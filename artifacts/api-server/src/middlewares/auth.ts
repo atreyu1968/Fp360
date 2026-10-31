@@ -88,6 +88,38 @@ export function clearAuthCookie(response: Response): void {
   });
 }
 
+export const requireSameOrigin: RequestHandler = (request, response, next) => {
+  if (request.get("sec-fetch-site") === "cross-site") {
+    response.status(403).json({ message: "Cross-origin request rejected" });
+    return;
+  }
+  const origin = request.get("origin");
+  if (origin) {
+    try {
+      if (new URL(origin).host.toLowerCase() !== request.get("host")?.toLowerCase()) {
+        response.status(403).json({ message: "Cross-origin request rejected" });
+        return;
+      }
+    } catch {
+      response.status(403).json({ message: "Cross-origin request rejected" });
+      return;
+    }
+  }
+  next();
+};
+
+export const requireSimulationWriteAccess: RequestHandler = (request, response, next) => {
+  if (["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+    next();
+    return;
+  }
+  if (!request.auth || !["student", "team_manager", "teacher", "administrator"].includes(request.auth.role)) {
+    response.status(403).json({ message: "Tu perfil solo permite consultar esta simulación." });
+    return;
+  }
+  requireSameOrigin(request, response, next);
+};
+
 export const requireAuth: RequestHandler = async (request, response, next) => {
   response.setHeader("Cache-Control", "no-store");
   try {

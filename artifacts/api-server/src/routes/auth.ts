@@ -19,6 +19,7 @@ import {
   issueAuthSession,
   hashSessionToken,
   requireAuth,
+  requireSameOrigin,
   SESSION_COOKIE_NAME,
   type AuthContext,
   type AuthRole,
@@ -54,31 +55,6 @@ const setupLimiter = rateLimit({
     response.status(429).json({ message: "Too many setup attempts" });
   },
 });
-
-const requireSameOrigin: RequestHandler = (request, response, next) => {
-  const fetchSite = request.get("sec-fetch-site");
-  if (fetchSite === "cross-site") {
-    response.status(403).json({ message: "Cross-origin request rejected" });
-    return;
-  }
-
-  const origin = request.get("origin");
-  if (origin) {
-    try {
-      const originHost = new URL(origin).host.toLowerCase();
-      const requestHost = request.get("host")?.toLowerCase();
-      if (!requestHost || originHost !== requestHost) {
-        response.status(403).json({ message: "Cross-origin request rejected" });
-        return;
-      }
-    } catch {
-      response.status(403).json({ message: "Cross-origin request rejected" });
-      return;
-    }
-  }
-
-  next();
-};
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();

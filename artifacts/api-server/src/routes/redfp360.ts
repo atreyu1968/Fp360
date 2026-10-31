@@ -32,10 +32,11 @@ import {
   fpPayments,
   fpProducts,
 } from "@workspace/db";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, requireSimulationWriteAccess } from "../middlewares/auth";
 
 const router: IRouter = Router();
 router.use(requireAuth);
+router.use(requireSimulationWriteAccess);
 const DEMO_TENANT_ID = "red-fp360-demo";
 const SIMULATED_DATE = "2027-09-15";
 
@@ -125,7 +126,8 @@ function newId(prefix: string): string {
   return `${prefix}-${randomUUID()}`;
 }
 
-async function ensureDemoData(): Promise<void> {
+async function ensureDemoData(tenantId: string): Promise<void> {
+  if (tenantId !== DEMO_TENANT_ID) return;
   await db.insert(fpOrganizations).values([...seedOrganizations]).onConflictDoNothing();
   await db.insert(fpProducts).values([...seedProducts]).onConflictDoNothing();
   await db
@@ -250,11 +252,11 @@ function timestamp(value: Date): string {
   return value.toISOString();
 }
 
-async function loadOrder(id: string) {
+async function loadOrder(id: string, tenantId: string) {
   const [order] = await db
     .select()
     .from(fpOrders)
-    .where(and(eq(fpOrders.id, id), eq(fpOrders.tenantId, DEMO_TENANT_ID)))
+    .where(and(eq(fpOrders.id, id), eq(fpOrders.tenantId, tenantId)))
     .limit(1);
   if (!order) return null;
   const [buyer] = await db
@@ -263,7 +265,7 @@ async function loadOrder(id: string) {
     .where(
       and(
         eq(fpOrganizations.id, order.buyerOrganizationId),
-        eq(fpOrganizations.tenantId, DEMO_TENANT_ID),
+        eq(fpOrganizations.tenantId, tenantId),
       ),
     )
     .limit(1);
@@ -291,11 +293,11 @@ async function loadOrder(id: string) {
   };
 }
 
-async function loadInvoice(id: string) {
+async function loadInvoice(id: string, tenantId: string) {
   const [invoice] = await db
     .select()
     .from(fpInvoices)
-    .where(and(eq(fpInvoices.id, id), eq(fpInvoices.tenantId, DEMO_TENANT_ID)))
+    .where(and(eq(fpInvoices.id, id), eq(fpInvoices.tenantId, tenantId)))
     .limit(1);
   if (!invoice) return null;
   const lines = await db
@@ -341,13 +343,14 @@ async function loadInvoice(id: string) {
 }
 
 async function addActivity(
+  tenantId: string,
   action: string,
   description: string,
   reference: string,
 ): Promise<void> {
   await db.insert(fpActivity).values({
     id: newId("activity"),
-    tenantId: DEMO_TENANT_ID,
+    tenantId,
     action,
     description,
     reference,
@@ -355,40 +358,41 @@ async function addActivity(
   });
 }
 
-async function listOrders() {
+async function listOrders(tenantId: string) {
   const rows = await db
     .select({ id: fpOrders.id })
     .from(fpOrders)
-    .where(eq(fpOrders.tenantId, DEMO_TENANT_ID))
+    .where(eq(fpOrders.tenantId, tenantId))
     .orderBy(desc(fpOrders.createdAt));
-  const mapped = await Promise.all(rows.map((row) => loadOrder(row.id)));
+  const mapped = await Promise.all(rows.map((row) => loadOrder(row.id, tenantId)));
   return mapped.filter((order): order is NonNullable<typeof order> => Boolean(order));
 }
 
-async function listInvoices() {
+async function listInvoices(tenantId: string) {
   const rows = await db
     .select({ id: fpInvoices.id })
     .from(fpInvoices)
-    .where(eq(fpInvoices.tenantId, DEMO_TENANT_ID))
+    .where(eq(fpInvoices.tenantId, tenantId))
     .orderBy(desc(fpInvoices.createdAt));
-  const mapped = await Promise.all(rows.map((row) => loadInvoice(row.id)));
+  const mapped = await Promise.all(rows.map((row) => loadInvoice(row.id, tenantId)));
   return mapped.filter((invoice): invoice is NonNullable<typeof invoice> =>
     Boolean(invoice),
   );
 }
 
-router.get("/redfp360/dashboard", async (_req, res): Promise<void> => {
-  await ensureDemoData();
-  const orders = await listOrders();
-  const invoices = await listInvoices();
+router.get("/redfp360/dashboard", async (req, res): Promise<void> => {
+  const tenantId = req.auth!.tenantId;
+  await ensureDemoData(tenantId);
+  const orders = await listOrders(tenantId);
+  const invoices = await listInvoices(tenantId);
   const products = await db
     .select()
     .from(fpProducts)
-    .where(eq(fpProducts.tenantId, DEMO_TENANT_ID));
+    .where(eq(fpProducts.tenantId, tenantId));
   const activityRows = await db
     .select()
     .from(fpActivity)
-    .where(eq(fpActivity.tenantId, DEMO_TENANT_ID))
+    .where(eq(fpActivity.tenantId, tenantId))
     .orderBy(desc(fpActivity.createdAt))
     .limit(5);
   const activity = activityRows.map((item) => ({
@@ -418,12 +422,13 @@ router.get("/redfp360/dashboard", async (_req, res): Promise<void> => {
   );
 });
 
-router.get("/redfp360/organizations", async (_req, res): Promise<void> => {
-  await ensureDemoData();
+router.get("/redfp360/organizations", async (req, res): Promise<void> => {
+  const tenantId = req.auth!.tenantId;
+  await ensureDemoData(tenantId);
   const organizations = await db
     .select()
     .from(fpOrganizations)
-    .where(eq(fpOrganizations.tenantId, DEMO_TENANT_ID))
+    .where(eq(fpOrganizations.tenantId, tenantId))
     .orderBy(fpOrganizations.name);
   res.json(
     ListFp360OrganizationsResponse.parse(
@@ -438,12 +443,13 @@ router.get("/redfp360/organizations", async (_req, res): Promise<void> => {
   );
 });
 
-router.get("/redfp360/products", async (_req, res): Promise<void> => {
-  await ensureDemoData();
+router.get("/redfp360/products", async (req, res): Promise<void> => {
+  const tenantId = req.auth!.tenantId;
+  await ensureDemoData(tenantId);
   const products = await db
     .select()
     .from(fpProducts)
-    .where(eq(fpProducts.tenantId, DEMO_TENANT_ID))
+    .where(eq(fpProducts.tenantId, tenantId))
     .orderBy(fpProducts.category, fpProducts.name);
   res.json(
     ListFp360ProductsResponse.parse(
@@ -461,13 +467,15 @@ router.get("/redfp360/products", async (_req, res): Promise<void> => {
   );
 });
 
-router.get("/redfp360/orders", async (_req, res): Promise<void> => {
-  await ensureDemoData();
-  res.json(ListFp360OrdersResponse.parse(await listOrders()));
+router.get("/redfp360/orders", async (req, res): Promise<void> => {
+  const tenantId = req.auth!.tenantId;
+  await ensureDemoData(tenantId);
+  res.json(ListFp360OrdersResponse.parse(await listOrders(tenantId)));
 });
 
 router.post("/redfp360/orders", async (req, res): Promise<void> => {
-  await ensureDemoData();
+  const tenantId = req.auth!.tenantId;
+  await ensureDemoData(tenantId);
   const parsed = CreateFp360OrderBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -493,14 +501,14 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
       .where(
         and(
           eq(fpOrganizations.id, parsed.data.buyerOrganizationId),
-          eq(fpOrganizations.tenantId, DEMO_TENANT_ID),
+          eq(fpOrganizations.tenantId, tenantId),
         ),
       )
       .limit(1);
     if (!buyer) {
       return {
         ok: false as const,
-        error: "La entidad seleccionada no pertenece a la red demo.",
+        error: "La entidad seleccionada no pertenece a tu red.",
       };
     }
     const productIds = [...productQuantities.keys()];
@@ -509,7 +517,7 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
       .from(fpProducts)
       .where(
         and(
-          eq(fpProducts.tenantId, DEMO_TENANT_ID),
+          eq(fpProducts.tenantId, tenantId),
           inArray(fpProducts.id, productIds),
         ),
       )
@@ -536,7 +544,7 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
     }
     await tx.insert(fpOrders).values({
       id,
-      tenantId: DEMO_TENANT_ID,
+      tenantId,
       reference,
       buyerOrganizationId: buyer.id,
       status: "draft",
@@ -562,8 +570,8 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
     res.status(400).json({ error: created.error });
     return;
   }
-  await addActivity("Presupuesto creado", "Nuevo pedido en borrador.", reference);
-  const order = await loadOrder(id);
+  await addActivity(tenantId, "Presupuesto creado", "Nuevo pedido en borrador.", reference);
+  const order = await loadOrder(id, tenantId);
   if (!order) {
     res.status(500).json({ error: "No se pudo recuperar el pedido creado." });
     return;
@@ -572,7 +580,8 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
 });
 
 router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
-  await ensureDemoData();
+  const tenantId = req.auth!.tenantId;
+  await ensureDemoData(tenantId);
   const params = ConfirmFp360OrderParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -585,7 +594,7 @@ router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
       .where(
         and(
           eq(fpOrders.id, params.data.id),
-          eq(fpOrders.tenantId, DEMO_TENANT_ID),
+          eq(fpOrders.tenantId, tenantId),
         ),
       )
       .for("update")
@@ -614,7 +623,7 @@ router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
       .from(fpProducts)
       .where(
         and(
-          eq(fpProducts.tenantId, DEMO_TENANT_ID),
+          eq(fpProducts.tenantId, tenantId),
           inArray(fpProducts.id, productIds),
         ),
       )
@@ -649,16 +658,18 @@ router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
     return;
   }
   await addActivity(
+    tenantId,
     "Pedido confirmado",
     "El pedido y las unidades disponibles han quedado reservados.",
     result.reference,
   );
-  const order = await loadOrder(params.data.id);
+  const order = await loadOrder(params.data.id, tenantId);
   res.json(ConfirmFp360OrderResponse.parse(order));
 });
 
 router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => {
-  await ensureDemoData();
+  const tenantId = req.auth!.tenantId;
+  await ensureDemoData(tenantId);
   const params = DispatchFp360OrderParams.safeParse(req.params);
   const body = DispatchFp360OrderBody.safeParse(req.body);
   if (!params.success) {
@@ -687,7 +698,7 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
       .where(
         and(
           eq(fpOrders.id, params.data.id),
-          eq(fpOrders.tenantId, DEMO_TENANT_ID),
+          eq(fpOrders.tenantId, tenantId),
         ),
       )
       .for("update")
@@ -726,7 +737,7 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
       .from(fpProducts)
       .where(
         and(
-          eq(fpProducts.tenantId, DEMO_TENANT_ID),
+          eq(fpProducts.tenantId, tenantId),
           inArray(fpProducts.id, productIds),
         ),
       )
@@ -777,21 +788,24 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
     return;
   }
   await addActivity(
+    tenantId,
     "Albarán simulado",
     "Se ha registrado una entrega de mercancía.",
     result.reference,
   );
-  const order = await loadOrder(params.data.id);
+  const order = await loadOrder(params.data.id, tenantId);
   res.json(DispatchFp360OrderResponse.parse(order));
 });
 
-router.get("/redfp360/invoices", async (_req, res): Promise<void> => {
-  await ensureDemoData();
-  res.json(ListFp360InvoicesResponse.parse(await listInvoices()));
+router.get("/redfp360/invoices", async (req, res): Promise<void> => {
+  const tenantId = req.auth!.tenantId;
+  await ensureDemoData(tenantId);
+  res.json(ListFp360InvoicesResponse.parse(await listInvoices(tenantId)));
 });
 
 router.post("/redfp360/invoices", async (req, res): Promise<void> => {
-  await ensureDemoData();
+  const tenantId = req.auth!.tenantId;
+  await ensureDemoData(tenantId);
   const body = IssueFp360InvoiceBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
@@ -804,7 +818,7 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
       .where(
         and(
           eq(fpOrders.id, body.data.orderId),
-          eq(fpOrders.tenantId, DEMO_TENANT_ID),
+          eq(fpOrders.tenantId, tenantId),
         ),
       )
       .for("update")
@@ -837,7 +851,7 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
     const [buyer] = await tx
       .select()
       .from(fpOrganizations)
-      .where(eq(fpOrganizations.id, order.buyerOrganizationId))
+      .where(and(eq(fpOrganizations.id, order.buyerOrganizationId), eq(fpOrganizations.tenantId, tenantId)))
       .limit(1);
     const invoiceId = newId("invoice");
     const invoiceReference = `FP360-SIM-${new Date().getFullYear()}-${randomUUID()
@@ -872,7 +886,7 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
     }
     await tx.insert(fpInvoices).values({
       id: invoiceId,
-      tenantId: DEMO_TENANT_ID,
+      tenantId,
       reference: invoiceReference,
       orderId: order.id,
       buyerName: buyer?.name ?? "Entidad de la red",
@@ -919,18 +933,20 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
     return;
   }
   await addActivity(
+    tenantId,
     "Factura simulada",
     "Factura emitida para unidades ya entregadas.",
     result.reference,
   );
-  const invoice = await loadInvoice(result.invoiceId);
+  const invoice = await loadInvoice(result.invoiceId, tenantId);
   res.status(201).json(IssueFp360InvoiceResponse.parse(invoice));
 });
 
 router.post(
   "/redfp360/invoices/:id/payments",
   async (req, res): Promise<void> => {
-    await ensureDemoData();
+    const tenantId = req.auth!.tenantId;
+    await ensureDemoData(tenantId);
     const params = RecordFp360PaymentParams.safeParse(req.params);
     const body = RecordFp360PaymentBody.safeParse(req.body);
     if (!params.success) {
@@ -948,7 +964,7 @@ router.post(
         .where(
           and(
             eq(fpInvoices.id, params.data.id),
-            eq(fpInvoices.tenantId, DEMO_TENANT_ID),
+            eq(fpInvoices.tenantId, tenantId),
           ),
         )
         .for("update")
@@ -987,7 +1003,7 @@ router.post(
           .where(
             and(
               eq(fpInvoices.orderId, invoice.orderId),
-              eq(fpInvoices.tenantId, DEMO_TENANT_ID),
+              eq(fpInvoices.tenantId, tenantId),
             ),
           );
         const balances: number[] = [];
@@ -1020,21 +1036,23 @@ router.post(
       return;
     }
     await addActivity(
+      tenantId,
       "Cobro simulado",
       "Abono registrado en Banco FP360.",
       result.reference,
     );
-    const invoice = await loadInvoice(params.data.id);
+    const invoice = await loadInvoice(params.data.id, tenantId);
     res.status(201).json(RecordFp360PaymentResponse.parse(invoice));
   },
 );
 
-router.get("/redfp360/activity", async (_req, res): Promise<void> => {
-  await ensureDemoData();
+router.get("/redfp360/activity", async (req, res): Promise<void> => {
+  const tenantId = req.auth!.tenantId;
+  await ensureDemoData(tenantId);
   const activity = await db
     .select()
     .from(fpActivity)
-    .where(eq(fpActivity.tenantId, DEMO_TENANT_ID))
+    .where(eq(fpActivity.tenantId, tenantId))
     .orderBy(desc(fpActivity.createdAt))
     .limit(20);
   res.json(

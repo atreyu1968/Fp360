@@ -18,7 +18,8 @@ function statusOf(error: unknown) {
 function authError(error: unknown, setup = false) {
   const status = statusOf(error);
   if (status === 401) return setup ? 'El token de configuración o los datos no son válidos. Comprueba la información e inténtalo de nuevo.' : 'El correo o la contraseña no coinciden. Revisa los datos e inténtalo de nuevo.';
-  if (status === 403 || status === 404) return 'El servidor no ha habilitado la configuración inicial. Contacta con la persona responsable del centro.';
+  if (status === 403) return setup ? 'El token de configuración no es válido o la solicitud no está permitida. Revisa el token e inténtalo de nuevo.' : 'El acceso no está permitido. Contacta con la persona responsable del centro.';
+  if (status === 404 || (setup && status === 503)) return 'El servidor no ha habilitado la configuración inicial. Contacta con la persona responsable del centro.';
   if (status === 409) return setup ? 'La configuración inicial ya se completó. Inicia sesión con la cuenta de administración existente.' : 'No se pudo iniciar sesión con esos datos. Revisa el correo y la contraseña.';
   if (status === 429) return 'Se han realizado demasiados intentos. Espera un momento antes de volver a intentarlo.';
   if (status >= 500) return 'El servicio de acceso no está disponible ahora. Inténtalo de nuevo más tarde.';

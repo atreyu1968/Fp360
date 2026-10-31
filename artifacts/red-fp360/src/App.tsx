@@ -239,6 +239,8 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
   states: { products: DataState; organizations: DataState; orders: DataState };
   onRefresh: () => void; onNotice: (message: string) => void;
 }) {
+  const identity = useGetCurrentIdentity();
+  const readOnly = !identity.data || ['promoter', 'mentor'].includes(identity.data.role);
   const queryClient = useQueryClient();
   const orderQuery = useListFp360Orders<Order[]>();
   const productsQuery = useListFp360Products<Product[]>();
@@ -284,7 +286,8 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
   };
   const actionable = orders ?? [];
   return <main className="page-content">
-    <PageHeading path="/ventas"><button className="button button-primary" onClick={() => setNewOrder(true)} data-testid="button-create-order"><Plus size={16} /> Crear pedido</button></PageHeading>
+    <PageHeading path="/ventas"><button className="button button-primary" disabled={readOnly} onClick={() => setNewOrder(true)} data-testid="button-create-order"><Plus size={16} /> Crear pedido</button></PageHeading>
+    {readOnly && <p role="status">Tu perfil permite consultar los pedidos, pero no modificarlos.</p>}
     <SimulationNotice />
     <div className="sub-metrics">
       <div><span>Pedidos del escenario</span><b>{orders?.length ?? '—'}</b><small>Historial de venta</small></div>
@@ -298,8 +301,8 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
         {!states.orders.loading && !states.orders.error && actionable.map((order) => {
           const remaining = order.lines.reduce((sum, line) => sum + line.quantity - line.shippedQuantity, 0);
           return <tr key={order.id} data-testid={`row-order-${order.id}`}><td><b className="mono ref">{order.reference}</b></td><td>{order.buyerName}</td><td>{dateLabel(order.simulatedDate)}</td><td><Status status={order.status} /></td><td className="price-cell">{money(order.totalCents)}</td><td>{order.lines.reduce((sum, item) => sum + item.shippedQuantity, 0)} / {order.lines.reduce((sum, item) => sum + item.quantity, 0)}</td><td><div className="row-actions">
-            {order.status === 'draft' && <button className="mini-button" disabled={confirmOrder.isPending} onClick={() => confirm(order)} data-testid={`button-confirm-${order.id}`}><Check size={14} /> Confirmar</button>}
-            {(order.status === 'confirmed' || order.status === 'partial') && remaining > 0 && <button className="mini-button mini-button-blue" onClick={() => openDispatch(order)} data-testid={`button-dispatch-${order.id}`}><Truck size={14} /> Expedición</button>}
+            {order.status === 'draft' && <button className="mini-button" disabled={readOnly || confirmOrder.isPending} onClick={() => confirm(order)} data-testid={`button-confirm-${order.id}`}><Check size={14} /> Confirmar</button>}
+            {(order.status === 'confirmed' || order.status === 'partial') && remaining > 0 && <button className="mini-button mini-button-blue" disabled={readOnly} onClick={() => openDispatch(order)} data-testid={`button-dispatch-${order.id}`}><Truck size={14} /> Expedición</button>}
             {order.status === 'delivered' && <span className="text-muted">Listo para facturar</span>}
           </div></td></tr>;
         })}
@@ -369,6 +372,8 @@ function InvoicesPage({ invoices, orders, stateInvoices, stateOrders, onRefresh,
   invoices?: Invoice[]; orders?: Order[]; stateInvoices: DataState; stateOrders: DataState;
   onRefresh: () => void; onNotice: (message: string) => void;
 }) {
+  const identity = useGetCurrentIdentity();
+  const readOnly = !identity.data || ['promoter', 'mentor'].includes(identity.data.role);
   const queryClient = useQueryClient();
   const invoiceQuery = useListFp360Invoices<Invoice[]>();
   const orderQuery = useListFp360Orders<Order[]>();
@@ -398,6 +403,7 @@ function InvoicesPage({ invoices, orders, stateInvoices, stateOrders, onRefresh,
   const outstanding = (invoices ?? []).reduce((sum, invoice) => sum + invoice.balanceCents, 0);
   return <main className="page-content">
     <PageHeading path="/facturas" />
+    {readOnly && <p role="status">Tu perfil permite consultar las facturas, pero no emitir documentos ni registrar pagos.</p>}
     <SimulationNotice />
     <div className="metrics-grid invoice-metrics">
       <Metric label="Facturas emitidas" value={String(invoices?.length ?? '—')} hint="Documentos del escenario" icon={FileCheck2} />
@@ -408,14 +414,14 @@ function InvoicesPage({ invoices, orders, stateInvoices, stateOrders, onRefresh,
       <SectionTitle title="Emitir factura" subtitle="Solo se pueden facturar unidades ya expedidas y aún no facturadas." />
       <DataMessage state={stateOrders} />
       {!stateOrders.loading && !stateOrders.error && (issuable.length ? <div className="invoice-eligible">
-        {issuable.map((order) => <div className="eligible-row" key={order.id}><span className="eligible-icon"><ReceiptText size={17} /></span><div className="eligible-copy"><b>{order.reference} <span>· {order.buyerName}</span></b><small>{order.lines.filter((line) => line.shippedQuantity > line.invoicedQuantity).map((line) => `${line.shippedQuantity - line.invoicedQuantity} × ${line.productName}`).join(', ')}</small></div><button className="button button-secondary" disabled={issueInvoice.isPending} onClick={() => issue(order)} data-testid={`button-issue-${order.id}`}><Plus size={15} /> Emitir</button></div>)}
+        {issuable.map((order) => <div className="eligible-row" key={order.id}><span className="eligible-icon"><ReceiptText size={17} /></span><div className="eligible-copy"><b>{order.reference} <span>· {order.buyerName}</span></b><small>{order.lines.filter((line) => line.shippedQuantity > line.invoicedQuantity).map((line) => `${line.shippedQuantity - line.invoicedQuantity} × ${line.productName}`).join(', ')}</small></div><button className="button button-secondary" disabled={readOnly || issueInvoice.isPending} onClick={() => issue(order)} data-testid={`button-issue-${order.id}`}><Plus size={15} /> Emitir</button></div>)}
       </div> : <div className="issuance-empty"><FileCheck2 size={19} /><span><b>No hay expediciones pendientes de facturar</b><small>Cuando un pedido se expida, podrás emitir aquí la factura correspondiente.</small></span><Link href="/ventas" className="text-button">Ver pedidos <ArrowRight size={14} /></Link></div>)}
     </section>
     <section className="panel">
       <div className="list-toolbar"><SectionTitle title="Facturas" subtitle="Documentos y pagos asociados a pedidos simulados." /><div className="tabs small-tabs"><button className={tab === 'all' ? 'tab-active' : ''} onClick={() => setTab('all')}>Todas</button><button className={tab === 'due' ? 'tab-active' : ''} onClick={() => setTab('due')}>Pendientes</button></div></div>
       <DataMessage state={stateInvoices} />
       <DataTable minWidth={800}><thead><tr><th>Factura</th><th>Empresa</th><th>Fecha simulada</th><th>Base</th><th>IGIC</th><th>Total</th><th>Saldo</th><th>Estado / acción</th></tr></thead><tbody>
-        {!stateInvoices.loading && !stateInvoices.error && shownInvoices.map((invoice) => <tr key={invoice.id} data-testid={`row-invoice-${invoice.id}`}><td><b className="mono ref">{invoice.reference}</b><small className="table-secondary block">Pedido {invoice.orderId}</small></td><td>{invoice.buyerName}</td><td>{dateLabel(invoice.simulatedDate)}</td><td>{money(invoice.baseCents)}</td><td>{money(invoice.igicCents)}</td><td className="price-cell">{money(invoice.totalCents)}</td><td className={invoice.balanceCents ? 'balance-due' : 'balance-paid'}>{money(invoice.balanceCents)}</td><td><div className="invoice-action"><Status status={invoice.status} />{invoice.balanceCents > 0 && <button className="mini-button" onClick={() => startPayment(invoice)} data-testid={`button-payment-${invoice.id}`}>Registrar pago</button>}</div></td></tr>)}
+        {!stateInvoices.loading && !stateInvoices.error && shownInvoices.map((invoice) => <tr key={invoice.id} data-testid={`row-invoice-${invoice.id}`}><td><b className="mono ref">{invoice.reference}</b><small className="table-secondary block">Pedido {invoice.orderId}</small></td><td>{invoice.buyerName}</td><td>{dateLabel(invoice.simulatedDate)}</td><td>{money(invoice.baseCents)}</td><td>{money(invoice.igicCents)}</td><td className="price-cell">{money(invoice.totalCents)}</td><td className={invoice.balanceCents ? 'balance-due' : 'balance-paid'}>{money(invoice.balanceCents)}</td><td><div className="invoice-action"><Status status={invoice.status} />{invoice.balanceCents > 0 && <button className="mini-button" disabled={readOnly} onClick={() => startPayment(invoice)} data-testid={`button-payment-${invoice.id}`}>Registrar pago</button>}</div></td></tr>)}
         {!stateInvoices.loading && !stateInvoices.error && shownInvoices.length === 0 && <TableEmpty colSpan={8} title={tab === 'due' ? 'Sin saldos pendientes' : 'Aún no hay facturas'} detail={tab === 'due' ? 'Todas las facturas registradas están pagadas.' : 'Emite una factura tras registrar una expedición simulada.'} />}
       </tbody></DataTable>
     </section>
@@ -667,17 +673,22 @@ function AuthRouter() {
   const [validatedIdentity, setValidatedIdentity] = useState('');
   const previousIdentity = useRef('');
   const identity = identityQuery.data;
-  const identityKey = identity ? `${identity.id}:${identity.tenantId}:${identity.organizationId ?? ''}` : '';
+  const identityKey = identity ? `${identity.id}:${identity.tenantId}:${identity.organizationId ?? ''}:${identity.role}` : '';
 
   useEffect(() => {
-    if (!identity || identityQuery.isFetching || identityQuery.isError) return;
+    if (identityQuery.isError && isUnauthorized(identityQuery.error)) {
+      clearBusinessCache();
+      setValidatedIdentity('');
+      return;
+    }
+    if (!identity || identityQuery.isError) return;
     if (previousIdentity.current && previousIdentity.current !== identityKey) clearBusinessCache();
     previousIdentity.current = identityKey;
     setValidatedIdentity(identityKey);
   }, [identity, identityQuery.isFetching, identityQuery.isError, identityKey]);
 
   const onAuthenticated = (nextIdentity: AuthIdentity) => {
-    const nextKey = `${nextIdentity.id}:${nextIdentity.tenantId}:${nextIdentity.organizationId ?? ''}`;
+    const nextKey = `${nextIdentity.id}:${nextIdentity.tenantId}:${nextIdentity.organizationId ?? ''}:${nextIdentity.role}`;
     if (previousIdentity.current && previousIdentity.current !== nextKey) clearBusinessCache();
     previousIdentity.current = nextKey;
     setValidatedIdentity(nextKey);
@@ -689,7 +700,7 @@ function AuthRouter() {
   if (authStatus.isLoading) return <AuthLoading label="Cargando configuración del acceso" />;
   if (authStatus.isError || !authStatus.data) return <main className="auth-loading"><div className="auth-state-card"><CircleHelp size={22} /><h1>No podemos comprobar el acceso</h1><p>El servicio de autenticación no responde. Comprueba la conexión e inténtalo otra vez.</p><button className="auth-submit" type="button" onClick={() => { void authStatus.refetch(); void identityQuery.refetch(); }} data-testid="button-retry-auth">Reintentar <ArrowRight size={16} /></button></div></main>;
 
-  if (identityQuery.isLoading || (identity && identityQuery.isFetching) || (identity && validatedIdentity !== identityKey)) return <AuthLoading />;
+  if (identityQuery.isLoading || (identity && !identityQuery.isError && validatedIdentity !== identityKey)) return <AuthLoading />;
   if (identity && !identityQuery.isError && validatedIdentity === identityKey) {
     if (location === '/sign-in' || location === '/setup') {
       return <AuthRedirect target="/" />;
