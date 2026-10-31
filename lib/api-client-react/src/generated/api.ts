@@ -58,6 +58,15 @@ import type {
   DirectionTaskUpdate,
   DirectionThreshold,
   DirectionThresholdInput,
+  Fp360AccountingAccount,
+  Fp360AccountingAccountInput,
+  Fp360AccountingEntry,
+  Fp360AccountingEntryActionInput,
+  Fp360AccountingEntryInput,
+  Fp360AccountingOverview,
+  Fp360AccountingPeriod,
+  Fp360AccountingPeriodActionInput,
+  Fp360AccountingSourceDraftInput,
   Fp360Activity,
   Fp360Dashboard,
   Fp360DispatchInput,
@@ -84,6 +93,7 @@ import type {
   Fp360ProductUpdate,
   Fp360StockAdjustment,
   Fp360StockAdjustmentInput,
+  GetFp360AccountingOverviewParams,
   GetFp360DirectionOverviewParams,
   HealthStatus,
   InvitationAcceptanceInput,
@@ -8085,6 +8095,741 @@ export const useIssueFp360Invoice = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getIssueFp360InvoiceMutationOptions(options), queryClient);
+    }
+
+export const getGetFp360AccountingOverviewUrl = (params: GetFp360AccountingOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/accounting/overview?${stringifiedParams}` : `/api/redfp360/accounting/overview`
+}
+
+/**
+ * @summary Get accounting dashboard and ledgers for one organization
+ */
+export const getFp360AccountingOverview = async (params: GetFp360AccountingOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<Fp360AccountingOverview> => {
+
+  return customFetch<Fp360AccountingOverview>(getGetFp360AccountingOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360AccountingOverviewQueryKey = (params?: GetFp360AccountingOverviewParams,) => {
+    return [
+    `/api/redfp360/accounting/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360AccountingOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getFp360AccountingOverview>>, TError = ErrorType<void>>(params: GetFp360AccountingOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360AccountingOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360AccountingOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360AccountingOverview>>> = ({ signal }) => getFp360AccountingOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360AccountingOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360AccountingOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360AccountingOverview>>>
+export type GetFp360AccountingOverviewQueryError = ErrorType<void>
+
+
+export function useGetFp360AccountingOverview<TData = Awaited<ReturnType<typeof getFp360AccountingOverview>>, TError = ErrorType<void>>(
+ params: GetFp360AccountingOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360AccountingOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360AccountingOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360AccountingOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360AccountingOverview<TData = Awaited<ReturnType<typeof getFp360AccountingOverview>>, TError = ErrorType<void>>(
+ params: GetFp360AccountingOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360AccountingOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360AccountingOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360AccountingOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360AccountingOverview<TData = Awaited<ReturnType<typeof getFp360AccountingOverview>>, TError = ErrorType<void>>(
+ params: GetFp360AccountingOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360AccountingOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get accounting dashboard and ledgers for one organization
+ */
+
+export function useGetFp360AccountingOverview<TData = Awaited<ReturnType<typeof getFp360AccountingOverview>>, TError = ErrorType<void>>(
+ params: GetFp360AccountingOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360AccountingOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360AccountingOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360AccountingAccountUrl = () => {
+
+
+
+
+  return `/api/redfp360/accounting/accounts`
+}
+
+/**
+ * @summary Add a company accounting account
+ */
+export const createFp360AccountingAccount = async (fp360AccountingAccountInput: Fp360AccountingAccountInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360AccountingAccount> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360AccountingAccount>(getCreateFp360AccountingAccountUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360AccountingAccountInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360AccountingAccountMutationKey = () => ['createFp360AccountingAccount'] as const;
+
+export const getCreateFp360AccountingAccountMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360AccountingAccount>>, TError,CreateFp360AccountingAccountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360AccountingAccount>>, TError,CreateFp360AccountingAccountMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360AccountingAccountMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360AccountingAccount>>, CreateFp360AccountingAccountMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360AccountingAccount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360AccountingAccountMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360AccountingAccount>>>
+    export type CreateFp360AccountingAccountMutationBody = BodyType<Fp360AccountingAccountInput>
+    export type CreateFp360AccountingAccountMutationError = ErrorType<void>
+    export type CreateFp360AccountingAccountMutationVariables = {data: BodyType<Fp360AccountingAccountInput>}
+
+    /**
+ * @summary Add a company accounting account
+ */
+export const useCreateFp360AccountingAccount = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360AccountingAccount>>, TError,CreateFp360AccountingAccountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360AccountingAccount>>,
+        TError,
+        CreateFp360AccountingAccountMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360AccountingAccountMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360AccountingEntryUrl = () => {
+
+
+
+
+  return `/api/redfp360/accounting/entries`
+}
+
+/**
+ * @summary Save a journal entry draft
+ */
+export const createFp360AccountingEntry = async (fp360AccountingEntryInput: Fp360AccountingEntryInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360AccountingEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360AccountingEntry>(getCreateFp360AccountingEntryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360AccountingEntryInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360AccountingEntryMutationKey = () => ['createFp360AccountingEntry'] as const;
+
+export const getCreateFp360AccountingEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360AccountingEntry>>, TError,CreateFp360AccountingEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360AccountingEntry>>, TError,CreateFp360AccountingEntryMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360AccountingEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360AccountingEntry>>, CreateFp360AccountingEntryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360AccountingEntry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360AccountingEntryMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360AccountingEntry>>>
+    export type CreateFp360AccountingEntryMutationBody = BodyType<Fp360AccountingEntryInput>
+    export type CreateFp360AccountingEntryMutationError = ErrorType<void>
+    export type CreateFp360AccountingEntryMutationVariables = {data: BodyType<Fp360AccountingEntryInput>}
+
+    /**
+ * @summary Save a journal entry draft
+ */
+export const useCreateFp360AccountingEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360AccountingEntry>>, TError,CreateFp360AccountingEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360AccountingEntry>>,
+        TError,
+        CreateFp360AccountingEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360AccountingEntryMutationOptions(options), queryClient);
+    }
+
+export const getPostFp360AccountingEntryUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/accounting/entries/${id}/post`
+}
+
+/**
+ * @summary Validate and post a balanced journal entry
+ */
+export const postFp360AccountingEntry = async (id: string,
+    fp360AccountingEntryActionInput: Fp360AccountingEntryActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360AccountingEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360AccountingEntry>(getPostFp360AccountingEntryUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360AccountingEntryActionInput)
+  }
+);}
+
+
+
+
+
+export const getPostFp360AccountingEntryMutationKey = () => ['postFp360AccountingEntry'] as const;
+
+export const getPostFp360AccountingEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postFp360AccountingEntry>>, TError,PostFp360AccountingEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postFp360AccountingEntry>>, TError,PostFp360AccountingEntryMutationVariables, TContext> => {
+
+const mutationKey = getPostFp360AccountingEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postFp360AccountingEntry>>, PostFp360AccountingEntryMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  postFp360AccountingEntry(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostFp360AccountingEntryMutationResult = NonNullable<Awaited<ReturnType<typeof postFp360AccountingEntry>>>
+    export type PostFp360AccountingEntryMutationBody = BodyType<Fp360AccountingEntryActionInput>
+    export type PostFp360AccountingEntryMutationError = ErrorType<void>
+    export type PostFp360AccountingEntryMutationVariables = {id: string;data: BodyType<Fp360AccountingEntryActionInput>}
+
+    /**
+ * @summary Validate and post a balanced journal entry
+ */
+export const usePostFp360AccountingEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postFp360AccountingEntry>>, TError,PostFp360AccountingEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postFp360AccountingEntry>>,
+        TError,
+        PostFp360AccountingEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPostFp360AccountingEntryMutationOptions(options), queryClient);
+    }
+
+export const getReverseFp360AccountingEntryUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/accounting/entries/${id}/reverse`
+}
+
+/**
+ * @summary Create an auditable compensating journal entry
+ */
+export const reverseFp360AccountingEntry = async (id: string,
+    fp360AccountingEntryActionInput: Fp360AccountingEntryActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360AccountingEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360AccountingEntry>(getReverseFp360AccountingEntryUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360AccountingEntryActionInput)
+  }
+);}
+
+
+
+
+
+export const getReverseFp360AccountingEntryMutationKey = () => ['reverseFp360AccountingEntry'] as const;
+
+export const getReverseFp360AccountingEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reverseFp360AccountingEntry>>, TError,ReverseFp360AccountingEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reverseFp360AccountingEntry>>, TError,ReverseFp360AccountingEntryMutationVariables, TContext> => {
+
+const mutationKey = getReverseFp360AccountingEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reverseFp360AccountingEntry>>, ReverseFp360AccountingEntryMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reverseFp360AccountingEntry(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReverseFp360AccountingEntryMutationResult = NonNullable<Awaited<ReturnType<typeof reverseFp360AccountingEntry>>>
+    export type ReverseFp360AccountingEntryMutationBody = BodyType<Fp360AccountingEntryActionInput>
+    export type ReverseFp360AccountingEntryMutationError = ErrorType<void>
+    export type ReverseFp360AccountingEntryMutationVariables = {id: string;data: BodyType<Fp360AccountingEntryActionInput>}
+
+    /**
+ * @summary Create an auditable compensating journal entry
+ */
+export const useReverseFp360AccountingEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reverseFp360AccountingEntry>>, TError,ReverseFp360AccountingEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reverseFp360AccountingEntry>>,
+        TError,
+        ReverseFp360AccountingEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReverseFp360AccountingEntryMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360AccountingSourceDraftUrl = (sourceType: 'sales_invoice' | 'purchase_invoice' | 'payment',
+    sourceId: string,) => {
+
+
+
+
+  return `/api/redfp360/accounting/sources/${sourceType}/${sourceId}/draft`
+}
+
+/**
+ * @summary Convert a confirmed source document into a balanced draft
+ */
+export const createFp360AccountingSourceDraft = async (sourceType: 'sales_invoice' | 'purchase_invoice' | 'payment',
+    sourceId: string,
+    fp360AccountingSourceDraftInput: Fp360AccountingSourceDraftInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360AccountingEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360AccountingEntry>(getCreateFp360AccountingSourceDraftUrl(sourceType,sourceId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360AccountingSourceDraftInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360AccountingSourceDraftMutationKey = () => ['createFp360AccountingSourceDraft'] as const;
+
+export const getCreateFp360AccountingSourceDraftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360AccountingSourceDraft>>, TError,CreateFp360AccountingSourceDraftMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360AccountingSourceDraft>>, TError,CreateFp360AccountingSourceDraftMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360AccountingSourceDraftMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360AccountingSourceDraft>>, CreateFp360AccountingSourceDraftMutationVariables> = (props) => {
+          const {sourceType,sourceId,data} = props ?? {};
+
+          return  createFp360AccountingSourceDraft(sourceType,sourceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360AccountingSourceDraftMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360AccountingSourceDraft>>>
+    export type CreateFp360AccountingSourceDraftMutationBody = BodyType<Fp360AccountingSourceDraftInput>
+    export type CreateFp360AccountingSourceDraftMutationError = ErrorType<void>
+    export type CreateFp360AccountingSourceDraftMutationVariables = {sourceType: 'sales_invoice' | 'purchase_invoice' | 'payment';sourceId: string;data: BodyType<Fp360AccountingSourceDraftInput>}
+
+    /**
+ * @summary Convert a confirmed source document into a balanced draft
+ */
+export const useCreateFp360AccountingSourceDraft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360AccountingSourceDraft>>, TError,CreateFp360AccountingSourceDraftMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360AccountingSourceDraft>>,
+        TError,
+        CreateFp360AccountingSourceDraftMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360AccountingSourceDraftMutationOptions(options), queryClient);
+    }
+
+export const getCloseFp360AccountingPeriodUrl = (fiscalYear: number,
+    period: number,) => {
+
+
+
+
+  return `/api/redfp360/accounting/periods/${fiscalYear}/${period}/close`
+}
+
+/**
+ * @summary Close a period after required checks pass
+ */
+export const closeFp360AccountingPeriod = async (fiscalYear: number,
+    period: number,
+    fp360AccountingPeriodActionInput: Fp360AccountingPeriodActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360AccountingPeriod> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360AccountingPeriod>(getCloseFp360AccountingPeriodUrl(fiscalYear,period),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360AccountingPeriodActionInput)
+  }
+);}
+
+
+
+
+
+export const getCloseFp360AccountingPeriodMutationKey = () => ['closeFp360AccountingPeriod'] as const;
+
+export const getCloseFp360AccountingPeriodMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeFp360AccountingPeriod>>, TError,CloseFp360AccountingPeriodMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof closeFp360AccountingPeriod>>, TError,CloseFp360AccountingPeriodMutationVariables, TContext> => {
+
+const mutationKey = getCloseFp360AccountingPeriodMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof closeFp360AccountingPeriod>>, CloseFp360AccountingPeriodMutationVariables> = (props) => {
+          const {fiscalYear,period,data} = props ?? {};
+
+          return  closeFp360AccountingPeriod(fiscalYear,period,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CloseFp360AccountingPeriodMutationResult = NonNullable<Awaited<ReturnType<typeof closeFp360AccountingPeriod>>>
+    export type CloseFp360AccountingPeriodMutationBody = BodyType<Fp360AccountingPeriodActionInput>
+    export type CloseFp360AccountingPeriodMutationError = ErrorType<void>
+    export type CloseFp360AccountingPeriodMutationVariables = {fiscalYear: number;period: number;data: BodyType<Fp360AccountingPeriodActionInput>}
+
+    /**
+ * @summary Close a period after required checks pass
+ */
+export const useCloseFp360AccountingPeriod = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeFp360AccountingPeriod>>, TError,CloseFp360AccountingPeriodMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof closeFp360AccountingPeriod>>,
+        TError,
+        CloseFp360AccountingPeriodMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCloseFp360AccountingPeriodMutationOptions(options), queryClient);
+    }
+
+export const getReopenFp360AccountingPeriodUrl = (fiscalYear: number,
+    period: number,) => {
+
+
+
+
+  return `/api/redfp360/accounting/periods/${fiscalYear}/${period}/reopen`
+}
+
+/**
+ * @summary Reopen a period with teacher or administrator authorization
+ */
+export const reopenFp360AccountingPeriod = async (fiscalYear: number,
+    period: number,
+    fp360AccountingPeriodActionInput: Fp360AccountingPeriodActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360AccountingPeriod> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360AccountingPeriod>(getReopenFp360AccountingPeriodUrl(fiscalYear,period),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360AccountingPeriodActionInput)
+  }
+);}
+
+
+
+
+
+export const getReopenFp360AccountingPeriodMutationKey = () => ['reopenFp360AccountingPeriod'] as const;
+
+export const getReopenFp360AccountingPeriodMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenFp360AccountingPeriod>>, TError,ReopenFp360AccountingPeriodMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reopenFp360AccountingPeriod>>, TError,ReopenFp360AccountingPeriodMutationVariables, TContext> => {
+
+const mutationKey = getReopenFp360AccountingPeriodMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reopenFp360AccountingPeriod>>, ReopenFp360AccountingPeriodMutationVariables> = (props) => {
+          const {fiscalYear,period,data} = props ?? {};
+
+          return  reopenFp360AccountingPeriod(fiscalYear,period,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReopenFp360AccountingPeriodMutationResult = NonNullable<Awaited<ReturnType<typeof reopenFp360AccountingPeriod>>>
+    export type ReopenFp360AccountingPeriodMutationBody = BodyType<Fp360AccountingPeriodActionInput>
+    export type ReopenFp360AccountingPeriodMutationError = ErrorType<void>
+    export type ReopenFp360AccountingPeriodMutationVariables = {fiscalYear: number;period: number;data: BodyType<Fp360AccountingPeriodActionInput>}
+
+    /**
+ * @summary Reopen a period with teacher or administrator authorization
+ */
+export const useReopenFp360AccountingPeriod = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenFp360AccountingPeriod>>, TError,ReopenFp360AccountingPeriodMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reopenFp360AccountingPeriod>>,
+        TError,
+        ReopenFp360AccountingPeriodMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReopenFp360AccountingPeriodMutationOptions(options), queryClient);
     }
 
 export const getRecordFp360PaymentUrl = (id: string,) => {

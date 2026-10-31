@@ -294,6 +294,7 @@ async function readInvoice(id: string, actor: AuthContext) {
   }));
   return {
     id: invoice.id, orderId: order.id, orderNumber: order.orderNumber,
+    buyerOrganizationId: order.buyerOrganizationId,
     requestId: invoice.requestId, supplierOrganizationId: invoice.supplierOrganizationId,
     supplierName: supplier?.name ?? "Proveedor archivado",
     supersedesInvoiceId: invoice.supersedesInvoiceId,

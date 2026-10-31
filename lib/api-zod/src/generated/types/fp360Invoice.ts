@@ -13,6 +13,8 @@ export interface Fp360Invoice {
   id: string;
   reference: string;
   orderId: string;
+  /** @nullable */
+  issuerOrganizationId: string | null;
   buyerName: string;
   status: Fp360InvoiceStatus;
   lines: Fp360InvoiceLine[];
@@ -27,6 +29,8 @@ export interface Fp360Invoice {
   /** @minimum 0 */
   balanceCents: number;
   simulatedDate: string;
+  /** @nullable */
+  dueDate: string | null;
   createdAt: string;
   payments: Fp360Payment[];
 }

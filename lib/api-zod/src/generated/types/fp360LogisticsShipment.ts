@@ -12,6 +12,7 @@ import type { Fp360LogisticsShipmentStatus } from './fp360LogisticsShipmentStatu
 
 export interface Fp360LogisticsShipment {
   id: string;
+  reference: string;
   orderId: string;
   orderReference: string;
   /** @nullable */

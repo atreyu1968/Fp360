@@ -1557,6 +1557,202 @@ paths:
           description: Order has no uninvoiced shipped quantities
         "404":
           description: Order not found
+  /redfp360/accounting/overview:
+    get:
+      operationId: getFp360AccountingOverview
+      tags: [redfp360]
+      summary: Get accounting dashboard and ledgers for one organization
+      parameters:
+        - name: organizationId
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Accounts, journal, periods, balances, and importable documents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360AccountingOverview"
+        "403":
+          description: Organization is outside the actor's access
+  /redfp360/accounting/accounts:
+    post:
+      operationId: createFp360AccountingAccount
+      tags: [redfp360]
+      summary: Add a company accounting account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360AccountingAccountInput"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360AccountingAccount"
+        "409":
+          description: Account code already exists
+  /redfp360/accounting/entries:
+    post:
+      operationId: createFp360AccountingEntry
+      tags: [redfp360]
+      summary: Save a journal entry draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360AccountingEntryInput"
+      responses:
+        "201":
+          description: Draft journal entry saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360AccountingEntry"
+        "400":
+          description: Invalid entry date, lines, or accounts
+  /redfp360/accounting/entries/{id}/post:
+    post:
+      operationId: postFp360AccountingEntry
+      tags: [redfp360]
+      summary: Validate and post a balanced journal entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360AccountingEntryActionInput"
+      responses:
+        "200":
+          description: Entry posted with a consecutive number
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360AccountingEntry"
+        "409":
+          description: Entry is unbalanced or its period is closed
+  /redfp360/accounting/entries/{id}/reverse:
+    post:
+      operationId: reverseFp360AccountingEntry
+      tags: [redfp360]
+      summary: Create an auditable compensating journal entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360AccountingEntryActionInput"
+      responses:
+        "201":
+          description: Reversal entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360AccountingEntry"
+        "409":
+          description: Entry cannot be reversed
+  /redfp360/accounting/sources/{sourceType}/{sourceId}/draft:
+    post:
+      operationId: createFp360AccountingSourceDraft
+      tags: [redfp360]
+      summary: Convert a confirmed source document into a balanced draft
+      parameters:
+        - name: sourceType
+          in: path
+          required: true
+          schema: { type: string, enum: [sales_invoice, purchase_invoice, payment] }
+        - name: sourceId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360AccountingSourceDraftInput"
+      responses:
+        "201":
+          description: Draft created from source document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360AccountingEntry"
+        "409":
+          description: Source has already been imported
+  /redfp360/accounting/periods/{fiscalYear}/{period}/close:
+    post:
+      operationId: closeFp360AccountingPeriod
+      tags: [redfp360]
+      summary: Close a period after required checks pass
+      parameters:
+        - name: fiscalYear
+          in: path
+          required: true
+          schema: { type: integer, minimum: 2000, maximum: 2100 }
+        - name: period
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 12 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360AccountingPeriodActionInput"
+      responses:
+        "200":
+          description: Period closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360AccountingPeriod"
+        "409":
+          description: Draft entries or imbalance prevent closure
+  /redfp360/accounting/periods/{fiscalYear}/{period}/reopen:
+    post:
+      operationId: reopenFp360AccountingPeriod
+      tags: [redfp360]
+      summary: Reopen a period with teacher or administrator authorization
+      parameters:
+        - name: fiscalYear
+          in: path
+          required: true
+          schema: { type: integer, minimum: 2000, maximum: 2100 }
+        - name: period
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 12 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360AccountingPeriodActionInput"
+      responses:
+        "200":
+          description: Period reopened with audit event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360AccountingPeriod"
+        "403":
+          description: Only a teacher or administrator can reopen a period
   /redfp360/invoices/{id}/payments:
     post:
       operationId: recordFp360Payment
@@ -2057,12 +2253,13 @@ components:
         matches: { type: boolean }
     PurchaseInvoice:
       type: object
-      required: [id, orderId, orderNumber, requestId, supplierOrganizationId, supplierName, supersedesInvoiceId, invoiceReference, invoiceDate, dueDate, status, matchStatus, matchSummary, baseCents, igicCents, freightCents, totalCents, decisionReason, lines, createdByRole, createdAt]
+      required: [id, orderId, orderNumber, requestId, buyerOrganizationId, supplierOrganizationId, supplierName, supersedesInvoiceId, invoiceReference, invoiceDate, dueDate, status, matchStatus, matchSummary, baseCents, igicCents, freightCents, totalCents, decisionReason, lines, createdByRole, createdAt]
       properties:
         id: { type: string, format: uuid }
         orderId: { type: string, format: uuid }
         orderNumber: { type: string }
         requestId: { type: string, format: uuid }
+        buyerOrganizationId: { type: string, format: uuid }
         supplierOrganizationId: { type: string, format: uuid }
         supplierName: { type: string }
         supersedesInvoiceId: { type: ["string", "null"], format: uuid }
@@ -2460,9 +2657,10 @@ components:
         resolvedAt: { type: ["string", "null"], format: date-time }
     Fp360LogisticsShipment:
       type: object
-      required: [id, orderId, orderReference, originOrganizationId, originName, destinationOrganizationId, destinationName, routeName, carrierName, parcelCount, plannedDeliveryDate, status, simulatedDate, deliveredDate, lines, events, incidents, createdAt]
+      required: [id, reference, orderId, orderReference, originOrganizationId, originName, destinationOrganizationId, destinationName, routeName, carrierName, parcelCount, plannedDeliveryDate, status, simulatedDate, deliveredDate, lines, events, incidents, createdAt]
       properties:
         id: { type: string }
+        reference: { type: string }
         orderId: { type: string }
         orderReference: { type: string }
         originOrganizationId: { type: ["string", "null"] }
@@ -2530,6 +2728,184 @@ components:
         operationId: { type: string, minLength: 1, maxLength: 120 }
         resolution: { type: string, minLength: 5, maxLength: 500 }
         outcome: { type: string, enum: [resume, close_partial] }
+    Fp360AccountingOverview:
+      type: object
+      required: [organizationId, accounts, entries, periods, sources, balances, totals]
+      properties:
+        organizationId: { type: string }
+        accounts:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360AccountingAccount" }
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360AccountingEntry" }
+        periods:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360AccountingPeriod" }
+        sources:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360AccountingSource" }
+        balances:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360AccountingBalance" }
+        totals:
+          type: object
+          required: [postedEntryCount, draftEntryCount, debitCents, creditCents, balanced]
+          properties:
+            postedEntryCount: { type: integer, minimum: 0 }
+            draftEntryCount: { type: integer, minimum: 0 }
+            debitCents: { type: integer, minimum: 0 }
+            creditCents: { type: integer, minimum: 0 }
+            balanced: { type: boolean }
+    Fp360AccountingAccount:
+      type: object
+      required: [id, organizationId, code, name, nature, normalBalance, parentCode, active, isSystem, createdAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        code: { type: string }
+        name: { type: string }
+        nature: { type: string, enum: [asset, liability, equity, revenue, expense] }
+        normalBalance: { type: string, enum: [debit, credit] }
+        parentCode: { type: string, nullable: true }
+        active: { type: boolean }
+        isSystem: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    Fp360AccountingAccountInput:
+      type: object
+      required: [organizationId, code, name, nature, normalBalance]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        code: { type: string, minLength: 3, maxLength: 12, pattern: "^[0-9A-Za-z.]+$" }
+        name: { type: string, minLength: 2, maxLength: 120 }
+        nature: { type: string, enum: [asset, liability, equity, revenue, expense] }
+        normalBalance: { type: string, enum: [debit, credit] }
+        parentCode: { type: string, nullable: true, maxLength: 12 }
+    Fp360AccountingEntryLine:
+      type: object
+      required: [lineNumber, accountId, accountCode, accountName, description, debitCents, creditCents, thirdPartyOrganizationId]
+      properties:
+        lineNumber: { type: integer, minimum: 1 }
+        accountId: { type: string }
+        accountCode: { type: string }
+        accountName: { type: string }
+        description: { type: string }
+        debitCents: { type: integer, minimum: 0 }
+        creditCents: { type: integer, minimum: 0 }
+        thirdPartyOrganizationId: { type: string, nullable: true }
+    Fp360AccountingEntry:
+      type: object
+      required: [id, organizationId, entryNumber, fiscalYear, period, entryDate, concept, status, sourceType, sourceId, sourceReference, debitCents, creditCents, createdByName, postedAt, reversalOfEntryId, reversedByEntryId, lines, events, createdAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        entryNumber: { type: integer, nullable: true }
+        fiscalYear: { type: integer }
+        period: { type: integer, minimum: 1, maximum: 12 }
+        entryDate: { type: string, format: date }
+        concept: { type: string }
+        status: { type: string, enum: [draft, posted, reversed] }
+        sourceType: { type: string, enum: [manual, sales_invoice, purchase_invoice, payment, reversal] }
+        sourceId: { type: string, nullable: true }
+        sourceReference: { type: string, nullable: true }
+        debitCents: { type: integer, minimum: 0 }
+        creditCents: { type: integer, minimum: 0 }
+        createdByName: { type: string }
+        postedAt: { type: string, format: date-time, nullable: true }
+        reversalOfEntryId: { type: string, nullable: true }
+        reversedByEntryId: { type: string, nullable: true }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360AccountingEntryLine" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360AccountingEntryEvent" }
+        createdAt: { type: string, format: date-time }
+    Fp360AccountingEntryEvent:
+      type: object
+      required: [eventType, description, actorName, createdAt]
+      properties:
+        eventType: { type: string }
+        description: { type: string }
+        actorName: { type: string }
+        createdAt: { type: string, format: date-time }
+    Fp360AccountingEntryInput:
+      type: object
+      required: [organizationId, operationId, entryDate, concept, lines]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        operationId: { type: string, minLength: 1, maxLength: 100 }
+        entryDate: { type: string, format: date }
+        concept: { type: string, minLength: 3, maxLength: 250 }
+        lines:
+          type: array
+          minItems: 2
+          maxItems: 100
+          items:
+            type: object
+            required: [accountId, description, debitCents, creditCents, thirdPartyOrganizationId]
+            properties:
+              accountId: { type: string, minLength: 1 }
+              description: { type: string, minLength: 2, maxLength: 160 }
+              debitCents: { type: integer, minimum: 0 }
+              creditCents: { type: integer, minimum: 0 }
+              thirdPartyOrganizationId: { type: string, nullable: true }
+    Fp360AccountingEntryActionInput:
+      type: object
+      required: [organizationId, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        operationId: { type: string, minLength: 1, maxLength: 100 }
+        reason: { type: string, minLength: 5, maxLength: 500 }
+    Fp360AccountingSourceDraftInput:
+      type: object
+      required: [organizationId, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        operationId: { type: string, minLength: 1, maxLength: 100 }
+    Fp360AccountingSource:
+      type: object
+      required: [id, sourceType, reference, sourceDate, partnerName, totalCents, status, imported]
+      properties:
+        id: { type: string }
+        sourceType: { type: string, enum: [sales_invoice, purchase_invoice, payment] }
+        reference: { type: string }
+        sourceDate: { type: string, format: date }
+        partnerName: { type: string }
+        totalCents: { type: integer, minimum: 0 }
+        status: { type: string }
+        imported: { type: boolean }
+    Fp360AccountingBalance:
+      type: object
+      required: [accountId, code, name, nature, normalBalance, debitCents, creditCents, balanceCents]
+      properties:
+        accountId: { type: string }
+        code: { type: string }
+        name: { type: string }
+        nature: { type: string, enum: [asset, liability, equity, revenue, expense] }
+        normalBalance: { type: string, enum: [debit, credit] }
+        debitCents: { type: integer, minimum: 0 }
+        creditCents: { type: integer, minimum: 0 }
+        balanceCents: { type: integer }
+    Fp360AccountingPeriod:
+      type: object
+      required: [id, organizationId, fiscalYear, period, status, closedAt, reopenedAt, closeReason]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        fiscalYear: { type: integer }
+        period: { type: integer, minimum: 1, maximum: 12 }
+        status: { type: string, enum: [open, closed] }
+        closedAt: { type: string, format: date-time, nullable: true }
+        reopenedAt: { type: string, format: date-time, nullable: true }
+        closeReason: { type: string, nullable: true }
+    Fp360AccountingPeriodActionInput:
+      type: object
+      required: [organizationId, operationId, reason]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        operationId: { type: string, minLength: 1, maxLength: 100 }
+        reason: { type: string, minLength: 5, maxLength: 500 }
     Fp360InvoiceLine:
       type: object
       required: [productName, quantity, unitPriceCents, baseCents, igicBasisPoints, igicCents, totalCents]
@@ -2551,11 +2927,12 @@ components:
         createdAt: { type: string, format: date-time }
     Fp360Invoice:
       type: object
-      required: [id, reference, orderId, buyerName, status, lines, baseCents, igicCents, totalCents, paidCents, balanceCents, simulatedDate, createdAt, payments]
+      required: [id, reference, orderId, issuerOrganizationId, buyerName, status, lines, baseCents, igicCents, totalCents, paidCents, balanceCents, simulatedDate, dueDate, createdAt, payments]
       properties:
         id: { type: string }
         reference: { type: string }
         orderId: { type: string }
+        issuerOrganizationId: { type: string, nullable: true }
         buyerName: { type: string }
         status: { type: string, enum: [outstanding, partial, paid] }
         lines:
@@ -2568,6 +2945,7 @@ components:
         paidCents: { type: integer, minimum: 0 }
         balanceCents: { type: integer, minimum: 0 }
         simulatedDate: { type: string, format: date }
+        dueDate: { type: string, format: date, nullable: true }
         createdAt: { type: string, format: date-time }
         payments:
           type: array
@@ -2580,9 +2958,10 @@ components:
         orderId: { type: string, minLength: 1 }
     Fp360PaymentInput:
       type: object
-      required: [amountCents]
+      required: [amountCents, operationId]
       properties:
         amountCents: { type: integer, minimum: 1 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
     Fp360Activity:
       type: object
       required: [id, action, description, reference, simulatedDate, createdAt]

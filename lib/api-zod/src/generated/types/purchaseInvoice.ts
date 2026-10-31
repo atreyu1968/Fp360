@@ -14,6 +14,7 @@ export interface PurchaseInvoice {
   orderId: string;
   orderNumber: string;
   requestId: string;
+  buyerOrganizationId: string;
   supplierOrganizationId: string;
   supplierName: string;
   /** @nullable */

@@ -27,6 +27,7 @@ import {
   fpInvoiceLines,
   fpInvoices,
   fpLogisticsEvents,
+  fpLogisticsIncidents,
   fpLogisticsShipmentLines,
   fpLogisticsShipments,
   fpOrderLines,
@@ -47,6 +48,11 @@ function isNetworkSupervisor(actor: AuthContext) {
 }
 function operationFingerprint(value: unknown) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+function addSimulatedDays(dateValue: string, days: number) {
+  const date = new Date(`${dateValue}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 const seedOrganizations = [
@@ -328,6 +334,7 @@ async function loadInvoice(id: string, tenantId: string) {
     id: invoice.id,
     reference: invoice.reference,
     orderId: invoice.orderId,
+    issuerOrganizationId: invoice.issuerOrganizationId,
     buyerName: invoice.buyerName,
     status: balanceCents === 0 ? "paid" : paidCents > 0 ? "partial" : "outstanding",
     lines: lines.map((line) => ({
@@ -345,6 +352,7 @@ async function loadInvoice(id: string, tenantId: string) {
     paidCents,
     balanceCents,
     simulatedDate: invoice.simulatedDate,
+    dueDate: invoice.dueDate,
     createdAt: timestamp(invoice.createdAt),
     payments: payments.map((payment) => ({
       id: payment.id,
@@ -381,11 +389,14 @@ async function listOrders(tenantId: string) {
   return mapped.filter((order): order is NonNullable<typeof order> => Boolean(order));
 }
 
-async function listInvoices(tenantId: string) {
+async function listInvoices(tenantId: string, actor: AuthContext) {
+  if (!actor.organizationId && !["teacher", "administrator"].includes(actor.role)) return [];
+  const conditions = [eq(fpInvoices.tenantId, tenantId)];
+  if (actor.organizationId) conditions.push(eq(fpInvoices.issuerOrganizationId, actor.organizationId));
   const rows = await db
     .select({ id: fpInvoices.id })
     .from(fpInvoices)
-    .where(eq(fpInvoices.tenantId, tenantId))
+    .where(and(...conditions))
     .orderBy(desc(fpInvoices.createdAt));
   const mapped = await Promise.all(rows.map((row) => loadInvoice(row.id, tenantId)));
   return mapped.filter((invoice): invoice is NonNullable<typeof invoice> =>
@@ -394,10 +405,11 @@ async function listInvoices(tenantId: string) {
 }
 
 router.get("/redfp360/dashboard", async (req, res): Promise<void> => {
-  const tenantId = req.auth!.tenantId;
+  const actor = req.auth!;
+  const tenantId = actor.tenantId;
   await ensureDemoData(tenantId);
   const orders = await listOrders(tenantId);
-  const invoices = await listInvoices(tenantId);
+  const invoices = await listInvoices(tenantId, actor);
   const products = await db
     .select()
     .from(fpProducts)
@@ -931,13 +943,15 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
 });
 
 router.get("/redfp360/invoices", async (req, res): Promise<void> => {
-  const tenantId = req.auth!.tenantId;
+  const actor = req.auth!;
+  const tenantId = actor.tenantId;
   await ensureDemoData(tenantId);
-  res.json(ListFp360InvoicesResponse.parse(await listInvoices(tenantId)));
+  res.json(ListFp360InvoicesResponse.parse(await listInvoices(tenantId, actor)));
 });
 
 router.post("/redfp360/invoices", async (req, res): Promise<void> => {
-  const tenantId = req.auth!.tenantId;
+  const actor = req.auth!;
+  const tenantId = actor.tenantId;
   await ensureDemoData(tenantId);
   const body = IssueFp360InvoiceBody.safeParse(req.body);
   if (!body.success) {
@@ -963,6 +977,23 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
         error: "Pedido no encontrado.",
       };
     }
+    if (!["delivered", "invoiced", "paid"].includes(order.status)) {
+      return { ok: false as const, status: 409 as const, error: "Confirma la recepción logística antes de facturar el pedido." };
+    }
+    const orderShipments = await tx.select({ id: fpLogisticsShipments.id }).from(fpLogisticsShipments).where(and(
+      eq(fpLogisticsShipments.orderId, order.id),
+      eq(fpLogisticsShipments.tenantId, tenantId),
+    ));
+    if (orderShipments.length) {
+      const openIncidents = await tx.select({ id: fpLogisticsIncidents.id }).from(fpLogisticsIncidents).where(and(
+        eq(fpLogisticsIncidents.tenantId, tenantId),
+        inArray(fpLogisticsIncidents.shipmentId, orderShipments.map((shipment) => shipment.id)),
+        eq(fpLogisticsIncidents.status, "open"),
+      ));
+      if (openIncidents.length) {
+        return { ok: false as const, status: 409 as const, error: "Resuelve las incidencias logísticas antes de emitir la factura." };
+      }
+    }
     const lines = await tx
       .select()
       .from(fpOrderLines)
@@ -971,7 +1002,7 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
     const unbilled = lines
       .map((line) => ({
         line,
-        quantity: line.shippedQuantity - line.invoicedQuantity,
+        quantity: (orderShipments.length ? line.receivedQuantity : line.shippedQuantity) - line.invoicedQuantity,
       }))
       .filter((entry) => entry.quantity > 0);
     if (!unbilled.length) {
@@ -1020,9 +1051,11 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
     await tx.insert(fpInvoices).values({
       id: invoiceId,
       tenantId,
+      issuerOrganizationId: actor.organizationId,
       reference: invoiceReference,
       orderId: order.id,
       buyerName: buyer?.name ?? "Entidad de la red",
+      dueDate: addSimulatedDays(SIMULATED_DATE, 30),
       baseCents,
       igicCents,
       totalCents,
@@ -1035,14 +1068,12 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
         .set({ invoicedQuantity: line.invoicedQuantity + quantity })
         .where(eq(fpOrderLines.id, line.id));
     }
-    const fullyDelivered = lines.every(
-      (line) => line.shippedQuantity === line.quantity,
-    );
+    const fullyDelivered = ["delivered", "invoiced", "paid"].includes(order.status);
     const fullyInvoiced = lines.every(
       (line) =>
         line.invoicedQuantity +
           (unbilled.find((entry) => entry.line.id === line.id)?.quantity ?? 0) ===
-        line.quantity,
+        (orderShipments.length ? line.receivedQuantity : line.shippedQuantity),
     );
     const status =
       fullyDelivered && fullyInvoiced
@@ -1078,7 +1109,8 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
 router.post(
   "/redfp360/invoices/:id/payments",
   async (req, res): Promise<void> => {
-    const tenantId = req.auth!.tenantId;
+    const actor = req.auth!;
+    const tenantId = actor.tenantId;
     await ensureDemoData(tenantId);
     const params = RecordFp360PaymentParams.safeParse(req.params);
     const body = RecordFp360PaymentBody.safeParse(req.body);
@@ -1090,7 +1122,43 @@ router.post(
       res.status(400).json({ error: body.error.message });
       return;
     }
+    const requestFingerprint = operationFingerprint({
+      invoiceId: params.data.id,
+      amountCents: body.data.amountCents,
+      organizationId: actor.organizationId,
+    });
     const result = await db.transaction(async (tx) => {
+      const [priorOperation] = await tx
+        .select()
+        .from(fpPayments)
+        .where(and(
+          eq(fpPayments.tenantId, tenantId),
+          eq(fpPayments.operationId, body.data.operationId),
+        ))
+        .limit(1);
+      if (priorOperation) {
+        if (priorOperation.requestFingerprint !== requestFingerprint) {
+          return {
+            ok: false as const,
+            status: 409 as const,
+            error: "El identificador de operación ya se usó con otros datos.",
+          };
+        }
+        const [priorInvoice] = await tx
+          .select({ reference: fpInvoices.reference })
+          .from(fpInvoices)
+          .where(and(
+            eq(fpInvoices.id, priorOperation.invoiceId),
+            eq(fpInvoices.tenantId, tenantId),
+          ))
+          .limit(1);
+        return {
+          ok: true as const,
+          status: 200 as const,
+          reference: priorInvoice?.reference ?? "Factura",
+          replayed: true,
+        };
+      }
       const [invoice] = await tx
         .select()
         .from(fpInvoices)
@@ -1109,6 +1177,13 @@ router.post(
           error: "Factura no encontrada.",
         };
       }
+      if (actor.organizationId && invoice.issuerOrganizationId !== actor.organizationId) {
+        return {
+          ok: false as const,
+          status: 403 as const,
+          error: "Solo la empresa emisora puede registrar el cobro de esta factura.",
+        };
+      }
       const existing = await tx
         .select()
         .from(fpPayments)
@@ -1124,9 +1199,15 @@ router.post(
       }
       await tx.insert(fpPayments).values({
         id: newId("payment"),
+        tenantId,
+        organizationId: invoice.issuerOrganizationId ?? actor.organizationId,
         invoiceId: invoice.id,
         amountCents: body.data.amountCents,
         simulatedDate: SIMULATED_DATE,
+        operationId: body.data.operationId,
+        requestFingerprint,
+        createdByUserId: actor.userId,
+        createdByName: actor.displayName,
       });
       const remainingBalance = balance - body.data.amountCents;
       if (remainingBalance === 0) {
@@ -1162,20 +1243,23 @@ router.post(
         ok: true as const,
         status: 201 as const,
         reference: invoice.reference,
+        replayed: false,
       };
     });
     if (!result.ok) {
       res.status(result.status).json({ error: result.error });
       return;
     }
-    await addActivity(
-      tenantId,
-      "Cobro simulado",
-      "Abono registrado en Banco FP360.",
-      result.reference,
-    );
+    if (!result.replayed) {
+      await addActivity(
+        tenantId,
+        "Cobro simulado",
+        "Cobro simulado registrado; su asiento se prepara en Contabilidad.",
+        result.reference,
+      );
+    }
     const invoice = await loadInvoice(params.data.id, tenantId);
-    res.status(201).json(RecordFp360PaymentResponse.parse(invoice));
+    res.status(result.status).json(RecordFp360PaymentResponse.parse(invoice));
   },
 );
 

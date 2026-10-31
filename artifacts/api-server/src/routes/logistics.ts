@@ -107,6 +107,7 @@ async function readShipment(id: string, tenantId: string) {
     .orderBy(desc(fpLogisticsIncidents.createdAt));
   return ListFp360LogisticsShipmentsResponseItem.parse({
     id: shipment.id,
+    reference: shipment.reference,
     orderId: shipment.orderId,
     orderReference: order?.reference ?? "Pedido",
     originOrganizationId: shipment.originOrganizationId,
@@ -124,6 +125,7 @@ async function readShipment(id: string, tenantId: string) {
       productId: line.productId,
       productName: line.productName,
       quantity: line.quantity,
+      receivedQuantity: line.receivedQuantity,
     })),
     events: events.map((event) => ({
       id: event.id,
@@ -227,6 +229,10 @@ router.patch("/redfp360/logistics/shipments/:id/route", async (req, res): Promis
   };
   if (normalized.routeName.length < 2 || normalized.carrierName.length < 2) {
     res.status(400).json({ error: "Indica una ruta y un transportista con al menos dos caracteres." });
+    return;
+  }
+  if (normalized.plannedDeliveryDate && normalized.plannedDeliveryDate < SIMULATED_DATE) {
+    res.status(400).json({ error: "La fecha prevista no puede ser anterior al inicio del escenario." });
     return;
   }
   const requestFingerprint = fingerprint({ shipmentId: params.data.id, userId: actor.userId, ...normalized });

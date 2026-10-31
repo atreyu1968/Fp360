@@ -2148,6 +2148,7 @@ export const CreatePurchaseInvoiceResponse = zod.object({
   "orderId": zod.string().uuid(),
   "orderNumber": zod.string(),
   "requestId": zod.string().uuid(),
+  "buyerOrganizationId": zod.string().uuid(),
   "supplierOrganizationId": zod.string().uuid(),
   "supplierName": zod.string(),
   "supersedesInvoiceId": zod.string().uuid().nullable(),
@@ -2187,6 +2188,7 @@ export const ListPurchaseInvoicesResponseItem = zod.object({
   "orderId": zod.string().uuid(),
   "orderNumber": zod.string(),
   "requestId": zod.string().uuid(),
+  "buyerOrganizationId": zod.string().uuid(),
   "supplierOrganizationId": zod.string().uuid(),
   "supplierName": zod.string(),
   "supersedesInvoiceId": zod.string().uuid().nullable(),
@@ -2241,6 +2243,7 @@ export const DecidePurchaseInvoiceResponse = zod.object({
   "orderId": zod.string().uuid(),
   "orderNumber": zod.string(),
   "requestId": zod.string().uuid(),
+  "buyerOrganizationId": zod.string().uuid(),
   "supplierOrganizationId": zod.string().uuid(),
   "supplierName": zod.string(),
   "supersedesInvoiceId": zod.string().uuid().nullable(),
@@ -2795,6 +2798,7 @@ export const listFp360LogisticsShipmentsResponseIncidentsItemAffectedQuantityMin
 
 export const ListFp360LogisticsShipmentsResponseItem = zod.object({
   "id": zod.string(),
+  "reference": zod.string(),
   "orderId": zod.string(),
   "orderReference": zod.string(),
   "originOrganizationId": zod.string().nullable(),
@@ -2876,6 +2880,7 @@ export const updateFp360LogisticsRouteResponseIncidentsItemAffectedQuantityMin =
 
 export const UpdateFp360LogisticsRouteResponse = zod.object({
   "id": zod.string(),
+  "reference": zod.string(),
   "orderId": zod.string(),
   "orderReference": zod.string(),
   "originOrganizationId": zod.string().nullable(),
@@ -2956,6 +2961,7 @@ export const confirmFp360LogisticsDeliveryResponseIncidentsItemAffectedQuantityM
 
 export const ConfirmFp360LogisticsDeliveryResponse = zod.object({
   "id": zod.string(),
+  "reference": zod.string(),
   "orderId": zod.string(),
   "orderReference": zod.string(),
   "originOrganizationId": zod.string().nullable(),
@@ -3033,6 +3039,7 @@ export const createFp360LogisticsIncidentResponseIncidentsItemAffectedQuantityMi
 
 export const CreateFp360LogisticsIncidentResponse = zod.object({
   "id": zod.string(),
+  "reference": zod.string(),
   "orderId": zod.string(),
   "orderReference": zod.string(),
   "originOrganizationId": zod.string().nullable(),
@@ -3093,7 +3100,8 @@ export const resolveFp360LogisticsIncidentBodyResolutionMax = 500;
 
 export const ResolveFp360LogisticsIncidentBody = zod.object({
   "operationId": zod.string().min(1).max(resolveFp360LogisticsIncidentBodyOperationIdMax),
-  "resolution": zod.string().min(resolveFp360LogisticsIncidentBodyResolutionMin).max(resolveFp360LogisticsIncidentBodyResolutionMax)
+  "resolution": zod.string().min(resolveFp360LogisticsIncidentBodyResolutionMin).max(resolveFp360LogisticsIncidentBodyResolutionMax),
+  "outcome": zod.enum(['resume', 'close_partial'])
 })
 
 
@@ -3106,6 +3114,7 @@ export const resolveFp360LogisticsIncidentResponseIncidentsItemAffectedQuantityM
 
 export const ResolveFp360LogisticsIncidentResponse = zod.object({
   "id": zod.string(),
+  "reference": zod.string(),
   "orderId": zod.string(),
   "orderReference": zod.string(),
   "originOrganizationId": zod.string().nullable(),
@@ -3180,6 +3189,7 @@ export const ListFp360InvoicesResponseItem = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "orderId": zod.string(),
+  "issuerOrganizationId": zod.string().nullable(),
   "buyerName": zod.string(),
   "status": zod.enum(['outstanding', 'partial', 'paid']),
   "lines": zod.array(zod.object({
@@ -3197,6 +3207,7 @@ export const ListFp360InvoicesResponseItem = zod.object({
   "paidCents": zod.number().int().min(listFp360InvoicesResponsePaidCentsMin),
   "balanceCents": zod.number().int().min(listFp360InvoicesResponseBalanceCentsMin),
   "simulatedDate": zod.string().date(),
+  "dueDate": zod.string().date().nullable(),
   "createdAt": zod.string().datetime({"offset":true}),
   "payments": zod.array(zod.object({
   "id": zod.string(),
@@ -3246,6 +3257,7 @@ export const IssueFp360InvoiceResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "orderId": zod.string(),
+  "issuerOrganizationId": zod.string().nullable(),
   "buyerName": zod.string(),
   "status": zod.enum(['outstanding', 'partial', 'paid']),
   "lines": zod.array(zod.object({
@@ -3263,6 +3275,7 @@ export const IssueFp360InvoiceResponse = zod.object({
   "paidCents": zod.number().int().min(issueFp360InvoiceResponsePaidCentsMin),
   "balanceCents": zod.number().int().min(issueFp360InvoiceResponseBalanceCentsMin),
   "simulatedDate": zod.string().date(),
+  "dueDate": zod.string().date().nullable(),
   "createdAt": zod.string().datetime({"offset":true}),
   "payments": zod.array(zod.object({
   "id": zod.string(),
@@ -3274,6 +3287,564 @@ export const IssueFp360InvoiceResponse = zod.object({
 
 
 /**
+ * @summary Get accounting dashboard and ledgers for one organization
+ */
+
+
+
+export const GetFp360AccountingOverviewQueryParams = zod.object({
+  "organizationId": zod.coerce.string().min(1)
+})
+
+export const getFp360AccountingOverviewResponseEntriesItemPeriodMax = 12;
+
+export const getFp360AccountingOverviewResponseEntriesItemDebitCentsMin = 0;
+
+export const getFp360AccountingOverviewResponseEntriesItemCreditCentsMin = 0;
+
+
+export const getFp360AccountingOverviewResponseEntriesItemLinesItemDebitCentsMin = 0;
+
+export const getFp360AccountingOverviewResponseEntriesItemLinesItemCreditCentsMin = 0;
+
+export const getFp360AccountingOverviewResponsePeriodsItemPeriodMax = 12;
+
+export const getFp360AccountingOverviewResponseSourcesItemTotalCentsMin = 0;
+
+export const getFp360AccountingOverviewResponseBalancesItemDebitCentsMin = 0;
+
+export const getFp360AccountingOverviewResponseBalancesItemCreditCentsMin = 0;
+
+export const getFp360AccountingOverviewResponseTotalsPostedEntryCountMin = 0;
+
+export const getFp360AccountingOverviewResponseTotalsDraftEntryCountMin = 0;
+
+export const getFp360AccountingOverviewResponseTotalsDebitCentsMin = 0;
+
+export const getFp360AccountingOverviewResponseTotalsCreditCentsMin = 0;
+
+
+
+export const GetFp360AccountingOverviewResponse = zod.object({
+  "organizationId": zod.string(),
+  "accounts": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "nature": zod.enum(['asset', 'liability', 'equity', 'revenue', 'expense']),
+  "normalBalance": zod.enum(['debit', 'credit']),
+  "parentCode": zod.string().nullable(),
+  "active": zod.boolean(),
+  "isSystem": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "entries": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "entryNumber": zod.number().int().nullable(),
+  "fiscalYear": zod.number().int(),
+  "period": zod.number().int().min(1).max(getFp360AccountingOverviewResponseEntriesItemPeriodMax),
+  "entryDate": zod.string().date(),
+  "concept": zod.string(),
+  "status": zod.enum(['draft', 'posted', 'reversed']),
+  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'reversal']),
+  "sourceId": zod.string().nullable(),
+  "sourceReference": zod.string().nullable(),
+  "debitCents": zod.number().int().min(getFp360AccountingOverviewResponseEntriesItemDebitCentsMin),
+  "creditCents": zod.number().int().min(getFp360AccountingOverviewResponseEntriesItemCreditCentsMin),
+  "createdByName": zod.string(),
+  "postedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reversalOfEntryId": zod.string().nullable(),
+  "reversedByEntryId": zod.string().nullable(),
+  "lines": zod.array(zod.object({
+  "lineNumber": zod.number().int().min(1),
+  "accountId": zod.string(),
+  "accountCode": zod.string(),
+  "accountName": zod.string(),
+  "description": zod.string(),
+  "debitCents": zod.number().int().min(getFp360AccountingOverviewResponseEntriesItemLinesItemDebitCentsMin),
+  "creditCents": zod.number().int().min(getFp360AccountingOverviewResponseEntriesItemLinesItemCreditCentsMin),
+  "thirdPartyOrganizationId": zod.string().nullable()
+})),
+  "events": zod.array(zod.object({
+  "eventType": zod.string(),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "periods": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "fiscalYear": zod.number().int(),
+  "period": zod.number().int().min(1).max(getFp360AccountingOverviewResponsePeriodsItemPeriodMax),
+  "status": zod.enum(['open', 'closed']),
+  "closedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reopenedAt": zod.string().datetime({"offset":true}).nullable(),
+  "closeReason": zod.string().nullable()
+})),
+  "sources": zod.array(zod.object({
+  "id": zod.string(),
+  "sourceType": zod.enum(['sales_invoice', 'purchase_invoice', 'payment']),
+  "reference": zod.string(),
+  "sourceDate": zod.string().date(),
+  "partnerName": zod.string(),
+  "totalCents": zod.number().int().min(getFp360AccountingOverviewResponseSourcesItemTotalCentsMin),
+  "status": zod.string(),
+  "imported": zod.boolean()
+})),
+  "balances": zod.array(zod.object({
+  "accountId": zod.string(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "nature": zod.enum(['asset', 'liability', 'equity', 'revenue', 'expense']),
+  "normalBalance": zod.enum(['debit', 'credit']),
+  "debitCents": zod.number().int().min(getFp360AccountingOverviewResponseBalancesItemDebitCentsMin),
+  "creditCents": zod.number().int().min(getFp360AccountingOverviewResponseBalancesItemCreditCentsMin),
+  "balanceCents": zod.number().int()
+})),
+  "totals": zod.object({
+  "postedEntryCount": zod.number().int().min(getFp360AccountingOverviewResponseTotalsPostedEntryCountMin),
+  "draftEntryCount": zod.number().int().min(getFp360AccountingOverviewResponseTotalsDraftEntryCountMin),
+  "debitCents": zod.number().int().min(getFp360AccountingOverviewResponseTotalsDebitCentsMin),
+  "creditCents": zod.number().int().min(getFp360AccountingOverviewResponseTotalsCreditCentsMin),
+  "balanced": zod.boolean()
+})
+})
+
+
+/**
+ * @summary Add a company accounting account
+ */
+
+export const createFp360AccountingAccountBodyCodeMin = 3;
+export const createFp360AccountingAccountBodyCodeMax = 12;
+
+
+export const createFp360AccountingAccountBodyCodeRegExp = new RegExp('^[0-9A-Za-z.]+$');
+export const createFp360AccountingAccountBodyNameMin = 2;
+export const createFp360AccountingAccountBodyNameMax = 120;
+
+export const createFp360AccountingAccountBodyParentCodeMax = 12;
+
+
+
+export const CreateFp360AccountingAccountBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "code": zod.string().min(createFp360AccountingAccountBodyCodeMin).max(createFp360AccountingAccountBodyCodeMax).regex(createFp360AccountingAccountBodyCodeRegExp),
+  "name": zod.string().min(createFp360AccountingAccountBodyNameMin).max(createFp360AccountingAccountBodyNameMax),
+  "nature": zod.enum(['asset', 'liability', 'equity', 'revenue', 'expense']),
+  "normalBalance": zod.enum(['debit', 'credit']),
+  "parentCode": zod.string().max(createFp360AccountingAccountBodyParentCodeMax).nullish()
+})
+
+export const CreateFp360AccountingAccountResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "nature": zod.enum(['asset', 'liability', 'equity', 'revenue', 'expense']),
+  "normalBalance": zod.enum(['debit', 'credit']),
+  "parentCode": zod.string().nullable(),
+  "active": zod.boolean(),
+  "isSystem": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Save a journal entry draft
+ */
+
+export const createFp360AccountingEntryBodyOperationIdMax = 100;
+
+export const createFp360AccountingEntryBodyConceptMin = 3;
+export const createFp360AccountingEntryBodyConceptMax = 250;
+
+
+export const createFp360AccountingEntryBodyLinesItemDescriptionMin = 2;
+export const createFp360AccountingEntryBodyLinesItemDescriptionMax = 160;
+
+export const createFp360AccountingEntryBodyLinesItemDebitCentsMin = 0;
+
+export const createFp360AccountingEntryBodyLinesItemCreditCentsMin = 0;
+
+export const createFp360AccountingEntryBodyLinesMin = 2;
+export const createFp360AccountingEntryBodyLinesMax = 100;
+
+
+
+export const CreateFp360AccountingEntryBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "operationId": zod.string().min(1).max(createFp360AccountingEntryBodyOperationIdMax),
+  "entryDate": zod.string().date(),
+  "concept": zod.string().min(createFp360AccountingEntryBodyConceptMin).max(createFp360AccountingEntryBodyConceptMax),
+  "lines": zod.array(zod.object({
+  "accountId": zod.string().min(1),
+  "description": zod.string().min(createFp360AccountingEntryBodyLinesItemDescriptionMin).max(createFp360AccountingEntryBodyLinesItemDescriptionMax),
+  "debitCents": zod.number().int().min(createFp360AccountingEntryBodyLinesItemDebitCentsMin),
+  "creditCents": zod.number().int().min(createFp360AccountingEntryBodyLinesItemCreditCentsMin),
+  "thirdPartyOrganizationId": zod.string().nullable()
+})).min(createFp360AccountingEntryBodyLinesMin).max(createFp360AccountingEntryBodyLinesMax)
+})
+
+export const createFp360AccountingEntryResponsePeriodMax = 12;
+
+export const createFp360AccountingEntryResponseDebitCentsMin = 0;
+
+export const createFp360AccountingEntryResponseCreditCentsMin = 0;
+
+
+export const createFp360AccountingEntryResponseLinesItemDebitCentsMin = 0;
+
+export const createFp360AccountingEntryResponseLinesItemCreditCentsMin = 0;
+
+
+
+export const CreateFp360AccountingEntryResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "entryNumber": zod.number().int().nullable(),
+  "fiscalYear": zod.number().int(),
+  "period": zod.number().int().min(1).max(createFp360AccountingEntryResponsePeriodMax),
+  "entryDate": zod.string().date(),
+  "concept": zod.string(),
+  "status": zod.enum(['draft', 'posted', 'reversed']),
+  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'reversal']),
+  "sourceId": zod.string().nullable(),
+  "sourceReference": zod.string().nullable(),
+  "debitCents": zod.number().int().min(createFp360AccountingEntryResponseDebitCentsMin),
+  "creditCents": zod.number().int().min(createFp360AccountingEntryResponseCreditCentsMin),
+  "createdByName": zod.string(),
+  "postedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reversalOfEntryId": zod.string().nullable(),
+  "reversedByEntryId": zod.string().nullable(),
+  "lines": zod.array(zod.object({
+  "lineNumber": zod.number().int().min(1),
+  "accountId": zod.string(),
+  "accountCode": zod.string(),
+  "accountName": zod.string(),
+  "description": zod.string(),
+  "debitCents": zod.number().int().min(createFp360AccountingEntryResponseLinesItemDebitCentsMin),
+  "creditCents": zod.number().int().min(createFp360AccountingEntryResponseLinesItemCreditCentsMin),
+  "thirdPartyOrganizationId": zod.string().nullable()
+})),
+  "events": zod.array(zod.object({
+  "eventType": zod.string(),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Validate and post a balanced journal entry
+ */
+export const PostFp360AccountingEntryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+export const postFp360AccountingEntryBodyOperationIdMax = 100;
+
+export const postFp360AccountingEntryBodyReasonMin = 5;
+export const postFp360AccountingEntryBodyReasonMax = 500;
+
+
+
+export const PostFp360AccountingEntryBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "operationId": zod.string().min(1).max(postFp360AccountingEntryBodyOperationIdMax),
+  "reason": zod.string().min(postFp360AccountingEntryBodyReasonMin).max(postFp360AccountingEntryBodyReasonMax).optional()
+})
+
+export const postFp360AccountingEntryResponsePeriodMax = 12;
+
+export const postFp360AccountingEntryResponseDebitCentsMin = 0;
+
+export const postFp360AccountingEntryResponseCreditCentsMin = 0;
+
+
+export const postFp360AccountingEntryResponseLinesItemDebitCentsMin = 0;
+
+export const postFp360AccountingEntryResponseLinesItemCreditCentsMin = 0;
+
+
+
+export const PostFp360AccountingEntryResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "entryNumber": zod.number().int().nullable(),
+  "fiscalYear": zod.number().int(),
+  "period": zod.number().int().min(1).max(postFp360AccountingEntryResponsePeriodMax),
+  "entryDate": zod.string().date(),
+  "concept": zod.string(),
+  "status": zod.enum(['draft', 'posted', 'reversed']),
+  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'reversal']),
+  "sourceId": zod.string().nullable(),
+  "sourceReference": zod.string().nullable(),
+  "debitCents": zod.number().int().min(postFp360AccountingEntryResponseDebitCentsMin),
+  "creditCents": zod.number().int().min(postFp360AccountingEntryResponseCreditCentsMin),
+  "createdByName": zod.string(),
+  "postedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reversalOfEntryId": zod.string().nullable(),
+  "reversedByEntryId": zod.string().nullable(),
+  "lines": zod.array(zod.object({
+  "lineNumber": zod.number().int().min(1),
+  "accountId": zod.string(),
+  "accountCode": zod.string(),
+  "accountName": zod.string(),
+  "description": zod.string(),
+  "debitCents": zod.number().int().min(postFp360AccountingEntryResponseLinesItemDebitCentsMin),
+  "creditCents": zod.number().int().min(postFp360AccountingEntryResponseLinesItemCreditCentsMin),
+  "thirdPartyOrganizationId": zod.string().nullable()
+})),
+  "events": zod.array(zod.object({
+  "eventType": zod.string(),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Create an auditable compensating journal entry
+ */
+export const ReverseFp360AccountingEntryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+export const reverseFp360AccountingEntryBodyOperationIdMax = 100;
+
+export const reverseFp360AccountingEntryBodyReasonMin = 5;
+export const reverseFp360AccountingEntryBodyReasonMax = 500;
+
+
+
+export const ReverseFp360AccountingEntryBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "operationId": zod.string().min(1).max(reverseFp360AccountingEntryBodyOperationIdMax),
+  "reason": zod.string().min(reverseFp360AccountingEntryBodyReasonMin).max(reverseFp360AccountingEntryBodyReasonMax).optional()
+})
+
+export const reverseFp360AccountingEntryResponsePeriodMax = 12;
+
+export const reverseFp360AccountingEntryResponseDebitCentsMin = 0;
+
+export const reverseFp360AccountingEntryResponseCreditCentsMin = 0;
+
+
+export const reverseFp360AccountingEntryResponseLinesItemDebitCentsMin = 0;
+
+export const reverseFp360AccountingEntryResponseLinesItemCreditCentsMin = 0;
+
+
+
+export const ReverseFp360AccountingEntryResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "entryNumber": zod.number().int().nullable(),
+  "fiscalYear": zod.number().int(),
+  "period": zod.number().int().min(1).max(reverseFp360AccountingEntryResponsePeriodMax),
+  "entryDate": zod.string().date(),
+  "concept": zod.string(),
+  "status": zod.enum(['draft', 'posted', 'reversed']),
+  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'reversal']),
+  "sourceId": zod.string().nullable(),
+  "sourceReference": zod.string().nullable(),
+  "debitCents": zod.number().int().min(reverseFp360AccountingEntryResponseDebitCentsMin),
+  "creditCents": zod.number().int().min(reverseFp360AccountingEntryResponseCreditCentsMin),
+  "createdByName": zod.string(),
+  "postedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reversalOfEntryId": zod.string().nullable(),
+  "reversedByEntryId": zod.string().nullable(),
+  "lines": zod.array(zod.object({
+  "lineNumber": zod.number().int().min(1),
+  "accountId": zod.string(),
+  "accountCode": zod.string(),
+  "accountName": zod.string(),
+  "description": zod.string(),
+  "debitCents": zod.number().int().min(reverseFp360AccountingEntryResponseLinesItemDebitCentsMin),
+  "creditCents": zod.number().int().min(reverseFp360AccountingEntryResponseLinesItemCreditCentsMin),
+  "thirdPartyOrganizationId": zod.string().nullable()
+})),
+  "events": zod.array(zod.object({
+  "eventType": zod.string(),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Convert a confirmed source document into a balanced draft
+ */
+export const CreateFp360AccountingSourceDraftParams = zod.object({
+  "sourceType": zod.enum(['sales_invoice', 'purchase_invoice', 'payment']),
+  "sourceId": zod.coerce.string()
+})
+
+
+export const createFp360AccountingSourceDraftBodyOperationIdMax = 100;
+
+
+
+export const CreateFp360AccountingSourceDraftBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "operationId": zod.string().min(1).max(createFp360AccountingSourceDraftBodyOperationIdMax)
+})
+
+export const createFp360AccountingSourceDraftResponsePeriodMax = 12;
+
+export const createFp360AccountingSourceDraftResponseDebitCentsMin = 0;
+
+export const createFp360AccountingSourceDraftResponseCreditCentsMin = 0;
+
+
+export const createFp360AccountingSourceDraftResponseLinesItemDebitCentsMin = 0;
+
+export const createFp360AccountingSourceDraftResponseLinesItemCreditCentsMin = 0;
+
+
+
+export const CreateFp360AccountingSourceDraftResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "entryNumber": zod.number().int().nullable(),
+  "fiscalYear": zod.number().int(),
+  "period": zod.number().int().min(1).max(createFp360AccountingSourceDraftResponsePeriodMax),
+  "entryDate": zod.string().date(),
+  "concept": zod.string(),
+  "status": zod.enum(['draft', 'posted', 'reversed']),
+  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'reversal']),
+  "sourceId": zod.string().nullable(),
+  "sourceReference": zod.string().nullable(),
+  "debitCents": zod.number().int().min(createFp360AccountingSourceDraftResponseDebitCentsMin),
+  "creditCents": zod.number().int().min(createFp360AccountingSourceDraftResponseCreditCentsMin),
+  "createdByName": zod.string(),
+  "postedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reversalOfEntryId": zod.string().nullable(),
+  "reversedByEntryId": zod.string().nullable(),
+  "lines": zod.array(zod.object({
+  "lineNumber": zod.number().int().min(1),
+  "accountId": zod.string(),
+  "accountCode": zod.string(),
+  "accountName": zod.string(),
+  "description": zod.string(),
+  "debitCents": zod.number().int().min(createFp360AccountingSourceDraftResponseLinesItemDebitCentsMin),
+  "creditCents": zod.number().int().min(createFp360AccountingSourceDraftResponseLinesItemCreditCentsMin),
+  "thirdPartyOrganizationId": zod.string().nullable()
+})),
+  "events": zod.array(zod.object({
+  "eventType": zod.string(),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Close a period after required checks pass
+ */
+export const closeFp360AccountingPeriodPathFiscalYearMin = 2000;
+export const closeFp360AccountingPeriodPathFiscalYearMax = 2100;
+
+export const closeFp360AccountingPeriodPathPeriodMax = 12;
+
+
+
+export const CloseFp360AccountingPeriodParams = zod.object({
+  "fiscalYear": zod.coerce.number().int().min(closeFp360AccountingPeriodPathFiscalYearMin).max(closeFp360AccountingPeriodPathFiscalYearMax),
+  "period": zod.coerce.number().int().min(1).max(closeFp360AccountingPeriodPathPeriodMax)
+})
+
+
+export const closeFp360AccountingPeriodBodyOperationIdMax = 100;
+
+export const closeFp360AccountingPeriodBodyReasonMin = 5;
+export const closeFp360AccountingPeriodBodyReasonMax = 500;
+
+
+
+export const CloseFp360AccountingPeriodBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "operationId": zod.string().min(1).max(closeFp360AccountingPeriodBodyOperationIdMax),
+  "reason": zod.string().min(closeFp360AccountingPeriodBodyReasonMin).max(closeFp360AccountingPeriodBodyReasonMax)
+})
+
+export const closeFp360AccountingPeriodResponsePeriodMax = 12;
+
+
+
+export const CloseFp360AccountingPeriodResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "fiscalYear": zod.number().int(),
+  "period": zod.number().int().min(1).max(closeFp360AccountingPeriodResponsePeriodMax),
+  "status": zod.enum(['open', 'closed']),
+  "closedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reopenedAt": zod.string().datetime({"offset":true}).nullable(),
+  "closeReason": zod.string().nullable()
+})
+
+
+/**
+ * @summary Reopen a period with teacher or administrator authorization
+ */
+export const reopenFp360AccountingPeriodPathFiscalYearMin = 2000;
+export const reopenFp360AccountingPeriodPathFiscalYearMax = 2100;
+
+export const reopenFp360AccountingPeriodPathPeriodMax = 12;
+
+
+
+export const ReopenFp360AccountingPeriodParams = zod.object({
+  "fiscalYear": zod.coerce.number().int().min(reopenFp360AccountingPeriodPathFiscalYearMin).max(reopenFp360AccountingPeriodPathFiscalYearMax),
+  "period": zod.coerce.number().int().min(1).max(reopenFp360AccountingPeriodPathPeriodMax)
+})
+
+
+export const reopenFp360AccountingPeriodBodyOperationIdMax = 100;
+
+export const reopenFp360AccountingPeriodBodyReasonMin = 5;
+export const reopenFp360AccountingPeriodBodyReasonMax = 500;
+
+
+
+export const ReopenFp360AccountingPeriodBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "operationId": zod.string().min(1).max(reopenFp360AccountingPeriodBodyOperationIdMax),
+  "reason": zod.string().min(reopenFp360AccountingPeriodBodyReasonMin).max(reopenFp360AccountingPeriodBodyReasonMax)
+})
+
+export const reopenFp360AccountingPeriodResponsePeriodMax = 12;
+
+
+
+export const ReopenFp360AccountingPeriodResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "fiscalYear": zod.number().int(),
+  "period": zod.number().int().min(1).max(reopenFp360AccountingPeriodResponsePeriodMax),
+  "status": zod.enum(['open', 'closed']),
+  "closedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reopenedAt": zod.string().datetime({"offset":true}).nullable(),
+  "closeReason": zod.string().nullable()
+})
+
+
+/**
  * @summary Record a simulated bank payment
  */
 export const RecordFp360PaymentParams = zod.object({
@@ -3281,10 +3852,14 @@ export const RecordFp360PaymentParams = zod.object({
 })
 
 
+export const recordFp360PaymentBodyOperationIdMin = 8;
+export const recordFp360PaymentBodyOperationIdMax = 120;
+
 
 
 export const RecordFp360PaymentBody = zod.object({
-  "amountCents": zod.number().int().min(1)
+  "amountCents": zod.number().int().min(1),
+  "operationId": zod.string().min(recordFp360PaymentBodyOperationIdMin).max(recordFp360PaymentBodyOperationIdMax)
 })
 
 
@@ -3315,6 +3890,7 @@ export const RecordFp360PaymentResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "orderId": zod.string(),
+  "issuerOrganizationId": zod.string().nullable(),
   "buyerName": zod.string(),
   "status": zod.enum(['outstanding', 'partial', 'paid']),
   "lines": zod.array(zod.object({
@@ -3332,6 +3908,7 @@ export const RecordFp360PaymentResponse = zod.object({
   "paidCents": zod.number().int().min(recordFp360PaymentResponsePaidCentsMin),
   "balanceCents": zod.number().int().min(recordFp360PaymentResponseBalanceCentsMin),
   "simulatedDate": zod.string().date(),
+  "dueDate": zod.string().date().nullable(),
   "createdAt": zod.string().datetime({"offset":true}),
   "payments": zod.array(zod.object({
   "id": zod.string(),

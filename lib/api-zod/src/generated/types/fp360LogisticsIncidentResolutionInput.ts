@@ -5,6 +5,7 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+import type { Fp360LogisticsIncidentResolutionInputOutcome } from './fp360LogisticsIncidentResolutionInputOutcome';
 
 export interface Fp360LogisticsIncidentResolutionInput {
   /**
@@ -17,4 +18,5 @@ export interface Fp360LogisticsIncidentResolutionInput {
      * @maxLength 500
      */
   resolution: string;
+  outcome: Fp360LogisticsIncidentResolutionInputOutcome;
 }

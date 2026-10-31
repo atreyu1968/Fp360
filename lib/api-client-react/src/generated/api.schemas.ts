@@ -817,6 +817,7 @@ export interface PurchaseInvoice {
   orderId: string;
   orderNumber: string;
   requestId: string;
+  buyerOrganizationId: string;
   supplierOrganizationId: string;
   supplierName: string;
   /** @nullable */
@@ -1549,6 +1550,7 @@ export const Fp360LogisticsShipmentStatus = {
 
 export interface Fp360LogisticsShipment {
   id: string;
+  reference: string;
   orderId: string;
   orderReference: string;
   /** @nullable */
@@ -1653,6 +1655,14 @@ export interface Fp360LogisticsIncidentInput {
   affectedQuantity: number;
 }
 
+export type Fp360LogisticsIncidentResolutionInputOutcome = typeof Fp360LogisticsIncidentResolutionInputOutcome[keyof typeof Fp360LogisticsIncidentResolutionInputOutcome];
+
+
+export const Fp360LogisticsIncidentResolutionInputOutcome = {
+  resume: 'resume',
+  close_partial: 'close_partial',
+} as const;
+
 export interface Fp360LogisticsIncidentResolutionInput {
   /**
      * @minLength 1
@@ -1664,6 +1674,337 @@ export interface Fp360LogisticsIncidentResolutionInput {
      * @maxLength 500
      */
   resolution: string;
+  outcome: Fp360LogisticsIncidentResolutionInputOutcome;
+}
+
+export type Fp360AccountingOverviewTotals = {
+  /** @minimum 0 */
+  postedEntryCount: number;
+  /** @minimum 0 */
+  draftEntryCount: number;
+  /** @minimum 0 */
+  debitCents: number;
+  /** @minimum 0 */
+  creditCents: number;
+  balanced: boolean;
+};
+
+export type Fp360AccountingAccountNature = typeof Fp360AccountingAccountNature[keyof typeof Fp360AccountingAccountNature];
+
+
+export const Fp360AccountingAccountNature = {
+  asset: 'asset',
+  liability: 'liability',
+  equity: 'equity',
+  revenue: 'revenue',
+  expense: 'expense',
+} as const;
+
+export type Fp360AccountingAccountNormalBalance = typeof Fp360AccountingAccountNormalBalance[keyof typeof Fp360AccountingAccountNormalBalance];
+
+
+export const Fp360AccountingAccountNormalBalance = {
+  debit: 'debit',
+  credit: 'credit',
+} as const;
+
+export interface Fp360AccountingAccount {
+  id: string;
+  organizationId: string;
+  code: string;
+  name: string;
+  nature: Fp360AccountingAccountNature;
+  normalBalance: Fp360AccountingAccountNormalBalance;
+  /** @nullable */
+  parentCode: string | null;
+  active: boolean;
+  isSystem: boolean;
+  createdAt: string;
+}
+
+export type Fp360AccountingEntryStatus = typeof Fp360AccountingEntryStatus[keyof typeof Fp360AccountingEntryStatus];
+
+
+export const Fp360AccountingEntryStatus = {
+  draft: 'draft',
+  posted: 'posted',
+  reversed: 'reversed',
+} as const;
+
+export type Fp360AccountingEntrySourceType = typeof Fp360AccountingEntrySourceType[keyof typeof Fp360AccountingEntrySourceType];
+
+
+export const Fp360AccountingEntrySourceType = {
+  manual: 'manual',
+  sales_invoice: 'sales_invoice',
+  purchase_invoice: 'purchase_invoice',
+  payment: 'payment',
+  reversal: 'reversal',
+} as const;
+
+export interface Fp360AccountingEntryLine {
+  /** @minimum 1 */
+  lineNumber: number;
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  description: string;
+  /** @minimum 0 */
+  debitCents: number;
+  /** @minimum 0 */
+  creditCents: number;
+  /** @nullable */
+  thirdPartyOrganizationId: string | null;
+}
+
+export interface Fp360AccountingEntryEvent {
+  eventType: string;
+  description: string;
+  actorName: string;
+  createdAt: string;
+}
+
+export interface Fp360AccountingEntry {
+  id: string;
+  organizationId: string;
+  /** @nullable */
+  entryNumber: number | null;
+  fiscalYear: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  period: number;
+  entryDate: string;
+  concept: string;
+  status: Fp360AccountingEntryStatus;
+  sourceType: Fp360AccountingEntrySourceType;
+  /** @nullable */
+  sourceId: string | null;
+  /** @nullable */
+  sourceReference: string | null;
+  /** @minimum 0 */
+  debitCents: number;
+  /** @minimum 0 */
+  creditCents: number;
+  createdByName: string;
+  /** @nullable */
+  postedAt: string | null;
+  /** @nullable */
+  reversalOfEntryId: string | null;
+  /** @nullable */
+  reversedByEntryId: string | null;
+  lines: Fp360AccountingEntryLine[];
+  events: Fp360AccountingEntryEvent[];
+  createdAt: string;
+}
+
+export type Fp360AccountingPeriodStatus = typeof Fp360AccountingPeriodStatus[keyof typeof Fp360AccountingPeriodStatus];
+
+
+export const Fp360AccountingPeriodStatus = {
+  open: 'open',
+  closed: 'closed',
+} as const;
+
+export interface Fp360AccountingPeriod {
+  id: string;
+  organizationId: string;
+  fiscalYear: number;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  period: number;
+  status: Fp360AccountingPeriodStatus;
+  /** @nullable */
+  closedAt: string | null;
+  /** @nullable */
+  reopenedAt: string | null;
+  /** @nullable */
+  closeReason: string | null;
+}
+
+export type Fp360AccountingSourceSourceType = typeof Fp360AccountingSourceSourceType[keyof typeof Fp360AccountingSourceSourceType];
+
+
+export const Fp360AccountingSourceSourceType = {
+  sales_invoice: 'sales_invoice',
+  purchase_invoice: 'purchase_invoice',
+  payment: 'payment',
+} as const;
+
+export interface Fp360AccountingSource {
+  id: string;
+  sourceType: Fp360AccountingSourceSourceType;
+  reference: string;
+  sourceDate: string;
+  partnerName: string;
+  /** @minimum 0 */
+  totalCents: number;
+  status: string;
+  imported: boolean;
+}
+
+export type Fp360AccountingBalanceNature = typeof Fp360AccountingBalanceNature[keyof typeof Fp360AccountingBalanceNature];
+
+
+export const Fp360AccountingBalanceNature = {
+  asset: 'asset',
+  liability: 'liability',
+  equity: 'equity',
+  revenue: 'revenue',
+  expense: 'expense',
+} as const;
+
+export type Fp360AccountingBalanceNormalBalance = typeof Fp360AccountingBalanceNormalBalance[keyof typeof Fp360AccountingBalanceNormalBalance];
+
+
+export const Fp360AccountingBalanceNormalBalance = {
+  debit: 'debit',
+  credit: 'credit',
+} as const;
+
+export interface Fp360AccountingBalance {
+  accountId: string;
+  code: string;
+  name: string;
+  nature: Fp360AccountingBalanceNature;
+  normalBalance: Fp360AccountingBalanceNormalBalance;
+  /** @minimum 0 */
+  debitCents: number;
+  /** @minimum 0 */
+  creditCents: number;
+  balanceCents: number;
+}
+
+export interface Fp360AccountingOverview {
+  organizationId: string;
+  accounts: Fp360AccountingAccount[];
+  entries: Fp360AccountingEntry[];
+  periods: Fp360AccountingPeriod[];
+  sources: Fp360AccountingSource[];
+  balances: Fp360AccountingBalance[];
+  totals: Fp360AccountingOverviewTotals;
+}
+
+export type Fp360AccountingAccountInputNature = typeof Fp360AccountingAccountInputNature[keyof typeof Fp360AccountingAccountInputNature];
+
+
+export const Fp360AccountingAccountInputNature = {
+  asset: 'asset',
+  liability: 'liability',
+  equity: 'equity',
+  revenue: 'revenue',
+  expense: 'expense',
+} as const;
+
+export type Fp360AccountingAccountInputNormalBalance = typeof Fp360AccountingAccountInputNormalBalance[keyof typeof Fp360AccountingAccountInputNormalBalance];
+
+
+export const Fp360AccountingAccountInputNormalBalance = {
+  debit: 'debit',
+  credit: 'credit',
+} as const;
+
+export interface Fp360AccountingAccountInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+     * @minLength 3
+     * @maxLength 12
+     * @pattern ^[0-9A-Za-z.]+$
+     */
+  code: string;
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  name: string;
+  nature: Fp360AccountingAccountInputNature;
+  normalBalance: Fp360AccountingAccountInputNormalBalance;
+  /**
+     * @maxLength 12
+     * @nullable
+     */
+  parentCode?: string | null;
+}
+
+export type Fp360AccountingEntryInputLinesItem = {
+  /** @minLength 1 */
+  accountId: string;
+  /**
+     * @minLength 2
+     * @maxLength 160
+     */
+  description: string;
+  /** @minimum 0 */
+  debitCents: number;
+  /** @minimum 0 */
+  creditCents: number;
+  /** @nullable */
+  thirdPartyOrganizationId: string | null;
+};
+
+export interface Fp360AccountingEntryInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  operationId: string;
+  entryDate: string;
+  /**
+     * @minLength 3
+     * @maxLength 250
+     */
+  concept: string;
+  /**
+     * @minItems 2
+     * @maxItems 100
+     */
+  lines: Fp360AccountingEntryInputLinesItem[];
+}
+
+export interface Fp360AccountingEntryActionInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  operationId: string;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  reason?: string;
+}
+
+export interface Fp360AccountingSourceDraftInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export interface Fp360AccountingPeriodActionInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  operationId: string;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  reason: string;
 }
 
 export interface Fp360InvoiceLine {
@@ -1703,6 +2044,8 @@ export interface Fp360Invoice {
   id: string;
   reference: string;
   orderId: string;
+  /** @nullable */
+  issuerOrganizationId: string | null;
   buyerName: string;
   status: Fp360InvoiceStatus;
   lines: Fp360InvoiceLine[];
@@ -1717,6 +2060,8 @@ export interface Fp360Invoice {
   /** @minimum 0 */
   balanceCents: number;
   simulatedDate: string;
+  /** @nullable */
+  dueDate: string | null;
   createdAt: string;
   payments: Fp360Payment[];
 }
@@ -1729,6 +2074,11 @@ export interface Fp360InvoiceInput {
 export interface Fp360PaymentInput {
   /** @minimum 1 */
   amountCents: number;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
 }
 
 export interface Fp360Activity {
@@ -2206,4 +2556,11 @@ export const ListFp360DirectionEventsEntityType = {
   objective: 'objective',
   report: 'report',
 } as const;
+
+export type GetFp360AccountingOverviewParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+};
 

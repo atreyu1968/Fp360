@@ -9,6 +9,7 @@ import purchasesRouter from "./purchases";
 import purchaseFulfillmentRouter from "./purchases-fulfillment";
 import directionRouter from "./direction";
 import logisticsRouter from "./logistics";
+import accountingRouter from "./accounting";
 
 const router: IRouter = Router();
 
@@ -21,6 +22,7 @@ router.use(purchasesRouter);
 router.use(purchaseFulfillmentRouter);
 router.use(directionRouter);
 router.use(logisticsRouter);
+router.use(accountingRouter);
 router.use(redfp360Router);
 
 export default router;

@@ -9,4 +9,9 @@
 export interface Fp360PaymentInput {
   /** @minimum 1 */
   amountCents: number;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
 }

@@ -275,11 +275,13 @@ export const fpInvoices = pgTable(
   {
     id: text("id").primaryKey(),
     tenantId: text("tenant_id").notNull(),
+    issuerOrganizationId: text("issuer_organization_id").references(() => fpOrganizations.id),
     reference: text("reference").notNull(),
     orderId: text("order_id")
       .notNull()
       .references(() => fpOrders.id),
     buyerName: text("buyer_name").notNull(),
+    dueDate: date("due_date", { mode: "string" }),
     baseCents: integer("base_cents").notNull(),
     igicCents: integer("igic_cents").notNull(),
     totalCents: integer("total_cents").notNull(),
@@ -317,16 +319,157 @@ export const fpPayments = pgTable(
   "fp360_payments",
   {
     id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull().default(""),
+    organizationId: text("organization_id").references(() => fpOrganizations.id),
     invoiceId: text("invoice_id")
       .notNull()
       .references(() => fpInvoices.id, { onDelete: "cascade" }),
     amountCents: integer("amount_cents").notNull(),
     simulatedDate: date("simulated_date", { mode: "string" }).notNull(),
+    operationId: text("operation_id"),
+    requestFingerprint: text("request_fingerprint"),
+    createdByUserId: text("created_by_user_id"),
+    createdByName: text("created_by_name"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("fp360_payments_invoice_idx").on(table.invoiceId)],
+  (table) => [
+    index("fp360_payments_invoice_idx").on(table.invoiceId),
+    uniqueIndex("fp360_payments_operation_idx").on(table.tenantId, table.operationId),
+  ],
+);
+
+export const fpAccountingAccounts = pgTable(
+  "fp360_accounting_accounts",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    organizationId: text("organization_id").notNull().references(() => fpOrganizations.id),
+    code: text("code").notNull(),
+    name: text("name").notNull(),
+    nature: text("nature").notNull(),
+    normalBalance: text("normal_balance").notNull(),
+    parentCode: text("parent_code"),
+    active: boolean("active").notNull().default(true),
+    isSystem: boolean("is_system").notNull().default(false),
+    createdByUserId: text("created_by_user_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("fp360_accounting_accounts_code_idx").on(table.tenantId, table.organizationId, table.code),
+    index("fp360_accounting_accounts_org_idx").on(table.tenantId, table.organizationId),
+  ],
+);
+
+export const fpAccountingPeriods = pgTable(
+  "fp360_accounting_periods",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    organizationId: text("organization_id").notNull().references(() => fpOrganizations.id),
+    fiscalYear: integer("fiscal_year").notNull(),
+    period: integer("period").notNull(),
+    status: text("status").notNull().default("open"),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    closedByUserId: text("closed_by_user_id"),
+    reopenedAt: timestamp("reopened_at", { withTimezone: true }),
+    reopenedByUserId: text("reopened_by_user_id"),
+    closeReason: text("close_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("fp360_accounting_period_org_idx").on(table.tenantId, table.organizationId, table.fiscalYear, table.period),
+  ],
+);
+
+export const fpAccountingSequences = pgTable(
+  "fp360_accounting_sequences",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    organizationId: text("organization_id").notNull().references(() => fpOrganizations.id),
+    fiscalYear: integer("fiscal_year").notNull(),
+    nextEntryNumber: integer("next_entry_number").notNull().default(1),
+  },
+  (table) => [
+    uniqueIndex("fp360_accounting_sequence_year_idx").on(table.tenantId, table.organizationId, table.fiscalYear),
+  ],
+);
+
+export const fpAccountingEntries = pgTable(
+  "fp360_accounting_entries",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    organizationId: text("organization_id").notNull().references(() => fpOrganizations.id),
+    entryNumber: integer("entry_number"),
+    fiscalYear: integer("fiscal_year").notNull(),
+    period: integer("period").notNull(),
+    entryDate: date("entry_date", { mode: "string" }).notNull(),
+    concept: text("concept").notNull(),
+    status: text("status").notNull().default("draft"),
+    sourceType: text("source_type").notNull().default("manual"),
+    sourceId: text("source_id"),
+    sourceReference: text("source_reference"),
+    debitCents: integer("debit_cents").notNull().default(0),
+    creditCents: integer("credit_cents").notNull().default(0),
+    operationId: text("operation_id").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
+    createdByUserId: text("created_by_user_id").notNull(),
+    createdByName: text("created_by_name").notNull(),
+    postedAt: timestamp("posted_at", { withTimezone: true }),
+    reversalOfEntryId: text("reversal_of_entry_id"),
+    reversedByEntryId: text("reversed_by_entry_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("fp360_accounting_entry_operation_idx").on(table.tenantId, table.operationId),
+    uniqueIndex("fp360_accounting_entry_source_idx").on(table.tenantId, table.organizationId, table.sourceType, table.sourceId),
+    uniqueIndex("fp360_accounting_entry_number_idx").on(table.tenantId, table.organizationId, table.fiscalYear, table.entryNumber),
+    index("fp360_accounting_entry_period_idx").on(table.tenantId, table.organizationId, table.fiscalYear, table.period),
+    index("fp360_accounting_entry_status_idx").on(table.tenantId, table.organizationId, table.status),
+  ],
+);
+
+export const fpAccountingEntryLines = pgTable(
+  "fp360_accounting_entry_lines",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    entryId: text("entry_id").notNull().references(() => fpAccountingEntries.id, { onDelete: "cascade" }),
+    accountId: text("account_id").notNull().references(() => fpAccountingAccounts.id),
+    lineNumber: integer("line_number").notNull(),
+    description: text("description").notNull(),
+    debitCents: integer("debit_cents").notNull().default(0),
+    creditCents: integer("credit_cents").notNull().default(0),
+    thirdPartyOrganizationId: text("third_party_organization_id").references(() => fpOrganizations.id),
+  },
+  (table) => [
+    index("fp360_accounting_entry_lines_entry_idx").on(table.tenantId, table.entryId),
+    index("fp360_accounting_entry_lines_account_idx").on(table.tenantId, table.accountId),
+  ],
+);
+
+export const fpAccountingEvents = pgTable(
+  "fp360_accounting_events",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    organizationId: text("organization_id").notNull().references(() => fpOrganizations.id),
+    entryId: text("entry_id").references(() => fpAccountingEntries.id),
+    operationId: text("operation_id").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
+    eventType: text("event_type").notNull(),
+    description: text("description").notNull(),
+    actorUserId: text("actor_user_id").notNull(),
+    actorName: text("actor_name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("fp360_accounting_event_operation_idx").on(table.tenantId, table.operationId),
+    index("fp360_accounting_event_entry_idx").on(table.tenantId, table.entryId),
+  ],
 );
 
 export const fpActivity = pgTable(
