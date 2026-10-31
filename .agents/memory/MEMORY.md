@@ -1,0 +1,1 @@
+- [RED FP360 authentication](red-fp360-auth.md) — Clerk is not permitted for this project; confirm an alternative before implementing auth.
