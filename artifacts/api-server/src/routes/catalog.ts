@@ -3,24 +3,46 @@ import { and, desc, eq, gt, isNull, ne, sql } from "drizzle-orm";
 import { Router, type ErrorRequestHandler, type IRouter } from "express";
 import {
   AdjustFp360StockBody, AdjustFp360StockParams, AdjustFp360StockResponse,
+  CompleteFp360ProductDocumentUploadParams, CompleteFp360ProductDocumentUploadResponse,
   CreateFp360OrganizationBody, CreateFp360OrganizationResponse,
   CreateFp360ProductBody, CreateFp360ProductResponse,
+  DeleteFp360ProductDocumentParams, DeleteFp360ProductDocumentResponse,
+  DownloadFp360ProductDocumentParams,
+  ListFp360ProductDocumentsParams, ListFp360ProductDocumentsResponse,
+  ListFp360ProductPriceVersionsParams, ListFp360ProductPriceVersionsResponse,
+  RequestFp360ProductDocumentUploadUrlBody, RequestFp360ProductDocumentUploadUrlParams,
+  RequestFp360ProductDocumentUploadUrlResponse,
   ListFp360StockAdjustmentsParams, ListFp360StockAdjustmentsResponse,
   UpdateFp360OrganizationBody, UpdateFp360OrganizationParams, UpdateFp360OrganizationResponse,
   UpdateFp360ProductBody, UpdateFp360ProductParams, UpdateFp360ProductResponse,
 } from "@workspace/api-zod";
-import { db, fpActivity, fpAuthInvitations, fpAuthMemberships, fpOrganizations, fpProducts, fpStockAdjustments } from "@workspace/db";
+import { db, fpActivity, fpAuthInvitations, fpAuthMemberships, fpOrganizations, fpProducts, fpProductDocuments, fpProductPriceVersions, fpStockAdjustments } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
+import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
 
 const router: IRouter = Router();
+const objectStorageService = new ObjectStorageService();
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const SIMULATED_DATE = "2027-09-15";
+const MAX_PRODUCT_DOCUMENT_BYTES = 10 * 1024 * 1024;
+const DOCUMENT_EXTENSIONS: Record<string, string[]> = {
+  "application/pdf": [".pdf"],
+  "image/jpeg": [".jpg", ".jpeg"],
+  "image/png": [".png"],
+  "image/webp": [".webp"],
+};
 class CatalogError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 function fail(status: number, message: string): never { throw new CatalogError(status, message); }
 function nonBlank(value: string | undefined, label: string) {
   if (value !== undefined && !value.trim()) fail(400, `${label} no puede estar vacío.`);
+}
+function documentResponse(row: typeof fpProductDocuments.$inferSelect) {
+  return { ...row, createdAt: row.createdAt.toISOString() };
+}
+function sanitizeDocumentName(value: string) {
+  return value.normalize("NFKC").replace(/[\\/\u0000-\u001f\u007f]/g, "_").trim().slice(0, 200);
 }
 async function activity(tx: Transaction, actor: AuthContext, action: string, description: string, reference: string) {
   await tx.insert(fpActivity).values({
@@ -102,22 +124,64 @@ router.post("/redfp360/products", async (req, res): Promise<void> => {
   if (!body.success) fail(400, "Revisa la referencia, los importes y las existencias.");
   nonBlank(body.data.name, "El nombre");
   nonBlank(body.data.category, "La categoría");
+  nonBlank(body.data.unit, "La unidad de medida");
   const actor = req.auth!;
+  const itemType = body.data.itemType ?? "product";
+  const tracksInventory = body.data.tracksInventory ?? itemType === "product";
+  const stock = body.data.stock;
+  const minimumStock = body.data.minimumStock ?? 0;
+  if ((itemType === "service" && tracksInventory) || (!tracksInventory && (stock !== 0 || minimumStock !== 0))) {
+    fail(400, "Los servicios y las referencias sin control de almacén no pueden tener existencias ni stock mínimo.");
+  }
   const product = await db.transaction(async (tx) => {
+    const supplierOrganizationId = body.data.supplierOrganizationId ?? null;
+    if (supplierOrganizationId) {
+      const [supplier] = await tx.select().from(fpOrganizations).where(and(
+        eq(fpOrganizations.id, supplierOrganizationId),
+        eq(fpOrganizations.tenantId, actor.tenantId),
+      ));
+      if (!supplier || !supplier.isActive || !["seller", "both"].includes(supplier.role)) {
+        fail(400, "Selecciona un proveedor activo de tu empresa o red autorizada.");
+      }
+    }
     const [created] = await tx.insert(fpProducts).values({
-      ...body.data, sku: body.data.sku.trim().toUpperCase(), name: body.data.name.trim(),
-      category: body.data.category.trim(), costCents: body.data.costCents ?? 0,
-      minimumStock: body.data.minimumStock ?? 0,
+      ...body.data,
+      sku: body.data.sku.trim().toUpperCase(),
+      name: body.data.name.trim(),
+      description: body.data.description?.trim() ?? "",
+      category: body.data.category.trim(),
+      itemType,
+      unit: body.data.unit?.trim() || (itemType === "service" ? "servicio" : "unidad"),
+      tracksInventory,
+      stock: tracksInventory ? stock : 0,
+      costCents: body.data.costCents ?? 0,
+      minimumStock: tracksInventory ? minimumStock : 0,
+      maxDiscountBasisPoints: body.data.maxDiscountBasisPoints ?? 0,
+      leadTimeDays: body.data.leadTimeDays ?? 0,
+      supplierOrganizationId,
       id: randomUUID(), tenantId: actor.tenantId, reserved: 0, isActive: true, isPublished: false,
     }).returning();
-    if (created.stock > 0) {
+    await tx.insert(fpProductPriceVersions).values({
+      id: randomUUID(),
+      tenantId: actor.tenantId,
+      productId: created.id,
+      unitPriceCents: created.unitPriceCents,
+      costCents: created.costCents,
+      igicBasisPoints: created.igicBasisPoints,
+      maxDiscountBasisPoints: created.maxDiscountBasisPoints,
+      validFrom: SIMULATED_DATE,
+      reason: "Tarifa inicial",
+      actorUserId: actor.userId,
+      actorName: actor.displayName,
+    });
+    if (created.tracksInventory && created.stock > 0) {
       await tx.insert(fpStockAdjustments).values({
         id: randomUUID(), tenantId: actor.tenantId, productId: created.id, quantityDelta: created.stock,
         stockBefore: 0, stockAfter: created.stock, reason: "Existencias iniciales al crear la referencia.",
         actorUserId: actor.userId, actorName: actor.displayName, simulatedDate: SIMULATED_DATE,
       });
     }
-    await activity(tx, actor, "Producto creado", `Referencia ${created.sku} creada, pendiente de aprobación para el mercado.`, created.id);
+    await activity(tx, actor, "Referencia de catálogo creada", `${created.itemType === "service" ? "Servicio" : "Producto"} ${created.sku} creado, pendiente de aprobación para el mercado.`, created.id);
     return created;
   });
   res.status(201).json(CreateFp360ProductResponse.parse(product));
@@ -129,40 +193,268 @@ router.patch("/redfp360/products/:id", async (req, res): Promise<void> => {
   if (!params.success || !body.success || !Object.keys(body.data).length) fail(400, "No hay cambios válidos.");
   nonBlank(body.data.name, "El nombre");
   nonBlank(body.data.category, "La categoría");
+  nonBlank(body.data.unit, "La unidad de medida");
   const actor = req.auth!;
   if (body.data.isPublished !== undefined && !["teacher", "administrator"].includes(actor.role)) {
     fail(403, "Solo el profesorado y la administración pueden aprobar la publicación en el mercado.");
   }
+  const { priceChangeReason, effectiveFrom, ...changes } = body.data;
   const product = await db.transaction(async (tx) => {
     const [previous] = await tx.select().from(fpProducts).where(and(
       eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, actor.tenantId),
     )).for("update");
-    if (!previous) fail(404, "Producto no encontrado en tu red.");
+    if (!previous) fail(404, "Referencia de catálogo no encontrada en tu red.");
     const next = {
-      ...body.data,
-      ...(body.data.sku !== undefined ? { sku: body.data.sku.toUpperCase() } : {}),
-      ...(body.data.name !== undefined ? { name: body.data.name.trim() } : {}),
-      ...(body.data.category !== undefined ? { category: body.data.category.trim() } : {}),
+      ...changes,
+      ...(changes.sku !== undefined ? { sku: changes.sku.trim().toUpperCase() } : {}),
+      ...(changes.name !== undefined ? { name: changes.name.trim() } : {}),
+      ...(changes.description !== undefined ? { description: changes.description.trim() } : {}),
+      ...(changes.category !== undefined ? { category: changes.category.trim() } : {}),
+      ...(changes.unit !== undefined ? { unit: changes.unit.trim() } : {}),
     };
     const priceChanged =
       (next.unitPriceCents !== undefined && next.unitPriceCents !== previous.unitPriceCents) ||
-      (next.igicBasisPoints !== undefined && next.igicBasisPoints !== previous.igicBasisPoints);
+      (next.costCents !== undefined && next.costCents !== previous.costCents) ||
+      (next.igicBasisPoints !== undefined && next.igicBasisPoints !== previous.igicBasisPoints) ||
+      (next.maxDiscountBasisPoints !== undefined && next.maxDiscountBasisPoints !== previous.maxDiscountBasisPoints);
+    if (priceChanged && (!priceChangeReason || priceChangeReason.trim().length < 5)) {
+      fail(400, "Explica el cambio de tarifa con un motivo de al menos cinco caracteres.");
+    }
+    if (!priceChanged && (priceChangeReason !== undefined || effectiveFrom !== undefined)) {
+      fail(400, "El motivo y la fecha solo se aplican al versionar una tarifa.");
+    }
+    if (next.igicBasisPoints !== undefined && next.igicBasisPoints !== previous.igicBasisPoints &&
+      !["teacher", "administrator"].includes(actor.role)) {
+      fail(403, "El cambio de IGIC requiere revisión del profesorado o la administración.");
+    }
+    const nextType = next.itemType ?? previous.itemType;
+    const nextTracksInventory = next.tracksInventory ?? (nextType === "service" ? false : previous.tracksInventory);
+    if (nextType === "service" && nextTracksInventory) {
+      fail(400, "Un servicio no puede controlar existencias de almacén.");
+    }
+    if (!nextTracksInventory && (previous.stock > 0 || previous.reserved > 0)) {
+      fail(409, "Registra primero la salida de existencias y completa las reservas antes de retirar el control de almacén.");
+    }
+    if (nextType === "service") {
+      next.tracksInventory = false;
+      next.minimumStock = 0;
+    }
+    if (!nextTracksInventory && (next.minimumStock ?? previous.minimumStock) !== 0) {
+      fail(400, "Una referencia sin control de almacén debe tener stock mínimo cero.");
+    }
+    if (next.supplierOrganizationId) {
+      const [supplier] = await tx.select().from(fpOrganizations).where(and(
+        eq(fpOrganizations.id, next.supplierOrganizationId),
+        eq(fpOrganizations.tenantId, actor.tenantId),
+      ));
+      if (!supplier || !supplier.isActive || !["seller", "both"].includes(supplier.role)) {
+        fail(400, "Selecciona un proveedor activo de tu empresa o red autorizada.");
+      }
+    }
     if (priceChanged || next.isActive === false) next.isPublished = false;
     if (next.isActive === false && previous.reserved > 0) {
       fail(409, "No puedes archivar una referencia con unidades reservadas.");
     }
     if (next.isPublished === true && !(next.isActive ?? previous.isActive)) {
-      fail(409, "Reactiva el producto antes de publicarlo.");
+      fail(409, "Reactiva la referencia antes de publicarla.");
     }
     const [updated] = await tx.update(fpProducts).set(next).where(and(
       eq(fpProducts.id, previous.id), eq(fpProducts.tenantId, actor.tenantId),
     )).returning();
-    await activity(tx, actor, "Producto actualizado",
-      `Referencia ${updated.sku} actualizada.${priceChanged ? " El cambio de precio o impuesto requiere nueva aprobación; los documentos históricos no cambian." : ""}`,
+    if (priceChanged) {
+      const [latestVersion] = await tx.select().from(fpProductPriceVersions).where(and(
+        eq(fpProductPriceVersions.tenantId, actor.tenantId),
+        eq(fpProductPriceVersions.productId, previous.id),
+      )).orderBy(desc(fpProductPriceVersions.validFrom), desc(fpProductPriceVersions.createdAt)).limit(1);
+      const validFrom = effectiveFrom ?? SIMULATED_DATE;
+      if (latestVersion && validFrom < latestVersion.validFrom) {
+        fail(409, "La fecha de vigencia no puede ser anterior a la última tarifa registrada.");
+      }
+      await tx.insert(fpProductPriceVersions).values({
+        id: randomUUID(),
+        tenantId: actor.tenantId,
+        productId: previous.id,
+        unitPriceCents: updated.unitPriceCents,
+        costCents: updated.costCents,
+        igicBasisPoints: updated.igicBasisPoints,
+        maxDiscountBasisPoints: updated.maxDiscountBasisPoints,
+        validFrom,
+        reason: priceChangeReason!.trim(),
+        actorUserId: actor.userId,
+        actorName: actor.displayName,
+      });
+    }
+    await activity(tx, actor, "Referencia de catálogo actualizada",
+      `Referencia ${updated.sku} actualizada.${priceChanged ? " La nueva tarifa requiere aprobación y los documentos históricos conservan sus importes." : ""}`,
       previous.id);
     return updated;
   });
   res.json(UpdateFp360ProductResponse.parse(product));
+});
+
+router.get("/redfp360/products/:id/price-versions", async (req, res): Promise<void> => {
+  const params = ListFp360ProductPriceVersionsParams.safeParse(req.params);
+  if (!params.success) fail(400, "Referencia no válida.");
+  const tenantId = req.auth!.tenantId;
+  const [product] = await db.select({ id: fpProducts.id }).from(fpProducts).where(and(
+    eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, tenantId),
+  ));
+  if (!product) fail(404, "Referencia de catálogo no encontrada en tu red.");
+  const rows = await db.select().from(fpProductPriceVersions).where(and(
+    eq(fpProductPriceVersions.productId, product.id),
+    eq(fpProductPriceVersions.tenantId, tenantId),
+  )).orderBy(desc(fpProductPriceVersions.validFrom), desc(fpProductPriceVersions.createdAt));
+  res.json(ListFp360ProductPriceVersionsResponse.parse(rows.map((row) => ({
+    ...row,
+    createdAt: row.createdAt.toISOString(),
+  }))));
+});
+
+router.get("/redfp360/products/:id/documents", async (req, res): Promise<void> => {
+  const params = ListFp360ProductDocumentsParams.safeParse(req.params);
+  if (!params.success) fail(400, "Referencia no válida.");
+  const tenantId = req.auth!.tenantId;
+  const [product] = await db.select({ id: fpProducts.id }).from(fpProducts).where(and(
+    eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, tenantId),
+  ));
+  if (!product) fail(404, "Referencia de catálogo no encontrada en tu red.");
+  const documents = await db.select().from(fpProductDocuments).where(and(
+    eq(fpProductDocuments.productId, product.id), eq(fpProductDocuments.tenantId, tenantId),
+  )).orderBy(desc(fpProductDocuments.createdAt));
+  res.json(ListFp360ProductDocumentsResponse.parse(documents.map(documentResponse)));
+});
+
+router.post("/redfp360/products/:id/documents/upload-url", async (req, res): Promise<void> => {
+  const params = RequestFp360ProductDocumentUploadUrlParams.safeParse(req.params);
+  const body = RequestFp360ProductDocumentUploadUrlBody.safeParse(req.body);
+  if (!params.success || !body.success) fail(400, "Revisa el documento y su formato.");
+  const actor = req.auth!;
+  const [product] = await db.select().from(fpProducts).where(and(
+    eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, actor.tenantId),
+  ));
+  if (!product) fail(404, "Referencia de catálogo no encontrada en tu red.");
+  if (!product.isActive) fail(409, "Reactiva la referencia antes de adjuntar documentos.");
+  if (body.data.size > MAX_PRODUCT_DOCUMENT_BYTES) fail(400, "El documento no puede superar los 10 MB.");
+  const originalName = sanitizeDocumentName(body.data.name);
+  if (!originalName) fail(400, "El nombre del documento no es válido.");
+  const extension = `.${originalName.split(".").pop()?.toLocaleLowerCase("en") ?? ""}`;
+  if (!DOCUMENT_EXTENSIONS[body.data.contentType]?.includes(extension)) {
+    fail(400, "El tipo de archivo y su extensión no coinciden.");
+  }
+
+  const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+  const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+  if (!/^\/objects\/uploads\/[a-f0-9-]{36}$/i.test(objectPath)) {
+    throw new Error("Object storage returned an unexpected private object path.");
+  }
+  const documentId = randomUUID();
+  await db.insert(fpProductDocuments).values({
+    id: documentId,
+    tenantId: actor.tenantId,
+    productId: product.id,
+    objectPath,
+    originalName,
+    contentType: body.data.contentType,
+    sizeBytes: body.data.size,
+    description: body.data.description?.trim() ?? "",
+    status: "pending",
+    uploaderUserId: actor.userId,
+    uploaderName: actor.displayName,
+  });
+  res.json(RequestFp360ProductDocumentUploadUrlResponse.parse({ documentId, uploadURL }));
+});
+
+router.post("/redfp360/products/:id/documents/:documentId/complete", async (req, res): Promise<void> => {
+  const params = CompleteFp360ProductDocumentUploadParams.safeParse(req.params);
+  if (!params.success) fail(400, "Documento no válido.");
+  const actor = req.auth!;
+  const document = await db.transaction(async (tx) => {
+    const [row] = await tx.select().from(fpProductDocuments).where(and(
+      eq(fpProductDocuments.id, params.data.documentId),
+      eq(fpProductDocuments.productId, params.data.id),
+      eq(fpProductDocuments.tenantId, actor.tenantId),
+    )).for("update");
+    if (!row) fail(404, "Documento no encontrado en esta referencia.");
+    if (row.status === "ready") return row;
+    let file;
+    try {
+      file = await objectStorageService.getObjectEntityFile(row.objectPath);
+    } catch (error) {
+      if (error instanceof ObjectNotFoundError) fail(404, "No se ha encontrado el archivo cargado.");
+      throw error;
+    }
+    const [metadata] = await file.getMetadata();
+    const actualSize = Number(metadata.size);
+    const actualContentType = String(metadata.contentType ?? "");
+    if (!Number.isSafeInteger(actualSize) || actualSize !== row.sizeBytes || actualSize > MAX_PRODUCT_DOCUMENT_BYTES ||
+      actualContentType !== row.contentType) {
+      try {
+        await file.delete({ ignoreNotFound: true });
+      } catch (error) {
+        req.log.error({ err: error, documentId: row.id }, "Could not remove an invalid product document upload");
+      }
+      fail(400, "El archivo cargado no coincide con el tipo o tamaño declarado.");
+    }
+    const [updated] = await tx.update(fpProductDocuments).set({ status: "ready" }).where(and(
+      eq(fpProductDocuments.id, row.id), eq(fpProductDocuments.tenantId, actor.tenantId),
+    )).returning();
+    const [product] = await tx.select({ name: fpProducts.name }).from(fpProducts).where(eq(fpProducts.id, row.productId));
+    await activity(tx, actor, "Documento de catálogo adjuntado",
+      `${row.originalName} se ha vinculado a ${product?.name ?? "una referencia de catálogo"}.`, row.productId);
+    return updated;
+  });
+  res.json(CompleteFp360ProductDocumentUploadResponse.parse(documentResponse(document)));
+});
+
+router.get("/redfp360/products/:id/documents/:documentId/download", async (req, res): Promise<void> => {
+  const params = DownloadFp360ProductDocumentParams.safeParse(req.params);
+  if (!params.success) fail(400, "Documento no válido.");
+  const [document] = await db.select().from(fpProductDocuments).where(and(
+    eq(fpProductDocuments.id, params.data.documentId),
+    eq(fpProductDocuments.productId, params.data.id),
+    eq(fpProductDocuments.tenantId, req.auth!.tenantId),
+    eq(fpProductDocuments.status, "ready"),
+  ));
+  if (!document) fail(404, "Documento disponible no encontrado en esta referencia.");
+  let file;
+  try {
+    file = await objectStorageService.getObjectEntityFile(document.objectPath);
+  } catch (error) {
+    if (error instanceof ObjectNotFoundError) fail(404, "No se ha encontrado el archivo.");
+    throw error;
+  }
+  const [downloadURL] = await file.getSignedUrl({
+    action: "read",
+    expires: Date.now() + 5 * 60 * 1000,
+    responseDisposition: "attachment",
+  });
+  res.redirect(302, downloadURL);
+});
+
+router.delete("/redfp360/products/:id/documents/:documentId", async (req, res): Promise<void> => {
+  const params = DeleteFp360ProductDocumentParams.safeParse(req.params);
+  if (!params.success) fail(400, "Documento no válido.");
+  const actor = req.auth!;
+  const [document] = await db.select().from(fpProductDocuments).where(and(
+    eq(fpProductDocuments.id, params.data.documentId),
+    eq(fpProductDocuments.productId, params.data.id),
+    eq(fpProductDocuments.tenantId, actor.tenantId),
+  ));
+  if (!document) fail(404, "Documento no encontrado en esta referencia.");
+  try {
+    const file = await objectStorageService.getObjectEntityFile(document.objectPath);
+    await file.delete({ ignoreNotFound: true });
+  } catch (error) {
+    if (!(error instanceof ObjectNotFoundError)) throw error;
+  }
+  await db.transaction(async (tx) => {
+    await tx.delete(fpProductDocuments).where(and(
+      eq(fpProductDocuments.id, document.id), eq(fpProductDocuments.tenantId, actor.tenantId),
+    ));
+    await activity(tx, actor, "Documento de catálogo eliminado",
+      `Se ha eliminado ${document.originalName} de la referencia ${document.productId}.`, document.productId);
+  });
+  res.json(DeleteFp360ProductDocumentResponse.parse({ deleted: true }));
 });
 
 router.get("/redfp360/products/:id/stock-adjustments", async (req, res): Promise<void> => {
@@ -202,6 +494,7 @@ router.post("/redfp360/products/:id/stock-adjustments", async (req, res): Promis
       return previous;
     }
     if (!previous.isActive) fail(409, "Reactiva el producto antes de ajustar las existencias.");
+    if (!previous.tracksInventory) fail(409, "Esta referencia no controla existencias de almacén.");
     const stock = previous.stock + body.data.quantityDelta;
     if (stock < previous.reserved || stock < 0 || stock > 1000000) {
       fail(409, "El stock debe estar entre las unidades reservadas y un millón de unidades.");

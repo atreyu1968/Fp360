@@ -24,3 +24,19 @@ Invitations currently provision new accounts only. Do not automatically attach a
 **Why:** cross-network membership changes need an explicit authenticated consent flow; matching an email alone must not change an existing account's access.
 
 **How to apply:** keep existing-account invitations rejected until a deliberate membership-acceptance and network-switching flow is implemented.
+
+## Rate limiting behind the Replit proxy
+
+Trust exactly one reverse-proxy hop in Express before rate-limited routes.
+
+**Why:** the Replit preview proxy forwards visitor IPs in `X-Forwarded-For`; `express-rate-limit` 8 rejects that header when Express keeps its default `trust proxy` setting.
+
+**How to apply:** keep `app.set("trust proxy", 1)` before the auth and admin rate limiters. Do not trust an arbitrary proxy chain.
+
+## Private product documents
+
+Serve catalog attachments only through the existing app-owned session and tenant-scoped document records. Do not expose the generic private-object route without authentication.
+
+**Why:** product and supplier documents are private to each RED FP360 network, and the project uses custom sessions rather than Clerk or Replit Auth.
+
+**How to apply:** verify the authenticated tenant owns the product and document before issuing a short-lived download URL or deleting an object.

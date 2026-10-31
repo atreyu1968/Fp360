@@ -30,6 +30,34 @@ import type {
   AuthLoginInput,
   AuthSetupInput,
   AuthStatus,
+  CrmActivity,
+  CrmActivityInput,
+  CrmActivityUpdate,
+  CrmContact,
+  CrmContactInput,
+  CrmContactUpdate,
+  CrmOpportunity,
+  CrmOpportunityHistory,
+  CrmOpportunityInput,
+  CrmOpportunityStageInput,
+  CrmOpportunityUpdate,
+  DirectionAlert,
+  DirectionAlertAction,
+  DirectionDecision,
+  DirectionDecisionInput,
+  DirectionDecisionReview,
+  DirectionEvent,
+  DirectionMember,
+  DirectionObjective,
+  DirectionObjectiveInput,
+  DirectionOverview,
+  DirectionReport,
+  DirectionReportInput,
+  DirectionTask,
+  DirectionTaskInput,
+  DirectionTaskUpdate,
+  DirectionThreshold,
+  DirectionThresholdInput,
   Fp360Activity,
   Fp360Dashboard,
   Fp360DispatchInput,
@@ -42,17 +70,42 @@ import type {
   Fp360OrganizationUpdate,
   Fp360PaymentInput,
   Fp360Product,
+  Fp360ProductDocument,
+  Fp360ProductDocumentDeleteResponse,
+  Fp360ProductDocumentUploadUrl,
+  Fp360ProductDocumentUploadUrlInput,
   Fp360ProductInput,
+  Fp360ProductPriceVersion,
   Fp360ProductUpdate,
   Fp360StockAdjustment,
   Fp360StockAdjustmentInput,
+  GetFp360DirectionOverviewParams,
   HealthStatus,
   InvitationAcceptanceInput,
   InvitationPreview,
   InvitationTokenInput,
   IssuedInvitation,
+  ListFp360DirectionEventsParams,
+  ListFp360DirectionObjectivesParams,
   ManagedUser,
   ManagedUserUpdate,
+  PurchaseAwardInput,
+  PurchaseDecisionInput,
+  PurchaseEvent,
+  PurchaseInvoice,
+  PurchaseInvoiceDecisionInput,
+  PurchaseInvoiceInput,
+  PurchaseOffer,
+  PurchaseOfferInput,
+  PurchaseOrder,
+  PurchaseReceipt,
+  PurchaseReceiptInput,
+  PurchaseRequest,
+  PurchaseRequestInput,
+  PurchaseRequestSummary,
+  PurchaseRequestTransitionInput,
+  PurchaseSupplierMetric,
+  UpsertFp360DirectionThresholdParams,
   UserInvitation,
   UserInvitationInput
 } from './api.schemas';
@@ -1421,6 +1474,1841 @@ export function useGetFp360Dashboard<TData = Awaited<ReturnType<typeof getFp360D
 
 
 
+export const getGetFp360DirectionOverviewUrl = (params?: GetFp360DirectionOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/direction/overview?${stringifiedParams}` : `/api/redfp360/direction/overview`
+}
+
+/**
+ * @summary Get source-backed executive indicators for a simulated period
+ */
+export const getFp360DirectionOverview = async (params?: GetFp360DirectionOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<DirectionOverview> => {
+
+  return customFetch<DirectionOverview>(getGetFp360DirectionOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360DirectionOverviewQueryKey = (params?: GetFp360DirectionOverviewParams,) => {
+    return [
+    `/api/redfp360/direction/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360DirectionOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError = ErrorType<void>>(params?: GetFp360DirectionOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360DirectionOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360DirectionOverview>>> = ({ signal }) => getFp360DirectionOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360DirectionOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360DirectionOverview>>>
+export type GetFp360DirectionOverviewQueryError = ErrorType<void>
+
+
+export function useGetFp360DirectionOverview<TData = Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError = ErrorType<void>>(
+ params: undefined |  GetFp360DirectionOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360DirectionOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360DirectionOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360DirectionOverview<TData = Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError = ErrorType<void>>(
+ params?: GetFp360DirectionOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360DirectionOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360DirectionOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360DirectionOverview<TData = Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError = ErrorType<void>>(
+ params?: GetFp360DirectionOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get source-backed executive indicators for a simulated period
+ */
+
+export function useGetFp360DirectionOverview<TData = Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError = ErrorType<void>>(
+ params?: GetFp360DirectionOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360DirectionOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListFp360DirectionTasksUrl = () => {
+
+
+
+
+  return `/api/redfp360/direction/tasks`
+}
+
+/**
+ * @summary List direction tasks for the authenticated tenant
+ */
+export const listFp360DirectionTasks = async ( options?: Parameters<typeof customFetch>[1]): Promise<DirectionTask[]> => {
+
+  return customFetch<DirectionTask[]>(getListFp360DirectionTasksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFp360DirectionTasksQueryKey = () => {
+    return [
+    `/api/redfp360/direction/tasks`
+    ] as const;
+    }
+
+
+export const getListFp360DirectionTasksQueryOptions = <TData = Awaited<ReturnType<typeof listFp360DirectionTasks>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionTasks>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFp360DirectionTasksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFp360DirectionTasks>>> = ({ signal }) => listFp360DirectionTasks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionTasks>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFp360DirectionTasksQueryResult = NonNullable<Awaited<ReturnType<typeof listFp360DirectionTasks>>>
+export type ListFp360DirectionTasksQueryError = ErrorType<unknown>
+
+
+export function useListFp360DirectionTasks<TData = Awaited<ReturnType<typeof listFp360DirectionTasks>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionTasks>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionTasks>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionTasks>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionTasks<TData = Awaited<ReturnType<typeof listFp360DirectionTasks>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionTasks>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionTasks>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionTasks>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionTasks<TData = Awaited<ReturnType<typeof listFp360DirectionTasks>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionTasks>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List direction tasks for the authenticated tenant
+ */
+
+export function useListFp360DirectionTasks<TData = Awaited<ReturnType<typeof listFp360DirectionTasks>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionTasks>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFp360DirectionTasksQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360DirectionTaskUrl = () => {
+
+
+
+
+  return `/api/redfp360/direction/tasks`
+}
+
+/**
+ * @summary Create a simulated direction task
+ */
+export const createFp360DirectionTask = async (directionTaskInput: DirectionTaskInput, options?: Parameters<typeof customFetch>[1]): Promise<DirectionTask> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionTask>(getCreateFp360DirectionTaskUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(directionTaskInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360DirectionTaskMutationKey = () => ['createFp360DirectionTask'] as const;
+
+export const getCreateFp360DirectionTaskMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360DirectionTask>>, TError,CreateFp360DirectionTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360DirectionTask>>, TError,CreateFp360DirectionTaskMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360DirectionTaskMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360DirectionTask>>, CreateFp360DirectionTaskMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360DirectionTask(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360DirectionTaskMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360DirectionTask>>>
+    export type CreateFp360DirectionTaskMutationBody = BodyType<DirectionTaskInput>
+    export type CreateFp360DirectionTaskMutationError = ErrorType<void>
+    export type CreateFp360DirectionTaskMutationVariables = {data: BodyType<DirectionTaskInput>}
+
+    /**
+ * @summary Create a simulated direction task
+ */
+export const useCreateFp360DirectionTask = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360DirectionTask>>, TError,CreateFp360DirectionTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360DirectionTask>>,
+        TError,
+        CreateFp360DirectionTaskMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360DirectionTaskMutationOptions(options), queryClient);
+    }
+
+export const getListFp360DirectionMembersUrl = () => {
+
+
+
+
+  return `/api/redfp360/direction/members`
+}
+
+/**
+ * @summary List assignable active members in the authenticated tenant
+ */
+export const listFp360DirectionMembers = async ( options?: Parameters<typeof customFetch>[1]): Promise<DirectionMember[]> => {
+
+  return customFetch<DirectionMember[]>(getListFp360DirectionMembersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFp360DirectionMembersQueryKey = () => {
+    return [
+    `/api/redfp360/direction/members`
+    ] as const;
+    }
+
+
+export const getListFp360DirectionMembersQueryOptions = <TData = Awaited<ReturnType<typeof listFp360DirectionMembers>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionMembers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFp360DirectionMembersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFp360DirectionMembers>>> = ({ signal }) => listFp360DirectionMembers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionMembers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFp360DirectionMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listFp360DirectionMembers>>>
+export type ListFp360DirectionMembersQueryError = ErrorType<unknown>
+
+
+export function useListFp360DirectionMembers<TData = Awaited<ReturnType<typeof listFp360DirectionMembers>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionMembers>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionMembers>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionMembers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionMembers<TData = Awaited<ReturnType<typeof listFp360DirectionMembers>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionMembers>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionMembers>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionMembers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionMembers<TData = Awaited<ReturnType<typeof listFp360DirectionMembers>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionMembers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List assignable active members in the authenticated tenant
+ */
+
+export function useListFp360DirectionMembers<TData = Awaited<ReturnType<typeof listFp360DirectionMembers>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionMembers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFp360DirectionMembersQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateFp360DirectionTaskUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/direction/tasks/${id}`
+}
+
+/**
+ * @summary Update a task status with an audit reason
+ */
+export const updateFp360DirectionTask = async (id: string,
+    directionTaskUpdate: DirectionTaskUpdate, options?: Parameters<typeof customFetch>[1]): Promise<DirectionTask> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionTask>(getUpdateFp360DirectionTaskUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(directionTaskUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateFp360DirectionTaskMutationKey = () => ['updateFp360DirectionTask'] as const;
+
+export const getUpdateFp360DirectionTaskMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360DirectionTask>>, TError,UpdateFp360DirectionTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFp360DirectionTask>>, TError,UpdateFp360DirectionTaskMutationVariables, TContext> => {
+
+const mutationKey = getUpdateFp360DirectionTaskMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFp360DirectionTask>>, UpdateFp360DirectionTaskMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateFp360DirectionTask(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFp360DirectionTaskMutationResult = NonNullable<Awaited<ReturnType<typeof updateFp360DirectionTask>>>
+    export type UpdateFp360DirectionTaskMutationBody = BodyType<DirectionTaskUpdate>
+    export type UpdateFp360DirectionTaskMutationError = ErrorType<void>
+    export type UpdateFp360DirectionTaskMutationVariables = {id: string;data: BodyType<DirectionTaskUpdate>}
+
+    /**
+ * @summary Update a task status with an audit reason
+ */
+export const useUpdateFp360DirectionTask = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360DirectionTask>>, TError,UpdateFp360DirectionTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateFp360DirectionTask>>,
+        TError,
+        UpdateFp360DirectionTaskMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateFp360DirectionTaskMutationOptions(options), queryClient);
+    }
+
+export const getListFp360DirectionAlertsUrl = () => {
+
+
+
+
+  return `/api/redfp360/direction/alerts`
+}
+
+/**
+ * @summary List source-derived alerts and their recorded actions
+ */
+export const listFp360DirectionAlerts = async ( options?: Parameters<typeof customFetch>[1]): Promise<DirectionAlert[]> => {
+
+  return customFetch<DirectionAlert[]>(getListFp360DirectionAlertsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFp360DirectionAlertsQueryKey = () => {
+    return [
+    `/api/redfp360/direction/alerts`
+    ] as const;
+    }
+
+
+export const getListFp360DirectionAlertsQueryOptions = <TData = Awaited<ReturnType<typeof listFp360DirectionAlerts>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionAlerts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFp360DirectionAlertsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFp360DirectionAlerts>>> = ({ signal }) => listFp360DirectionAlerts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionAlerts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFp360DirectionAlertsQueryResult = NonNullable<Awaited<ReturnType<typeof listFp360DirectionAlerts>>>
+export type ListFp360DirectionAlertsQueryError = ErrorType<unknown>
+
+
+export function useListFp360DirectionAlerts<TData = Awaited<ReturnType<typeof listFp360DirectionAlerts>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionAlerts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionAlerts>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionAlerts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionAlerts<TData = Awaited<ReturnType<typeof listFp360DirectionAlerts>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionAlerts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionAlerts>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionAlerts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionAlerts<TData = Awaited<ReturnType<typeof listFp360DirectionAlerts>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionAlerts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List source-derived alerts and their recorded actions
+ */
+
+export function useListFp360DirectionAlerts<TData = Awaited<ReturnType<typeof listFp360DirectionAlerts>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionAlerts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFp360DirectionAlertsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateFp360DirectionAlertUrl = (alertKey: string,) => {
+
+
+
+
+  return `/api/redfp360/direction/alerts/${alertKey}`
+}
+
+/**
+ * @summary Record an alert owner, status, justification, and evidence
+ */
+export const updateFp360DirectionAlert = async (alertKey: string,
+    directionAlertAction: DirectionAlertAction, options?: Parameters<typeof customFetch>[1]): Promise<DirectionAlert> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionAlert>(getUpdateFp360DirectionAlertUrl(alertKey),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(directionAlertAction)
+  }
+);}
+
+
+
+
+
+export const getUpdateFp360DirectionAlertMutationKey = () => ['updateFp360DirectionAlert'] as const;
+
+export const getUpdateFp360DirectionAlertMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360DirectionAlert>>, TError,UpdateFp360DirectionAlertMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFp360DirectionAlert>>, TError,UpdateFp360DirectionAlertMutationVariables, TContext> => {
+
+const mutationKey = getUpdateFp360DirectionAlertMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFp360DirectionAlert>>, UpdateFp360DirectionAlertMutationVariables> = (props) => {
+          const {alertKey,data} = props ?? {};
+
+          return  updateFp360DirectionAlert(alertKey,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFp360DirectionAlertMutationResult = NonNullable<Awaited<ReturnType<typeof updateFp360DirectionAlert>>>
+    export type UpdateFp360DirectionAlertMutationBody = BodyType<DirectionAlertAction>
+    export type UpdateFp360DirectionAlertMutationError = ErrorType<void>
+    export type UpdateFp360DirectionAlertMutationVariables = {alertKey: string;data: BodyType<DirectionAlertAction>}
+
+    /**
+ * @summary Record an alert owner, status, justification, and evidence
+ */
+export const useUpdateFp360DirectionAlert = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360DirectionAlert>>, TError,UpdateFp360DirectionAlertMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateFp360DirectionAlert>>,
+        TError,
+        UpdateFp360DirectionAlertMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateFp360DirectionAlertMutationOptions(options), queryClient);
+    }
+
+export const getListFp360DirectionThresholdsUrl = () => {
+
+
+
+
+  return `/api/redfp360/direction/thresholds`
+}
+
+/**
+ * @summary List configurable direction alert thresholds
+ */
+export const listFp360DirectionThresholds = async ( options?: Parameters<typeof customFetch>[1]): Promise<DirectionThreshold[]> => {
+
+  return customFetch<DirectionThreshold[]>(getListFp360DirectionThresholdsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFp360DirectionThresholdsQueryKey = () => {
+    return [
+    `/api/redfp360/direction/thresholds`
+    ] as const;
+    }
+
+
+export const getListFp360DirectionThresholdsQueryOptions = <TData = Awaited<ReturnType<typeof listFp360DirectionThresholds>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionThresholds>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFp360DirectionThresholdsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFp360DirectionThresholds>>> = ({ signal }) => listFp360DirectionThresholds({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionThresholds>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFp360DirectionThresholdsQueryResult = NonNullable<Awaited<ReturnType<typeof listFp360DirectionThresholds>>>
+export type ListFp360DirectionThresholdsQueryError = ErrorType<unknown>
+
+
+export function useListFp360DirectionThresholds<TData = Awaited<ReturnType<typeof listFp360DirectionThresholds>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionThresholds>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionThresholds>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionThresholds>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionThresholds<TData = Awaited<ReturnType<typeof listFp360DirectionThresholds>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionThresholds>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionThresholds>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionThresholds>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionThresholds<TData = Awaited<ReturnType<typeof listFp360DirectionThresholds>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionThresholds>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List configurable direction alert thresholds
+ */
+
+export function useListFp360DirectionThresholds<TData = Awaited<ReturnType<typeof listFp360DirectionThresholds>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionThresholds>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFp360DirectionThresholdsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpsertFp360DirectionThresholdUrl = (params: UpsertFp360DirectionThresholdParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/direction/thresholds?${stringifiedParams}` : `/api/redfp360/direction/thresholds`
+}
+
+/**
+ * @summary Configure a source-aware direction alert threshold
+ */
+export const upsertFp360DirectionThreshold = async (directionThresholdInput: DirectionThresholdInput,
+    params: UpsertFp360DirectionThresholdParams, options?: Parameters<typeof customFetch>[1]): Promise<DirectionThreshold> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionThreshold>(getUpsertFp360DirectionThresholdUrl(params),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(directionThresholdInput)
+  }
+);}
+
+
+
+
+
+export const getUpsertFp360DirectionThresholdMutationKey = () => ['upsertFp360DirectionThreshold'] as const;
+
+export const getUpsertFp360DirectionThresholdMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertFp360DirectionThreshold>>, TError,UpsertFp360DirectionThresholdMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertFp360DirectionThreshold>>, TError,UpsertFp360DirectionThresholdMutationVariables, TContext> => {
+
+const mutationKey = getUpsertFp360DirectionThresholdMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertFp360DirectionThreshold>>, UpsertFp360DirectionThresholdMutationVariables> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  upsertFp360DirectionThreshold(data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertFp360DirectionThresholdMutationResult = NonNullable<Awaited<ReturnType<typeof upsertFp360DirectionThreshold>>>
+    export type UpsertFp360DirectionThresholdMutationBody = BodyType<DirectionThresholdInput>
+    export type UpsertFp360DirectionThresholdMutationError = ErrorType<void>
+    export type UpsertFp360DirectionThresholdMutationVariables = {data: BodyType<DirectionThresholdInput>;params: UpsertFp360DirectionThresholdParams}
+
+    /**
+ * @summary Configure a source-aware direction alert threshold
+ */
+export const useUpsertFp360DirectionThreshold = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertFp360DirectionThreshold>>, TError,UpsertFp360DirectionThresholdMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof upsertFp360DirectionThreshold>>,
+        TError,
+        UpsertFp360DirectionThresholdMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpsertFp360DirectionThresholdMutationOptions(options), queryClient);
+    }
+
+export const getListFp360DirectionDecisionsUrl = () => {
+
+
+
+
+  return `/api/redfp360/direction/decisions`
+}
+
+/**
+ * @summary List decisions and their retained approval history
+ */
+export const listFp360DirectionDecisions = async ( options?: Parameters<typeof customFetch>[1]): Promise<DirectionDecision[]> => {
+
+  return customFetch<DirectionDecision[]>(getListFp360DirectionDecisionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFp360DirectionDecisionsQueryKey = () => {
+    return [
+    `/api/redfp360/direction/decisions`
+    ] as const;
+    }
+
+
+export const getListFp360DirectionDecisionsQueryOptions = <TData = Awaited<ReturnType<typeof listFp360DirectionDecisions>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionDecisions>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFp360DirectionDecisionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFp360DirectionDecisions>>> = ({ signal }) => listFp360DirectionDecisions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionDecisions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFp360DirectionDecisionsQueryResult = NonNullable<Awaited<ReturnType<typeof listFp360DirectionDecisions>>>
+export type ListFp360DirectionDecisionsQueryError = ErrorType<unknown>
+
+
+export function useListFp360DirectionDecisions<TData = Awaited<ReturnType<typeof listFp360DirectionDecisions>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionDecisions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionDecisions>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionDecisions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionDecisions<TData = Awaited<ReturnType<typeof listFp360DirectionDecisions>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionDecisions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionDecisions>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionDecisions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionDecisions<TData = Awaited<ReturnType<typeof listFp360DirectionDecisions>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionDecisions>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List decisions and their retained approval history
+ */
+
+export function useListFp360DirectionDecisions<TData = Awaited<ReturnType<typeof listFp360DirectionDecisions>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionDecisions>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFp360DirectionDecisionsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360DirectionDecisionUrl = () => {
+
+
+
+
+  return `/api/redfp360/direction/decisions`
+}
+
+/**
+ * @summary Submit a simulated management decision for review
+ */
+export const createFp360DirectionDecision = async (directionDecisionInput: DirectionDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<DirectionDecision> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionDecision>(getCreateFp360DirectionDecisionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(directionDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360DirectionDecisionMutationKey = () => ['createFp360DirectionDecision'] as const;
+
+export const getCreateFp360DirectionDecisionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360DirectionDecision>>, TError,CreateFp360DirectionDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360DirectionDecision>>, TError,CreateFp360DirectionDecisionMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360DirectionDecisionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360DirectionDecision>>, CreateFp360DirectionDecisionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360DirectionDecision(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360DirectionDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360DirectionDecision>>>
+    export type CreateFp360DirectionDecisionMutationBody = BodyType<DirectionDecisionInput>
+    export type CreateFp360DirectionDecisionMutationError = ErrorType<void>
+    export type CreateFp360DirectionDecisionMutationVariables = {data: BodyType<DirectionDecisionInput>}
+
+    /**
+ * @summary Submit a simulated management decision for review
+ */
+export const useCreateFp360DirectionDecision = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360DirectionDecision>>, TError,CreateFp360DirectionDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360DirectionDecision>>,
+        TError,
+        CreateFp360DirectionDecisionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360DirectionDecisionMutationOptions(options), queryClient);
+    }
+
+export const getDecideFp360DirectionDecisionUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/direction/decisions/${id}/decision`
+}
+
+/**
+ * @summary Approve or reject a decision with a retained reason
+ */
+export const decideFp360DirectionDecision = async (id: string,
+    directionDecisionReview: DirectionDecisionReview, options?: Parameters<typeof customFetch>[1]): Promise<DirectionDecision> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionDecision>(getDecideFp360DirectionDecisionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(directionDecisionReview)
+  }
+);}
+
+
+
+
+
+export const getDecideFp360DirectionDecisionMutationKey = () => ['decideFp360DirectionDecision'] as const;
+
+export const getDecideFp360DirectionDecisionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decideFp360DirectionDecision>>, TError,DecideFp360DirectionDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof decideFp360DirectionDecision>>, TError,DecideFp360DirectionDecisionMutationVariables, TContext> => {
+
+const mutationKey = getDecideFp360DirectionDecisionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof decideFp360DirectionDecision>>, DecideFp360DirectionDecisionMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  decideFp360DirectionDecision(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DecideFp360DirectionDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof decideFp360DirectionDecision>>>
+    export type DecideFp360DirectionDecisionMutationBody = BodyType<DirectionDecisionReview>
+    export type DecideFp360DirectionDecisionMutationError = ErrorType<void>
+    export type DecideFp360DirectionDecisionMutationVariables = {id: string;data: BodyType<DirectionDecisionReview>}
+
+    /**
+ * @summary Approve or reject a decision with a retained reason
+ */
+export const useDecideFp360DirectionDecision = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decideFp360DirectionDecision>>, TError,DecideFp360DirectionDecisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof decideFp360DirectionDecision>>,
+        TError,
+        DecideFp360DirectionDecisionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDecideFp360DirectionDecisionMutationOptions(options), queryClient);
+    }
+
+export const getListFp360DirectionObjectivesUrl = (params?: ListFp360DirectionObjectivesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/direction/objectives?${stringifiedParams}` : `/api/redfp360/direction/objectives`
+}
+
+/**
+ * @summary List tenant objectives for the selected periods
+ */
+export const listFp360DirectionObjectives = async (params?: ListFp360DirectionObjectivesParams, options?: Parameters<typeof customFetch>[1]): Promise<DirectionObjective[]> => {
+
+  return customFetch<DirectionObjective[]>(getListFp360DirectionObjectivesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFp360DirectionObjectivesQueryKey = (params?: ListFp360DirectionObjectivesParams,) => {
+    return [
+    `/api/redfp360/direction/objectives`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListFp360DirectionObjectivesQueryOptions = <TData = Awaited<ReturnType<typeof listFp360DirectionObjectives>>, TError = ErrorType<unknown>>(params?: ListFp360DirectionObjectivesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionObjectives>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFp360DirectionObjectivesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFp360DirectionObjectives>>> = ({ signal }) => listFp360DirectionObjectives(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionObjectives>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFp360DirectionObjectivesQueryResult = NonNullable<Awaited<ReturnType<typeof listFp360DirectionObjectives>>>
+export type ListFp360DirectionObjectivesQueryError = ErrorType<unknown>
+
+
+export function useListFp360DirectionObjectives<TData = Awaited<ReturnType<typeof listFp360DirectionObjectives>>, TError = ErrorType<unknown>>(
+ params: undefined |  ListFp360DirectionObjectivesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionObjectives>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionObjectives>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionObjectives>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionObjectives<TData = Awaited<ReturnType<typeof listFp360DirectionObjectives>>, TError = ErrorType<unknown>>(
+ params?: ListFp360DirectionObjectivesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionObjectives>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionObjectives>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionObjectives>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionObjectives<TData = Awaited<ReturnType<typeof listFp360DirectionObjectives>>, TError = ErrorType<unknown>>(
+ params?: ListFp360DirectionObjectivesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionObjectives>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List tenant objectives for the selected periods
+ */
+
+export function useListFp360DirectionObjectives<TData = Awaited<ReturnType<typeof listFp360DirectionObjectives>>, TError = ErrorType<unknown>>(
+ params?: ListFp360DirectionObjectivesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionObjectives>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFp360DirectionObjectivesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360DirectionObjectiveUrl = () => {
+
+
+
+
+  return `/api/redfp360/direction/objectives`
+}
+
+/**
+ * @summary Set a simulated company objective
+ */
+export const createFp360DirectionObjective = async (directionObjectiveInput: DirectionObjectiveInput, options?: Parameters<typeof customFetch>[1]): Promise<DirectionObjective> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionObjective>(getCreateFp360DirectionObjectiveUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(directionObjectiveInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360DirectionObjectiveMutationKey = () => ['createFp360DirectionObjective'] as const;
+
+export const getCreateFp360DirectionObjectiveMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360DirectionObjective>>, TError,CreateFp360DirectionObjectiveMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360DirectionObjective>>, TError,CreateFp360DirectionObjectiveMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360DirectionObjectiveMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360DirectionObjective>>, CreateFp360DirectionObjectiveMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360DirectionObjective(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360DirectionObjectiveMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360DirectionObjective>>>
+    export type CreateFp360DirectionObjectiveMutationBody = BodyType<DirectionObjectiveInput>
+    export type CreateFp360DirectionObjectiveMutationError = ErrorType<void>
+    export type CreateFp360DirectionObjectiveMutationVariables = {data: BodyType<DirectionObjectiveInput>}
+
+    /**
+ * @summary Set a simulated company objective
+ */
+export const useCreateFp360DirectionObjective = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360DirectionObjective>>, TError,CreateFp360DirectionObjectiveMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360DirectionObjective>>,
+        TError,
+        CreateFp360DirectionObjectiveMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360DirectionObjectiveMutationOptions(options), queryClient);
+    }
+
+export const getUpdateFp360DirectionObjectiveUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/direction/objectives/${id}`
+}
+
+/**
+ * @summary Update a simulated company objective
+ */
+export const updateFp360DirectionObjective = async (id: string,
+    directionObjectiveInput: DirectionObjectiveInput, options?: Parameters<typeof customFetch>[1]): Promise<DirectionObjective> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionObjective>(getUpdateFp360DirectionObjectiveUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(directionObjectiveInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateFp360DirectionObjectiveMutationKey = () => ['updateFp360DirectionObjective'] as const;
+
+export const getUpdateFp360DirectionObjectiveMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360DirectionObjective>>, TError,UpdateFp360DirectionObjectiveMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFp360DirectionObjective>>, TError,UpdateFp360DirectionObjectiveMutationVariables, TContext> => {
+
+const mutationKey = getUpdateFp360DirectionObjectiveMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFp360DirectionObjective>>, UpdateFp360DirectionObjectiveMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateFp360DirectionObjective(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFp360DirectionObjectiveMutationResult = NonNullable<Awaited<ReturnType<typeof updateFp360DirectionObjective>>>
+    export type UpdateFp360DirectionObjectiveMutationBody = BodyType<DirectionObjectiveInput>
+    export type UpdateFp360DirectionObjectiveMutationError = ErrorType<void>
+    export type UpdateFp360DirectionObjectiveMutationVariables = {id: string;data: BodyType<DirectionObjectiveInput>}
+
+    /**
+ * @summary Update a simulated company objective
+ */
+export const useUpdateFp360DirectionObjective = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360DirectionObjective>>, TError,UpdateFp360DirectionObjectiveMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateFp360DirectionObjective>>,
+        TError,
+        UpdateFp360DirectionObjectiveMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateFp360DirectionObjectiveMutationOptions(options), queryClient);
+    }
+
+export const getListFp360DirectionReportsUrl = () => {
+
+
+
+
+  return `/api/redfp360/direction/reports`
+}
+
+/**
+ * @summary List direction reports visible to the authenticated role
+ */
+export const listFp360DirectionReports = async ( options?: Parameters<typeof customFetch>[1]): Promise<DirectionReport[]> => {
+
+  return customFetch<DirectionReport[]>(getListFp360DirectionReportsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFp360DirectionReportsQueryKey = () => {
+    return [
+    `/api/redfp360/direction/reports`
+    ] as const;
+    }
+
+
+export const getListFp360DirectionReportsQueryOptions = <TData = Awaited<ReturnType<typeof listFp360DirectionReports>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionReports>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFp360DirectionReportsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFp360DirectionReports>>> = ({ signal }) => listFp360DirectionReports({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionReports>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFp360DirectionReportsQueryResult = NonNullable<Awaited<ReturnType<typeof listFp360DirectionReports>>>
+export type ListFp360DirectionReportsQueryError = ErrorType<unknown>
+
+
+export function useListFp360DirectionReports<TData = Awaited<ReturnType<typeof listFp360DirectionReports>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionReports>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionReports>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionReports>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionReports<TData = Awaited<ReturnType<typeof listFp360DirectionReports>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionReports>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionReports>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionReports>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionReports<TData = Awaited<ReturnType<typeof listFp360DirectionReports>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionReports>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List direction reports visible to the authenticated role
+ */
+
+export function useListFp360DirectionReports<TData = Awaited<ReturnType<typeof listFp360DirectionReports>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionReports>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFp360DirectionReportsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360DirectionReportUrl = () => {
+
+
+
+
+  return `/api/redfp360/direction/reports`
+}
+
+/**
+ * @summary Save a source-backed report snapshot for a period
+ */
+export const createFp360DirectionReport = async (directionReportInput: DirectionReportInput, options?: Parameters<typeof customFetch>[1]): Promise<DirectionReport> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DirectionReport>(getCreateFp360DirectionReportUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(directionReportInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360DirectionReportMutationKey = () => ['createFp360DirectionReport'] as const;
+
+export const getCreateFp360DirectionReportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360DirectionReport>>, TError,CreateFp360DirectionReportMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360DirectionReport>>, TError,CreateFp360DirectionReportMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360DirectionReportMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360DirectionReport>>, CreateFp360DirectionReportMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360DirectionReport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360DirectionReportMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360DirectionReport>>>
+    export type CreateFp360DirectionReportMutationBody = BodyType<DirectionReportInput>
+    export type CreateFp360DirectionReportMutationError = ErrorType<void>
+    export type CreateFp360DirectionReportMutationVariables = {data: BodyType<DirectionReportInput>}
+
+    /**
+ * @summary Save a source-backed report snapshot for a period
+ */
+export const useCreateFp360DirectionReport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360DirectionReport>>, TError,CreateFp360DirectionReportMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360DirectionReport>>,
+        TError,
+        CreateFp360DirectionReportMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360DirectionReportMutationOptions(options), queryClient);
+    }
+
+export const getGetFp360DirectionReportUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/direction/reports/${id}`
+}
+
+/**
+ * @summary Get a saved report visible to the authenticated role
+ */
+export const getFp360DirectionReport = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<DirectionReport> => {
+
+  return customFetch<DirectionReport>(getGetFp360DirectionReportUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360DirectionReportQueryKey = (id: string,) => {
+    return [
+    `/api/redfp360/direction/reports/${id}`
+    ] as const;
+    }
+
+
+export const getGetFp360DirectionReportQueryOptions = <TData = Awaited<ReturnType<typeof getFp360DirectionReport>>, TError = ErrorType<void>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionReport>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360DirectionReportQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360DirectionReport>>> = ({ signal }) => getFp360DirectionReport(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionReport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360DirectionReportQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360DirectionReport>>>
+export type GetFp360DirectionReportQueryError = ErrorType<void>
+
+
+export function useGetFp360DirectionReport<TData = Awaited<ReturnType<typeof getFp360DirectionReport>>, TError = ErrorType<void>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionReport>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360DirectionReport>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360DirectionReport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360DirectionReport<TData = Awaited<ReturnType<typeof getFp360DirectionReport>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionReport>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360DirectionReport>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360DirectionReport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360DirectionReport<TData = Awaited<ReturnType<typeof getFp360DirectionReport>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionReport>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get a saved report visible to the authenticated role
+ */
+
+export function useGetFp360DirectionReport<TData = Awaited<ReturnType<typeof getFp360DirectionReport>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionReport>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360DirectionReportQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListFp360DirectionEventsUrl = (params?: ListFp360DirectionEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/direction/events?${stringifiedParams}` : `/api/redfp360/direction/events`
+}
+
+/**
+ * @summary Read the retained direction audit trail
+ */
+export const listFp360DirectionEvents = async (params?: ListFp360DirectionEventsParams, options?: Parameters<typeof customFetch>[1]): Promise<DirectionEvent[]> => {
+
+  return customFetch<DirectionEvent[]>(getListFp360DirectionEventsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFp360DirectionEventsQueryKey = (params?: ListFp360DirectionEventsParams,) => {
+    return [
+    `/api/redfp360/direction/events`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListFp360DirectionEventsQueryOptions = <TData = Awaited<ReturnType<typeof listFp360DirectionEvents>>, TError = ErrorType<unknown>>(params?: ListFp360DirectionEventsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionEvents>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFp360DirectionEventsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFp360DirectionEvents>>> = ({ signal }) => listFp360DirectionEvents(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionEvents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFp360DirectionEventsQueryResult = NonNullable<Awaited<ReturnType<typeof listFp360DirectionEvents>>>
+export type ListFp360DirectionEventsQueryError = ErrorType<unknown>
+
+
+export function useListFp360DirectionEvents<TData = Awaited<ReturnType<typeof listFp360DirectionEvents>>, TError = ErrorType<unknown>>(
+ params: undefined |  ListFp360DirectionEventsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionEvents>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionEvents>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionEvents>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionEvents<TData = Awaited<ReturnType<typeof listFp360DirectionEvents>>, TError = ErrorType<unknown>>(
+ params?: ListFp360DirectionEventsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionEvents>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360DirectionEvents>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360DirectionEvents>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360DirectionEvents<TData = Awaited<ReturnType<typeof listFp360DirectionEvents>>, TError = ErrorType<unknown>>(
+ params?: ListFp360DirectionEventsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionEvents>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Read the retained direction audit trail
+ */
+
+export function useListFp360DirectionEvents<TData = Awaited<ReturnType<typeof listFp360DirectionEvents>>, TError = ErrorType<unknown>>(
+ params?: ListFp360DirectionEventsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360DirectionEvents>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFp360DirectionEventsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getListFp360OrganizationsUrl = () => {
 
 
@@ -1953,6 +3841,522 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getUpdateFp360ProductMutationOptions(options), queryClient);
     }
 
+export const getListFp360ProductPriceVersionsUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/products/${id}/price-versions`
+}
+
+export const listFp360ProductPriceVersions = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProductPriceVersion[]> => {
+
+  return customFetch<Fp360ProductPriceVersion[]>(getListFp360ProductPriceVersionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFp360ProductPriceVersionsQueryKey = (id: string,) => {
+    return [
+    `/api/redfp360/products/${id}/price-versions`
+    ] as const;
+    }
+
+
+export const getListFp360ProductPriceVersionsQueryOptions = <TData = Awaited<ReturnType<typeof listFp360ProductPriceVersions>>, TError = ErrorType<void>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360ProductPriceVersions>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFp360ProductPriceVersionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFp360ProductPriceVersions>>> = ({ signal }) => listFp360ProductPriceVersions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFp360ProductPriceVersions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFp360ProductPriceVersionsQueryResult = NonNullable<Awaited<ReturnType<typeof listFp360ProductPriceVersions>>>
+export type ListFp360ProductPriceVersionsQueryError = ErrorType<void>
+
+
+export function useListFp360ProductPriceVersions<TData = Awaited<ReturnType<typeof listFp360ProductPriceVersions>>, TError = ErrorType<void>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360ProductPriceVersions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360ProductPriceVersions>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360ProductPriceVersions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360ProductPriceVersions<TData = Awaited<ReturnType<typeof listFp360ProductPriceVersions>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360ProductPriceVersions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360ProductPriceVersions>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360ProductPriceVersions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360ProductPriceVersions<TData = Awaited<ReturnType<typeof listFp360ProductPriceVersions>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360ProductPriceVersions>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListFp360ProductPriceVersions<TData = Awaited<ReturnType<typeof listFp360ProductPriceVersions>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360ProductPriceVersions>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFp360ProductPriceVersionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListFp360ProductDocumentsUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/products/${id}/documents`
+}
+
+export const listFp360ProductDocuments = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProductDocument[]> => {
+
+  return customFetch<Fp360ProductDocument[]>(getListFp360ProductDocumentsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFp360ProductDocumentsQueryKey = (id: string,) => {
+    return [
+    `/api/redfp360/products/${id}/documents`
+    ] as const;
+    }
+
+
+export const getListFp360ProductDocumentsQueryOptions = <TData = Awaited<ReturnType<typeof listFp360ProductDocuments>>, TError = ErrorType<void>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360ProductDocuments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFp360ProductDocumentsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFp360ProductDocuments>>> = ({ signal }) => listFp360ProductDocuments(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFp360ProductDocuments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFp360ProductDocumentsQueryResult = NonNullable<Awaited<ReturnType<typeof listFp360ProductDocuments>>>
+export type ListFp360ProductDocumentsQueryError = ErrorType<void>
+
+
+export function useListFp360ProductDocuments<TData = Awaited<ReturnType<typeof listFp360ProductDocuments>>, TError = ErrorType<void>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360ProductDocuments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360ProductDocuments>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360ProductDocuments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360ProductDocuments<TData = Awaited<ReturnType<typeof listFp360ProductDocuments>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360ProductDocuments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360ProductDocuments>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360ProductDocuments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360ProductDocuments<TData = Awaited<ReturnType<typeof listFp360ProductDocuments>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360ProductDocuments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListFp360ProductDocuments<TData = Awaited<ReturnType<typeof listFp360ProductDocuments>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360ProductDocuments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFp360ProductDocumentsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRequestFp360ProductDocumentUploadUrlUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/products/${id}/documents/upload-url`
+}
+
+export const requestFp360ProductDocumentUploadUrl = async (id: string,
+    fp360ProductDocumentUploadUrlInput: Fp360ProductDocumentUploadUrlInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProductDocumentUploadUrl> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProductDocumentUploadUrl>(getRequestFp360ProductDocumentUploadUrlUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProductDocumentUploadUrlInput)
+  }
+);}
+
+
+
+
+
+export const getRequestFp360ProductDocumentUploadUrlMutationKey = () => ['requestFp360ProductDocumentUploadUrl'] as const;
+
+export const getRequestFp360ProductDocumentUploadUrlMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestFp360ProductDocumentUploadUrl>>, TError,RequestFp360ProductDocumentUploadUrlMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestFp360ProductDocumentUploadUrl>>, TError,RequestFp360ProductDocumentUploadUrlMutationVariables, TContext> => {
+
+const mutationKey = getRequestFp360ProductDocumentUploadUrlMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestFp360ProductDocumentUploadUrl>>, RequestFp360ProductDocumentUploadUrlMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  requestFp360ProductDocumentUploadUrl(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestFp360ProductDocumentUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestFp360ProductDocumentUploadUrl>>>
+    export type RequestFp360ProductDocumentUploadUrlMutationBody = BodyType<Fp360ProductDocumentUploadUrlInput>
+    export type RequestFp360ProductDocumentUploadUrlMutationError = ErrorType<void>
+    export type RequestFp360ProductDocumentUploadUrlMutationVariables = {id: string;data: BodyType<Fp360ProductDocumentUploadUrlInput>}
+
+    export const useRequestFp360ProductDocumentUploadUrl = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestFp360ProductDocumentUploadUrl>>, TError,RequestFp360ProductDocumentUploadUrlMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof requestFp360ProductDocumentUploadUrl>>,
+        TError,
+        RequestFp360ProductDocumentUploadUrlMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestFp360ProductDocumentUploadUrlMutationOptions(options), queryClient);
+    }
+
+export const getCompleteFp360ProductDocumentUploadUrl = (id: string,
+    documentId: string,) => {
+
+
+
+
+  return `/api/redfp360/products/${id}/documents/${documentId}/complete`
+}
+
+export const completeFp360ProductDocumentUpload = async (id: string,
+    documentId: string, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProductDocument> => {
+
+  return customFetch<Fp360ProductDocument>(getCompleteFp360ProductDocumentUploadUrl(id,documentId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompleteFp360ProductDocumentUploadMutationKey = () => ['completeFp360ProductDocumentUpload'] as const;
+
+export const getCompleteFp360ProductDocumentUploadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeFp360ProductDocumentUpload>>, TError,CompleteFp360ProductDocumentUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeFp360ProductDocumentUpload>>, TError,CompleteFp360ProductDocumentUploadMutationVariables, TContext> => {
+
+const mutationKey = getCompleteFp360ProductDocumentUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeFp360ProductDocumentUpload>>, CompleteFp360ProductDocumentUploadMutationVariables> = (props) => {
+          const {id,documentId} = props ?? {};
+
+          return  completeFp360ProductDocumentUpload(id,documentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteFp360ProductDocumentUploadMutationResult = NonNullable<Awaited<ReturnType<typeof completeFp360ProductDocumentUpload>>>
+
+    export type CompleteFp360ProductDocumentUploadMutationError = ErrorType<void>
+    export type CompleteFp360ProductDocumentUploadMutationVariables = {id: string;documentId: string}
+
+    export const useCompleteFp360ProductDocumentUpload = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeFp360ProductDocumentUpload>>, TError,CompleteFp360ProductDocumentUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof completeFp360ProductDocumentUpload>>,
+        TError,
+        CompleteFp360ProductDocumentUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteFp360ProductDocumentUploadMutationOptions(options), queryClient);
+    }
+
+export const getDownloadFp360ProductDocumentUrl = (id: string,
+    documentId: string,) => {
+
+
+
+
+  return `/api/redfp360/products/${id}/documents/${documentId}/download`
+}
+
+export const downloadFp360ProductDocument = async (id: string,
+    documentId: string, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getDownloadFp360ProductDocumentUrl(id,documentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadFp360ProductDocumentQueryKey = (id: string,
+    documentId: string,) => {
+    return [
+    `/api/redfp360/products/${id}/documents/${documentId}/download`
+    ] as const;
+    }
+
+
+export const getDownloadFp360ProductDocumentQueryOptions = <TData = Awaited<ReturnType<typeof downloadFp360ProductDocument>>, TError = ErrorType<void>>(id: string,
+    documentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360ProductDocument>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadFp360ProductDocumentQueryKey(id,documentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadFp360ProductDocument>>> = ({ signal }) => downloadFp360ProductDocument(id,documentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && documentId !== null && documentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadFp360ProductDocument>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DownloadFp360ProductDocumentQueryResult = NonNullable<Awaited<ReturnType<typeof downloadFp360ProductDocument>>>
+export type DownloadFp360ProductDocumentQueryError = ErrorType<void>
+
+
+export function useDownloadFp360ProductDocument<TData = Awaited<ReturnType<typeof downloadFp360ProductDocument>>, TError = ErrorType<void>>(
+ id: string,
+    documentId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360ProductDocument>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadFp360ProductDocument>>,
+          TError,
+          Awaited<ReturnType<typeof downloadFp360ProductDocument>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadFp360ProductDocument<TData = Awaited<ReturnType<typeof downloadFp360ProductDocument>>, TError = ErrorType<void>>(
+ id: string,
+    documentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360ProductDocument>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadFp360ProductDocument>>,
+          TError,
+          Awaited<ReturnType<typeof downloadFp360ProductDocument>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadFp360ProductDocument<TData = Awaited<ReturnType<typeof downloadFp360ProductDocument>>, TError = ErrorType<void>>(
+ id: string,
+    documentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360ProductDocument>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useDownloadFp360ProductDocument<TData = Awaited<ReturnType<typeof downloadFp360ProductDocument>>, TError = ErrorType<void>>(
+ id: string,
+    documentId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360ProductDocument>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDownloadFp360ProductDocumentQueryOptions(id,documentId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteFp360ProductDocumentUrl = (id: string,
+    documentId: string,) => {
+
+
+
+
+  return `/api/redfp360/products/${id}/documents/${documentId}`
+}
+
+export const deleteFp360ProductDocument = async (id: string,
+    documentId: string, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProductDocumentDeleteResponse> => {
+
+  return customFetch<Fp360ProductDocumentDeleteResponse>(getDeleteFp360ProductDocumentUrl(id,documentId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteFp360ProductDocumentMutationKey = () => ['deleteFp360ProductDocument'] as const;
+
+export const getDeleteFp360ProductDocumentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFp360ProductDocument>>, TError,DeleteFp360ProductDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteFp360ProductDocument>>, TError,DeleteFp360ProductDocumentMutationVariables, TContext> => {
+
+const mutationKey = getDeleteFp360ProductDocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteFp360ProductDocument>>, DeleteFp360ProductDocumentMutationVariables> = (props) => {
+          const {id,documentId} = props ?? {};
+
+          return  deleteFp360ProductDocument(id,documentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteFp360ProductDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteFp360ProductDocument>>>
+
+    export type DeleteFp360ProductDocumentMutationError = ErrorType<void>
+    export type DeleteFp360ProductDocumentMutationVariables = {id: string;documentId: string}
+
+    export const useDeleteFp360ProductDocument = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteFp360ProductDocument>>, TError,DeleteFp360ProductDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteFp360ProductDocument>>,
+        TError,
+        DeleteFp360ProductDocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteFp360ProductDocumentMutationOptions(options), queryClient);
+    }
+
 export const getListFp360StockAdjustmentsUrl = (id: string,) => {
 
 
@@ -2129,6 +4533,2553 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getAdjustFp360StockMutationOptions(options), queryClient);
+    }
+
+export const getListPurchaseRequestsUrl = () => {
+
+
+
+
+  return `/api/redfp360/purchases/requests`
+}
+
+export const listPurchaseRequests = async ( options?: Parameters<typeof customFetch>[1]): Promise<PurchaseRequestSummary[]> => {
+
+  return customFetch<PurchaseRequestSummary[]>(getListPurchaseRequestsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPurchaseRequestsQueryKey = () => {
+    return [
+    `/api/redfp360/purchases/requests`
+    ] as const;
+    }
+
+
+export const getListPurchaseRequestsQueryOptions = <TData = Awaited<ReturnType<typeof listPurchaseRequests>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseRequests>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPurchaseRequestsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPurchaseRequests>>> = ({ signal }) => listPurchaseRequests({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPurchaseRequests>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPurchaseRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof listPurchaseRequests>>>
+export type ListPurchaseRequestsQueryError = ErrorType<unknown>
+
+
+export function useListPurchaseRequests<TData = Awaited<ReturnType<typeof listPurchaseRequests>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseRequests>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseRequests>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseRequests>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseRequests<TData = Awaited<ReturnType<typeof listPurchaseRequests>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseRequests>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseRequests>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseRequests>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseRequests<TData = Awaited<ReturnType<typeof listPurchaseRequests>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseRequests>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPurchaseRequests<TData = Awaited<ReturnType<typeof listPurchaseRequests>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseRequests>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPurchaseRequestsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePurchaseRequestUrl = () => {
+
+
+
+
+  return `/api/redfp360/purchases/requests`
+}
+
+export const createPurchaseRequest = async (purchaseRequestInput: PurchaseRequestInput, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseRequest> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PurchaseRequest>(getCreatePurchaseRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(purchaseRequestInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePurchaseRequestMutationKey = () => ['createPurchaseRequest'] as const;
+
+export const getCreatePurchaseRequestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPurchaseRequest>>, TError,CreatePurchaseRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPurchaseRequest>>, TError,CreatePurchaseRequestMutationVariables, TContext> => {
+
+const mutationKey = getCreatePurchaseRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPurchaseRequest>>, CreatePurchaseRequestMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPurchaseRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePurchaseRequestMutationResult = NonNullable<Awaited<ReturnType<typeof createPurchaseRequest>>>
+    export type CreatePurchaseRequestMutationBody = BodyType<PurchaseRequestInput>
+    export type CreatePurchaseRequestMutationError = ErrorType<void>
+    export type CreatePurchaseRequestMutationVariables = {data: BodyType<PurchaseRequestInput>}
+
+    export const useCreatePurchaseRequest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPurchaseRequest>>, TError,CreatePurchaseRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createPurchaseRequest>>,
+        TError,
+        CreatePurchaseRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreatePurchaseRequestMutationOptions(options), queryClient);
+    }
+
+export const getGetPurchaseRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/purchases/requests/${id}`
+}
+
+export const getPurchaseRequest = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseRequest> => {
+
+  return customFetch<PurchaseRequest>(getGetPurchaseRequestUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPurchaseRequestQueryKey = (id: string,) => {
+    return [
+    `/api/redfp360/purchases/requests/${id}`
+    ] as const;
+    }
+
+
+export const getGetPurchaseRequestQueryOptions = <TData = Awaited<ReturnType<typeof getPurchaseRequest>>, TError = ErrorType<void>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPurchaseRequest>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPurchaseRequestQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPurchaseRequest>>> = ({ signal }) => getPurchaseRequest(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPurchaseRequest>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPurchaseRequestQueryResult = NonNullable<Awaited<ReturnType<typeof getPurchaseRequest>>>
+export type GetPurchaseRequestQueryError = ErrorType<void>
+
+
+export function useGetPurchaseRequest<TData = Awaited<ReturnType<typeof getPurchaseRequest>>, TError = ErrorType<void>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPurchaseRequest>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPurchaseRequest>>,
+          TError,
+          Awaited<ReturnType<typeof getPurchaseRequest>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPurchaseRequest<TData = Awaited<ReturnType<typeof getPurchaseRequest>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPurchaseRequest>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPurchaseRequest>>,
+          TError,
+          Awaited<ReturnType<typeof getPurchaseRequest>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPurchaseRequest<TData = Awaited<ReturnType<typeof getPurchaseRequest>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPurchaseRequest>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetPurchaseRequest<TData = Awaited<ReturnType<typeof getPurchaseRequest>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPurchaseRequest>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPurchaseRequestQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSubmitPurchaseRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/purchases/requests/${id}/submit`
+}
+
+export const submitPurchaseRequest = async (id: string,
+    purchaseRequestTransitionInput: PurchaseRequestTransitionInput, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseRequest> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PurchaseRequest>(getSubmitPurchaseRequestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(purchaseRequestTransitionInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitPurchaseRequestMutationKey = () => ['submitPurchaseRequest'] as const;
+
+export const getSubmitPurchaseRequestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitPurchaseRequest>>, TError,SubmitPurchaseRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitPurchaseRequest>>, TError,SubmitPurchaseRequestMutationVariables, TContext> => {
+
+const mutationKey = getSubmitPurchaseRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitPurchaseRequest>>, SubmitPurchaseRequestMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  submitPurchaseRequest(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitPurchaseRequestMutationResult = NonNullable<Awaited<ReturnType<typeof submitPurchaseRequest>>>
+    export type SubmitPurchaseRequestMutationBody = BodyType<PurchaseRequestTransitionInput>
+    export type SubmitPurchaseRequestMutationError = ErrorType<void>
+    export type SubmitPurchaseRequestMutationVariables = {id: string;data: BodyType<PurchaseRequestTransitionInput>}
+
+    export const useSubmitPurchaseRequest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitPurchaseRequest>>, TError,SubmitPurchaseRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof submitPurchaseRequest>>,
+        TError,
+        SubmitPurchaseRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSubmitPurchaseRequestMutationOptions(options), queryClient);
+    }
+
+export const getListPurchaseOffersUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/purchases/requests/${id}/offers`
+}
+
+export const listPurchaseOffers = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseOffer[]> => {
+
+  return customFetch<PurchaseOffer[]>(getListPurchaseOffersUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPurchaseOffersQueryKey = (id: string,) => {
+    return [
+    `/api/redfp360/purchases/requests/${id}/offers`
+    ] as const;
+    }
+
+
+export const getListPurchaseOffersQueryOptions = <TData = Awaited<ReturnType<typeof listPurchaseOffers>>, TError = ErrorType<void>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseOffers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPurchaseOffersQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPurchaseOffers>>> = ({ signal }) => listPurchaseOffers(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPurchaseOffers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPurchaseOffersQueryResult = NonNullable<Awaited<ReturnType<typeof listPurchaseOffers>>>
+export type ListPurchaseOffersQueryError = ErrorType<void>
+
+
+export function useListPurchaseOffers<TData = Awaited<ReturnType<typeof listPurchaseOffers>>, TError = ErrorType<void>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseOffers>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseOffers>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseOffers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseOffers<TData = Awaited<ReturnType<typeof listPurchaseOffers>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseOffers>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseOffers>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseOffers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseOffers<TData = Awaited<ReturnType<typeof listPurchaseOffers>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseOffers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPurchaseOffers<TData = Awaited<ReturnType<typeof listPurchaseOffers>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseOffers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPurchaseOffersQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePurchaseOfferUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/purchases/requests/${id}/offers`
+}
+
+export const createPurchaseOffer = async (id: string,
+    purchaseOfferInput: PurchaseOfferInput, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseOffer> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PurchaseOffer>(getCreatePurchaseOfferUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(purchaseOfferInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePurchaseOfferMutationKey = () => ['createPurchaseOffer'] as const;
+
+export const getCreatePurchaseOfferMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPurchaseOffer>>, TError,CreatePurchaseOfferMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPurchaseOffer>>, TError,CreatePurchaseOfferMutationVariables, TContext> => {
+
+const mutationKey = getCreatePurchaseOfferMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPurchaseOffer>>, CreatePurchaseOfferMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createPurchaseOffer(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePurchaseOfferMutationResult = NonNullable<Awaited<ReturnType<typeof createPurchaseOffer>>>
+    export type CreatePurchaseOfferMutationBody = BodyType<PurchaseOfferInput>
+    export type CreatePurchaseOfferMutationError = ErrorType<void>
+    export type CreatePurchaseOfferMutationVariables = {id: string;data: BodyType<PurchaseOfferInput>}
+
+    export const useCreatePurchaseOffer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPurchaseOffer>>, TError,CreatePurchaseOfferMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createPurchaseOffer>>,
+        TError,
+        CreatePurchaseOfferMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreatePurchaseOfferMutationOptions(options), queryClient);
+    }
+
+export const getReviewPurchaseRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/purchases/requests/${id}/review`
+}
+
+export const reviewPurchaseRequest = async (id: string,
+    purchaseRequestTransitionInput: PurchaseRequestTransitionInput, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseRequest> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PurchaseRequest>(getReviewPurchaseRequestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(purchaseRequestTransitionInput)
+  }
+);}
+
+
+
+
+
+export const getReviewPurchaseRequestMutationKey = () => ['reviewPurchaseRequest'] as const;
+
+export const getReviewPurchaseRequestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewPurchaseRequest>>, TError,ReviewPurchaseRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewPurchaseRequest>>, TError,ReviewPurchaseRequestMutationVariables, TContext> => {
+
+const mutationKey = getReviewPurchaseRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewPurchaseRequest>>, ReviewPurchaseRequestMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviewPurchaseRequest(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewPurchaseRequestMutationResult = NonNullable<Awaited<ReturnType<typeof reviewPurchaseRequest>>>
+    export type ReviewPurchaseRequestMutationBody = BodyType<PurchaseRequestTransitionInput>
+    export type ReviewPurchaseRequestMutationError = ErrorType<void>
+    export type ReviewPurchaseRequestMutationVariables = {id: string;data: BodyType<PurchaseRequestTransitionInput>}
+
+    export const useReviewPurchaseRequest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewPurchaseRequest>>, TError,ReviewPurchaseRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviewPurchaseRequest>>,
+        TError,
+        ReviewPurchaseRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewPurchaseRequestMutationOptions(options), queryClient);
+    }
+
+export const getDecidePurchaseRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/purchases/requests/${id}/decision`
+}
+
+export const decidePurchaseRequest = async (id: string,
+    purchaseDecisionInput: PurchaseDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseRequest> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PurchaseRequest>(getDecidePurchaseRequestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(purchaseDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getDecidePurchaseRequestMutationKey = () => ['decidePurchaseRequest'] as const;
+
+export const getDecidePurchaseRequestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decidePurchaseRequest>>, TError,DecidePurchaseRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof decidePurchaseRequest>>, TError,DecidePurchaseRequestMutationVariables, TContext> => {
+
+const mutationKey = getDecidePurchaseRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof decidePurchaseRequest>>, DecidePurchaseRequestMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  decidePurchaseRequest(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DecidePurchaseRequestMutationResult = NonNullable<Awaited<ReturnType<typeof decidePurchaseRequest>>>
+    export type DecidePurchaseRequestMutationBody = BodyType<PurchaseDecisionInput>
+    export type DecidePurchaseRequestMutationError = ErrorType<void>
+    export type DecidePurchaseRequestMutationVariables = {id: string;data: BodyType<PurchaseDecisionInput>}
+
+    export const useDecidePurchaseRequest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decidePurchaseRequest>>, TError,DecidePurchaseRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof decidePurchaseRequest>>,
+        TError,
+        DecidePurchaseRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDecidePurchaseRequestMutationOptions(options), queryClient);
+    }
+
+export const getAwardPurchaseOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/purchases/requests/${id}/award`
+}
+
+export const awardPurchaseOrder = async (id: string,
+    purchaseAwardInput: PurchaseAwardInput, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseOrder> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PurchaseOrder>(getAwardPurchaseOrderUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(purchaseAwardInput)
+  }
+);}
+
+
+
+
+
+export const getAwardPurchaseOrderMutationKey = () => ['awardPurchaseOrder'] as const;
+
+export const getAwardPurchaseOrderMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof awardPurchaseOrder>>, TError,AwardPurchaseOrderMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof awardPurchaseOrder>>, TError,AwardPurchaseOrderMutationVariables, TContext> => {
+
+const mutationKey = getAwardPurchaseOrderMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof awardPurchaseOrder>>, AwardPurchaseOrderMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  awardPurchaseOrder(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AwardPurchaseOrderMutationResult = NonNullable<Awaited<ReturnType<typeof awardPurchaseOrder>>>
+    export type AwardPurchaseOrderMutationBody = BodyType<PurchaseAwardInput>
+    export type AwardPurchaseOrderMutationError = ErrorType<void>
+    export type AwardPurchaseOrderMutationVariables = {id: string;data: BodyType<PurchaseAwardInput>}
+
+    export const useAwardPurchaseOrder = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof awardPurchaseOrder>>, TError,AwardPurchaseOrderMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof awardPurchaseOrder>>,
+        TError,
+        AwardPurchaseOrderMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAwardPurchaseOrderMutationOptions(options), queryClient);
+    }
+
+export const getCancelPurchaseRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/purchases/requests/${id}/cancel`
+}
+
+export const cancelPurchaseRequest = async (id: string,
+    purchaseRequestTransitionInput: PurchaseRequestTransitionInput, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseRequest> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PurchaseRequest>(getCancelPurchaseRequestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(purchaseRequestTransitionInput)
+  }
+);}
+
+
+
+
+
+export const getCancelPurchaseRequestMutationKey = () => ['cancelPurchaseRequest'] as const;
+
+export const getCancelPurchaseRequestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelPurchaseRequest>>, TError,CancelPurchaseRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelPurchaseRequest>>, TError,CancelPurchaseRequestMutationVariables, TContext> => {
+
+const mutationKey = getCancelPurchaseRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelPurchaseRequest>>, CancelPurchaseRequestMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  cancelPurchaseRequest(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelPurchaseRequestMutationResult = NonNullable<Awaited<ReturnType<typeof cancelPurchaseRequest>>>
+    export type CancelPurchaseRequestMutationBody = BodyType<PurchaseRequestTransitionInput>
+    export type CancelPurchaseRequestMutationError = ErrorType<void>
+    export type CancelPurchaseRequestMutationVariables = {id: string;data: BodyType<PurchaseRequestTransitionInput>}
+
+    export const useCancelPurchaseRequest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelPurchaseRequest>>, TError,CancelPurchaseRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof cancelPurchaseRequest>>,
+        TError,
+        CancelPurchaseRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCancelPurchaseRequestMutationOptions(options), queryClient);
+    }
+
+export const getListPurchaseEventsUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/purchases/requests/${id}/events`
+}
+
+export const listPurchaseEvents = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseEvent[]> => {
+
+  return customFetch<PurchaseEvent[]>(getListPurchaseEventsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPurchaseEventsQueryKey = (id: string,) => {
+    return [
+    `/api/redfp360/purchases/requests/${id}/events`
+    ] as const;
+    }
+
+
+export const getListPurchaseEventsQueryOptions = <TData = Awaited<ReturnType<typeof listPurchaseEvents>>, TError = ErrorType<void>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseEvents>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPurchaseEventsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPurchaseEvents>>> = ({ signal }) => listPurchaseEvents(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPurchaseEvents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPurchaseEventsQueryResult = NonNullable<Awaited<ReturnType<typeof listPurchaseEvents>>>
+export type ListPurchaseEventsQueryError = ErrorType<void>
+
+
+export function useListPurchaseEvents<TData = Awaited<ReturnType<typeof listPurchaseEvents>>, TError = ErrorType<void>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseEvents>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseEvents>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseEvents>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseEvents<TData = Awaited<ReturnType<typeof listPurchaseEvents>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseEvents>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseEvents>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseEvents>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseEvents<TData = Awaited<ReturnType<typeof listPurchaseEvents>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseEvents>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPurchaseEvents<TData = Awaited<ReturnType<typeof listPurchaseEvents>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseEvents>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPurchaseEventsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListPurchaseOrdersUrl = () => {
+
+
+
+
+  return `/api/redfp360/purchases/orders`
+}
+
+export const listPurchaseOrders = async ( options?: Parameters<typeof customFetch>[1]): Promise<PurchaseOrder[]> => {
+
+  return customFetch<PurchaseOrder[]>(getListPurchaseOrdersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPurchaseOrdersQueryKey = () => {
+    return [
+    `/api/redfp360/purchases/orders`
+    ] as const;
+    }
+
+
+export const getListPurchaseOrdersQueryOptions = <TData = Awaited<ReturnType<typeof listPurchaseOrders>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseOrders>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPurchaseOrdersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPurchaseOrders>>> = ({ signal }) => listPurchaseOrders({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPurchaseOrders>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPurchaseOrdersQueryResult = NonNullable<Awaited<ReturnType<typeof listPurchaseOrders>>>
+export type ListPurchaseOrdersQueryError = ErrorType<unknown>
+
+
+export function useListPurchaseOrders<TData = Awaited<ReturnType<typeof listPurchaseOrders>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseOrders>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseOrders>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseOrders>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseOrders<TData = Awaited<ReturnType<typeof listPurchaseOrders>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseOrders>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseOrders>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseOrders>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseOrders<TData = Awaited<ReturnType<typeof listPurchaseOrders>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseOrders>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPurchaseOrders<TData = Awaited<ReturnType<typeof listPurchaseOrders>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseOrders>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPurchaseOrdersQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRecordPurchaseReceiptUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/purchases/orders/${id}/receipts`
+}
+
+export const recordPurchaseReceipt = async (id: string,
+    purchaseReceiptInput: PurchaseReceiptInput, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseReceipt> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PurchaseReceipt>(getRecordPurchaseReceiptUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(purchaseReceiptInput)
+  }
+);}
+
+
+
+
+
+export const getRecordPurchaseReceiptMutationKey = () => ['recordPurchaseReceipt'] as const;
+
+export const getRecordPurchaseReceiptMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordPurchaseReceipt>>, TError,RecordPurchaseReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordPurchaseReceipt>>, TError,RecordPurchaseReceiptMutationVariables, TContext> => {
+
+const mutationKey = getRecordPurchaseReceiptMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordPurchaseReceipt>>, RecordPurchaseReceiptMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  recordPurchaseReceipt(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordPurchaseReceiptMutationResult = NonNullable<Awaited<ReturnType<typeof recordPurchaseReceipt>>>
+    export type RecordPurchaseReceiptMutationBody = BodyType<PurchaseReceiptInput>
+    export type RecordPurchaseReceiptMutationError = ErrorType<void>
+    export type RecordPurchaseReceiptMutationVariables = {id: string;data: BodyType<PurchaseReceiptInput>}
+
+    export const useRecordPurchaseReceipt = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordPurchaseReceipt>>, TError,RecordPurchaseReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof recordPurchaseReceipt>>,
+        TError,
+        RecordPurchaseReceiptMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRecordPurchaseReceiptMutationOptions(options), queryClient);
+    }
+
+export const getListPurchaseReceiptsUrl = () => {
+
+
+
+
+  return `/api/redfp360/purchases/receipts`
+}
+
+export const listPurchaseReceipts = async ( options?: Parameters<typeof customFetch>[1]): Promise<PurchaseReceipt[]> => {
+
+  return customFetch<PurchaseReceipt[]>(getListPurchaseReceiptsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPurchaseReceiptsQueryKey = () => {
+    return [
+    `/api/redfp360/purchases/receipts`
+    ] as const;
+    }
+
+
+export const getListPurchaseReceiptsQueryOptions = <TData = Awaited<ReturnType<typeof listPurchaseReceipts>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseReceipts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPurchaseReceiptsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPurchaseReceipts>>> = ({ signal }) => listPurchaseReceipts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPurchaseReceipts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPurchaseReceiptsQueryResult = NonNullable<Awaited<ReturnType<typeof listPurchaseReceipts>>>
+export type ListPurchaseReceiptsQueryError = ErrorType<unknown>
+
+
+export function useListPurchaseReceipts<TData = Awaited<ReturnType<typeof listPurchaseReceipts>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseReceipts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseReceipts>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseReceipts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseReceipts<TData = Awaited<ReturnType<typeof listPurchaseReceipts>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseReceipts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseReceipts>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseReceipts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseReceipts<TData = Awaited<ReturnType<typeof listPurchaseReceipts>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseReceipts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPurchaseReceipts<TData = Awaited<ReturnType<typeof listPurchaseReceipts>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseReceipts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPurchaseReceiptsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePurchaseInvoiceUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/purchases/orders/${id}/invoices`
+}
+
+export const createPurchaseInvoice = async (id: string,
+    purchaseInvoiceInput: PurchaseInvoiceInput, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseInvoice> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PurchaseInvoice>(getCreatePurchaseInvoiceUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(purchaseInvoiceInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePurchaseInvoiceMutationKey = () => ['createPurchaseInvoice'] as const;
+
+export const getCreatePurchaseInvoiceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPurchaseInvoice>>, TError,CreatePurchaseInvoiceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPurchaseInvoice>>, TError,CreatePurchaseInvoiceMutationVariables, TContext> => {
+
+const mutationKey = getCreatePurchaseInvoiceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPurchaseInvoice>>, CreatePurchaseInvoiceMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createPurchaseInvoice(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePurchaseInvoiceMutationResult = NonNullable<Awaited<ReturnType<typeof createPurchaseInvoice>>>
+    export type CreatePurchaseInvoiceMutationBody = BodyType<PurchaseInvoiceInput>
+    export type CreatePurchaseInvoiceMutationError = ErrorType<void>
+    export type CreatePurchaseInvoiceMutationVariables = {id: string;data: BodyType<PurchaseInvoiceInput>}
+
+    export const useCreatePurchaseInvoice = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPurchaseInvoice>>, TError,CreatePurchaseInvoiceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createPurchaseInvoice>>,
+        TError,
+        CreatePurchaseInvoiceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreatePurchaseInvoiceMutationOptions(options), queryClient);
+    }
+
+export const getListPurchaseInvoicesUrl = () => {
+
+
+
+
+  return `/api/redfp360/purchases/invoices`
+}
+
+export const listPurchaseInvoices = async ( options?: Parameters<typeof customFetch>[1]): Promise<PurchaseInvoice[]> => {
+
+  return customFetch<PurchaseInvoice[]>(getListPurchaseInvoicesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPurchaseInvoicesQueryKey = () => {
+    return [
+    `/api/redfp360/purchases/invoices`
+    ] as const;
+    }
+
+
+export const getListPurchaseInvoicesQueryOptions = <TData = Awaited<ReturnType<typeof listPurchaseInvoices>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseInvoices>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPurchaseInvoicesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPurchaseInvoices>>> = ({ signal }) => listPurchaseInvoices({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPurchaseInvoices>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPurchaseInvoicesQueryResult = NonNullable<Awaited<ReturnType<typeof listPurchaseInvoices>>>
+export type ListPurchaseInvoicesQueryError = ErrorType<unknown>
+
+
+export function useListPurchaseInvoices<TData = Awaited<ReturnType<typeof listPurchaseInvoices>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseInvoices>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseInvoices>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseInvoices>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseInvoices<TData = Awaited<ReturnType<typeof listPurchaseInvoices>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseInvoices>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseInvoices>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseInvoices>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseInvoices<TData = Awaited<ReturnType<typeof listPurchaseInvoices>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseInvoices>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPurchaseInvoices<TData = Awaited<ReturnType<typeof listPurchaseInvoices>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseInvoices>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPurchaseInvoicesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDecidePurchaseInvoiceUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/purchases/invoices/${id}/decision`
+}
+
+export const decidePurchaseInvoice = async (id: string,
+    purchaseInvoiceDecisionInput: PurchaseInvoiceDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<PurchaseInvoice> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PurchaseInvoice>(getDecidePurchaseInvoiceUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(purchaseInvoiceDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getDecidePurchaseInvoiceMutationKey = () => ['decidePurchaseInvoice'] as const;
+
+export const getDecidePurchaseInvoiceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decidePurchaseInvoice>>, TError,DecidePurchaseInvoiceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof decidePurchaseInvoice>>, TError,DecidePurchaseInvoiceMutationVariables, TContext> => {
+
+const mutationKey = getDecidePurchaseInvoiceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof decidePurchaseInvoice>>, DecidePurchaseInvoiceMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  decidePurchaseInvoice(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DecidePurchaseInvoiceMutationResult = NonNullable<Awaited<ReturnType<typeof decidePurchaseInvoice>>>
+    export type DecidePurchaseInvoiceMutationBody = BodyType<PurchaseInvoiceDecisionInput>
+    export type DecidePurchaseInvoiceMutationError = ErrorType<void>
+    export type DecidePurchaseInvoiceMutationVariables = {id: string;data: BodyType<PurchaseInvoiceDecisionInput>}
+
+    export const useDecidePurchaseInvoice = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decidePurchaseInvoice>>, TError,DecidePurchaseInvoiceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof decidePurchaseInvoice>>,
+        TError,
+        DecidePurchaseInvoiceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDecidePurchaseInvoiceMutationOptions(options), queryClient);
+    }
+
+export const getListPurchaseSupplierAnalysisUrl = () => {
+
+
+
+
+  return `/api/redfp360/purchases/supplier-analysis`
+}
+
+export const listPurchaseSupplierAnalysis = async ( options?: Parameters<typeof customFetch>[1]): Promise<PurchaseSupplierMetric[]> => {
+
+  return customFetch<PurchaseSupplierMetric[]>(getListPurchaseSupplierAnalysisUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPurchaseSupplierAnalysisQueryKey = () => {
+    return [
+    `/api/redfp360/purchases/supplier-analysis`
+    ] as const;
+    }
+
+
+export const getListPurchaseSupplierAnalysisQueryOptions = <TData = Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPurchaseSupplierAnalysisQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>> = ({ signal }) => listPurchaseSupplierAnalysis({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPurchaseSupplierAnalysisQueryResult = NonNullable<Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>>
+export type ListPurchaseSupplierAnalysisQueryError = ErrorType<unknown>
+
+
+export function useListPurchaseSupplierAnalysis<TData = Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseSupplierAnalysis<TData = Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>,
+          TError,
+          Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPurchaseSupplierAnalysis<TData = Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPurchaseSupplierAnalysis<TData = Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPurchaseSupplierAnalysis>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPurchaseSupplierAnalysisQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListCrmContactsUrl = () => {
+
+
+
+
+  return `/api/redfp360/crm/contacts`
+}
+
+export const listCrmContacts = async ( options?: Parameters<typeof customFetch>[1]): Promise<CrmContact[]> => {
+
+  return customFetch<CrmContact[]>(getListCrmContactsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrmContactsQueryKey = () => {
+    return [
+    `/api/redfp360/crm/contacts`
+    ] as const;
+    }
+
+
+export const getListCrmContactsQueryOptions = <TData = Awaited<ReturnType<typeof listCrmContacts>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmContacts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrmContactsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrmContacts>>> = ({ signal }) => listCrmContacts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrmContacts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListCrmContactsQueryResult = NonNullable<Awaited<ReturnType<typeof listCrmContacts>>>
+export type ListCrmContactsQueryError = ErrorType<unknown>
+
+
+export function useListCrmContacts<TData = Awaited<ReturnType<typeof listCrmContacts>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmContacts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCrmContacts>>,
+          TError,
+          Awaited<ReturnType<typeof listCrmContacts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCrmContacts<TData = Awaited<ReturnType<typeof listCrmContacts>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmContacts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCrmContacts>>,
+          TError,
+          Awaited<ReturnType<typeof listCrmContacts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCrmContacts<TData = Awaited<ReturnType<typeof listCrmContacts>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmContacts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListCrmContacts<TData = Awaited<ReturnType<typeof listCrmContacts>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmContacts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListCrmContactsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCrmContactUrl = () => {
+
+
+
+
+  return `/api/redfp360/crm/contacts`
+}
+
+export const createCrmContact = async (crmContactInput: CrmContactInput, options?: Parameters<typeof customFetch>[1]): Promise<CrmContact> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CrmContact>(getCreateCrmContactUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(crmContactInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCrmContactMutationKey = () => ['createCrmContact'] as const;
+
+export const getCreateCrmContactMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmContact>>, TError,CreateCrmContactMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCrmContact>>, TError,CreateCrmContactMutationVariables, TContext> => {
+
+const mutationKey = getCreateCrmContactMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCrmContact>>, CreateCrmContactMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCrmContact(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCrmContactMutationResult = NonNullable<Awaited<ReturnType<typeof createCrmContact>>>
+    export type CreateCrmContactMutationBody = BodyType<CrmContactInput>
+    export type CreateCrmContactMutationError = ErrorType<void>
+    export type CreateCrmContactMutationVariables = {data: BodyType<CrmContactInput>}
+
+    export const useCreateCrmContact = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmContact>>, TError,CreateCrmContactMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createCrmContact>>,
+        TError,
+        CreateCrmContactMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCrmContactMutationOptions(options), queryClient);
+    }
+
+export const getUpdateCrmContactUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/crm/contacts/${id}`
+}
+
+export const updateCrmContact = async (id: string,
+    crmContactUpdate: CrmContactUpdate, options?: Parameters<typeof customFetch>[1]): Promise<CrmContact> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CrmContact>(getUpdateCrmContactUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(crmContactUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCrmContactMutationKey = () => ['updateCrmContact'] as const;
+
+export const getUpdateCrmContactMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmContact>>, TError,UpdateCrmContactMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCrmContact>>, TError,UpdateCrmContactMutationVariables, TContext> => {
+
+const mutationKey = getUpdateCrmContactMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCrmContact>>, UpdateCrmContactMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCrmContact(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCrmContactMutationResult = NonNullable<Awaited<ReturnType<typeof updateCrmContact>>>
+    export type UpdateCrmContactMutationBody = BodyType<CrmContactUpdate>
+    export type UpdateCrmContactMutationError = ErrorType<void>
+    export type UpdateCrmContactMutationVariables = {id: string;data: BodyType<CrmContactUpdate>}
+
+    export const useUpdateCrmContact = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmContact>>, TError,UpdateCrmContactMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateCrmContact>>,
+        TError,
+        UpdateCrmContactMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateCrmContactMutationOptions(options), queryClient);
+    }
+
+export const getListCrmOpportunitiesUrl = () => {
+
+
+
+
+  return `/api/redfp360/crm/opportunities`
+}
+
+export const listCrmOpportunities = async ( options?: Parameters<typeof customFetch>[1]): Promise<CrmOpportunity[]> => {
+
+  return customFetch<CrmOpportunity[]>(getListCrmOpportunitiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrmOpportunitiesQueryKey = () => {
+    return [
+    `/api/redfp360/crm/opportunities`
+    ] as const;
+    }
+
+
+export const getListCrmOpportunitiesQueryOptions = <TData = Awaited<ReturnType<typeof listCrmOpportunities>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmOpportunities>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrmOpportunitiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrmOpportunities>>> = ({ signal }) => listCrmOpportunities({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrmOpportunities>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListCrmOpportunitiesQueryResult = NonNullable<Awaited<ReturnType<typeof listCrmOpportunities>>>
+export type ListCrmOpportunitiesQueryError = ErrorType<unknown>
+
+
+export function useListCrmOpportunities<TData = Awaited<ReturnType<typeof listCrmOpportunities>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmOpportunities>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCrmOpportunities>>,
+          TError,
+          Awaited<ReturnType<typeof listCrmOpportunities>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCrmOpportunities<TData = Awaited<ReturnType<typeof listCrmOpportunities>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmOpportunities>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCrmOpportunities>>,
+          TError,
+          Awaited<ReturnType<typeof listCrmOpportunities>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCrmOpportunities<TData = Awaited<ReturnType<typeof listCrmOpportunities>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmOpportunities>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListCrmOpportunities<TData = Awaited<ReturnType<typeof listCrmOpportunities>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmOpportunities>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListCrmOpportunitiesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCrmOpportunityUrl = () => {
+
+
+
+
+  return `/api/redfp360/crm/opportunities`
+}
+
+export const createCrmOpportunity = async (crmOpportunityInput: CrmOpportunityInput, options?: Parameters<typeof customFetch>[1]): Promise<CrmOpportunity> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CrmOpportunity>(getCreateCrmOpportunityUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(crmOpportunityInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCrmOpportunityMutationKey = () => ['createCrmOpportunity'] as const;
+
+export const getCreateCrmOpportunityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmOpportunity>>, TError,CreateCrmOpportunityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCrmOpportunity>>, TError,CreateCrmOpportunityMutationVariables, TContext> => {
+
+const mutationKey = getCreateCrmOpportunityMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCrmOpportunity>>, CreateCrmOpportunityMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCrmOpportunity(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCrmOpportunityMutationResult = NonNullable<Awaited<ReturnType<typeof createCrmOpportunity>>>
+    export type CreateCrmOpportunityMutationBody = BodyType<CrmOpportunityInput>
+    export type CreateCrmOpportunityMutationError = ErrorType<void>
+    export type CreateCrmOpportunityMutationVariables = {data: BodyType<CrmOpportunityInput>}
+
+    export const useCreateCrmOpportunity = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmOpportunity>>, TError,CreateCrmOpportunityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createCrmOpportunity>>,
+        TError,
+        CreateCrmOpportunityMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCrmOpportunityMutationOptions(options), queryClient);
+    }
+
+export const getUpdateCrmOpportunityUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/crm/opportunities/${id}`
+}
+
+export const updateCrmOpportunity = async (id: string,
+    crmOpportunityUpdate: CrmOpportunityUpdate, options?: Parameters<typeof customFetch>[1]): Promise<CrmOpportunity> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CrmOpportunity>(getUpdateCrmOpportunityUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(crmOpportunityUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCrmOpportunityMutationKey = () => ['updateCrmOpportunity'] as const;
+
+export const getUpdateCrmOpportunityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmOpportunity>>, TError,UpdateCrmOpportunityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCrmOpportunity>>, TError,UpdateCrmOpportunityMutationVariables, TContext> => {
+
+const mutationKey = getUpdateCrmOpportunityMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCrmOpportunity>>, UpdateCrmOpportunityMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCrmOpportunity(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCrmOpportunityMutationResult = NonNullable<Awaited<ReturnType<typeof updateCrmOpportunity>>>
+    export type UpdateCrmOpportunityMutationBody = BodyType<CrmOpportunityUpdate>
+    export type UpdateCrmOpportunityMutationError = ErrorType<void>
+    export type UpdateCrmOpportunityMutationVariables = {id: string;data: BodyType<CrmOpportunityUpdate>}
+
+    export const useUpdateCrmOpportunity = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmOpportunity>>, TError,UpdateCrmOpportunityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateCrmOpportunity>>,
+        TError,
+        UpdateCrmOpportunityMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateCrmOpportunityMutationOptions(options), queryClient);
+    }
+
+export const getMoveCrmOpportunityUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/crm/opportunities/${id}/stage`
+}
+
+export const moveCrmOpportunity = async (id: string,
+    crmOpportunityStageInput: CrmOpportunityStageInput, options?: Parameters<typeof customFetch>[1]): Promise<CrmOpportunity> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CrmOpportunity>(getMoveCrmOpportunityUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(crmOpportunityStageInput)
+  }
+);}
+
+
+
+
+
+export const getMoveCrmOpportunityMutationKey = () => ['moveCrmOpportunity'] as const;
+
+export const getMoveCrmOpportunityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moveCrmOpportunity>>, TError,MoveCrmOpportunityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof moveCrmOpportunity>>, TError,MoveCrmOpportunityMutationVariables, TContext> => {
+
+const mutationKey = getMoveCrmOpportunityMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof moveCrmOpportunity>>, MoveCrmOpportunityMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  moveCrmOpportunity(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MoveCrmOpportunityMutationResult = NonNullable<Awaited<ReturnType<typeof moveCrmOpportunity>>>
+    export type MoveCrmOpportunityMutationBody = BodyType<CrmOpportunityStageInput>
+    export type MoveCrmOpportunityMutationError = ErrorType<void>
+    export type MoveCrmOpportunityMutationVariables = {id: string;data: BodyType<CrmOpportunityStageInput>}
+
+    export const useMoveCrmOpportunity = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moveCrmOpportunity>>, TError,MoveCrmOpportunityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof moveCrmOpportunity>>,
+        TError,
+        MoveCrmOpportunityMutationVariables,
+        TContext
+      > => {
+      return useMutation(getMoveCrmOpportunityMutationOptions(options), queryClient);
+    }
+
+export const getListCrmOpportunityHistoryUrl = () => {
+
+
+
+
+  return `/api/redfp360/crm/opportunity-history`
+}
+
+export const listCrmOpportunityHistory = async ( options?: Parameters<typeof customFetch>[1]): Promise<CrmOpportunityHistory[]> => {
+
+  return customFetch<CrmOpportunityHistory[]>(getListCrmOpportunityHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrmOpportunityHistoryQueryKey = () => {
+    return [
+    `/api/redfp360/crm/opportunity-history`
+    ] as const;
+    }
+
+
+export const getListCrmOpportunityHistoryQueryOptions = <TData = Awaited<ReturnType<typeof listCrmOpportunityHistory>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmOpportunityHistory>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrmOpportunityHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrmOpportunityHistory>>> = ({ signal }) => listCrmOpportunityHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrmOpportunityHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListCrmOpportunityHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof listCrmOpportunityHistory>>>
+export type ListCrmOpportunityHistoryQueryError = ErrorType<unknown>
+
+
+export function useListCrmOpportunityHistory<TData = Awaited<ReturnType<typeof listCrmOpportunityHistory>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmOpportunityHistory>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCrmOpportunityHistory>>,
+          TError,
+          Awaited<ReturnType<typeof listCrmOpportunityHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCrmOpportunityHistory<TData = Awaited<ReturnType<typeof listCrmOpportunityHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmOpportunityHistory>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCrmOpportunityHistory>>,
+          TError,
+          Awaited<ReturnType<typeof listCrmOpportunityHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCrmOpportunityHistory<TData = Awaited<ReturnType<typeof listCrmOpportunityHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmOpportunityHistory>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListCrmOpportunityHistory<TData = Awaited<ReturnType<typeof listCrmOpportunityHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmOpportunityHistory>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListCrmOpportunityHistoryQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListCrmActivitiesUrl = () => {
+
+
+
+
+  return `/api/redfp360/crm/activities`
+}
+
+export const listCrmActivities = async ( options?: Parameters<typeof customFetch>[1]): Promise<CrmActivity[]> => {
+
+  return customFetch<CrmActivity[]>(getListCrmActivitiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrmActivitiesQueryKey = () => {
+    return [
+    `/api/redfp360/crm/activities`
+    ] as const;
+    }
+
+
+export const getListCrmActivitiesQueryOptions = <TData = Awaited<ReturnType<typeof listCrmActivities>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmActivities>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrmActivitiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrmActivities>>> = ({ signal }) => listCrmActivities({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrmActivities>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListCrmActivitiesQueryResult = NonNullable<Awaited<ReturnType<typeof listCrmActivities>>>
+export type ListCrmActivitiesQueryError = ErrorType<unknown>
+
+
+export function useListCrmActivities<TData = Awaited<ReturnType<typeof listCrmActivities>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmActivities>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCrmActivities>>,
+          TError,
+          Awaited<ReturnType<typeof listCrmActivities>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCrmActivities<TData = Awaited<ReturnType<typeof listCrmActivities>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmActivities>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCrmActivities>>,
+          TError,
+          Awaited<ReturnType<typeof listCrmActivities>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCrmActivities<TData = Awaited<ReturnType<typeof listCrmActivities>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmActivities>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListCrmActivities<TData = Awaited<ReturnType<typeof listCrmActivities>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCrmActivities>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListCrmActivitiesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCrmActivityUrl = () => {
+
+
+
+
+  return `/api/redfp360/crm/activities`
+}
+
+export const createCrmActivity = async (crmActivityInput: CrmActivityInput, options?: Parameters<typeof customFetch>[1]): Promise<CrmActivity> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CrmActivity>(getCreateCrmActivityUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(crmActivityInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCrmActivityMutationKey = () => ['createCrmActivity'] as const;
+
+export const getCreateCrmActivityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmActivity>>, TError,CreateCrmActivityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCrmActivity>>, TError,CreateCrmActivityMutationVariables, TContext> => {
+
+const mutationKey = getCreateCrmActivityMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCrmActivity>>, CreateCrmActivityMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCrmActivity(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCrmActivityMutationResult = NonNullable<Awaited<ReturnType<typeof createCrmActivity>>>
+    export type CreateCrmActivityMutationBody = BodyType<CrmActivityInput>
+    export type CreateCrmActivityMutationError = ErrorType<void>
+    export type CreateCrmActivityMutationVariables = {data: BodyType<CrmActivityInput>}
+
+    export const useCreateCrmActivity = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmActivity>>, TError,CreateCrmActivityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createCrmActivity>>,
+        TError,
+        CreateCrmActivityMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCrmActivityMutationOptions(options), queryClient);
+    }
+
+export const getUpdateCrmActivityUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/crm/activities/${id}`
+}
+
+export const updateCrmActivity = async (id: string,
+    crmActivityUpdate: CrmActivityUpdate, options?: Parameters<typeof customFetch>[1]): Promise<CrmActivity> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CrmActivity>(getUpdateCrmActivityUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(crmActivityUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCrmActivityMutationKey = () => ['updateCrmActivity'] as const;
+
+export const getUpdateCrmActivityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmActivity>>, TError,UpdateCrmActivityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCrmActivity>>, TError,UpdateCrmActivityMutationVariables, TContext> => {
+
+const mutationKey = getUpdateCrmActivityMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCrmActivity>>, UpdateCrmActivityMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCrmActivity(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCrmActivityMutationResult = NonNullable<Awaited<ReturnType<typeof updateCrmActivity>>>
+    export type UpdateCrmActivityMutationBody = BodyType<CrmActivityUpdate>
+    export type UpdateCrmActivityMutationError = ErrorType<void>
+    export type UpdateCrmActivityMutationVariables = {id: string;data: BodyType<CrmActivityUpdate>}
+
+    export const useUpdateCrmActivity = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmActivity>>, TError,UpdateCrmActivityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateCrmActivity>>,
+        TError,
+        UpdateCrmActivityMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateCrmActivityMutationOptions(options), queryClient);
     }
 
 export const getListFp360OrdersUrl = () => {

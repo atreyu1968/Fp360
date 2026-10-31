@@ -272,6 +272,732 @@ export const GetFp360DashboardResponse = zod.object({
 
 
 /**
+ * @summary Get source-backed executive indicators for a simulated period
+ */
+export const GetFp360DirectionOverviewQueryParams = zod.object({
+  "periodStart": zod.coerce.string().date().optional(),
+  "periodEnd": zod.coerce.string().date().optional()
+})
+
+export const getFp360DirectionOverviewResponseTwoSalesBaseCentsMin = 0;
+
+export const getFp360DirectionOverviewResponseTwoPurchaseBaseCentsMin = 0;
+
+export const getFp360DirectionOverviewResponseTwoOutstandingCustomerCentsMin = 0;
+
+export const getFp360DirectionOverviewResponseTwoOutstandingCustomerInvoiceCountMin = 0;
+
+export const getFp360DirectionOverviewResponseTwoSalesInvoiceCountMin = 0;
+
+export const getFp360DirectionOverviewResponseTwoPurchaseInvoiceCountMin = 0;
+
+export const getFp360DirectionOverviewResponseTwoOverdueCustomerInvoiceCountMin = 0;
+
+export const getFp360DirectionOverviewResponseTwoSeriesItemSalesBaseCentsMin = 0;
+
+export const getFp360DirectionOverviewResponseTwoSeriesItemPurchaseBaseCentsMin = 0;
+
+export const getFp360DirectionOverviewResponseTwoActivityByAreaItemCountMin = 0;
+
+
+
+export const GetFp360DirectionOverviewResponse = zod.object({
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "periodLabel": zod.string()
+}).and(zod.object({
+  "salesBaseCents": zod.number().int().min(getFp360DirectionOverviewResponseTwoSalesBaseCentsMin),
+  "purchaseBaseCents": zod.number().int().min(getFp360DirectionOverviewResponseTwoPurchaseBaseCentsMin),
+  "outstandingCustomerCents": zod.number().int().min(getFp360DirectionOverviewResponseTwoOutstandingCustomerCentsMin),
+  "outstandingCustomerInvoiceCount": zod.number().int().min(getFp360DirectionOverviewResponseTwoOutstandingCustomerInvoiceCountMin),
+  "salesInvoiceCount": zod.number().int().min(getFp360DirectionOverviewResponseTwoSalesInvoiceCountMin),
+  "purchaseInvoiceCount": zod.number().int().min(getFp360DirectionOverviewResponseTwoPurchaseInvoiceCountMin),
+  "overdueCustomerInvoiceCount": zod.number().int().min(getFp360DirectionOverviewResponseTwoOverdueCustomerInvoiceCountMin).nullable(),
+  "overdueCustomerInvoiceUnavailableReason": zod.string().nullable(),
+  "treasuryBalanceCents": zod.number().int().nullable(),
+  "treasuryBalanceUnavailableReason": zod.string().nullable(),
+  "grossMarginCents": zod.number().int().nullable(),
+  "grossMarginUnavailableReason": zod.string().nullable(),
+  "series": zod.array(zod.object({
+  "period": zod.string(),
+  "salesBaseCents": zod.number().int().min(getFp360DirectionOverviewResponseTwoSeriesItemSalesBaseCentsMin),
+  "purchaseBaseCents": zod.number().int().min(getFp360DirectionOverviewResponseTwoSeriesItemPurchaseBaseCentsMin)
+})),
+  "activityByArea": zod.array(zod.object({
+  "area": zod.string(),
+  "count": zod.number().int().min(getFp360DirectionOverviewResponseTwoActivityByAreaItemCountMin)
+})),
+  "simulationOnly": zod.literal(true)
+}))
+
+
+/**
+ * @summary List direction tasks for the authenticated tenant
+ */
+export const ListFp360DirectionTasksResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
+  "status": zod.enum(['open', 'in_progress', 'done']),
+  "dueSimulatedDate": zod.string().date().nullable(),
+  "assignedToUserId": zod.string().nullable(),
+  "createdByUserId": zod.string(),
+  "createdByRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+export const ListFp360DirectionTasksResponse = zod.array(ListFp360DirectionTasksResponseItem)
+
+
+/**
+ * @summary Create a simulated direction task
+ */
+export const createFp360DirectionTaskBodyTitleMin = 3;
+export const createFp360DirectionTaskBodyTitleMax = 140;
+
+export const createFp360DirectionTaskBodyDetailMax = 2000;
+
+
+
+export const CreateFp360DirectionTaskBody = zod.object({
+  "title": zod.string().min(createFp360DirectionTaskBodyTitleMin).max(createFp360DirectionTaskBodyTitleMax),
+  "detail": zod.string().max(createFp360DirectionTaskBodyDetailMax).optional(),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
+  "dueSimulatedDate": zod.string().date().nullish(),
+  "assignedToUserId": zod.string().nullish()
+})
+
+export const CreateFp360DirectionTaskResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
+  "status": zod.enum(['open', 'in_progress', 'done']),
+  "dueSimulatedDate": zod.string().date().nullable(),
+  "assignedToUserId": zod.string().nullable(),
+  "createdByUserId": zod.string(),
+  "createdByRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary List assignable active members in the authenticated tenant
+ */
+export const ListFp360DirectionMembersResponseItem = zod.object({
+  "id": zod.string(),
+  "displayName": zod.string(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "organizationId": zod.string().nullable()
+})
+export const ListFp360DirectionMembersResponse = zod.array(ListFp360DirectionMembersResponseItem)
+
+
+/**
+ * @summary Update a task status with an audit reason
+ */
+
+
+
+export const UpdateFp360DirectionTaskParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const updateFp360DirectionTaskBodyReasonMin = 3;
+export const updateFp360DirectionTaskBodyReasonMax = 1000;
+
+
+
+export const UpdateFp360DirectionTaskBody = zod.object({
+  "status": zod.enum(['open', 'in_progress', 'done']),
+  "reason": zod.string().min(updateFp360DirectionTaskBodyReasonMin).max(updateFp360DirectionTaskBodyReasonMax)
+})
+
+export const UpdateFp360DirectionTaskResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
+  "status": zod.enum(['open', 'in_progress', 'done']),
+  "dueSimulatedDate": zod.string().date().nullable(),
+  "assignedToUserId": zod.string().nullable(),
+  "createdByUserId": zod.string(),
+  "createdByRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary List source-derived alerts and their recorded actions
+ */
+export const ListFp360DirectionAlertsResponseItem = zod.object({
+  "alertKey": zod.string(),
+  "severity": zod.enum(['low', 'medium', 'high', 'critical']),
+  "title": zod.string(),
+  "description": zod.string(),
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "status": zod.enum(['open', 'in_progress', 'resolved']),
+  "assignedToUserId": zod.string().nullable(),
+  "justification": zod.string(),
+  "evidenceReference": zod.string(),
+  "requiresEvidence": zod.boolean()
+})
+export const ListFp360DirectionAlertsResponse = zod.array(ListFp360DirectionAlertsResponseItem)
+
+
+/**
+ * @summary Record an alert owner, status, justification, and evidence
+ */
+
+
+
+export const UpdateFp360DirectionAlertParams = zod.object({
+  "alertKey": zod.coerce.string().min(1)
+})
+
+export const updateFp360DirectionAlertBodyJustificationMin = 3;
+export const updateFp360DirectionAlertBodyJustificationMax = 1000;
+
+export const updateFp360DirectionAlertBodyEvidenceReferenceMax = 300;
+
+
+
+export const UpdateFp360DirectionAlertBody = zod.object({
+  "status": zod.enum(['open', 'in_progress', 'resolved']),
+  "assignedToUserId": zod.string().nullish(),
+  "justification": zod.string().min(updateFp360DirectionAlertBodyJustificationMin).max(updateFp360DirectionAlertBodyJustificationMax),
+  "evidenceReference": zod.string().max(updateFp360DirectionAlertBodyEvidenceReferenceMax).optional()
+})
+
+export const UpdateFp360DirectionAlertResponse = zod.object({
+  "alertKey": zod.string(),
+  "severity": zod.enum(['low', 'medium', 'high', 'critical']),
+  "title": zod.string(),
+  "description": zod.string(),
+  "sourceType": zod.string(),
+  "sourceId": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "status": zod.enum(['open', 'in_progress', 'resolved']),
+  "assignedToUserId": zod.string().nullable(),
+  "justification": zod.string(),
+  "evidenceReference": zod.string(),
+  "requiresEvidence": zod.boolean()
+})
+
+
+/**
+ * @summary List configurable direction alert thresholds
+ */
+export const listFp360DirectionThresholdsResponseValueMin = 0;
+
+
+
+export const ListFp360DirectionThresholdsResponseItem = zod.object({
+  "key": zod.enum(['stock_low_units', 'liquidity_min_cents']),
+  "value": zod.number().int().min(listFp360DirectionThresholdsResponseValueMin).nullable(),
+  "enabled": zod.boolean(),
+  "updatedByUserId": zod.string().nullable(),
+  "updatedAt": zod.string().datetime({"offset":true}).nullable()
+})
+export const ListFp360DirectionThresholdsResponse = zod.array(ListFp360DirectionThresholdsResponseItem)
+
+
+/**
+ * @summary Configure a source-aware direction alert threshold
+ */
+export const UpsertFp360DirectionThresholdQueryParams = zod.object({
+  "key": zod.enum(['stock_low_units', 'liquidity_min_cents'])
+})
+
+export const upsertFp360DirectionThresholdBodyValueMin = 0;
+
+
+
+export const UpsertFp360DirectionThresholdBody = zod.object({
+  "value": zod.number().int().min(upsertFp360DirectionThresholdBodyValueMin).nullable(),
+  "enabled": zod.boolean()
+})
+
+export const upsertFp360DirectionThresholdResponseValueMin = 0;
+
+
+
+export const UpsertFp360DirectionThresholdResponse = zod.object({
+  "key": zod.enum(['stock_low_units', 'liquidity_min_cents']),
+  "value": zod.number().int().min(upsertFp360DirectionThresholdResponseValueMin).nullable(),
+  "enabled": zod.boolean(),
+  "updatedByUserId": zod.string().nullable(),
+  "updatedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary List decisions and their retained approval history
+ */
+export const ListFp360DirectionDecisionsResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "reason": zod.string(),
+  "proposedAction": zod.string(),
+  "impactCents": zod.number().int().nullable(),
+  "impactNote": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "submittedByUserId": zod.string(),
+  "submittedByRole": zod.string(),
+  "reviewedByUserId": zod.string().nullable(),
+  "reviewedByRole": zod.string().nullable(),
+  "reviewReason": zod.string().nullable(),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListFp360DirectionDecisionsResponse = zod.array(ListFp360DirectionDecisionsResponseItem)
+
+
+/**
+ * @summary Submit a simulated management decision for review
+ */
+export const createFp360DirectionDecisionBodyTitleMin = 3;
+export const createFp360DirectionDecisionBodyTitleMax = 140;
+
+export const createFp360DirectionDecisionBodyReasonMin = 3;
+export const createFp360DirectionDecisionBodyReasonMax = 2000;
+
+export const createFp360DirectionDecisionBodyProposedActionMin = 3;
+export const createFp360DirectionDecisionBodyProposedActionMax = 2000;
+
+export const createFp360DirectionDecisionBodyImpactNoteMin = 3;
+export const createFp360DirectionDecisionBodyImpactNoteMax = 1000;
+
+
+
+export const CreateFp360DirectionDecisionBody = zod.object({
+  "title": zod.string().min(createFp360DirectionDecisionBodyTitleMin).max(createFp360DirectionDecisionBodyTitleMax),
+  "reason": zod.string().min(createFp360DirectionDecisionBodyReasonMin).max(createFp360DirectionDecisionBodyReasonMax),
+  "proposedAction": zod.string().min(createFp360DirectionDecisionBodyProposedActionMin).max(createFp360DirectionDecisionBodyProposedActionMax),
+  "impactCents": zod.number().int().nullish(),
+  "impactNote": zod.string().min(createFp360DirectionDecisionBodyImpactNoteMin).max(createFp360DirectionDecisionBodyImpactNoteMax),
+  "simulatedDate": zod.string().date()
+})
+
+export const CreateFp360DirectionDecisionResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "reason": zod.string(),
+  "proposedAction": zod.string(),
+  "impactCents": zod.number().int().nullable(),
+  "impactNote": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "submittedByUserId": zod.string(),
+  "submittedByRole": zod.string(),
+  "reviewedByUserId": zod.string().nullable(),
+  "reviewedByRole": zod.string().nullable(),
+  "reviewReason": zod.string().nullable(),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Approve or reject a decision with a retained reason
+ */
+
+
+
+export const DecideFp360DirectionDecisionParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const decideFp360DirectionDecisionBodyReasonMin = 3;
+export const decideFp360DirectionDecisionBodyReasonMax = 1000;
+
+
+
+export const DecideFp360DirectionDecisionBody = zod.object({
+  "decision": zod.enum(['approve', 'reject']),
+  "reason": zod.string().min(decideFp360DirectionDecisionBodyReasonMin).max(decideFp360DirectionDecisionBodyReasonMax)
+})
+
+export const DecideFp360DirectionDecisionResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "reason": zod.string(),
+  "proposedAction": zod.string(),
+  "impactCents": zod.number().int().nullable(),
+  "impactNote": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "submittedByUserId": zod.string(),
+  "submittedByRole": zod.string(),
+  "reviewedByUserId": zod.string().nullable(),
+  "reviewedByRole": zod.string().nullable(),
+  "reviewReason": zod.string().nullable(),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary List tenant objectives for the selected periods
+ */
+export const ListFp360DirectionObjectivesQueryParams = zod.object({
+  "periodStart": zod.coerce.string().date().optional(),
+  "periodEnd": zod.coerce.string().date().optional()
+})
+
+export const listFp360DirectionObjectivesResponseTargetValueMin = 0;
+
+export const listFp360DirectionObjectivesResponseActualValueMin = 0;
+
+
+
+export const ListFp360DirectionObjectivesResponseItem = zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "metric": zod.enum(['sales_base_cents', 'purchase_base_cents', 'open_orders', 'open_tasks']),
+  "targetValue": zod.number().int().min(listFp360DirectionObjectivesResponseTargetValueMin),
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "notes": zod.string(),
+  "createdByUserId": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "actualValue": zod.number().int().min(listFp360DirectionObjectivesResponseActualValueMin).nullable(),
+  "progressAvailable": zod.boolean()
+})
+export const ListFp360DirectionObjectivesResponse = zod.array(ListFp360DirectionObjectivesResponseItem)
+
+
+/**
+ * @summary Set a simulated company objective
+ */
+export const createFp360DirectionObjectiveBodyLabelMin = 3;
+export const createFp360DirectionObjectiveBodyLabelMax = 140;
+
+export const createFp360DirectionObjectiveBodyTargetValueMin = 0;
+
+export const createFp360DirectionObjectiveBodyNotesMax = 1000;
+
+
+
+export const CreateFp360DirectionObjectiveBody = zod.object({
+  "label": zod.string().min(createFp360DirectionObjectiveBodyLabelMin).max(createFp360DirectionObjectiveBodyLabelMax),
+  "metric": zod.enum(['sales_base_cents', 'purchase_base_cents', 'open_orders', 'open_tasks']),
+  "targetValue": zod.number().int().min(createFp360DirectionObjectiveBodyTargetValueMin),
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "notes": zod.string().max(createFp360DirectionObjectiveBodyNotesMax).optional()
+})
+
+export const createFp360DirectionObjectiveResponseTargetValueMin = 0;
+
+export const createFp360DirectionObjectiveResponseActualValueMin = 0;
+
+
+
+export const CreateFp360DirectionObjectiveResponse = zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "metric": zod.enum(['sales_base_cents', 'purchase_base_cents', 'open_orders', 'open_tasks']),
+  "targetValue": zod.number().int().min(createFp360DirectionObjectiveResponseTargetValueMin),
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "notes": zod.string(),
+  "createdByUserId": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "actualValue": zod.number().int().min(createFp360DirectionObjectiveResponseActualValueMin).nullable(),
+  "progressAvailable": zod.boolean()
+})
+
+
+/**
+ * @summary Update a simulated company objective
+ */
+
+
+
+export const UpdateFp360DirectionObjectiveParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const updateFp360DirectionObjectiveBodyLabelMin = 3;
+export const updateFp360DirectionObjectiveBodyLabelMax = 140;
+
+export const updateFp360DirectionObjectiveBodyTargetValueMin = 0;
+
+export const updateFp360DirectionObjectiveBodyNotesMax = 1000;
+
+
+
+export const UpdateFp360DirectionObjectiveBody = zod.object({
+  "label": zod.string().min(updateFp360DirectionObjectiveBodyLabelMin).max(updateFp360DirectionObjectiveBodyLabelMax),
+  "metric": zod.enum(['sales_base_cents', 'purchase_base_cents', 'open_orders', 'open_tasks']),
+  "targetValue": zod.number().int().min(updateFp360DirectionObjectiveBodyTargetValueMin),
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "notes": zod.string().max(updateFp360DirectionObjectiveBodyNotesMax).optional()
+})
+
+export const updateFp360DirectionObjectiveResponseTargetValueMin = 0;
+
+export const updateFp360DirectionObjectiveResponseActualValueMin = 0;
+
+
+
+export const UpdateFp360DirectionObjectiveResponse = zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "metric": zod.enum(['sales_base_cents', 'purchase_base_cents', 'open_orders', 'open_tasks']),
+  "targetValue": zod.number().int().min(updateFp360DirectionObjectiveResponseTargetValueMin),
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "notes": zod.string(),
+  "createdByUserId": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "actualValue": zod.number().int().min(updateFp360DirectionObjectiveResponseActualValueMin).nullable(),
+  "progressAvailable": zod.boolean()
+})
+
+
+/**
+ * @summary List direction reports visible to the authenticated role
+ */
+export const listFp360DirectionReportsResponseSnapshotTwoSalesBaseCentsMin = 0;
+
+export const listFp360DirectionReportsResponseSnapshotTwoPurchaseBaseCentsMin = 0;
+
+export const listFp360DirectionReportsResponseSnapshotTwoOutstandingCustomerCentsMin = 0;
+
+export const listFp360DirectionReportsResponseSnapshotTwoOutstandingCustomerInvoiceCountMin = 0;
+
+export const listFp360DirectionReportsResponseSnapshotTwoSalesInvoiceCountMin = 0;
+
+export const listFp360DirectionReportsResponseSnapshotTwoPurchaseInvoiceCountMin = 0;
+
+export const listFp360DirectionReportsResponseSnapshotTwoOverdueCustomerInvoiceCountMin = 0;
+
+export const listFp360DirectionReportsResponseSnapshotTwoSeriesItemSalesBaseCentsMin = 0;
+
+export const listFp360DirectionReportsResponseSnapshotTwoSeriesItemPurchaseBaseCentsMin = 0;
+
+export const listFp360DirectionReportsResponseSnapshotTwoActivityByAreaItemCountMin = 0;
+
+
+
+export const ListFp360DirectionReportsResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "createdByUserId": zod.string(),
+  "createdByRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "snapshot": zod.object({
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "periodLabel": zod.string()
+}).and(zod.object({
+  "salesBaseCents": zod.number().int().min(listFp360DirectionReportsResponseSnapshotTwoSalesBaseCentsMin),
+  "purchaseBaseCents": zod.number().int().min(listFp360DirectionReportsResponseSnapshotTwoPurchaseBaseCentsMin),
+  "outstandingCustomerCents": zod.number().int().min(listFp360DirectionReportsResponseSnapshotTwoOutstandingCustomerCentsMin),
+  "outstandingCustomerInvoiceCount": zod.number().int().min(listFp360DirectionReportsResponseSnapshotTwoOutstandingCustomerInvoiceCountMin),
+  "salesInvoiceCount": zod.number().int().min(listFp360DirectionReportsResponseSnapshotTwoSalesInvoiceCountMin),
+  "purchaseInvoiceCount": zod.number().int().min(listFp360DirectionReportsResponseSnapshotTwoPurchaseInvoiceCountMin),
+  "overdueCustomerInvoiceCount": zod.number().int().min(listFp360DirectionReportsResponseSnapshotTwoOverdueCustomerInvoiceCountMin).nullable(),
+  "overdueCustomerInvoiceUnavailableReason": zod.string().nullable(),
+  "treasuryBalanceCents": zod.number().int().nullable(),
+  "treasuryBalanceUnavailableReason": zod.string().nullable(),
+  "grossMarginCents": zod.number().int().nullable(),
+  "grossMarginUnavailableReason": zod.string().nullable(),
+  "series": zod.array(zod.object({
+  "period": zod.string(),
+  "salesBaseCents": zod.number().int().min(listFp360DirectionReportsResponseSnapshotTwoSeriesItemSalesBaseCentsMin),
+  "purchaseBaseCents": zod.number().int().min(listFp360DirectionReportsResponseSnapshotTwoSeriesItemPurchaseBaseCentsMin)
+})),
+  "activityByArea": zod.array(zod.object({
+  "area": zod.string(),
+  "count": zod.number().int().min(listFp360DirectionReportsResponseSnapshotTwoActivityByAreaItemCountMin)
+})),
+  "simulationOnly": zod.literal(true)
+}))
+})
+export const ListFp360DirectionReportsResponse = zod.array(ListFp360DirectionReportsResponseItem)
+
+
+/**
+ * @summary Save a source-backed report snapshot for a period
+ */
+export const createFp360DirectionReportBodyTitleMin = 3;
+export const createFp360DirectionReportBodyTitleMax = 140;
+
+
+
+export const CreateFp360DirectionReportBody = zod.object({
+  "title": zod.string().min(createFp360DirectionReportBodyTitleMin).max(createFp360DirectionReportBodyTitleMax),
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date()
+})
+
+export const createFp360DirectionReportResponseSnapshotTwoSalesBaseCentsMin = 0;
+
+export const createFp360DirectionReportResponseSnapshotTwoPurchaseBaseCentsMin = 0;
+
+export const createFp360DirectionReportResponseSnapshotTwoOutstandingCustomerCentsMin = 0;
+
+export const createFp360DirectionReportResponseSnapshotTwoOutstandingCustomerInvoiceCountMin = 0;
+
+export const createFp360DirectionReportResponseSnapshotTwoSalesInvoiceCountMin = 0;
+
+export const createFp360DirectionReportResponseSnapshotTwoPurchaseInvoiceCountMin = 0;
+
+export const createFp360DirectionReportResponseSnapshotTwoOverdueCustomerInvoiceCountMin = 0;
+
+export const createFp360DirectionReportResponseSnapshotTwoSeriesItemSalesBaseCentsMin = 0;
+
+export const createFp360DirectionReportResponseSnapshotTwoSeriesItemPurchaseBaseCentsMin = 0;
+
+export const createFp360DirectionReportResponseSnapshotTwoActivityByAreaItemCountMin = 0;
+
+
+
+export const CreateFp360DirectionReportResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "createdByUserId": zod.string(),
+  "createdByRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "snapshot": zod.object({
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "periodLabel": zod.string()
+}).and(zod.object({
+  "salesBaseCents": zod.number().int().min(createFp360DirectionReportResponseSnapshotTwoSalesBaseCentsMin),
+  "purchaseBaseCents": zod.number().int().min(createFp360DirectionReportResponseSnapshotTwoPurchaseBaseCentsMin),
+  "outstandingCustomerCents": zod.number().int().min(createFp360DirectionReportResponseSnapshotTwoOutstandingCustomerCentsMin),
+  "outstandingCustomerInvoiceCount": zod.number().int().min(createFp360DirectionReportResponseSnapshotTwoOutstandingCustomerInvoiceCountMin),
+  "salesInvoiceCount": zod.number().int().min(createFp360DirectionReportResponseSnapshotTwoSalesInvoiceCountMin),
+  "purchaseInvoiceCount": zod.number().int().min(createFp360DirectionReportResponseSnapshotTwoPurchaseInvoiceCountMin),
+  "overdueCustomerInvoiceCount": zod.number().int().min(createFp360DirectionReportResponseSnapshotTwoOverdueCustomerInvoiceCountMin).nullable(),
+  "overdueCustomerInvoiceUnavailableReason": zod.string().nullable(),
+  "treasuryBalanceCents": zod.number().int().nullable(),
+  "treasuryBalanceUnavailableReason": zod.string().nullable(),
+  "grossMarginCents": zod.number().int().nullable(),
+  "grossMarginUnavailableReason": zod.string().nullable(),
+  "series": zod.array(zod.object({
+  "period": zod.string(),
+  "salesBaseCents": zod.number().int().min(createFp360DirectionReportResponseSnapshotTwoSeriesItemSalesBaseCentsMin),
+  "purchaseBaseCents": zod.number().int().min(createFp360DirectionReportResponseSnapshotTwoSeriesItemPurchaseBaseCentsMin)
+})),
+  "activityByArea": zod.array(zod.object({
+  "area": zod.string(),
+  "count": zod.number().int().min(createFp360DirectionReportResponseSnapshotTwoActivityByAreaItemCountMin)
+})),
+  "simulationOnly": zod.literal(true)
+}))
+})
+
+
+/**
+ * @summary Get a saved report visible to the authenticated role
+ */
+
+
+
+export const GetFp360DirectionReportParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const getFp360DirectionReportResponseSnapshotTwoSalesBaseCentsMin = 0;
+
+export const getFp360DirectionReportResponseSnapshotTwoPurchaseBaseCentsMin = 0;
+
+export const getFp360DirectionReportResponseSnapshotTwoOutstandingCustomerCentsMin = 0;
+
+export const getFp360DirectionReportResponseSnapshotTwoOutstandingCustomerInvoiceCountMin = 0;
+
+export const getFp360DirectionReportResponseSnapshotTwoSalesInvoiceCountMin = 0;
+
+export const getFp360DirectionReportResponseSnapshotTwoPurchaseInvoiceCountMin = 0;
+
+export const getFp360DirectionReportResponseSnapshotTwoOverdueCustomerInvoiceCountMin = 0;
+
+export const getFp360DirectionReportResponseSnapshotTwoSeriesItemSalesBaseCentsMin = 0;
+
+export const getFp360DirectionReportResponseSnapshotTwoSeriesItemPurchaseBaseCentsMin = 0;
+
+export const getFp360DirectionReportResponseSnapshotTwoActivityByAreaItemCountMin = 0;
+
+
+
+export const GetFp360DirectionReportResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "createdByUserId": zod.string(),
+  "createdByRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "snapshot": zod.object({
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "periodLabel": zod.string()
+}).and(zod.object({
+  "salesBaseCents": zod.number().int().min(getFp360DirectionReportResponseSnapshotTwoSalesBaseCentsMin),
+  "purchaseBaseCents": zod.number().int().min(getFp360DirectionReportResponseSnapshotTwoPurchaseBaseCentsMin),
+  "outstandingCustomerCents": zod.number().int().min(getFp360DirectionReportResponseSnapshotTwoOutstandingCustomerCentsMin),
+  "outstandingCustomerInvoiceCount": zod.number().int().min(getFp360DirectionReportResponseSnapshotTwoOutstandingCustomerInvoiceCountMin),
+  "salesInvoiceCount": zod.number().int().min(getFp360DirectionReportResponseSnapshotTwoSalesInvoiceCountMin),
+  "purchaseInvoiceCount": zod.number().int().min(getFp360DirectionReportResponseSnapshotTwoPurchaseInvoiceCountMin),
+  "overdueCustomerInvoiceCount": zod.number().int().min(getFp360DirectionReportResponseSnapshotTwoOverdueCustomerInvoiceCountMin).nullable(),
+  "overdueCustomerInvoiceUnavailableReason": zod.string().nullable(),
+  "treasuryBalanceCents": zod.number().int().nullable(),
+  "treasuryBalanceUnavailableReason": zod.string().nullable(),
+  "grossMarginCents": zod.number().int().nullable(),
+  "grossMarginUnavailableReason": zod.string().nullable(),
+  "series": zod.array(zod.object({
+  "period": zod.string(),
+  "salesBaseCents": zod.number().int().min(getFp360DirectionReportResponseSnapshotTwoSeriesItemSalesBaseCentsMin),
+  "purchaseBaseCents": zod.number().int().min(getFp360DirectionReportResponseSnapshotTwoSeriesItemPurchaseBaseCentsMin)
+})),
+  "activityByArea": zod.array(zod.object({
+  "area": zod.string(),
+  "count": zod.number().int().min(getFp360DirectionReportResponseSnapshotTwoActivityByAreaItemCountMin)
+})),
+  "simulationOnly": zod.literal(true)
+}))
+})
+
+
+/**
+ * @summary Read the retained direction audit trail
+ */
+export const ListFp360DirectionEventsQueryParams = zod.object({
+  "entityType": zod.enum(['task', 'alert', 'decision', 'objective', 'report']).optional(),
+  "entityId": zod.coerce.string().optional()
+})
+
+export const ListFp360DirectionEventsResponseItem = zod.object({
+  "id": zod.string(),
+  "entityType": zod.enum(['task', 'alert', 'decision', 'objective', 'report']),
+  "entityId": zod.string(),
+  "action": zod.string(),
+  "actorUserId": zod.string(),
+  "actorRole": zod.string(),
+  "reason": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListFp360DirectionEventsResponse = zod.array(ListFp360DirectionEventsResponseItem)
+
+
+/**
  * @summary List simulated market organizations
  */
 export const ListFp360OrganizationsResponseItem = zod.object({
@@ -351,19 +1077,30 @@ export const listFp360ProductsResponseCostCentsMin = 0;
 
 export const listFp360ProductsResponseMinimumStockMin = 0;
 
+export const listFp360ProductsResponseMaxDiscountBasisPointsMin = 0;
+
+export const listFp360ProductsResponseLeadTimeDaysMin = 0;
+
 
 
 export const ListFp360ProductsResponseItem = zod.object({
   "id": zod.string(),
   "sku": zod.string(),
   "name": zod.string(),
+  "description": zod.string(),
   "category": zod.string(),
+  "itemType": zod.enum(['product', 'service']),
+  "unit": zod.string(),
+  "tracksInventory": zod.boolean(),
   "unitPriceCents": zod.number().int().min(listFp360ProductsResponseUnitPriceCentsMin),
   "igicBasisPoints": zod.number().int().min(listFp360ProductsResponseIgicBasisPointsMin),
   "stock": zod.number().int().min(listFp360ProductsResponseStockMin),
   "reserved": zod.number().int().min(listFp360ProductsResponseReservedMin),
   "costCents": zod.number().int().min(listFp360ProductsResponseCostCentsMin),
   "minimumStock": zod.number().int().min(listFp360ProductsResponseMinimumStockMin),
+  "maxDiscountBasisPoints": zod.number().int().min(listFp360ProductsResponseMaxDiscountBasisPointsMin),
+  "leadTimeDays": zod.number().int().min(listFp360ProductsResponseLeadTimeDaysMin),
+  "supplierOrganizationId": zod.string().nullable(),
   "isActive": zod.boolean(),
   "isPublished": zod.boolean()
 })
@@ -376,7 +1113,11 @@ export const createFp360ProductBodySkuMax = 40;
 export const createFp360ProductBodySkuRegExp = new RegExp('^[A-Za-z0-9][A-Za-z0-9._-]*$');
 export const createFp360ProductBodyNameMax = 150;
 
+export const createFp360ProductBodyDescriptionMax = 2000;
+
 export const createFp360ProductBodyCategoryMax = 100;
+
+export const createFp360ProductBodyUnitMax = 40;
 
 export const createFp360ProductBodyUnitPriceCentsMin = 0;
 export const createFp360ProductBodyUnitPriceCentsMax = 100000000;
@@ -393,17 +1134,30 @@ export const createFp360ProductBodyStockMax = 1000000;
 export const createFp360ProductBodyMinimumStockMin = 0;
 export const createFp360ProductBodyMinimumStockMax = 1000000;
 
+export const createFp360ProductBodyMaxDiscountBasisPointsMin = 0;
+export const createFp360ProductBodyMaxDiscountBasisPointsMax = 10000;
+
+export const createFp360ProductBodyLeadTimeDaysMin = 0;
+export const createFp360ProductBodyLeadTimeDaysMax = 3650;
+
 
 
 export const CreateFp360ProductBody = zod.object({
   "sku": zod.string().min(1).max(createFp360ProductBodySkuMax).regex(createFp360ProductBodySkuRegExp),
   "name": zod.string().min(1).max(createFp360ProductBodyNameMax),
+  "description": zod.string().max(createFp360ProductBodyDescriptionMax).optional(),
   "category": zod.string().min(1).max(createFp360ProductBodyCategoryMax),
+  "itemType": zod.enum(['product', 'service']).optional(),
+  "unit": zod.string().min(1).max(createFp360ProductBodyUnitMax).optional(),
+  "tracksInventory": zod.boolean().optional(),
   "unitPriceCents": zod.number().int().min(createFp360ProductBodyUnitPriceCentsMin).max(createFp360ProductBodyUnitPriceCentsMax),
   "costCents": zod.number().int().min(createFp360ProductBodyCostCentsMin).max(createFp360ProductBodyCostCentsMax).optional(),
   "igicBasisPoints": zod.number().int().min(createFp360ProductBodyIgicBasisPointsMin).max(createFp360ProductBodyIgicBasisPointsMax),
   "stock": zod.number().int().min(createFp360ProductBodyStockMin).max(createFp360ProductBodyStockMax),
-  "minimumStock": zod.number().int().min(createFp360ProductBodyMinimumStockMin).max(createFp360ProductBodyMinimumStockMax).optional()
+  "minimumStock": zod.number().int().min(createFp360ProductBodyMinimumStockMin).max(createFp360ProductBodyMinimumStockMax).optional(),
+  "maxDiscountBasisPoints": zod.number().int().min(createFp360ProductBodyMaxDiscountBasisPointsMin).max(createFp360ProductBodyMaxDiscountBasisPointsMax).optional(),
+  "leadTimeDays": zod.number().int().min(createFp360ProductBodyLeadTimeDaysMin).max(createFp360ProductBodyLeadTimeDaysMax).optional(),
+  "supplierOrganizationId": zod.string().nullish()
 })
 
 export const createFp360ProductResponseUnitPriceCentsMin = 0;
@@ -418,19 +1172,30 @@ export const createFp360ProductResponseCostCentsMin = 0;
 
 export const createFp360ProductResponseMinimumStockMin = 0;
 
+export const createFp360ProductResponseMaxDiscountBasisPointsMin = 0;
+
+export const createFp360ProductResponseLeadTimeDaysMin = 0;
+
 
 
 export const CreateFp360ProductResponse = zod.object({
   "id": zod.string(),
   "sku": zod.string(),
   "name": zod.string(),
+  "description": zod.string(),
   "category": zod.string(),
+  "itemType": zod.enum(['product', 'service']),
+  "unit": zod.string(),
+  "tracksInventory": zod.boolean(),
   "unitPriceCents": zod.number().int().min(createFp360ProductResponseUnitPriceCentsMin),
   "igicBasisPoints": zod.number().int().min(createFp360ProductResponseIgicBasisPointsMin),
   "stock": zod.number().int().min(createFp360ProductResponseStockMin),
   "reserved": zod.number().int().min(createFp360ProductResponseReservedMin),
   "costCents": zod.number().int().min(createFp360ProductResponseCostCentsMin),
   "minimumStock": zod.number().int().min(createFp360ProductResponseMinimumStockMin),
+  "maxDiscountBasisPoints": zod.number().int().min(createFp360ProductResponseMaxDiscountBasisPointsMin),
+  "leadTimeDays": zod.number().int().min(createFp360ProductResponseLeadTimeDaysMin),
+  "supplierOrganizationId": zod.string().nullable(),
   "isActive": zod.boolean(),
   "isPublished": zod.boolean()
 })
@@ -446,7 +1211,11 @@ export const updateFp360ProductBodySkuMax = 40;
 export const updateFp360ProductBodySkuRegExp = new RegExp('^[A-Za-z0-9][A-Za-z0-9._-]*$');
 export const updateFp360ProductBodyNameMax = 150;
 
+export const updateFp360ProductBodyDescriptionMax = 2000;
+
 export const updateFp360ProductBodyCategoryMax = 100;
+
+export const updateFp360ProductBodyUnitMax = 40;
 
 export const updateFp360ProductBodyUnitPriceCentsMin = 0;
 export const updateFp360ProductBodyUnitPriceCentsMax = 100000000;
@@ -460,16 +1229,34 @@ export const updateFp360ProductBodyIgicBasisPointsMax = 10000;
 export const updateFp360ProductBodyMinimumStockMin = 0;
 export const updateFp360ProductBodyMinimumStockMax = 1000000;
 
+export const updateFp360ProductBodyMaxDiscountBasisPointsMin = 0;
+export const updateFp360ProductBodyMaxDiscountBasisPointsMax = 10000;
+
+export const updateFp360ProductBodyLeadTimeDaysMin = 0;
+export const updateFp360ProductBodyLeadTimeDaysMax = 3650;
+
+export const updateFp360ProductBodyPriceChangeReasonMin = 5;
+export const updateFp360ProductBodyPriceChangeReasonMax = 500;
+
 
 
 export const UpdateFp360ProductBody = zod.object({
   "sku": zod.string().min(1).max(updateFp360ProductBodySkuMax).regex(updateFp360ProductBodySkuRegExp).optional(),
   "name": zod.string().min(1).max(updateFp360ProductBodyNameMax).optional(),
+  "description": zod.string().max(updateFp360ProductBodyDescriptionMax).optional(),
   "category": zod.string().min(1).max(updateFp360ProductBodyCategoryMax).optional(),
+  "itemType": zod.enum(['product', 'service']).optional(),
+  "unit": zod.string().min(1).max(updateFp360ProductBodyUnitMax).optional(),
+  "tracksInventory": zod.boolean().optional(),
   "unitPriceCents": zod.number().int().min(updateFp360ProductBodyUnitPriceCentsMin).max(updateFp360ProductBodyUnitPriceCentsMax).optional(),
   "costCents": zod.number().int().min(updateFp360ProductBodyCostCentsMin).max(updateFp360ProductBodyCostCentsMax).optional(),
   "igicBasisPoints": zod.number().int().min(updateFp360ProductBodyIgicBasisPointsMin).max(updateFp360ProductBodyIgicBasisPointsMax).optional(),
   "minimumStock": zod.number().int().min(updateFp360ProductBodyMinimumStockMin).max(updateFp360ProductBodyMinimumStockMax).optional(),
+  "maxDiscountBasisPoints": zod.number().int().min(updateFp360ProductBodyMaxDiscountBasisPointsMin).max(updateFp360ProductBodyMaxDiscountBasisPointsMax).optional(),
+  "leadTimeDays": zod.number().int().min(updateFp360ProductBodyLeadTimeDaysMin).max(updateFp360ProductBodyLeadTimeDaysMax).optional(),
+  "supplierOrganizationId": zod.string().nullish(),
+  "priceChangeReason": zod.string().min(updateFp360ProductBodyPriceChangeReasonMin).max(updateFp360ProductBodyPriceChangeReasonMax).optional(),
+  "effectiveFrom": zod.string().date().optional(),
   "isActive": zod.boolean().optional(),
   "isPublished": zod.boolean().optional()
 })
@@ -486,21 +1273,143 @@ export const updateFp360ProductResponseCostCentsMin = 0;
 
 export const updateFp360ProductResponseMinimumStockMin = 0;
 
+export const updateFp360ProductResponseMaxDiscountBasisPointsMin = 0;
+
+export const updateFp360ProductResponseLeadTimeDaysMin = 0;
+
 
 
 export const UpdateFp360ProductResponse = zod.object({
   "id": zod.string(),
   "sku": zod.string(),
   "name": zod.string(),
+  "description": zod.string(),
   "category": zod.string(),
+  "itemType": zod.enum(['product', 'service']),
+  "unit": zod.string(),
+  "tracksInventory": zod.boolean(),
   "unitPriceCents": zod.number().int().min(updateFp360ProductResponseUnitPriceCentsMin),
   "igicBasisPoints": zod.number().int().min(updateFp360ProductResponseIgicBasisPointsMin),
   "stock": zod.number().int().min(updateFp360ProductResponseStockMin),
   "reserved": zod.number().int().min(updateFp360ProductResponseReservedMin),
   "costCents": zod.number().int().min(updateFp360ProductResponseCostCentsMin),
   "minimumStock": zod.number().int().min(updateFp360ProductResponseMinimumStockMin),
+  "maxDiscountBasisPoints": zod.number().int().min(updateFp360ProductResponseMaxDiscountBasisPointsMin),
+  "leadTimeDays": zod.number().int().min(updateFp360ProductResponseLeadTimeDaysMin),
+  "supplierOrganizationId": zod.string().nullable(),
   "isActive": zod.boolean(),
   "isPublished": zod.boolean()
+})
+
+
+export const ListFp360ProductPriceVersionsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const listFp360ProductPriceVersionsResponseUnitPriceCentsMin = 0;
+
+export const listFp360ProductPriceVersionsResponseCostCentsMin = 0;
+
+export const listFp360ProductPriceVersionsResponseIgicBasisPointsMin = 0;
+
+export const listFp360ProductPriceVersionsResponseMaxDiscountBasisPointsMin = 0;
+
+
+
+export const ListFp360ProductPriceVersionsResponseItem = zod.object({
+  "id": zod.string(),
+  "unitPriceCents": zod.number().int().min(listFp360ProductPriceVersionsResponseUnitPriceCentsMin),
+  "costCents": zod.number().int().min(listFp360ProductPriceVersionsResponseCostCentsMin),
+  "igicBasisPoints": zod.number().int().min(listFp360ProductPriceVersionsResponseIgicBasisPointsMin),
+  "maxDiscountBasisPoints": zod.number().int().min(listFp360ProductPriceVersionsResponseMaxDiscountBasisPointsMin),
+  "validFrom": zod.string().date(),
+  "reason": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListFp360ProductPriceVersionsResponse = zod.array(ListFp360ProductPriceVersionsResponseItem)
+
+
+export const ListFp360ProductDocumentsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+export const ListFp360ProductDocumentsResponseItem = zod.object({
+  "id": zod.string(),
+  "originalName": zod.string(),
+  "contentType": zod.string(),
+  "sizeBytes": zod.number().int().min(1),
+  "description": zod.string(),
+  "status": zod.enum(['pending', 'ready']),
+  "uploaderName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListFp360ProductDocumentsResponse = zod.array(ListFp360ProductDocumentsResponseItem)
+
+
+export const RequestFp360ProductDocumentUploadUrlParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const requestFp360ProductDocumentUploadUrlBodyNameMax = 200;
+
+export const requestFp360ProductDocumentUploadUrlBodySizeMax = 10485760;
+
+export const requestFp360ProductDocumentUploadUrlBodyDescriptionMax = 500;
+
+
+
+export const RequestFp360ProductDocumentUploadUrlBody = zod.object({
+  "name": zod.string().min(1).max(requestFp360ProductDocumentUploadUrlBodyNameMax),
+  "size": zod.number().int().min(1).max(requestFp360ProductDocumentUploadUrlBodySizeMax),
+  "contentType": zod.enum(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']),
+  "description": zod.string().max(requestFp360ProductDocumentUploadUrlBodyDescriptionMax).optional()
+})
+
+export const RequestFp360ProductDocumentUploadUrlResponse = zod.object({
+  "documentId": zod.string(),
+  "uploadURL": zod.string().url()
+})
+
+
+export const CompleteFp360ProductDocumentUploadParams = zod.object({
+  "id": zod.coerce.string(),
+  "documentId": zod.coerce.string()
+})
+
+
+
+
+export const CompleteFp360ProductDocumentUploadResponse = zod.object({
+  "id": zod.string(),
+  "originalName": zod.string(),
+  "contentType": zod.string(),
+  "sizeBytes": zod.number().int().min(1),
+  "description": zod.string(),
+  "status": zod.enum(['pending', 'ready']),
+  "uploaderName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+export const DownloadFp360ProductDocumentParams = zod.object({
+  "id": zod.coerce.string(),
+  "documentId": zod.coerce.string()
+})
+
+export const DownloadFp360ProductDocumentResponse = zod.void()
+
+
+export const DeleteFp360ProductDocumentParams = zod.object({
+  "id": zod.coerce.string(),
+  "documentId": zod.coerce.string()
+})
+
+export const DeleteFp360ProductDocumentResponse = zod.object({
+  "deleted": zod.boolean()
 })
 
 
@@ -551,21 +1460,1117 @@ export const adjustFp360StockResponseCostCentsMin = 0;
 
 export const adjustFp360StockResponseMinimumStockMin = 0;
 
+export const adjustFp360StockResponseMaxDiscountBasisPointsMin = 0;
+
+export const adjustFp360StockResponseLeadTimeDaysMin = 0;
+
 
 
 export const AdjustFp360StockResponse = zod.object({
   "id": zod.string(),
   "sku": zod.string(),
   "name": zod.string(),
+  "description": zod.string(),
   "category": zod.string(),
+  "itemType": zod.enum(['product', 'service']),
+  "unit": zod.string(),
+  "tracksInventory": zod.boolean(),
   "unitPriceCents": zod.number().int().min(adjustFp360StockResponseUnitPriceCentsMin),
   "igicBasisPoints": zod.number().int().min(adjustFp360StockResponseIgicBasisPointsMin),
   "stock": zod.number().int().min(adjustFp360StockResponseStockMin),
   "reserved": zod.number().int().min(adjustFp360StockResponseReservedMin),
   "costCents": zod.number().int().min(adjustFp360StockResponseCostCentsMin),
   "minimumStock": zod.number().int().min(adjustFp360StockResponseMinimumStockMin),
+  "maxDiscountBasisPoints": zod.number().int().min(adjustFp360StockResponseMaxDiscountBasisPointsMin),
+  "leadTimeDays": zod.number().int().min(adjustFp360StockResponseLeadTimeDaysMin),
+  "supplierOrganizationId": zod.string().nullable(),
   "isActive": zod.boolean(),
   "isPublished": zod.boolean()
+})
+
+
+export const ListPurchaseRequestsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "requestNumber": zod.string(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "department": zod.string(),
+  "urgency": zod.enum(['low', 'normal', 'high', 'urgent']),
+  "deadline": zod.string().date().nullable(),
+  "budgetCapCents": zod.number().int(),
+  "status": zod.enum(['draft', 'requested', 'pending_approval', 'approved', 'rejected', 'ordered', 'cancelled']),
+  "lineCount": zod.number().int(),
+  "offerCount": zod.number().int(),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+export const ListPurchaseRequestsResponse = zod.array(ListPurchaseRequestsResponseItem)
+
+
+export const createPurchaseRequestBodyDepartmentMin = 2;
+export const createPurchaseRequestBodyDepartmentMax = 100;
+
+export const createPurchaseRequestBodyBudgetCapCentsMax = 100000000;
+
+export const createPurchaseRequestBodyPurposeMin = 5;
+export const createPurchaseRequestBodyPurposeMax = 500;
+
+export const createPurchaseRequestBodyRequestedSupplierIdsMin = 2;
+export const createPurchaseRequestBodyRequestedSupplierIdsMax = 5;
+
+export const createPurchaseRequestBodyLinesItemQuantityMax = 1000000;
+
+export const createPurchaseRequestBodyLinesItemJustificationMin = 5;
+export const createPurchaseRequestBodyLinesItemJustificationMax = 300;
+
+export const createPurchaseRequestBodyLinesMax = 50;
+
+
+
+export const CreatePurchaseRequestBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "organizationId": zod.string().uuid(),
+  "department": zod.string().min(createPurchaseRequestBodyDepartmentMin).max(createPurchaseRequestBodyDepartmentMax),
+  "urgency": zod.enum(['low', 'normal', 'high', 'urgent']),
+  "deadline": zod.string().date().nullable(),
+  "budgetCapCents": zod.number().int().min(1).max(createPurchaseRequestBodyBudgetCapCentsMax),
+  "purpose": zod.string().min(createPurchaseRequestBodyPurposeMin).max(createPurchaseRequestBodyPurposeMax),
+  "requestedSupplierIds": zod.array(zod.string().uuid()).min(createPurchaseRequestBodyRequestedSupplierIdsMin).max(createPurchaseRequestBodyRequestedSupplierIdsMax),
+  "lines": zod.array(zod.object({
+  "productId": zod.string().uuid(),
+  "quantity": zod.number().int().min(1).max(createPurchaseRequestBodyLinesItemQuantityMax),
+  "justification": zod.string().min(createPurchaseRequestBodyLinesItemJustificationMin).max(createPurchaseRequestBodyLinesItemJustificationMax)
+})).min(1).max(createPurchaseRequestBodyLinesMax)
+})
+
+export const CreatePurchaseRequestResponse = zod.object({
+  "id": zod.string().uuid(),
+  "requestNumber": zod.string(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "department": zod.string(),
+  "urgency": zod.enum(['low', 'normal', 'high', 'urgent']),
+  "deadline": zod.string().date().nullable(),
+  "budgetCapCents": zod.number().int(),
+  "purpose": zod.string(),
+  "status": zod.enum(['draft', 'requested', 'pending_approval', 'approved', 'rejected', 'ordered', 'cancelled']),
+  "lineCount": zod.number().int(),
+  "offerCount": zod.number().int(),
+  "requestedSuppliers": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "island": zod.string()
+})),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "justification": zod.string()
+})),
+  "createdByRole": zod.string(),
+  "decisionReason": zod.string().nullable(),
+  "awardedReason": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+export const GetPurchaseRequestParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetPurchaseRequestResponse = zod.object({
+  "id": zod.string().uuid(),
+  "requestNumber": zod.string(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "department": zod.string(),
+  "urgency": zod.enum(['low', 'normal', 'high', 'urgent']),
+  "deadline": zod.string().date().nullable(),
+  "budgetCapCents": zod.number().int(),
+  "purpose": zod.string(),
+  "status": zod.enum(['draft', 'requested', 'pending_approval', 'approved', 'rejected', 'ordered', 'cancelled']),
+  "lineCount": zod.number().int(),
+  "offerCount": zod.number().int(),
+  "requestedSuppliers": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "island": zod.string()
+})),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "justification": zod.string()
+})),
+  "createdByRole": zod.string(),
+  "decisionReason": zod.string().nullable(),
+  "awardedReason": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+export const SubmitPurchaseRequestParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const submitPurchaseRequestBodyReasonMin = 5;
+export const submitPurchaseRequestBodyReasonMax = 500;
+
+
+
+export const SubmitPurchaseRequestBody = zod.object({
+  "reason": zod.string().min(submitPurchaseRequestBodyReasonMin).max(submitPurchaseRequestBodyReasonMax)
+})
+
+export const SubmitPurchaseRequestResponse = zod.object({
+  "id": zod.string().uuid(),
+  "requestNumber": zod.string(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "department": zod.string(),
+  "urgency": zod.enum(['low', 'normal', 'high', 'urgent']),
+  "deadline": zod.string().date().nullable(),
+  "budgetCapCents": zod.number().int(),
+  "purpose": zod.string(),
+  "status": zod.enum(['draft', 'requested', 'pending_approval', 'approved', 'rejected', 'ordered', 'cancelled']),
+  "lineCount": zod.number().int(),
+  "offerCount": zod.number().int(),
+  "requestedSuppliers": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "island": zod.string()
+})),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "justification": zod.string()
+})),
+  "createdByRole": zod.string(),
+  "decisionReason": zod.string().nullable(),
+  "awardedReason": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+export const ListPurchaseOffersParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ListPurchaseOffersResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "requestId": zod.string().uuid(),
+  "supplierOrganizationId": zod.string().uuid(),
+  "supplierName": zod.string(),
+  "quoteReference": zod.string(),
+  "deliveryDays": zod.number().int(),
+  "paymentDays": zod.number().int(),
+  "freightCents": zod.number().int(),
+  "qualityScoreBasisPoints": zod.number().int(),
+  "validUntil": zod.string().date().nullable(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int(),
+  "totalCents": zod.number().int(),
+  "priceScoreBasisPoints": zod.number().int(),
+  "deliveryScoreBasisPoints": zod.number().int(),
+  "termsScoreBasisPoints": zod.number().int(),
+  "weightedScoreBasisPoints": zod.number().int(),
+  "lines": zod.array(zod.object({
+  "requestLineId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPriceCents": zod.number().int(),
+  "igicBasisPoints": zod.number().int(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int()
+})),
+  "createdByRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListPurchaseOffersResponse = zod.array(ListPurchaseOffersResponseItem)
+
+
+export const CreatePurchaseOfferParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const createPurchaseOfferBodyQuoteReferenceMax = 80;
+
+export const createPurchaseOfferBodyDeliveryDaysMax = 365;
+
+export const createPurchaseOfferBodyPaymentDaysMin = 0;
+export const createPurchaseOfferBodyPaymentDaysMax = 365;
+
+export const createPurchaseOfferBodyFreightCentsMin = 0;
+export const createPurchaseOfferBodyFreightCentsMax = 100000000;
+
+export const createPurchaseOfferBodyQualityScoreBasisPointsMin = 0;
+export const createPurchaseOfferBodyQualityScoreBasisPointsMax = 10000;
+
+export const createPurchaseOfferBodyLinesItemUnitPriceCentsMin = 0;
+export const createPurchaseOfferBodyLinesItemUnitPriceCentsMax = 100000000;
+
+export const createPurchaseOfferBodyLinesItemIgicBasisPointsMin = 0;
+export const createPurchaseOfferBodyLinesItemIgicBasisPointsMax = 10000;
+
+export const createPurchaseOfferBodyLinesMax = 50;
+
+
+
+export const CreatePurchaseOfferBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "supplierOrganizationId": zod.string().uuid(),
+  "quoteReference": zod.string().min(1).max(createPurchaseOfferBodyQuoteReferenceMax),
+  "deliveryDays": zod.number().int().min(1).max(createPurchaseOfferBodyDeliveryDaysMax),
+  "paymentDays": zod.number().int().min(createPurchaseOfferBodyPaymentDaysMin).max(createPurchaseOfferBodyPaymentDaysMax),
+  "freightCents": zod.number().int().min(createPurchaseOfferBodyFreightCentsMin).max(createPurchaseOfferBodyFreightCentsMax),
+  "qualityScoreBasisPoints": zod.number().int().min(createPurchaseOfferBodyQualityScoreBasisPointsMin).max(createPurchaseOfferBodyQualityScoreBasisPointsMax),
+  "validUntil": zod.string().date().nullable(),
+  "lines": zod.array(zod.object({
+  "requestLineId": zod.string().uuid(),
+  "unitPriceCents": zod.number().int().min(createPurchaseOfferBodyLinesItemUnitPriceCentsMin).max(createPurchaseOfferBodyLinesItemUnitPriceCentsMax),
+  "igicBasisPoints": zod.number().int().min(createPurchaseOfferBodyLinesItemIgicBasisPointsMin).max(createPurchaseOfferBodyLinesItemIgicBasisPointsMax)
+})).min(1).max(createPurchaseOfferBodyLinesMax)
+})
+
+export const CreatePurchaseOfferResponse = zod.object({
+  "id": zod.string().uuid(),
+  "requestId": zod.string().uuid(),
+  "supplierOrganizationId": zod.string().uuid(),
+  "supplierName": zod.string(),
+  "quoteReference": zod.string(),
+  "deliveryDays": zod.number().int(),
+  "paymentDays": zod.number().int(),
+  "freightCents": zod.number().int(),
+  "qualityScoreBasisPoints": zod.number().int(),
+  "validUntil": zod.string().date().nullable(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int(),
+  "totalCents": zod.number().int(),
+  "priceScoreBasisPoints": zod.number().int(),
+  "deliveryScoreBasisPoints": zod.number().int(),
+  "termsScoreBasisPoints": zod.number().int(),
+  "weightedScoreBasisPoints": zod.number().int(),
+  "lines": zod.array(zod.object({
+  "requestLineId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPriceCents": zod.number().int(),
+  "igicBasisPoints": zod.number().int(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int()
+})),
+  "createdByRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+export const ReviewPurchaseRequestParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const reviewPurchaseRequestBodyReasonMin = 5;
+export const reviewPurchaseRequestBodyReasonMax = 500;
+
+
+
+export const ReviewPurchaseRequestBody = zod.object({
+  "reason": zod.string().min(reviewPurchaseRequestBodyReasonMin).max(reviewPurchaseRequestBodyReasonMax)
+})
+
+export const ReviewPurchaseRequestResponse = zod.object({
+  "id": zod.string().uuid(),
+  "requestNumber": zod.string(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "department": zod.string(),
+  "urgency": zod.enum(['low', 'normal', 'high', 'urgent']),
+  "deadline": zod.string().date().nullable(),
+  "budgetCapCents": zod.number().int(),
+  "purpose": zod.string(),
+  "status": zod.enum(['draft', 'requested', 'pending_approval', 'approved', 'rejected', 'ordered', 'cancelled']),
+  "lineCount": zod.number().int(),
+  "offerCount": zod.number().int(),
+  "requestedSuppliers": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "island": zod.string()
+})),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "justification": zod.string()
+})),
+  "createdByRole": zod.string(),
+  "decisionReason": zod.string().nullable(),
+  "awardedReason": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+export const DecidePurchaseRequestParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const decidePurchaseRequestBodyReasonMin = 5;
+export const decidePurchaseRequestBodyReasonMax = 500;
+
+
+
+export const DecidePurchaseRequestBody = zod.object({
+  "decision": zod.enum(['approved', 'rejected']),
+  "reason": zod.string().min(decidePurchaseRequestBodyReasonMin).max(decidePurchaseRequestBodyReasonMax)
+})
+
+export const DecidePurchaseRequestResponse = zod.object({
+  "id": zod.string().uuid(),
+  "requestNumber": zod.string(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "department": zod.string(),
+  "urgency": zod.enum(['low', 'normal', 'high', 'urgent']),
+  "deadline": zod.string().date().nullable(),
+  "budgetCapCents": zod.number().int(),
+  "purpose": zod.string(),
+  "status": zod.enum(['draft', 'requested', 'pending_approval', 'approved', 'rejected', 'ordered', 'cancelled']),
+  "lineCount": zod.number().int(),
+  "offerCount": zod.number().int(),
+  "requestedSuppliers": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "island": zod.string()
+})),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "justification": zod.string()
+})),
+  "createdByRole": zod.string(),
+  "decisionReason": zod.string().nullable(),
+  "awardedReason": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+export const AwardPurchaseOrderParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const awardPurchaseOrderBodyReasonMin = 5;
+export const awardPurchaseOrderBodyReasonMax = 500;
+
+
+
+export const AwardPurchaseOrderBody = zod.object({
+  "offerId": zod.string().uuid(),
+  "reason": zod.string().min(awardPurchaseOrderBodyReasonMin).max(awardPurchaseOrderBodyReasonMax)
+})
+
+export const AwardPurchaseOrderResponse = zod.object({
+  "id": zod.string().uuid(),
+  "orderNumber": zod.string(),
+  "requestId": zod.string().uuid(),
+  "requestNumber": zod.string(),
+  "buyerOrganizationId": zod.string().uuid(),
+  "buyerOrganizationName": zod.string(),
+  "supplierOrganizationId": zod.string().uuid(),
+  "supplierName": zod.string(),
+  "offerId": zod.string().uuid(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int(),
+  "freightCents": zod.number().int(),
+  "totalCents": zod.number().int(),
+  "status": zod.enum(['ordered', 'partial', 'received']),
+  "expectedDate": zod.string().date().nullable(),
+  "receivedDate": zod.string().date().nullable(),
+  "awardedReason": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPriceCents": zod.number().int(),
+  "igicBasisPoints": zod.number().int(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int()
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+export const CancelPurchaseRequestParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const cancelPurchaseRequestBodyReasonMin = 5;
+export const cancelPurchaseRequestBodyReasonMax = 500;
+
+
+
+export const CancelPurchaseRequestBody = zod.object({
+  "reason": zod.string().min(cancelPurchaseRequestBodyReasonMin).max(cancelPurchaseRequestBodyReasonMax)
+})
+
+export const CancelPurchaseRequestResponse = zod.object({
+  "id": zod.string().uuid(),
+  "requestNumber": zod.string(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "department": zod.string(),
+  "urgency": zod.enum(['low', 'normal', 'high', 'urgent']),
+  "deadline": zod.string().date().nullable(),
+  "budgetCapCents": zod.number().int(),
+  "purpose": zod.string(),
+  "status": zod.enum(['draft', 'requested', 'pending_approval', 'approved', 'rejected', 'ordered', 'cancelled']),
+  "lineCount": zod.number().int(),
+  "offerCount": zod.number().int(),
+  "requestedSuppliers": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "island": zod.string()
+})),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "justification": zod.string()
+})),
+  "createdByRole": zod.string(),
+  "decisionReason": zod.string().nullable(),
+  "awardedReason": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+export const ListPurchaseEventsParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ListPurchaseEventsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "requestId": zod.string().uuid(),
+  "action": zod.string(),
+  "fromStatus": zod.string().nullable(),
+  "toStatus": zod.enum(['draft', 'requested', 'pending_approval', 'approved', 'rejected', 'ordered', 'partial', 'received', 'cancelled', 'pending_review', 'conformed', 'blocked', 'correction_requested', 'rectified']),
+  "reason": zod.string(),
+  "actorRole": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListPurchaseEventsResponse = zod.array(ListPurchaseEventsResponseItem)
+
+
+export const ListPurchaseOrdersResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "orderNumber": zod.string(),
+  "requestId": zod.string().uuid(),
+  "requestNumber": zod.string(),
+  "buyerOrganizationId": zod.string().uuid(),
+  "buyerOrganizationName": zod.string(),
+  "supplierOrganizationId": zod.string().uuid(),
+  "supplierName": zod.string(),
+  "offerId": zod.string().uuid(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int(),
+  "freightCents": zod.number().int(),
+  "totalCents": zod.number().int(),
+  "status": zod.enum(['ordered', 'partial', 'received']),
+  "expectedDate": zod.string().date().nullable(),
+  "receivedDate": zod.string().date().nullable(),
+  "awardedReason": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPriceCents": zod.number().int(),
+  "igicBasisPoints": zod.number().int(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int()
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListPurchaseOrdersResponse = zod.array(ListPurchaseOrdersResponseItem)
+
+
+export const RecordPurchaseReceiptParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const recordPurchaseReceiptBodyReceiptReferenceMax = 80;
+
+export const recordPurchaseReceiptBodyLinesItemQuantityAcceptedMin = 0;
+export const recordPurchaseReceiptBodyLinesItemQuantityAcceptedMax = 1000000;
+
+export const recordPurchaseReceiptBodyLinesItemQuantityRejectedMin = 0;
+export const recordPurchaseReceiptBodyLinesItemQuantityRejectedMax = 1000000;
+
+export const recordPurchaseReceiptBodyLinesItemIssueReasonMax = 500;
+
+export const recordPurchaseReceiptBodyLinesMax = 50;
+
+
+
+export const RecordPurchaseReceiptBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "receiptReference": zod.string().min(1).max(recordPurchaseReceiptBodyReceiptReferenceMax),
+  "receivedDate": zod.string().date(),
+  "lines": zod.array(zod.object({
+  "purchaseOrderLineId": zod.string().uuid(),
+  "quantityAccepted": zod.number().int().min(recordPurchaseReceiptBodyLinesItemQuantityAcceptedMin).max(recordPurchaseReceiptBodyLinesItemQuantityAcceptedMax),
+  "quantityRejected": zod.number().int().min(recordPurchaseReceiptBodyLinesItemQuantityRejectedMin).max(recordPurchaseReceiptBodyLinesItemQuantityRejectedMax),
+  "issueReason": zod.string().max(recordPurchaseReceiptBodyLinesItemIssueReasonMax).nullable()
+})).min(1).max(recordPurchaseReceiptBodyLinesMax)
+})
+
+export const RecordPurchaseReceiptResponse = zod.object({
+  "id": zod.string().uuid(),
+  "orderId": zod.string().uuid(),
+  "orderNumber": zod.string(),
+  "supplierName": zod.string(),
+  "receiptReference": zod.string(),
+  "receivedDate": zod.string().date(),
+  "status": zod.enum(['partial', 'received']),
+  "acceptedUnits": zod.number().int(),
+  "rejectedUnits": zod.number().int(),
+  "lines": zod.array(zod.object({
+  "purchaseOrderLineId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantityOrdered": zod.number().int(),
+  "quantityAccepted": zod.number().int(),
+  "quantityRejected": zod.number().int(),
+  "issueReason": zod.string().nullable()
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+export const ListPurchaseReceiptsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "orderId": zod.string().uuid(),
+  "orderNumber": zod.string(),
+  "supplierName": zod.string(),
+  "receiptReference": zod.string(),
+  "receivedDate": zod.string().date(),
+  "status": zod.enum(['partial', 'received']),
+  "acceptedUnits": zod.number().int(),
+  "rejectedUnits": zod.number().int(),
+  "lines": zod.array(zod.object({
+  "purchaseOrderLineId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantityOrdered": zod.number().int(),
+  "quantityAccepted": zod.number().int(),
+  "quantityRejected": zod.number().int(),
+  "issueReason": zod.string().nullable()
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListPurchaseReceiptsResponse = zod.array(ListPurchaseReceiptsResponseItem)
+
+
+export const CreatePurchaseInvoiceParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const createPurchaseInvoiceBodyInvoiceReferenceMax = 80;
+
+export const createPurchaseInvoiceBodyBaseCentsMin = 0;
+export const createPurchaseInvoiceBodyBaseCentsMax = 100000000;
+
+export const createPurchaseInvoiceBodyIgicCentsMin = 0;
+export const createPurchaseInvoiceBodyIgicCentsMax = 100000000;
+
+export const createPurchaseInvoiceBodyFreightCentsMin = 0;
+export const createPurchaseInvoiceBodyFreightCentsMax = 100000000;
+
+export const createPurchaseInvoiceBodyTotalCentsMin = 0;
+export const createPurchaseInvoiceBodyTotalCentsMax = 100000000;
+
+export const createPurchaseInvoiceBodyLinesItemQuantityMax = 1000000;
+
+export const createPurchaseInvoiceBodyLinesItemUnitPriceCentsMin = 0;
+export const createPurchaseInvoiceBodyLinesItemUnitPriceCentsMax = 100000000;
+
+export const createPurchaseInvoiceBodyLinesItemIgicBasisPointsMin = 0;
+export const createPurchaseInvoiceBodyLinesItemIgicBasisPointsMax = 10000;
+
+export const createPurchaseInvoiceBodyLinesMax = 50;
+
+
+
+export const CreatePurchaseInvoiceBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "invoiceReference": zod.string().min(1).max(createPurchaseInvoiceBodyInvoiceReferenceMax),
+  "invoiceDate": zod.string().date(),
+  "dueDate": zod.string().date().nullable(),
+  "supersedesInvoiceId": zod.string().uuid().nullable(),
+  "baseCents": zod.number().int().min(createPurchaseInvoiceBodyBaseCentsMin).max(createPurchaseInvoiceBodyBaseCentsMax),
+  "igicCents": zod.number().int().min(createPurchaseInvoiceBodyIgicCentsMin).max(createPurchaseInvoiceBodyIgicCentsMax),
+  "freightCents": zod.number().int().min(createPurchaseInvoiceBodyFreightCentsMin).max(createPurchaseInvoiceBodyFreightCentsMax),
+  "totalCents": zod.number().int().min(createPurchaseInvoiceBodyTotalCentsMin).max(createPurchaseInvoiceBodyTotalCentsMax),
+  "lines": zod.array(zod.object({
+  "purchaseOrderLineId": zod.string().uuid(),
+  "quantity": zod.number().int().min(1).max(createPurchaseInvoiceBodyLinesItemQuantityMax),
+  "unitPriceCents": zod.number().int().min(createPurchaseInvoiceBodyLinesItemUnitPriceCentsMin).max(createPurchaseInvoiceBodyLinesItemUnitPriceCentsMax),
+  "igicBasisPoints": zod.number().int().min(createPurchaseInvoiceBodyLinesItemIgicBasisPointsMin).max(createPurchaseInvoiceBodyLinesItemIgicBasisPointsMax)
+})).min(1).max(createPurchaseInvoiceBodyLinesMax)
+})
+
+export const CreatePurchaseInvoiceResponse = zod.object({
+  "id": zod.string().uuid(),
+  "orderId": zod.string().uuid(),
+  "orderNumber": zod.string(),
+  "requestId": zod.string().uuid(),
+  "supplierOrganizationId": zod.string().uuid(),
+  "supplierName": zod.string(),
+  "supersedesInvoiceId": zod.string().uuid().nullable(),
+  "invoiceReference": zod.string(),
+  "invoiceDate": zod.string().date(),
+  "dueDate": zod.string().date().nullable(),
+  "status": zod.enum(['pending_review', 'conformed', 'blocked', 'correction_requested', 'rectified']),
+  "matchStatus": zod.enum(['match', 'difference']),
+  "matchSummary": zod.string(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int(),
+  "freightCents": zod.number().int(),
+  "totalCents": zod.number().int(),
+  "decisionReason": zod.string().nullable(),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "purchaseOrderLineId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "expectedReceivedQuantity": zod.number().int(),
+  "unitPriceCents": zod.number().int(),
+  "expectedUnitPriceCents": zod.number().int(),
+  "igicBasisPoints": zod.number().int(),
+  "expectedIgicBasisPoints": zod.number().int(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int(),
+  "matches": zod.boolean()
+})),
+  "createdByRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+export const ListPurchaseInvoicesResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "orderId": zod.string().uuid(),
+  "orderNumber": zod.string(),
+  "requestId": zod.string().uuid(),
+  "supplierOrganizationId": zod.string().uuid(),
+  "supplierName": zod.string(),
+  "supersedesInvoiceId": zod.string().uuid().nullable(),
+  "invoiceReference": zod.string(),
+  "invoiceDate": zod.string().date(),
+  "dueDate": zod.string().date().nullable(),
+  "status": zod.enum(['pending_review', 'conformed', 'blocked', 'correction_requested', 'rectified']),
+  "matchStatus": zod.enum(['match', 'difference']),
+  "matchSummary": zod.string(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int(),
+  "freightCents": zod.number().int(),
+  "totalCents": zod.number().int(),
+  "decisionReason": zod.string().nullable(),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "purchaseOrderLineId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "expectedReceivedQuantity": zod.number().int(),
+  "unitPriceCents": zod.number().int(),
+  "expectedUnitPriceCents": zod.number().int(),
+  "igicBasisPoints": zod.number().int(),
+  "expectedIgicBasisPoints": zod.number().int(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int(),
+  "matches": zod.boolean()
+})),
+  "createdByRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListPurchaseInvoicesResponse = zod.array(ListPurchaseInvoicesResponseItem)
+
+
+export const DecidePurchaseInvoiceParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const decidePurchaseInvoiceBodyReasonMin = 5;
+export const decidePurchaseInvoiceBodyReasonMax = 500;
+
+
+
+export const DecidePurchaseInvoiceBody = zod.object({
+  "decision": zod.enum(['conformed', 'blocked', 'correction_requested']),
+  "reason": zod.string().min(decidePurchaseInvoiceBodyReasonMin).max(decidePurchaseInvoiceBodyReasonMax)
+})
+
+export const DecidePurchaseInvoiceResponse = zod.object({
+  "id": zod.string().uuid(),
+  "orderId": zod.string().uuid(),
+  "orderNumber": zod.string(),
+  "requestId": zod.string().uuid(),
+  "supplierOrganizationId": zod.string().uuid(),
+  "supplierName": zod.string(),
+  "supersedesInvoiceId": zod.string().uuid().nullable(),
+  "invoiceReference": zod.string(),
+  "invoiceDate": zod.string().date(),
+  "dueDate": zod.string().date().nullable(),
+  "status": zod.enum(['pending_review', 'conformed', 'blocked', 'correction_requested', 'rectified']),
+  "matchStatus": zod.enum(['match', 'difference']),
+  "matchSummary": zod.string(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int(),
+  "freightCents": zod.number().int(),
+  "totalCents": zod.number().int(),
+  "decisionReason": zod.string().nullable(),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "purchaseOrderLineId": zod.string().uuid(),
+  "sku": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "expectedReceivedQuantity": zod.number().int(),
+  "unitPriceCents": zod.number().int(),
+  "expectedUnitPriceCents": zod.number().int(),
+  "igicBasisPoints": zod.number().int(),
+  "expectedIgicBasisPoints": zod.number().int(),
+  "baseCents": zod.number().int(),
+  "igicCents": zod.number().int(),
+  "matches": zod.boolean()
+})),
+  "createdByRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+export const ListPurchaseSupplierAnalysisResponseItem = zod.object({
+  "supplierOrganizationId": zod.string().uuid(),
+  "supplierName": zod.string(),
+  "isActive": zod.boolean(),
+  "orderCount": zod.number().int(),
+  "receivedOrderCount": zod.number().int(),
+  "onTimeBasisPoints": zod.number().int(),
+  "acceptedUnits": zod.number().int(),
+  "rejectedUnits": zod.number().int(),
+  "qualityAcceptanceBasisPoints": zod.number().int(),
+  "complaintCount": zod.number().int(),
+  "orderedCents": zod.number().int(),
+  "averageOrderCents": zod.number().int()
+})
+export const ListPurchaseSupplierAnalysisResponse = zod.array(ListPurchaseSupplierAnalysisResponseItem)
+
+
+export const ListCrmContactsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "organizationId": zod.string(),
+  "organizationName": zod.string(),
+  "fullName": zod.string(),
+  "position": zod.string(),
+  "channel": zod.enum(['internal', 'school_mediated', 'practice_platform']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListCrmContactsResponse = zod.array(ListCrmContactsResponseItem)
+
+
+export const createCrmContactBodyFullNameMin = 2;
+export const createCrmContactBodyFullNameMax = 120;
+
+export const createCrmContactBodyPositionMin = 2;
+export const createCrmContactBodyPositionMax = 100;
+
+
+
+export const CreateCrmContactBody = zod.object({
+  "organizationId": zod.string().uuid(),
+  "fullName": zod.string().min(createCrmContactBodyFullNameMin).max(createCrmContactBodyFullNameMax),
+  "position": zod.string().min(createCrmContactBodyPositionMin).max(createCrmContactBodyPositionMax),
+  "channel": zod.enum(['internal', 'school_mediated', 'practice_platform'])
+})
+
+export const CreateCrmContactResponse = zod.object({
+  "id": zod.string().uuid(),
+  "organizationId": zod.string(),
+  "organizationName": zod.string(),
+  "fullName": zod.string(),
+  "position": zod.string(),
+  "channel": zod.enum(['internal', 'school_mediated', 'practice_platform']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+export const UpdateCrmContactParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updateCrmContactBodyFullNameMin = 2;
+export const updateCrmContactBodyFullNameMax = 120;
+
+export const updateCrmContactBodyPositionMin = 2;
+export const updateCrmContactBodyPositionMax = 100;
+
+
+
+export const UpdateCrmContactBody = zod.object({
+  "fullName": zod.string().min(updateCrmContactBodyFullNameMin).max(updateCrmContactBodyFullNameMax).optional(),
+  "position": zod.string().min(updateCrmContactBodyPositionMin).max(updateCrmContactBodyPositionMax).optional(),
+  "channel": zod.enum(['internal', 'school_mediated', 'practice_platform']).optional(),
+  "isActive": zod.boolean().optional()
+})
+
+export const UpdateCrmContactResponse = zod.object({
+  "id": zod.string().uuid(),
+  "organizationId": zod.string(),
+  "organizationName": zod.string(),
+  "fullName": zod.string(),
+  "position": zod.string(),
+  "channel": zod.enum(['internal', 'school_mediated', 'practice_platform']),
+  "isActive": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+export const ListCrmOpportunitiesResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "title": zod.string(),
+  "stage": zod.enum(['new', 'qualified', 'proposal', 'negotiation', 'won', 'lost']),
+  "estimatedValueCents": zod.number().int(),
+  "probabilityBasisPoints": zod.number().int(),
+  "expectedDate": zod.string().date().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+export const ListCrmOpportunitiesResponse = zod.array(ListCrmOpportunitiesResponseItem)
+
+
+export const createCrmOpportunityBodyTitleMin = 2;
+export const createCrmOpportunityBodyTitleMax = 150;
+
+export const createCrmOpportunityBodyEstimatedValueCentsMin = 0;
+export const createCrmOpportunityBodyEstimatedValueCentsMax = 100000000;
+
+export const createCrmOpportunityBodyReasonMin = 5;
+export const createCrmOpportunityBodyReasonMax = 500;
+
+
+
+export const CreateCrmOpportunityBody = zod.object({
+  "organizationId": zod.string().uuid(),
+  "title": zod.string().min(createCrmOpportunityBodyTitleMin).max(createCrmOpportunityBodyTitleMax),
+  "estimatedValueCents": zod.number().int().min(createCrmOpportunityBodyEstimatedValueCentsMin).max(createCrmOpportunityBodyEstimatedValueCentsMax),
+  "expectedDate": zod.string().date().nullable(),
+  "reason": zod.string().min(createCrmOpportunityBodyReasonMin).max(createCrmOpportunityBodyReasonMax)
+})
+
+export const CreateCrmOpportunityResponse = zod.object({
+  "id": zod.string().uuid(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "title": zod.string(),
+  "stage": zod.enum(['new', 'qualified', 'proposal', 'negotiation', 'won', 'lost']),
+  "estimatedValueCents": zod.number().int(),
+  "probabilityBasisPoints": zod.number().int(),
+  "expectedDate": zod.string().date().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+export const UpdateCrmOpportunityParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updateCrmOpportunityBodyTitleMin = 2;
+export const updateCrmOpportunityBodyTitleMax = 150;
+
+export const updateCrmOpportunityBodyEstimatedValueCentsMin = 0;
+export const updateCrmOpportunityBodyEstimatedValueCentsMax = 100000000;
+
+
+
+export const UpdateCrmOpportunityBody = zod.object({
+  "title": zod.string().min(updateCrmOpportunityBodyTitleMin).max(updateCrmOpportunityBodyTitleMax).optional(),
+  "estimatedValueCents": zod.number().int().min(updateCrmOpportunityBodyEstimatedValueCentsMin).max(updateCrmOpportunityBodyEstimatedValueCentsMax).optional(),
+  "expectedDate": zod.string().date().nullish()
+})
+
+export const UpdateCrmOpportunityResponse = zod.object({
+  "id": zod.string().uuid(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "title": zod.string(),
+  "stage": zod.enum(['new', 'qualified', 'proposal', 'negotiation', 'won', 'lost']),
+  "estimatedValueCents": zod.number().int(),
+  "probabilityBasisPoints": zod.number().int(),
+  "expectedDate": zod.string().date().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+export const MoveCrmOpportunityParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const moveCrmOpportunityBodyReasonMin = 5;
+export const moveCrmOpportunityBodyReasonMax = 500;
+
+
+
+export const MoveCrmOpportunityBody = zod.object({
+  "stage": zod.enum(['new', 'qualified', 'proposal', 'negotiation', 'won', 'lost']),
+  "reason": zod.string().min(moveCrmOpportunityBodyReasonMin).max(moveCrmOpportunityBodyReasonMax)
+})
+
+export const MoveCrmOpportunityResponse = zod.object({
+  "id": zod.string().uuid(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "title": zod.string(),
+  "stage": zod.enum(['new', 'qualified', 'proposal', 'negotiation', 'won', 'lost']),
+  "estimatedValueCents": zod.number().int(),
+  "probabilityBasisPoints": zod.number().int(),
+  "expectedDate": zod.string().date().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+export const ListCrmOpportunityHistoryResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "opportunityId": zod.string().uuid(),
+  "opportunityTitle": zod.string(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "fromStage": zod.union([zod.literal('new'),zod.literal('qualified'),zod.literal('proposal'),zod.literal('negotiation'),zod.literal('won'),zod.literal('lost'),zod.literal(null)]).nullable(),
+  "toStage": zod.enum(['new', 'qualified', 'proposal', 'negotiation', 'won', 'lost']),
+  "reason": zod.string(),
+  "actorRole": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListCrmOpportunityHistoryResponse = zod.array(ListCrmOpportunityHistoryResponseItem)
+
+
+export const ListCrmActivitiesResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "opportunityId": zod.string().uuid(),
+  "opportunityTitle": zod.string(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "contactId": zod.string().uuid().nullable(),
+  "contactName": zod.string().nullable(),
+  "kind": zod.enum(['note', 'call_simulation', 'meeting_simulation', 'task']),
+  "description": zod.string(),
+  "status": zod.enum(['planned', 'completed', 'cancelled']),
+  "dueDate": zod.string().date().nullable(),
+  "simulatedDate": zod.string().date(),
+  "actorRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+export const ListCrmActivitiesResponse = zod.array(ListCrmActivitiesResponseItem)
+
+
+export const createCrmActivityBodyDescriptionMin = 5;
+export const createCrmActivityBodyDescriptionMax = 500;
+
+
+
+export const CreateCrmActivityBody = zod.object({
+  "opportunityId": zod.string().uuid(),
+  "contactId": zod.string().uuid().nullish(),
+  "kind": zod.enum(['note', 'call_simulation', 'meeting_simulation', 'task']),
+  "description": zod.string().min(createCrmActivityBodyDescriptionMin).max(createCrmActivityBodyDescriptionMax),
+  "dueDate": zod.string().date().nullish(),
+  "simulatedDate": zod.string().date()
+})
+
+export const CreateCrmActivityResponse = zod.object({
+  "id": zod.string().uuid(),
+  "opportunityId": zod.string().uuid(),
+  "opportunityTitle": zod.string(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "contactId": zod.string().uuid().nullable(),
+  "contactName": zod.string().nullable(),
+  "kind": zod.enum(['note', 'call_simulation', 'meeting_simulation', 'task']),
+  "description": zod.string(),
+  "status": zod.enum(['planned', 'completed', 'cancelled']),
+  "dueDate": zod.string().date().nullable(),
+  "simulatedDate": zod.string().date(),
+  "actorRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+export const UpdateCrmActivityParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updateCrmActivityBodyDescriptionMin = 5;
+export const updateCrmActivityBodyDescriptionMax = 500;
+
+
+
+export const UpdateCrmActivityBody = zod.object({
+  "description": zod.string().min(updateCrmActivityBodyDescriptionMin).max(updateCrmActivityBodyDescriptionMax).optional(),
+  "status": zod.enum(['planned', 'completed', 'cancelled']).optional(),
+  "dueDate": zod.string().date().nullish()
+})
+
+export const UpdateCrmActivityResponse = zod.object({
+  "id": zod.string().uuid(),
+  "opportunityId": zod.string().uuid(),
+  "opportunityTitle": zod.string(),
+  "organizationId": zod.string().uuid(),
+  "organizationName": zod.string(),
+  "contactId": zod.string().uuid().nullable(),
+  "contactName": zod.string().nullable(),
+  "kind": zod.enum(['note', 'call_simulation', 'meeting_simulation', 'task']),
+  "description": zod.string(),
+  "status": zod.enum(['planned', 'completed', 'cancelled']),
+  "dueDate": zod.string().date().nullable(),
+  "simulatedDate": zod.string().date(),
+  "actorRole": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
 })
 
 
@@ -578,6 +2583,8 @@ export const listFp360OrdersResponseLinesItemShippedQuantityMin = 0;
 export const listFp360OrdersResponseLinesItemInvoicedQuantityMin = 0;
 
 export const listFp360OrdersResponseLinesItemUnitPriceCentsMin = 0;
+
+export const listFp360OrdersResponseLinesItemUnitCostCentsMin = 0;
 
 export const listFp360OrdersResponseTotalCentsMin = 0;
 
@@ -595,7 +2602,10 @@ export const ListFp360OrdersResponseItem = zod.object({
   "quantity": zod.number().int().min(1),
   "shippedQuantity": zod.number().int().min(listFp360OrdersResponseLinesItemShippedQuantityMin),
   "invoicedQuantity": zod.number().int().min(listFp360OrdersResponseLinesItemInvoicedQuantityMin),
-  "unitPriceCents": zod.number().int().min(listFp360OrdersResponseLinesItemUnitPriceCentsMin)
+  "unitPriceCents": zod.number().int().min(listFp360OrdersResponseLinesItemUnitPriceCentsMin),
+  "unitCostCents": zod.number().int().min(listFp360OrdersResponseLinesItemUnitCostCentsMin).nullable(),
+  "itemType": zod.enum(['product', 'service']),
+  "tracksInventory": zod.boolean()
 })),
   "totalCents": zod.number().int().min(listFp360OrdersResponseTotalCentsMin),
   "simulatedDate": zod.string().date(),
@@ -629,6 +2639,8 @@ export const createFp360OrderResponseLinesItemInvoicedQuantityMin = 0;
 
 export const createFp360OrderResponseLinesItemUnitPriceCentsMin = 0;
 
+export const createFp360OrderResponseLinesItemUnitCostCentsMin = 0;
+
 export const createFp360OrderResponseTotalCentsMin = 0;
 
 
@@ -645,7 +2657,10 @@ export const CreateFp360OrderResponse = zod.object({
   "quantity": zod.number().int().min(1),
   "shippedQuantity": zod.number().int().min(createFp360OrderResponseLinesItemShippedQuantityMin),
   "invoicedQuantity": zod.number().int().min(createFp360OrderResponseLinesItemInvoicedQuantityMin),
-  "unitPriceCents": zod.number().int().min(createFp360OrderResponseLinesItemUnitPriceCentsMin)
+  "unitPriceCents": zod.number().int().min(createFp360OrderResponseLinesItemUnitPriceCentsMin),
+  "unitCostCents": zod.number().int().min(createFp360OrderResponseLinesItemUnitCostCentsMin).nullable(),
+  "itemType": zod.enum(['product', 'service']),
+  "tracksInventory": zod.boolean()
 })),
   "totalCents": zod.number().int().min(createFp360OrderResponseTotalCentsMin),
   "simulatedDate": zod.string().date(),
@@ -667,6 +2682,8 @@ export const confirmFp360OrderResponseLinesItemInvoicedQuantityMin = 0;
 
 export const confirmFp360OrderResponseLinesItemUnitPriceCentsMin = 0;
 
+export const confirmFp360OrderResponseLinesItemUnitCostCentsMin = 0;
+
 export const confirmFp360OrderResponseTotalCentsMin = 0;
 
 
@@ -683,7 +2700,10 @@ export const ConfirmFp360OrderResponse = zod.object({
   "quantity": zod.number().int().min(1),
   "shippedQuantity": zod.number().int().min(confirmFp360OrderResponseLinesItemShippedQuantityMin),
   "invoicedQuantity": zod.number().int().min(confirmFp360OrderResponseLinesItemInvoicedQuantityMin),
-  "unitPriceCents": zod.number().int().min(confirmFp360OrderResponseLinesItemUnitPriceCentsMin)
+  "unitPriceCents": zod.number().int().min(confirmFp360OrderResponseLinesItemUnitPriceCentsMin),
+  "unitCostCents": zod.number().int().min(confirmFp360OrderResponseLinesItemUnitCostCentsMin).nullable(),
+  "itemType": zod.enum(['product', 'service']),
+  "tracksInventory": zod.boolean()
 })),
   "totalCents": zod.number().int().min(confirmFp360OrderResponseTotalCentsMin),
   "simulatedDate": zod.string().date(),
@@ -718,6 +2738,8 @@ export const dispatchFp360OrderResponseLinesItemInvoicedQuantityMin = 0;
 
 export const dispatchFp360OrderResponseLinesItemUnitPriceCentsMin = 0;
 
+export const dispatchFp360OrderResponseLinesItemUnitCostCentsMin = 0;
+
 export const dispatchFp360OrderResponseTotalCentsMin = 0;
 
 
@@ -734,7 +2756,10 @@ export const DispatchFp360OrderResponse = zod.object({
   "quantity": zod.number().int().min(1),
   "shippedQuantity": zod.number().int().min(dispatchFp360OrderResponseLinesItemShippedQuantityMin),
   "invoicedQuantity": zod.number().int().min(dispatchFp360OrderResponseLinesItemInvoicedQuantityMin),
-  "unitPriceCents": zod.number().int().min(dispatchFp360OrderResponseLinesItemUnitPriceCentsMin)
+  "unitPriceCents": zod.number().int().min(dispatchFp360OrderResponseLinesItemUnitPriceCentsMin),
+  "unitCostCents": zod.number().int().min(dispatchFp360OrderResponseLinesItemUnitCostCentsMin).nullable(),
+  "itemType": zod.enum(['product', 'service']),
+  "tracksInventory": zod.boolean()
 })),
   "totalCents": zod.number().int().min(dispatchFp360OrderResponseTotalCentsMin),
   "simulatedDate": zod.string().date(),

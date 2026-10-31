@@ -5,6 +5,7 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+import type { Fp360OrderLineItemType } from './fp360OrderLineItemType';
 
 export interface Fp360OrderLine {
   productId: string;
@@ -17,4 +18,11 @@ export interface Fp360OrderLine {
   invoicedQuantity: number;
   /** @minimum 0 */
   unitPriceCents: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  unitCostCents: number | null;
+  itemType: Fp360OrderLineItemType;
+  tracksInventory: boolean;
 }

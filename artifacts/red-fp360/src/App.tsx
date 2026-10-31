@@ -1,7 +1,7 @@
 import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import {
-  Activity, Archive, ArrowDownLeft, ArrowRight, BadgeCheck, Banknote, BarChart3, Bell,
+  Activity, Archive, ArrowDownLeft, ArrowRight, BadgeCheck, Banknote, BarChart3, Bell, BriefcaseBusiness,
   BookOpen, Boxes, Building2, Check, CheckCircle2, ChevronDown, CircleHelp, ClipboardList,
   Clock3, CreditCard, Download, FileArchive, FileCheck2, FileText, Filter, Globe2,
   GraduationCap, LayoutDashboard, LifeBuoy, Menu, Package, PackageCheck, Plus,
@@ -9,8 +9,8 @@ import {
 } from 'lucide-react';
 import {
   getGetFp360DashboardQueryKey, useConfirmFp360Order, useCreateFp360Order,
-  useDispatchFp360Order, useGetFp360Dashboard, useIssueFp360Invoice,
-  useListFp360Activity, useListFp360Invoices, useListFp360Orders,
+  useDispatchFp360Order, useIssueFp360Invoice,
+  useListFp360Invoices, useListFp360Orders,
   useListFp360Organizations, useListFp360Products, useRecordFp360Payment,
   getGetAuthStatusQueryKey, getGetCurrentIdentityQueryKey, useGetAuthStatus,
   useGetCurrentIdentity, useLogout,
@@ -34,6 +34,9 @@ import { AdminAccessDenied, AdminPage } from '@/components/admin-page';
 import { AcceptInvitation } from '@/components/accept-invitation';
 import { CatalogPage } from '@/components/catalog-page';
 import { OrganizationsDirectory } from '@/components/organizations-directory';
+import { CrmPage } from '@/components/crm-page';
+import { PurchasesPage } from '@/components/purchases-page';
+import DirectionPage from '@/components/direction/DirectionPage';
 
 const queryClient = new QueryClient();
 type Product = Fp360Product;
@@ -54,15 +57,18 @@ const appModules = [
   'Portafolio profesional', 'Evaluación docente', 'Mentoría empresarial',
   'Coordinación intercentros', 'Administración del sistema',
 ];
-const implemented = new Set([1, 2, 3, 5, 6, 15]);
+const implemented = new Set([1, 2, 3, 5, 6, 7, 15]);
 const navItems = [
   { href: '/', label: 'Inicio', icon: LayoutDashboard },
   { href: '/mercado', label: 'Mercado', icon: Globe2 },
   { href: '/ventas', label: 'Ventas', icon: ShoppingCart },
+  { href: '/compras', label: 'Compras', icon: ShoppingBag },
   { href: '/productos', label: 'Catálogo', icon: PackageCheck },
   { href: '/almacen', label: 'Almacén', icon: Boxes },
+  { href: '/logistica', label: 'Logística', icon: Truck },
   { href: '/facturas', label: 'Facturas', icon: ReceiptText },
   { href: '/clientes', label: 'Clientes', icon: Users },
+  { href: '/crm', label: 'CRM', icon: BriefcaseBusiness },
   { href: '/aplicaciones', label: 'Aplicaciones', icon: Package },
   { href: '/documentacion', label: 'Documentación', icon: BookOpen },
 ];
@@ -70,10 +76,13 @@ const titles: Record<string, { title: string; kicker: string; description: strin
   '/': { title: 'Cuadro de mando', kicker: 'DIRECCIÓN · VISTA GENERAL', description: 'Actividad comercial de la empresa simulada y operaciones recientes de la red.' },
   '/mercado': { title: 'Mercado FP360', kicker: 'RED INTERCENTROS · B2B', description: 'Empresas y catálogo comercial de la economía educativa canaria.' },
   '/ventas': { title: 'Ventas', kicker: 'CICLO COMERCIAL · OPERACIONES', description: 'Crea pedidos, confirma reservas y registra expediciones simuladas.' },
+  '/compras': { title: 'Compras y aprovisionamiento', kicker: 'APROVISIONAMIENTO · RED FP360', description: 'Solicita, compara ofertas y emite pedidos de compra simulados.' },
   '/almacen': { title: 'Almacén', kicker: 'EXISTENCIAS · CONTROL', description: 'Consulta stock físico, reservas y disponibilidad comercial.' },
+  '/logistica': { title: 'Logística y distribución', kicker: 'OPERACIONES · ENTREGAS', description: 'Prepara expediciones simuladas y sigue las cantidades entregadas.' },
   '/facturas': { title: 'Facturación', kicker: 'DOCUMENTOS · COBROS', description: 'Emite facturas y registra pagos en el circuito de prácticas.' },
   '/productos': { title: 'Catálogo de productos', kicker: 'CATÁLOGO · INVENTARIO', description: 'Productos inventariables, publicación y ajustes manuales.' },
   '/clientes': { title: 'Directorio de organizaciones', kicker: 'CRM · RED FP360', description: 'Empresas simuladas, centros participantes y relaciones de la red.' },
+  '/crm': { title: 'CRM de prácticas', kicker: 'RELACIONES COMERCIALES · SIMULACIÓN', description: 'Empresas ficticias, oportunidades y seguimiento para aprender el ciclo comercial.' },
   '/aplicaciones': { title: 'Aplicaciones', kicker: 'PLATAFORMA · 26 MÓDULOS', description: 'Catálogo de capacidades previstas y módulos conectados en esta demostración.' },
   '/administracion': { title: 'Usuarios y accesos', kicker: 'ADMINISTRACIÓN', description: 'Gestión de cuentas e invitaciones.' },
   '/documentacion': { title: 'Documentación', kicker: 'CENTRO DE RECURSOS', description: 'Especificación funcional, referencias visuales y materiales del proyecto.' },
@@ -202,42 +211,177 @@ function DashboardPage({ dashboard, activity, products, orders, states }: {
   </main>;
 }
 
-function MarketPage({ organizations, products, stateOrg, stateProducts }: {
-  organizations?: Organization[]; products?: Product[]; stateOrg: DataState; stateProducts: DataState;
+function MarketPage({ organizations, products, orders, stateOrg, stateProducts, stateOrders }: {
+  organizations?: Organization[]; products?: Product[]; orders?: Order[];
+  stateOrg: DataState; stateProducts: DataState; stateOrders: DataState;
 }) {
+  const identity = useGetCurrentIdentity();
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState<'products' | 'partners'>('products');
-  const matchedOrgs = (organizations ?? []).filter((org) => org.isActive).filter((org) => `${org.name} ${org.center} ${org.island} ${org.role}`.toLowerCase().includes(search.toLowerCase()));
-  const matchedProducts = (products ?? []).filter((product) => product.isActive && product.isPublished).filter((product) => `${product.name} ${product.category} ${product.sku}`.toLowerCase().includes(search.toLowerCase()));
-  return <main className="page-content">
-    <PageHeading path="/mercado"><Link className="button button-primary" href="/ventas"><ShoppingCart size={16} /> Nuevo pedido</Link></PageHeading>
+  const [tab, setTab] = useState<'partners' | 'products' | 'operations'>('partners');
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState('');
+  const [selectedProductId, setSelectedProductId] = useState('');
+  const [selectedOrderId, setSelectedOrderId] = useState('');
+  const activeOrganizations = (organizations ?? []).filter((org) => org.isActive);
+  const suppliers = activeOrganizations.filter((org) => org.role === 'seller' || org.role === 'both');
+  const publishedProducts = (products ?? []).filter((product) => product.isActive && product.isPublished);
+  const complete = (order: Order) => ['delivered', 'invoiced', 'paid'].includes(order.status);
+  const completedOrders = (orders ?? []).filter(complete);
+  const currentOrganization = activeOrganizations.find((org) => org.id === identity.data?.organizationId);
+  const canRequestOffer = !['mentor', 'promoter'].includes(identity.data?.role ?? '') &&
+    (currentOrganization?.role === 'buyer' || currentOrganization?.role === 'both');
+  const searchText = search.trim().toLocaleLowerCase('es');
+  const purchaseRequestHref = (productId?: string, supplierId?: string) => {
+    const params = new URLSearchParams();
+    if (productId) params.set('marketProduct', productId);
+    if (supplierId) params.set('marketSupplier', supplierId);
+    const query = params.toString();
+    return query ? `/compras?${query}` : '/compras';
+  };
+  const productsFor = (organizationId: string) => publishedProducts.filter((product) => product.supplierOrganizationId === organizationId);
+  const averageLeadTime = (organizationId: string) => {
+    const values = productsFor(organizationId).map((product) => product.leadTimeDays).filter((days) => days > 0);
+    return values.length ? `${Math.round(values.reduce((sum, days) => sum + days, 0) / values.length)} días` : 'No indicado';
+  };
+  const matchedSuppliers = suppliers.filter((org) => {
+    const catalog = productsFor(org.id);
+    const searchable = `${org.name} ${org.center} ${org.island} ${catalog.map((item) => `${item.name} ${item.category} ${item.sku}`).join(' ')}`;
+    return searchable.toLocaleLowerCase('es').includes(searchText);
+  });
+  const matchedProducts = publishedProducts.filter((product) => {
+    const supplier = activeOrganizations.find((org) => org.id === product.supplierOrganizationId)?.name ?? 'sin proveedor asignado';
+    return `${product.name} ${product.category} ${product.sku} ${product.itemType} ${supplier}`.toLocaleLowerCase('es').includes(searchText);
+  });
+  const matchedOrders = (orders ?? []).filter((order) => `${order.reference} ${order.buyerName} ${order.status}`.toLocaleLowerCase('es').includes(searchText));
+  const selectedSupplier = suppliers.find((org) => org.id === selectedOrganizationId) ?? matchedSuppliers[0] ?? null;
+  const selectedProduct = publishedProducts.find((product) => product.id === selectedProductId) ?? matchedProducts[0] ?? null;
+  const selectedOrder = (orders ?? []).find((order) => order.id === selectedOrderId) ?? matchedOrders[0] ?? null;
+  const recentOrders = [...(orders ?? [])].sort((a, b) => b.simulatedDate.localeCompare(a.simulatedDate)).slice(0, 4);
+  const inProgressOrders = (orders ?? []).filter((order) => order.status === 'confirmed' || order.status === 'partial');
+  const closedPercent = orders?.length ? Math.round((completedOrders.length / orders.length) * 100) : 0;
+
+  return <main className="page-content market-page">
+    <PageHeading path="/mercado"><Link className="button button-primary" href="/ventas" data-testid="button-market-new-operation"><Plus size={16} /> Nueva operación</Link></PageHeading>
     <SimulationNotice />
-    <div className="market-banner"><div className="market-banner-mark"><Globe2 size={22} /></div><div><strong>Una red comercial entre centros de FP</strong><p>Busca empresas proveedoras y productos publicados en el mercado de prácticas.</p></div><span className="banner-count">{organizations ? organizations.filter((o) => o.isActive).length : '—'} organizaciones activas</span></div>
-    <section className="panel">
-      <div className="list-toolbar">
-        <div className="tabs" role="tablist" aria-label="Contenido del mercado">
-          <button className={tab === 'products' ? 'tab-active' : ''} onClick={() => setTab('products')} role="tab" aria-selected={tab === 'products'}><Package size={15} /> Productos</button>
-          <button className={tab === 'partners' ? 'tab-active' : ''} onClick={() => setTab('partners')} role="tab" aria-selected={tab === 'partners'}><Building2 size={15} /> Organizaciones</button>
-        </div>
-        <label className="search-field"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tab === 'products' ? 'Buscar productos o referencias' : 'Buscar empresa, centro o isla'} aria-label="Buscar en mercado" data-testid="input-market-search" /><kbd>⌘ K</kbd></label>
-      </div>
-      {tab === 'products' ? <>
-        <DataMessage state={stateProducts} />
-        <DataTable minWidth={700}><thead><tr><th>Producto</th><th>Referencia</th><th>Categoría</th><th>Stock disponible</th><th>Precio unitario</th><th></th></tr></thead><tbody>
-          {!stateProducts.loading && !stateProducts.error && matchedProducts.map((product) => <tr key={product.id} data-testid={`row-market-product-${product.id}`}>
-            <td><div className="product-cell"><span className="product-glyph"><Package size={17} /></span><span><b>{product.name}</b><small>Publicado para la red FP360</small></span></div></td><td className="mono">{product.sku}</td><td>{product.category}</td><td><span className="stock-value">{Math.max(0, product.stock - product.reserved)}</span><small className="table-secondary"> ud. disponibles</small></td><td className="price-cell">{money(product.unitPriceCents)}</td><td><Link href="/ventas" className="row-link">Solicitar <ArrowRight size={14} /></Link></td>
-          </tr>)}
-          {!stateProducts.loading && !stateProducts.error && matchedProducts.length === 0 && <TableEmpty colSpan={6} title="No encontramos productos" detail="Prueba con otra búsqueda o revisa el catálogo más adelante." />}
-        </tbody></DataTable>
-      </> : <>
-        <DataMessage state={stateOrg} />
-        <DataTable minWidth={700}><thead><tr><th>Organización</th><th>Centro educativo</th><th>Isla</th><th>Participación</th><th></th></tr></thead><tbody>
-          {!stateOrg.loading && !stateOrg.error && matchedOrgs.map((org) => <tr key={org.id} data-testid={`row-market-org-${org.id}`}><td><div className="org-cell"><span className="org-avatar">{org.name.slice(0, 2).toUpperCase()}</span><b>{org.name}</b></div></td><td>{org.center}</td><td>{org.island}</td><td><span className="role-pill">{org.role === 'both' ? 'Compra y vende' : org.role === 'seller' ? 'Vende' : 'Compra'}</span></td><td><Link href="/clientes" className="row-link">Ver ficha <ArrowRight size={14} /></Link></td></tr>)}
-          {!stateOrg.loading && !stateOrg.error && matchedOrgs.length === 0 && <TableEmpty colSpan={5} title="Sin organizaciones coincidentes" detail="Ajusta la búsqueda para explorar la red." />}
-        </tbody></DataTable>
-      </>}
-      <div className="table-footer"><span>{tab === 'products' ? matchedProducts.length : matchedOrgs.length} resultados</span><span className="footer-simulation"><ShieldAlert size={13} /> Mercado exclusivamente simulado</span></div>
+    <section className="market-kpis" aria-label="Indicadores reales de la red simulada">
+      <div className="market-kpi"><span className="market-kpi-icon blue"><Building2 size={16} /></span><div><small>Empresas activas</small><b>{organizations ? activeOrganizations.length : '—'}</b><span>Participantes de la red</span></div></div>
+      <div className="market-kpi"><span className="market-kpi-icon green"><Package size={16} /></span><div><small>Referencias publicadas</small><b>{products ? publishedProducts.length : '—'}</b><span>Productos y servicios</span></div></div>
+      <div className="market-kpi"><span className="market-kpi-icon amber"><ShoppingCart size={16} /></span><div><small>Pedidos intercentros</small><b>{orders ? orders.length : '—'}</b><span>En este escenario</span></div></div>
+      <div className="market-kpi"><span className="market-kpi-icon violet"><CheckCircle2 size={16} /></span><div><small>Operaciones cerradas</small><b>{orders ? completedOrders.length : '—'}</b><span>Con entrega registrada</span></div></div>
     </section>
+
+    <div className="market-dashboard-grid">
+      <section className="panel market-activity-panel">
+        <div className="market-section-heading"><div><h2>Actividad intercentros</h2><p>Empresas, catálogo publicado y operaciones registradas.</p></div><Link href="/documentacion" className="market-text-link">Guía del módulo <ArrowRight size={13} /></Link></div>
+        <div className="market-table-toolbar">
+          <div className="tabs" role="tablist" aria-label="Vistas del mercado">
+            <button className={tab === 'partners' ? 'tab-active' : ''} onClick={() => setTab('partners')} role="tab" aria-selected={tab === 'partners'} data-testid="tab-market-organizations"><Building2 size={14} /> Empresas</button>
+            <button className={tab === 'products' ? 'tab-active' : ''} onClick={() => setTab('products')} role="tab" aria-selected={tab === 'products'} data-testid="tab-market-products"><Package size={14} /> Catálogo</button>
+            <button className={tab === 'operations' ? 'tab-active' : ''} onClick={() => setTab('operations')} role="tab" aria-selected={tab === 'operations'} data-testid="tab-market-operations"><Activity size={14} /> Operaciones</button>
+          </div>
+          <label className="search-field market-search"><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={tab === 'partners' ? 'Buscar empresa, centro o referencia…' : tab === 'products' ? 'Buscar producto, servicio o proveedor…' : 'Buscar pedido o comprador…'} aria-label="Buscar en Mercado FP360" data-testid="input-market-search" /></label>
+        </div>
+        {tab === 'partners' && <>
+          <DataMessage state={stateOrg} />
+          <DataTable minWidth={700}><thead><tr><th>Empresa proveedora</th><th>Familias publicadas</th><th>Isla</th><th>Referencias</th><th>Plazo medio</th><th>Estado</th></tr></thead><tbody>
+            {!stateOrg.loading && !stateOrg.error && matchedSuppliers.map((org) => {
+              const catalog = productsFor(org.id);
+              const categories = [...new Set(catalog.map((item) => item.category))].slice(0, 2).join(' · ') || 'Sin catálogo';
+              return <tr key={org.id} className={selectedSupplier?.id === org.id ? 'market-selected-row' : ''} data-testid={`row-market-org-${org.id}`}>
+                <td><button className="market-row-select" onClick={() => setSelectedOrganizationId(org.id)}><span className="org-avatar">{org.name.slice(0, 2).toUpperCase()}</span><span><b>{org.name}</b><small>{org.center}</small></span></button></td>
+                <td>{categories}</td><td>{org.island}</td><td className="numeric">{catalog.length}</td><td>{averageLeadTime(org.id)}</td>
+                <td><span className={`status ${catalog.length ? 'status-green' : 'status-amber'}`}><span className="status-dot" />{catalog.length ? 'Disponible' : 'Sin catálogo'}</span></td>
+              </tr>;
+            })}
+            {!stateOrg.loading && !stateOrg.error && !matchedSuppliers.length && <TableEmpty colSpan={6} title="No hay proveedores coincidentes" detail="Solo aparecen empresas activas con perfil vendedor o mixto." />}
+          </tbody></DataTable>
+          <div className="table-footer"><span>{matchedSuppliers.length} empresas proveedoras</span><span>Solo datos publicados</span></div>
+        </>}
+        {tab === 'products' && <>
+          <DataMessage state={stateProducts} />
+          <DataTable minWidth={740}><thead><tr><th>Referencia</th><th>Proveedor</th><th>Tipo</th><th>Precio</th><th>Disponibilidad</th><th>Plazo</th></tr></thead><tbody>
+            {!stateProducts.loading && !stateProducts.error && matchedProducts.map((product) => {
+              const supplier = activeOrganizations.find((org) => org.id === product.supplierOrganizationId);
+              return <tr key={product.id} className={selectedProduct?.id === product.id ? 'market-selected-row' : ''} data-testid={`row-market-product-${product.id}`}>
+                <td><button className="market-row-select" onClick={() => setSelectedProductId(product.id)}><span className={`product-glyph ${product.itemType === 'service' ? 'service' : ''}`}>{product.itemType === 'service' ? <BriefcaseBusiness size={16} /> : <Package size={16} />}</span><span><b>{product.name}</b><small className="mono">{product.sku} · {product.category}</small></span></button></td>
+                <td>{supplier?.name ?? 'Proveedor no asignado'}</td><td>{product.itemType === 'service' ? 'Servicio' : 'Producto'}</td><td className="price-cell">{money(product.unitPriceCents)}<small className="table-secondary block">por {product.unit}</small></td>
+                <td>{product.tracksInventory ? `${Math.max(0, product.stock - product.reserved)} disponibles` : 'Cotización por prestación'}</td><td>{product.leadTimeDays ? `${product.leadTimeDays} días` : 'Por acordar'}</td>
+              </tr>;
+            })}
+            {!stateProducts.loading && !stateProducts.error && !matchedProducts.length && <TableEmpty colSpan={6} title="No hay referencias publicadas" detail="Las referencias activas aparecen aquí después de su aprobación en el catálogo." />}
+          </tbody></DataTable>
+          <div className="table-footer"><span>{matchedProducts.length} referencias publicadas</span><span>Precios e importes exclusivamente simulados</span></div>
+        </>}
+        {tab === 'operations' && <>
+          <DataMessage state={stateOrders} />
+          <DataTable minWidth={650}><thead><tr><th>Pedido</th><th>Empresa compradora</th><th>Fecha simulada</th><th>Estado</th><th>Total</th></tr></thead><tbody>
+            {!stateOrders.loading && !stateOrders.error && matchedOrders.map((order) => <tr key={order.id} className={selectedOrder?.id === order.id ? 'market-selected-row' : ''} data-testid={`row-market-order-${order.id}`}>
+              <td><button className="market-row-select" onClick={() => setSelectedOrderId(order.id)}><b className="mono">{order.reference}</b><small>{order.lines.length} referencias</small></button></td><td>{order.buyerName}</td><td>{dateLabel(order.simulatedDate)}</td><td><Status status={order.status} /></td><td className="price-cell">{money(order.totalCents)}</td>
+            </tr>)}
+            {!stateOrders.loading && !stateOrders.error && !matchedOrders.length && <TableEmpty colSpan={5} title="Aún no hay operaciones" detail="Los pedidos entre empresas aparecerán aquí cuando se registren en Ventas." />}
+          </tbody></DataTable>
+          <div className="table-footer"><span>{matchedOrders.length} pedidos</span><Link href="/ventas" className="market-text-link">Ir a Ventas <ArrowRight size={13} /></Link></div>
+        </>}
+      </section>
+
+      <aside className="market-context-column">
+        <section className="panel market-context-panel">
+          {tab === 'partners' && selectedSupplier && <div data-testid="market-partner-detail">
+            <div className="market-context-heading"><span className="market-context-icon"><Building2 size={17} /></span><div><small>PERFIL DE EMPRESA</small><h2>{selectedSupplier.name}</h2><span>{selectedSupplier.center} · {selectedSupplier.island}</span></div></div>
+            <dl className="market-context-list">
+              <div><dt>Participación</dt><dd>{selectedSupplier.role === 'both' ? 'Compra y vende' : 'Proveedor'}</dd></div>
+              <div><dt>Referencias publicadas</dt><dd>{productsFor(selectedSupplier.id).length}</dd></div>
+              <div><dt>Plazo medio</dt><dd>{averageLeadTime(selectedSupplier.id)}</dd></div>
+              <div><dt>Condiciones / valoraciones</dt><dd>No hay registros</dd></div>
+            </dl>
+            <div className="market-context-subtitle">Catálogo visible</div>
+            <div className="market-context-listing">{productsFor(selectedSupplier.id).slice(0, 4).map((product) => <button key={product.id} onClick={() => { setTab('products'); setSelectedProductId(product.id); }}><span>{product.name}<small>{product.itemType === 'service' ? 'Servicio' : product.category}</small></span><b>{money(product.unitPriceCents)}</b></button>)}
+              {!productsFor(selectedSupplier.id).length && <p>Esta empresa aún no tiene referencias publicadas.</p>}
+            </div>
+            <Link href={canRequestOffer ? purchaseRequestHref(undefined, selectedSupplier.id) : '/compras'} className="button button-primary market-context-cta" data-testid="link-market-request-quote">{canRequestOffer ? 'Solicitar presupuesto' : 'Consultar solicitudes'} <ArrowRight size={14} /></Link>
+          </div>}
+          {tab === 'products' && selectedProduct && <div data-testid="market-product-detail">
+            <div className="market-context-heading"><span className="market-context-icon"><Package size={17} /></span><div><small>CATÁLOGO DEL MERCADO</small><h2>{selectedProduct.name}</h2><span className="mono">{selectedProduct.sku}</span></div></div>
+            <dl className="market-context-list">
+              <div><dt>Proveedor</dt><dd>{activeOrganizations.find((org) => org.id === selectedProduct.supplierOrganizationId)?.name ?? 'No asignado'}</dd></div>
+              <div><dt>Precio orientativo</dt><dd>{money(selectedProduct.unitPriceCents)} / {selectedProduct.unit}</dd></div>
+              <div><dt>Disponibilidad</dt><dd>{selectedProduct.tracksInventory ? `${Math.max(0, selectedProduct.stock - selectedProduct.reserved)} unidades` : 'A negociar'}</dd></div>
+              <div><dt>Plazo previsto</dt><dd>{selectedProduct.leadTimeDays ? `${selectedProduct.leadTimeDays} días` : 'A negociar'}</dd></div>
+            </dl>
+            {selectedProduct.description && <p className="market-context-description">{selectedProduct.description}</p>}
+            <Link href={canRequestOffer ? purchaseRequestHref(selectedProduct.id, selectedProduct.supplierOrganizationId ?? undefined) : '/compras'} className="button button-primary market-context-cta">{canRequestOffer ? 'Solicitar presupuesto' : 'Consultar solicitudes'} <ArrowRight size={14} /></Link>
+          </div>}
+          {tab === 'operations' && selectedOrder && <div data-testid="market-order-detail">
+            <div className="market-context-heading"><span className="market-context-icon"><ShoppingCart size={17} /></span><div><small>OPERACIÓN INTERCENTROS</small><h2>{selectedOrder.reference}</h2><span>{selectedOrder.buyerName}</span></div></div>
+            <dl className="market-context-list">
+              <div><dt>Fecha simulada</dt><dd>{dateLabel(selectedOrder.simulatedDate)}</dd></div>
+              <div><dt>Estado</dt><dd><Status status={selectedOrder.status} /></dd></div>
+              <div><dt>Importe simulado</dt><dd>{money(selectedOrder.totalCents)}</dd></div>
+            </dl>
+            <div className="market-context-subtitle">Líneas</div>
+            <div className="market-context-listing">{selectedOrder.lines.map((line) => <div key={line.productId}><span>{line.productName}<small>{line.itemType === 'service' ? 'Servicio' : 'Producto'} · {line.shippedQuantity}/{line.quantity} atendidas</small></span><b>{line.quantity} × {money(line.unitPriceCents)}</b></div>)}</div>
+            <Link href="/ventas" className="button button-primary market-context-cta">Gestionar pedido <ArrowRight size={14} /></Link>
+          </div>}
+          {((tab === 'partners' && !selectedSupplier) || (tab === 'products' && !selectedProduct) || (tab === 'operations' && !selectedOrder)) && <div className="market-context-empty"><Globe2 size={21} /><b>Selecciona un elemento</b><span>El panel mostrará información procedente de los registros de la red.</span></div>}
+        </section>
+        <section className="market-privacy-note"><ShieldCheck size={16} /><div><b>Acceso entre organizaciones</b><p>El mercado muestra únicamente empresas activas y referencias aprobadas. Todos los importes son ficticios.</p></div></section>
+      </aside>
+    </div>
+
+    <div className="market-lower-grid">
+      <section className="panel market-lower-panel"><div className="market-section-heading"><div><h2>Actividad reciente</h2><p>Pedidos registrados en este escenario.</p></div><Activity size={16} /></div>
+        {stateOrders.loading ? <LoadingRows /> : stateOrders.error ? <DataMessage state={stateOrders} /> : recentOrders.length ? <ul className="market-recent-list">{recentOrders.map((order) => <li key={order.id}><span className="market-recent-mark"><Clock3 size={13} /></span><span><b>{order.reference} · {order.buyerName}</b><small>{dateLabel(order.simulatedDate)} · {order.lines.length} líneas</small></span><Status status={order.status} /></li>)}</ul> : <EmptyState title="Sin actividad registrada" detail="Los pedidos confirmados aparecerán aquí." icon={Activity} />}
+      </section>
+      <section className="panel market-lower-panel"><div className="market-section-heading"><div><h2>Ciclo de operaciones</h2><p>Avance calculado desde pedidos reales.</p></div><BarChart3 size={16} /></div>
+        <div className="market-cycle-stats"><div><span>Borradores</span><b>{orders ? orders.filter((order) => order.status === 'draft').length : '—'}</b></div><div><span>En preparación</span><b>{orders ? inProgressOrders.length : '—'}</b></div><div><span>Cerradas</span><b>{orders ? completedOrders.length : '—'}</b></div></div>
+        <div className="market-cycle-progress"><div><span>Operaciones cerradas</span><b>{orders?.length ? `${closedPercent}%` : 'Sin operaciones'}</b></div><div className="market-progress-track"><span style={{ width: `${closedPercent}%` }} /></div><small>{orders?.length ? `${completedOrders.length} de ${orders.length} pedidos` : 'El indicador aparecerá al registrar pedidos.'}</small></div>
+      </section>
+    </div>
+    <div className="market-quick-actions">
+      <Link href="/ventas"><ShoppingCart size={14} /> Crear pedido</Link>
+      <Link href="/compras"><FileText size={14} /> Solicitar compra</Link>
+      <Link href="/productos"><Package size={14} /> Gestionar catálogo</Link>
+      <Link href="/documentacion"><BookOpen size={14} /> Consultar documentación</Link>
+    </div>
   </main>;
 }
 
@@ -273,7 +417,7 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
     });
   };
   const confirm = (order: Order) => confirmOrder.mutate({ id: order.id }, {
-    onSuccess: () => { refreshOrders(); void queryClient.invalidateQueries({ queryKey: productsQuery.queryKey }); onNotice(`Pedido ${order.reference} confirmado; las unidades quedan reservadas.`); },
+    onSuccess: () => { refreshOrders(); void queryClient.invalidateQueries({ queryKey: productsQuery.queryKey }); onNotice(`Pedido ${order.reference} confirmado; los productos inventariables quedan reservados.`); },
     onError: () => onNotice('No se pudo confirmar el pedido. Comprueba la disponibilidad.'),
   });
   const openDispatch = (order: Order) => {
@@ -285,10 +429,11 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
     if (!dispatching) return;
     const line = dispatching.lines.find((item) => item.quantity > item.shippedQuantity);
     if (!line) return;
+    const isService = line.itemType === 'service';
     const remaining = line.quantity - line.shippedQuantity;
     const shipQty = Math.min(Math.max(1, dispatchQuantity), remaining);
     dispatchOrder.mutate({ id: dispatching.id, data: { lines: [{ productId: line.productId, quantity: shipQty }] } }, {
-      onSuccess: () => { setDispatching(null); refreshOrders(); void queryClient.invalidateQueries({ queryKey: productsQuery.queryKey }); onNotice('Expedición simulada registrada.'); },
+      onSuccess: () => { setDispatching(null); refreshOrders(); void queryClient.invalidateQueries({ queryKey: productsQuery.queryKey }); onNotice(isService ? 'Prestación de servicio registrada.' : 'Expedición simulada registrada.'); },
       onError: () => onNotice('No se pudo registrar la expedición. Revisa las unidades pendientes.'),
     });
   };
@@ -303,7 +448,7 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
       <div><span>En preparación o envío</span><b>{actionable.filter((o) => o.status === 'confirmed' || o.status === 'partial').length}</b><small>Reserva y expedición</small></div>
     </div>
     <section className="panel">
-      <SectionTitle title="Pedidos" subtitle="Confirma el pedido para reservar stock; expide cuando esté preparado." aside={<button className="icon-button" aria-label="Actualizar pedidos" onClick={refreshOrders}><RefreshCw size={16} /></button>} />
+      <SectionTitle title="Pedidos" subtitle="Confirma el pedido para reservar existencias; registra la entrega o prestación cuando esté completada." aside={<button className="icon-button" aria-label="Actualizar pedidos" onClick={refreshOrders}><RefreshCw size={16} /></button>} />
       <DataMessage state={states.orders} />
       <DataTable minWidth={780}><thead><tr><th>Referencia</th><th>Empresa compradora</th><th>Fecha simulada</th><th>Estado</th><th>Total</th><th>Unidades</th><th>Acciones</th></tr></thead><tbody>
         {!states.orders.loading && !states.orders.error && actionable.map((order) => {
@@ -320,23 +465,23 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
     <div className="learning-note"><CircleHelp size={17} /><div><b>Secuencia de venta</b><p>Pedido borrador → confirmación y reserva → expedición parcial o completa → factura. Los importes y movimientos de stock se calculan solo en el entorno de prácticas.</p></div></div>
     {newOrder && <Modal title="Crear pedido simulado" onClose={() => setNewOrder(false)}>
       <form className="form-stack" onSubmit={submitOrder}>
-        <p className="form-intro">Selecciona una empresa de la red y una referencia disponible. Se creará un pedido en estado borrador.</p>
+        <p className="form-intro">Selecciona una empresa de la red y una referencia publicada. Se creará un pedido en estado borrador.</p>
         <label>Empresa compradora<select required value={buyerId} onChange={(e) => setBuyerId(e.target.value)} data-testid="select-order-buyer"><option value="">Selecciona una organización</option>{buyers.map((org) => <option value={org.id} key={org.id}>{org.name} · {org.island}</option>)}</select></label>
-        <label>Producto<select required value={productId} onChange={(e) => setProductId(e.target.value)} data-testid="select-order-product"><option value="">Selecciona un producto</option>{orderable.map((product) => <option value={product.id} key={product.id}>{product.name} · {money(product.unitPriceCents)} · disp. {Math.max(0, product.stock - product.reserved)}</option>)}</select></label>
-        <label>Unidades<input type="number" min={1} max={999} required value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} data-testid="input-order-quantity" /></label>
+        <label>Producto o servicio<select required value={productId} onChange={(e) => setProductId(e.target.value)} data-testid="select-order-product"><option value="">Selecciona una referencia</option>{orderable.map((product) => <option value={product.id} key={product.id}>{product.name} · {product.itemType === 'service' ? 'Servicio' : 'Producto'} · {money(product.unitPriceCents)} · {product.tracksInventory ? `disp. ${Math.max(0, product.stock - product.reserved)}` : 'sin stock'}</option>)}</select></label>
+        <label>Unidades o servicios<input type="number" min={1} max={999} required value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} data-testid="input-order-quantity" /></label>
         {selectedProduct && <div className="calculation-box"><span>Subtotal estimado sin IGIC</span><strong>{money(selectedProduct.unitPriceCents * quantity)}</strong><small>El cálculo fiscal final se efectúa al emitir la factura simulada.</small></div>}
-        {(!buyers.length || !orderable.length) && <div className="inline-error"><ShieldAlert size={16} />Faltan organizaciones compradoras activas o productos publicados para crear el pedido.</div>}
+        {(!buyers.length || !orderable.length) && <div className="inline-error"><ShieldAlert size={16} />Faltan organizaciones compradoras activas o referencias publicadas para crear el pedido.</div>}
         <SimulationNotice compact />
         <div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setNewOrder(false)}>Cancelar</button><button className="button button-primary" disabled={createOrder.isPending || !buyers.length || !orderable.length} data-testid="button-submit-order">{createOrder.isPending ? 'Guardando…' : 'Crear borrador'}</button></div>
       </form>
     </Modal>}
-    {dispatching && <Modal title={`Expedir ${dispatching.reference}`} onClose={() => setDispatching(null)}>
+    {dispatching && <Modal title={`${dispatching.lines.find((line) => line.quantity > line.shippedQuantity)?.itemType === 'service' ? 'Registrar prestación' : 'Expedir'} ${dispatching.reference}`} onClose={() => setDispatching(null)}>
       <form className="form-stack" onSubmit={dispatch}>
-        <p className="form-intro">Registra unidades entregadas en una expedición de prácticas. Puedes completar el envío en varias partes.</p>
-        <div className="dispatch-product"><PackageCheck size={18} /><div><b>{dispatching.lines.find((line) => line.quantity > line.shippedQuantity)?.productName}</b><small>Restan {dispatching.lines.reduce((sum, line) => sum + line.quantity - line.shippedQuantity, 0)} unidades por expedir</small></div></div>
-        <label>Unidades de esta expedición<input type="number" min={1} max={dispatching.lines.reduce((sum, line) => sum + line.quantity - line.shippedQuantity, 0)} value={dispatchQuantity} onChange={(e) => setDispatchQuantity(Number(e.target.value))} required data-testid="input-dispatch-quantity" /></label>
+        <p className="form-intro">Registra la entrega del producto o la prestación del servicio. Puedes completar el pedido en varias partes.</p>
+        <div className="dispatch-product"><PackageCheck size={18} /><div><b>{dispatching.lines.find((line) => line.quantity > line.shippedQuantity)?.productName}</b><small>Restan {dispatching.lines.reduce((sum, line) => sum + line.quantity - line.shippedQuantity, 0)} unidades por completar</small></div></div>
+        <label>Unidades de esta entrega o prestación<input type="number" min={1} max={dispatching.lines.reduce((sum, line) => sum + line.quantity - line.shippedQuantity, 0)} value={dispatchQuantity} onChange={(e) => setDispatchQuantity(Number(e.target.value))} required data-testid="input-dispatch-quantity" /></label>
         <SimulationNotice compact />
-        <div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setDispatching(null)}>Cancelar</button><button className="button button-primary" disabled={dispatchOrder.isPending}>{dispatchOrder.isPending ? 'Registrando…' : 'Registrar expedición'}</button></div>
+        <div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setDispatching(null)}>Cancelar</button><button className="button button-primary" disabled={dispatchOrder.isPending}>{dispatchOrder.isPending ? 'Registrando…' : dispatching.lines.find((line) => line.quantity > line.shippedQuantity)?.itemType === 'service' ? 'Registrar prestación' : 'Registrar expedición'}</button></div>
       </form>
     </Modal>}
   </main>;
@@ -346,14 +491,17 @@ function InventoryPage({ products, orders, stateProducts, stateOrders }: {
   products?: Product[]; orders?: Order[]; stateProducts: DataState; stateOrders: DataState;
 }) {
   const [search, setSearch] = useState('');
-  const rows = (products ?? []).filter((p) => `${p.name} ${p.sku} ${p.category}`.toLowerCase().includes(search.toLowerCase()));
-  const totalAvailable = (products ?? []).reduce((sum, p) => sum + Math.max(0, p.stock - p.reserved), 0);
-  const totalReserved = (products ?? []).reduce((sum, p) => sum + p.reserved, 0);
+  const inventoryProducts = (products ?? []).filter((p) => p.tracksInventory);
+  const rows = inventoryProducts.filter((p) => `${p.name} ${p.sku} ${p.category}`.toLowerCase().includes(search.toLowerCase()));
+  const totalAvailable = inventoryProducts.reduce((sum, p) => sum + Math.max(0, p.stock - p.reserved), 0);
+  const totalReserved = inventoryProducts.reduce((sum, p) => sum + p.reserved, 0);
+  const prepOrders = (orders ?? []).filter((order) => (order.status === 'confirmed' || order.status === 'partial') &&
+    order.lines.some((line) => line.tracksInventory && line.shippedQuantity < line.quantity));
   return <main className="page-content">
     <PageHeading path="/almacen" />
     <SimulationNotice />
     <div className="sub-metrics">
-      <div><span>Referencias catalogadas</span><b>{products?.length ?? '—'}</b><small>Artículos de la empresa</small></div>
+      <div><span>Referencias de almacén</span><b>{products ? inventoryProducts.length : '—'}</b><small>Artículos con control de existencias</small></div>
       <div><span>Unidades disponibles</span><b>{stateProducts.loading ? '…' : totalAvailable}</b><small>Stock físico menos reservas</small></div>
       <div><span>Unidades reservadas</span><b>{stateProducts.loading ? '…' : totalReserved}</b><small>Comprometidas en pedidos</small></div>
     </div>
@@ -369,10 +517,148 @@ function InventoryPage({ products, orders, stateProducts, stateOrders }: {
         {!stateProducts.loading && !stateProducts.error && rows.length === 0 && <TableEmpty colSpan={7} title="No hay artículos en este filtro" detail="Prueba otra búsqueda o consulta el catálogo del mercado." />}
       </tbody></DataTable>
     </section>
-    <section className="panel compact-panel"><SectionTitle title="Pedidos pendientes de preparación" subtitle="Reservas que pueden dar lugar a una expedición parcial." aside={<Link href="/ventas" className="subtle-link">Ir a ventas <ArrowRight size={14} /></Link>} />
+    <section className="panel compact-panel"><SectionTitle title="Pedidos pendientes de preparación" subtitle="Solo muestra unidades inventariables pendientes de entrega." aside={<Link href="/ventas" className="subtle-link">Ir a ventas <ArrowRight size={14} /></Link>} />
       <DataMessage state={stateOrders} />
-      {!stateOrders.loading && !stateOrders.error && (orders ?? []).filter((order) => order.status === 'confirmed' || order.status === 'partial').length > 0 ? <div className="prep-list">{(orders ?? []).filter((order) => order.status === 'confirmed' || order.status === 'partial').map((order) => <div className="prep-row" key={order.id}><span className="prep-icon"><Truck size={16} /></span><span><b>{order.reference}</b><small>{order.buyerName} · {order.lines.reduce((a, line) => a + line.quantity - line.shippedQuantity, 0)} ud. pendientes</small></span><Status status={order.status} /></div>)}</div> : !stateOrders.loading && !stateOrders.error ? <EmptyState title="Almacén al día" detail="Los pedidos confirmados aparecerán aquí para su preparación." icon={PackageCheck} /> : null}
+      {!stateOrders.loading && !stateOrders.error && prepOrders.length > 0 ? <div className="prep-list">{prepOrders.map((order) => <div className="prep-row" key={order.id}><span className="prep-icon"><Truck size={16} /></span><span><b>{order.reference}</b><small>{order.buyerName} · {order.lines.filter((line) => line.tracksInventory).reduce((a, line) => a + line.quantity - line.shippedQuantity, 0)} ud. pendientes</small></span><Status status={order.status} /></div>)}</div> : !stateOrders.loading && !stateOrders.error ? <EmptyState title="Almacén al día" detail="Los pedidos con productos inventariables confirmados aparecerán aquí." icon={PackageCheck} /> : null}
     </section>
+  </main>;
+}
+
+function LogisticsPage({ orders, organizations, stateOrders, onRefresh, onNotice }: {
+  orders?: Order[]; organizations?: Organization[]; stateOrders: DataState;
+  onRefresh: () => void; onNotice: (message: string) => void;
+}) {
+  const identity = useGetCurrentIdentity();
+  const queryClient = useQueryClient();
+  const ordersQuery = useListFp360Orders<Order[]>();
+  const productsQuery = useListFp360Products<Product[]>();
+  const dispatchOrder = useDispatchFp360Order();
+  const [tab, setTab] = useState<'dispatch' | 'tracking' | 'delivered' | 'analysis'>('dispatch');
+  const [search, setSearch] = useState('');
+  const [selectedId, setSelectedId] = useState('');
+  const [dispatching, setDispatching] = useState<Order | null>(null);
+  const [dispatchQuantities, setDispatchQuantities] = useState<Record<string, number>>({});
+  const readOnly = !identity.data || ['mentor', 'promoter'].includes(identity.data.role);
+  const physicalLines = (order: Order) => order.lines.filter((line) => line.itemType === 'product');
+  const shipmentProgress = (order: Order) => {
+    const lines = physicalLines(order);
+    return {
+      total: lines.reduce((sum, line) => sum + line.quantity, 0),
+      shipped: lines.reduce((sum, line) => sum + line.shippedQuantity, 0),
+      remaining: lines.reduce((sum, line) => sum + line.quantity - line.shippedQuantity, 0),
+    };
+  };
+  const physicalOrders = (orders ?? []).filter((order) => physicalLines(order).length > 0);
+  const awaitingDispatch = physicalOrders.filter((order) => shipmentProgress(order).remaining > 0);
+  const inTransit = physicalOrders.filter((order) => shipmentProgress(order).shipped > 0 && shipmentProgress(order).remaining > 0);
+  const fullyShipped = physicalOrders.filter((order) => shipmentProgress(order).total > 0 && shipmentProgress(order).remaining === 0);
+  const tabOrders = tab === 'dispatch' ? awaitingDispatch : tab === 'tracking' ? inTransit : tab === 'delivered' ? fullyShipped : physicalOrders;
+  const filteredOrders = tabOrders.filter((order) => `${order.reference} ${order.buyerName}`.toLocaleLowerCase('es').includes(search.trim().toLocaleLowerCase('es')));
+  const selectedOrder = filteredOrders.find((order) => order.id === selectedId) ?? filteredOrders[0] ?? null;
+  const buyer = organizations?.find((organization) => organization.id === selectedOrder?.buyerOrganizationId);
+  const origin = organizations?.find((organization) => organization.id === identity.data?.organizationId);
+  const progressPercent = orders?.length ? Math.round((fullyShipped.length / Math.max(1, physicalOrders.length)) * 100) : 0;
+  const openDispatch = (order: Order) => {
+    setDispatching(order);
+    setDispatchQuantities(Object.fromEntries(physicalLines(order).filter((line) => line.quantity > line.shippedQuantity).map((line) => [line.productId, line.quantity - line.shippedQuantity])));
+  };
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ordersQuery.queryKey });
+    void queryClient.invalidateQueries({ queryKey: productsQuery.queryKey });
+    onRefresh();
+  };
+  const submitDispatch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!dispatching) return;
+    const lines = physicalLines(dispatching)
+      .map((line) => ({ productId: line.productId, quantity: dispatchQuantities[line.productId] ?? 0 }))
+      .filter((line) => line.quantity > 0);
+    if (!lines.length) return;
+    dispatchOrder.mutate({ id: dispatching.id, data: { lines } }, {
+      onSuccess: () => {
+        setDispatching(null);
+        refresh();
+        onNotice(`Expedición simulada registrada para ${dispatching.reference}.`);
+      },
+      onError: () => onNotice('No se pudo registrar la expedición. Revisa las cantidades y el stock reservado.'),
+    });
+  };
+
+  return <main className="page-content logistics-page">
+    <PageHeading path="/logistica"><Link className="button button-primary" href="/ventas"><Plus size={15} /> Nueva operación</Link></PageHeading>
+    <SimulationNotice />
+    <div className="logistics-kpis">
+      <div><span className="market-kpi-icon blue"><Truck size={16} /></span><small>Pedidos pendientes</small><b>{orders ? awaitingDispatch.length : '—'}</b><span>Con mercancía por expedir</span></div>
+      <div><span className="market-kpi-icon amber"><Activity size={16} /></span><small>Seguimiento cuantitativo</small><b>{orders ? inTransit.length : '—'}</b><span>Expedición parcial registrada</span></div>
+      <div><span className="market-kpi-icon green"><CheckCircle2 size={16} /></span><small>Mercancía completada</small><b>{orders ? fullyShipped.length : '—'}</b><span>Unidades expedidas</span></div>
+      <div><span className="market-kpi-icon violet"><CircleAlert size={16} /></span><small>Ruta e incidencias</small><b>—</b><span>Sin registros logísticos aún</span></div>
+    </div>
+    <section className="logistics-disclaimer"><ShieldAlert size={15} /><span>El sistema registra cantidades expedidas y reservas de almacén. No simula geolocalización, rutas reales ni incidencias hasta que esos datos estén configurados.</span></section>
+    <div className="logistics-workspace">
+      <section className="panel logistics-list-panel">
+        <div className="market-section-heading"><div><h2>Operaciones logísticas</h2><p>Expediciones vinculadas a pedidos y mercancía disponible.</p></div><Link href="/almacen" className="market-text-link">Ver almacén <ArrowRight size={13} /></Link></div>
+        <div className="market-table-toolbar">
+          <div className="tabs" role="tablist" aria-label="Vistas logísticas">
+            <button className={tab === 'dispatch' ? 'tab-active' : ''} onClick={() => setTab('dispatch')} role="tab" aria-selected={tab === 'dispatch'}><Truck size={14} /> Expediciones</button>
+            <button className={tab === 'tracking' ? 'tab-active' : ''} onClick={() => setTab('tracking')} role="tab" aria-selected={tab === 'tracking'}><Activity size={14} /> Seguimiento</button>
+            <button className={tab === 'delivered' ? 'tab-active' : ''} onClick={() => setTab('delivered')} role="tab" aria-selected={tab === 'delivered'}><CheckCircle2 size={14} /> Entregas</button>
+            <button className={tab === 'analysis' ? 'tab-active' : ''} onClick={() => setTab('analysis')} role="tab" aria-selected={tab === 'analysis'}><BarChart3 size={14} /> Análisis</button>
+          </div>
+          <label className="search-field market-search"><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pedido o destinatario…" aria-label="Buscar operaciones logísticas" /></label>
+        </div>
+        {tab === 'analysis' ? <div className="logistics-analysis">
+          <div className="logistics-analysis-stat"><span>Pedidos con mercancía</span><b>{orders ? physicalOrders.length : '—'}</b></div>
+          <div className="logistics-analysis-stat"><span>Con expedición parcial</span><b>{orders ? inTransit.length : '—'}</b></div>
+          <div className="logistics-analysis-stat"><span>Mercancía expedida al completo</span><b>{orders ? fullyShipped.length : '—'}</b></div>
+          <div className="logistics-progress"><div><span>Completitud de expedición</span><b>{physicalOrders.length ? `${progressPercent}%` : 'Sin expediciones'}</b></div><div className="market-progress-track"><span style={{ width: `${progressPercent}%` }} /></div><small>{physicalOrders.length ? `${fullyShipped.length} de ${physicalOrders.length} pedidos con mercancía` : 'El análisis se calculará cuando existan pedidos con productos.'}</small></div>
+          <p>Los plazos, puntualidad, transportistas y costes no se muestran porque todavía no hay fechas de entrega ni rutas simuladas registradas.</p>
+        </div> : <>
+          <DataMessage state={stateOrders} />
+          <DataTable minWidth={680}><thead><tr><th>Pedido / expedición</th><th>Empresa destinataria</th><th>Contenido</th><th>Fecha pedido</th><th>Estado</th></tr></thead><tbody>
+            {!stateOrders.loading && !stateOrders.error && filteredOrders.map((order) => {
+              const progress = shipmentProgress(order);
+              return <tr key={order.id} className={selectedOrder?.id === order.id ? 'market-selected-row' : ''} data-testid={`row-logistics-${order.id}`}>
+                <td><button className="market-row-select" onClick={() => setSelectedId(order.id)}><b className="mono">{order.reference}</b><small>{origin?.name ?? 'Origen de la red'}</small></button></td>
+                <td>{order.buyerName}{buyer && <small className="table-secondary block">{buyer.center} · {buyer.island}</small>}</td>
+                <td>{progress.shipped} / {progress.total} unidades</td><td>{dateLabel(order.simulatedDate)}</td><td><Status status={order.status} /></td>
+              </tr>;
+            })}
+            {!stateOrders.loading && !stateOrders.error && !filteredOrders.length && <TableEmpty colSpan={5} title={tab === 'dispatch' ? 'No hay expediciones pendientes' : tab === 'tracking' ? 'Sin entregas parciales' : 'No hay entregas completadas'} detail="Los pedidos y sus cantidades se consultan desde el servidor." />}
+          </tbody></DataTable>
+          <div className="table-footer"><span>{filteredOrders.length} operaciones</span><span>Datos persistidos del escenario</span></div>
+        </>}
+      </section>
+      <aside className="panel logistics-detail-panel">
+        {selectedOrder && tab !== 'analysis' ? <>
+          <div className="market-context-heading"><span className="market-context-icon"><Truck size={17} /></span><div><small>DETALLE DE EXPEDICIÓN</small><h2>{selectedOrder.reference}</h2><span>Pedido · {dateLabel(selectedOrder.simulatedDate)}</span></div></div>
+          <dl className="market-context-list">
+            <div><dt>Origen</dt><dd>{origin?.name ?? 'Empresa de la red'}</dd></div>
+            <div><dt>Destino</dt><dd>{buyer?.name ?? selectedOrder.buyerName}</dd></div>
+            <div><dt>Centro / isla</dt><dd>{buyer ? `${buyer.center} · ${buyer.island}` : 'No disponible'}</dd></div>
+            <div><dt>Estado</dt><dd><Status status={selectedOrder.status} /></dd></div>
+          </dl>
+          <div className="market-context-subtitle">Mercancía del pedido</div>
+          <div className="market-context-listing">{selectedOrder.lines.map((line) => <div key={line.productId}><span>{line.productName}<small>{line.itemType === 'service' ? 'Servicio · se registra en Ventas' : `${line.shippedQuantity}/${line.quantity} unidades expedidas`}</small></span><b>{line.itemType === 'service' ? '—' : `${Math.max(0, line.quantity - line.shippedQuantity)} pendientes`}</b></div>)}</div>
+          {tab === 'dispatch' && shipmentProgress(selectedOrder).remaining > 0 && <button className="button button-primary market-context-cta" disabled={readOnly} onClick={() => openDispatch(selectedOrder)} data-testid={`button-logistics-dispatch-${selectedOrder.id}`}><Truck size={14} /> Registrar expedición simulada</button>}
+          {tab === 'delivered' && <Link href="/facturas" className="button button-primary market-context-cta">Continuar a facturación <ArrowRight size={14} /></Link>}
+          {(tab === 'tracking' || tab === 'delivered') && <p className="logistics-note">El seguimiento disponible se basa en cantidades confirmadas por el pedido; no existe todavía un historial de ruta o transportista.</p>}
+        </> : <div className="market-context-empty"><Truck size={21} /><b>{tab === 'analysis' ? 'Resumen del escenario' : 'Selecciona una operación'}</b><span>{tab === 'analysis' ? 'Indicadores calculados con pedidos y cantidades expedidas.' : 'El panel mostrará el detalle del pedido seleccionado.'}</span></div>}
+      </aside>
+    </div>
+    <div className="market-quick-actions">
+      <Link href="/ventas"><ShoppingCart size={14} /> Gestionar pedidos</Link>
+      <Link href="/almacen"><Package size={14} /> Revisar existencias</Link>
+      <Link href="/compras"><FileText size={14} /> Recepciones de compra</Link>
+      <Link href="/documentacion"><BookOpen size={14} /> Consultar documentación</Link>
+    </div>
+    {dispatching && <Modal title={`Registrar expedición · ${dispatching.reference}`} onClose={() => setDispatching(null)}>
+      <form className="form-stack" onSubmit={submitDispatch}>
+        <p className="form-intro">Indica las cantidades que salen del almacén en esta entrega. La operación es simulada y se registra de forma transaccional.</p>
+        {physicalLines(dispatching).filter((line) => line.quantity > line.shippedQuantity).map((line) => <label key={line.productId}>{line.productName} · {line.quantity - line.shippedQuantity} pendientes<input type="number" min={0} max={line.quantity - line.shippedQuantity} value={dispatchQuantities[line.productId] ?? 0} onChange={(event) => setDispatchQuantities((current) => ({ ...current, [line.productId]: Number(event.target.value) }))} data-testid={`input-logistics-quantity-${line.productId}`} /></label>)}
+        <SimulationNotice compact />
+        <div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setDispatching(null)}>Cancelar</button><button className="button button-primary" disabled={dispatchOrder.isPending || !Object.values(dispatchQuantities).some((quantity) => quantity > 0)}>{dispatchOrder.isPending ? 'Registrando…' : 'Confirmar salida'}</button></div>
+      </form>
+    </Modal>}
   </main>;
 }
 
@@ -577,29 +863,28 @@ function Shell({ identity }: { identity: AuthIdentity }) {
   const [mobileNav, setMobileNav] = useState(false);
   const [notice, setNotice] = useState('');
   const logout = useLogout();
-  const dashboardQuery = useGetFp360Dashboard<Dashboard>();
   const organizationsQuery = useListFp360Organizations<Organization[]>();
   const productsQuery = useListFp360Products<Product[]>();
   const ordersQuery = useListFp360Orders<Order[]>();
   const invoicesQuery = useListFp360Invoices<Invoice[]>();
-  const activityQuery = useListFp360Activity<ActivityItem[]>();
   const retryAll = () => { void queryClient.invalidateQueries(); };
   const states = {
-    dashboard: { loading: dashboardQuery.isLoading, error: dashboardQuery.isError, retry: retryAll },
     organizations: { loading: organizationsQuery.isLoading, error: organizationsQuery.isError, retry: retryAll },
     products: { loading: productsQuery.isLoading, error: productsQuery.isError, retry: retryAll },
     orders: { loading: ordersQuery.isLoading, error: ordersQuery.isError, retry: retryAll },
     invoices: { loading: invoicesQuery.isLoading, error: invoicesQuery.isError, retry: retryAll },
-    activity: { loading: activityQuery.isLoading, error: activityQuery.isError, retry: retryAll },
   };
   const page = useMemo(() => {
     switch (location) {
-      case '/': return <DashboardPage dashboard={dashboardQuery.data} activity={activityQuery.data} products={productsQuery.data} orders={ordersQuery.data} states={{ dashboard: states.dashboard, activity: states.activity, products: states.products, orders: states.orders }} />;
-      case '/mercado': return <MarketPage organizations={organizationsQuery.data} products={productsQuery.data} stateOrg={states.organizations} stateProducts={states.products} />;
+      case '/': return <DirectionPage actorRole={identity.role} />;
+      case '/mercado': return <MarketPage organizations={organizationsQuery.data} products={productsQuery.data} orders={ordersQuery.data} stateOrg={states.organizations} stateProducts={states.products} stateOrders={states.orders} />;
       case '/ventas': return <SalesPage products={productsQuery.data} organizations={organizationsQuery.data} orders={ordersQuery.data} states={{ products: states.products, organizations: states.organizations, orders: states.orders }} onRefresh={() => { void queryClient.invalidateQueries({ queryKey: getGetFp360DashboardQueryKey() }); void queryClient.invalidateQueries(); }} onNotice={setNotice} />;
+      case '/compras': return <PurchasesPage onNotice={setNotice} />;
       case '/almacen': return <InventoryPage products={productsQuery.data} orders={ordersQuery.data} stateProducts={states.products} stateOrders={states.orders} />;
+      case '/logistica': return <LogisticsPage orders={ordersQuery.data} organizations={organizationsQuery.data} stateOrders={states.orders} onRefresh={retryAll} onNotice={setNotice} />;
       case '/facturas': return <InvoicesPage invoices={invoicesQuery.data} orders={ordersQuery.data} stateInvoices={states.invoices} stateOrders={states.orders} onRefresh={() => { void queryClient.invalidateQueries({ queryKey: getGetFp360DashboardQueryKey() }); void queryClient.invalidateQueries(); }} onNotice={setNotice} />;
       case '/clientes': return <OrganizationsDirectory onNotice={setNotice} />;
+      case '/crm': return <CrmPage onNotice={setNotice} />;
       case '/productos': return <CatalogPage onNotice={setNotice} />;
        case '/aplicaciones':
        case '/apps': return <ApplicationsPage />;
@@ -608,7 +893,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       case '/administracion': return identity.role === 'administrator' ? <AdminPage identity={identity} /> : <AdminAccessDenied />;
       default: return null;
     }
-  }, [location, dashboardQuery.data, dashboardQuery.isLoading, dashboardQuery.isError, organizationsQuery.data, organizationsQuery.isLoading, organizationsQuery.isError, productsQuery.data, productsQuery.isLoading, productsQuery.isError, ordersQuery.data, ordersQuery.isLoading, ordersQuery.isError, invoicesQuery.data, invoicesQuery.isLoading, invoicesQuery.isError, activityQuery.data, activityQuery.isLoading, activityQuery.isError, identity]);
+  }, [location, organizationsQuery.data, organizationsQuery.isLoading, organizationsQuery.isError, productsQuery.data, productsQuery.isLoading, productsQuery.isError, ordersQuery.data, ordersQuery.isLoading, ordersQuery.isError, invoicesQuery.data, invoicesQuery.isLoading, invoicesQuery.isError, identity]);
   return <div className="app-shell">
     <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
       <Link href="/" className="brand-lockup" onClick={() => setMobileNav(false)}>
@@ -630,9 +915,11 @@ function Shell({ identity }: { identity: AuthIdentity }) {
         <Route path="/">{page}</Route>
         <Route path="/mercado">{page}</Route>
         <Route path="/ventas">{page}</Route>
+        <Route path="/compras">{page}</Route>
         <Route path="/almacen">{page}</Route>
         <Route path="/facturas">{page}</Route>
         <Route path="/clientes">{page}</Route>
+        <Route path="/crm">{page}</Route>
         <Route path="/productos">{page}</Route>
         <Route path="/aplicaciones">{page}</Route>
         <Route path="/documentacion">{page}</Route>

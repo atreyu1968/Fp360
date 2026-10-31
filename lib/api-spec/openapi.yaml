@@ -254,6 +254,347 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Fp360Dashboard"
+  /redfp360/direction/overview:
+    get:
+      operationId: getFp360DirectionOverview
+      tags: [redfp360]
+      summary: Get source-backed executive indicators for a simulated period
+      parameters:
+        - in: query
+          name: periodStart
+          schema: { type: string, format: date }
+        - in: query
+          name: periodEnd
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Indicators with explicit source availability
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectionOverview" }
+        "400": { description: Invalid period }
+  /redfp360/direction/tasks:
+    get:
+      operationId: listFp360DirectionTasks
+      tags: [redfp360]
+      summary: List direction tasks for the authenticated tenant
+      responses:
+        "200":
+          description: Tenant-scoped direction tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DirectionTask" }
+    post:
+      operationId: createFp360DirectionTask
+      tags: [redfp360]
+      summary: Create a simulated direction task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DirectionTaskInput" }
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectionTask" }
+        "400": { description: Invalid task }
+        "403": { description: Role cannot create tasks }
+  /redfp360/direction/members:
+    get:
+      operationId: listFp360DirectionMembers
+      tags: [redfp360]
+      summary: List assignable active members in the authenticated tenant
+      responses:
+        "200":
+          description: Active tenant members without private contact details
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DirectionMember" }
+  /redfp360/direction/tasks/{id}:
+    patch:
+      operationId: updateFp360DirectionTask
+      tags: [redfp360]
+      summary: Update a task status with an audit reason
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DirectionTaskUpdate" }
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectionTask" }
+        "400": { description: Invalid task update }
+        "403": { description: Role cannot update this task }
+        "404": { description: Task not found in tenant }
+  /redfp360/direction/alerts:
+    get:
+      operationId: listFp360DirectionAlerts
+      tags: [redfp360]
+      summary: List source-derived alerts and their recorded actions
+      responses:
+        "200":
+          description: Current alerts for the authenticated tenant
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DirectionAlert" }
+  /redfp360/direction/alerts/{alertKey}:
+    patch:
+      operationId: updateFp360DirectionAlert
+      tags: [redfp360]
+      summary: Record an alert owner, status, justification, and evidence
+      parameters:
+        - in: path
+          name: alertKey
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DirectionAlertAction" }
+      responses:
+        "200":
+          description: Updated alert action
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectionAlert" }
+        "400": { description: Invalid alert action or missing required evidence }
+        "403": { description: Role cannot update alerts }
+        "404": { description: Alert source not found in tenant }
+  /redfp360/direction/thresholds:
+    get:
+      operationId: listFp360DirectionThresholds
+      tags: [redfp360]
+      summary: List configurable direction alert thresholds
+      responses:
+        "200":
+          description: Tenant-scoped thresholds and configuration state
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DirectionThreshold" }
+    put:
+      operationId: upsertFp360DirectionThreshold
+      tags: [redfp360]
+      summary: Configure a source-aware direction alert threshold
+      parameters:
+        - in: query
+          name: key
+          required: true
+          schema: { type: string, enum: [stock_low_units, liquidity_min_cents] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DirectionThresholdInput" }
+      responses:
+        "200":
+          description: Updated threshold
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectionThreshold" }
+        "400": { description: Invalid threshold }
+        "403": { description: Role cannot configure thresholds }
+  /redfp360/direction/decisions:
+    get:
+      operationId: listFp360DirectionDecisions
+      tags: [redfp360]
+      summary: List decisions and their retained approval history
+      responses:
+        "200":
+          description: Tenant-scoped decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DirectionDecision" }
+    post:
+      operationId: createFp360DirectionDecision
+      tags: [redfp360]
+      summary: Submit a simulated management decision for review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DirectionDecisionInput" }
+      responses:
+        "201":
+          description: Decision submitted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectionDecision" }
+        "400": { description: Invalid decision }
+        "403": { description: Role cannot submit decisions }
+  /redfp360/direction/decisions/{id}/decision:
+    post:
+      operationId: decideFp360DirectionDecision
+      tags: [redfp360]
+      summary: Approve or reject a decision with a retained reason
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DirectionDecisionReview" }
+      responses:
+        "200":
+          description: Decision review recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectionDecision" }
+        "400": { description: Invalid review or decision state }
+        "403": { description: Only authorized supervisors can approve decisions }
+        "404": { description: Decision not found in tenant }
+  /redfp360/direction/objectives:
+    get:
+      operationId: listFp360DirectionObjectives
+      tags: [redfp360]
+      summary: List tenant objectives for the selected periods
+      parameters:
+        - in: query
+          name: periodStart
+          schema: { type: string, format: date }
+        - in: query
+          name: periodEnd
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Objectives and source-backed progress values
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DirectionObjective" }
+    post:
+      operationId: createFp360DirectionObjective
+      tags: [redfp360]
+      summary: Set a simulated company objective
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DirectionObjectiveInput" }
+      responses:
+        "201":
+          description: Objective created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectionObjective" }
+        "400": { description: Invalid objective period or target }
+        "403": { description: Role cannot set objectives }
+  /redfp360/direction/objectives/{id}:
+    patch:
+      operationId: updateFp360DirectionObjective
+      tags: [redfp360]
+      summary: Update a simulated company objective
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DirectionObjectiveInput" }
+      responses:
+        "200":
+          description: Updated objective
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectionObjective" }
+        "400": { description: Invalid objective }
+        "403": { description: Role cannot update objectives }
+        "404": { description: Objective not found in tenant }
+  /redfp360/direction/reports:
+    get:
+      operationId: listFp360DirectionReports
+      tags: [redfp360]
+      summary: List direction reports visible to the authenticated role
+      responses:
+        "200":
+          description: Saved reports filtered for the current role
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DirectionReport" }
+    post:
+      operationId: createFp360DirectionReport
+      tags: [redfp360]
+      summary: Save a source-backed report snapshot for a period
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DirectionReportInput" }
+      responses:
+        "201":
+          description: Saved report snapshot
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectionReport" }
+        "400": { description: Invalid report period }
+        "403": { description: Role cannot save reports }
+  /redfp360/direction/reports/{id}:
+    get:
+      operationId: getFp360DirectionReport
+      tags: [redfp360]
+      summary: Get a saved report visible to the authenticated role
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Saved report snapshot
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectionReport" }
+        "403": { description: Report not visible to this role }
+        "404": { description: Report not found in tenant }
+  /redfp360/direction/events:
+    get:
+      operationId: listFp360DirectionEvents
+      tags: [redfp360]
+      summary: Read the retained direction audit trail
+      parameters:
+        - in: query
+          name: entityType
+          schema: { type: string, enum: [task, alert, decision, objective, report] }
+        - in: query
+          name: entityId
+          schema: { type: string }
+      responses:
+        "200":
+          description: Tenant-scoped audit events
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DirectionEvent" }
   /redfp360/organizations:
     get:
       operationId: listFp360Organizations
@@ -358,6 +699,101 @@ paths:
         "403": { description: Publishing requires teacher or administrator }
         "404": { description: Product not found }
         "409": { description: Duplicate SKU or reserved stock prevents archiving }
+  /redfp360/products/{id}/price-versions:
+    get:
+      operationId: listFp360ProductPriceVersions
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Versioned prices and conditions for the catalog item
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Fp360ProductPriceVersion" }
+        "404": { description: Product not found }
+  /redfp360/products/{id}/documents:
+    get:
+      operationId: listFp360ProductDocuments
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Product and service documents in the current tenant
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Fp360ProductDocument" }
+        "404": { description: Product not found }
+  /redfp360/products/{id}/documents/upload-url:
+    post:
+      operationId: requestFp360ProductDocumentUploadUrl
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProductDocumentUploadUrlInput" }
+      responses:
+        "200":
+          description: Private upload URL and pending document record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProductDocumentUploadUrl" }
+        "400": { description: Invalid file metadata or unsupported document }
+        "403": { description: Read-only role }
+        "404": { description: Product not found }
+  /redfp360/products/{id}/documents/{documentId}/complete:
+    post:
+      operationId: completeFp360ProductDocumentUpload
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: documentId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Uploaded document verified and made available
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProductDocument" }
+        "403": { description: Read-only role }
+        "404": { description: "Product, document, or uploaded object not found" }
+        "409": { description: Document upload is no longer pending }
+  /redfp360/products/{id}/documents/{documentId}/download:
+    get:
+      operationId: downloadFp360ProductDocument
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: documentId, in: path, required: true, schema: { type: string } }
+      responses:
+        "302":
+          description: Redirect to a short-lived private download URL
+          headers:
+            Location:
+              schema: { type: string, format: uri }
+        "404": { description: Product document not found }
+  /redfp360/products/{id}/documents/{documentId}:
+    delete:
+      operationId: deleteFp360ProductDocument
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: documentId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Product document removed from the catalog
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProductDocumentDeleteResponse" }
+        "403": { description: Read-only role }
+        "404": { description: Product document not found }
   /redfp360/products/{id}/stock-adjustments:
     get:
       operationId: listFp360StockAdjustments
@@ -393,6 +829,480 @@ paths:
         "403": { description: Read-only role }
         "404": { description: Product not found }
         "409": { description: Stock cannot fall below reserved units }
+  /redfp360/purchases/requests:
+    get:
+      operationId: listPurchaseRequests
+      tags: [redfp360]
+      responses:
+        "200":
+          description: Purchase requests visible to the current organization and selected suppliers
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PurchaseRequestSummary" }
+    post:
+      operationId: createPurchaseRequest
+      tags: [redfp360]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseRequestInput" }
+      responses:
+        "201":
+          description: Idempotently created purchase request draft
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseRequest" }
+        "400": { description: "Invalid products, quantities or selected suppliers" }
+        "403": { description: The current profile cannot purchase for this organization }
+        "404": { description: Organization or product not found }
+        "409": { description: Idempotency key conflict }
+  /redfp360/purchases/requests/{id}:
+    get:
+      operationId: getPurchaseRequest
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Request and snapshot lines
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseRequest" }
+        "404": { description: Request is not visible to this organization }
+  /redfp360/purchases/requests/{id}/submit:
+    post:
+      operationId: submitPurchaseRequest
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseRequestTransitionInput" }
+      responses:
+        "200":
+          description: Suppliers invited to respond to this practice request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseRequest" }
+        "400": { description: Request is incomplete or cannot be submitted }
+        "404": { description: Request not found }
+  /redfp360/purchases/requests/{id}/offers:
+    get:
+      operationId: listPurchaseOffers
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Offers visible to the buyer, or the signed-in supplier's own offer
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PurchaseOffer" }
+        "404": { description: Request not found }
+    post:
+      operationId: createPurchaseOffer
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseOfferInput" }
+      responses:
+        "201":
+          description: Simulated supplier quote recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseOffer" }
+        "400": { description: Quote does not cover every requested item }
+        "403": { description: Only this supplier or an educator can record its quote }
+        "404": { description: "Request, supplier or item not found" }
+        "409": { description: Quote already exists or the response window has closed }
+  /redfp360/purchases/requests/{id}/review:
+    post:
+      operationId: reviewPurchaseRequest
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseRequestTransitionInput" }
+      responses:
+        "200":
+          description: Comparable quotes sent for teacher approval
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseRequest" }
+        "400": { description: At least two complete quotes are required }
+        "404": { description: Request not found }
+  /redfp360/purchases/requests/{id}/decision:
+    post:
+      operationId: decidePurchaseRequest
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseDecisionInput" }
+      responses:
+        "200":
+          description: Educator approval or rejection recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseRequest" }
+        "400": { description: Request cannot be approved in its current state }
+        "403": { description: Only a teacher or administrator can decide }
+        "404": { description: Request not found }
+  /redfp360/purchases/requests/{id}/award:
+    post:
+      operationId: awardPurchaseOrder
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseAwardInput" }
+      responses:
+        "201":
+          description: Purchase order created from the approved supplier offer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseOrder" }
+        "400": { description: Award requires an approved request and a valid justification }
+        "404": { description: Request or offer not found }
+        "409": { description: This request already has a purchase order }
+  /redfp360/purchases/requests/{id}/cancel:
+    post:
+      operationId: cancelPurchaseRequest
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseRequestTransitionInput" }
+      responses:
+        "200":
+          description: Request cancelled with a preserved reason
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseRequest" }
+        "400": { description: The request cannot be cancelled now }
+        "404": { description: Request not found }
+  /redfp360/purchases/requests/{id}/events:
+    get:
+      operationId: listPurchaseEvents
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Request status history and responsible role
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PurchaseEvent" }
+        "404": { description: Request not found }
+  /redfp360/purchases/orders:
+    get:
+      operationId: listPurchaseOrders
+      tags: [redfp360]
+      responses:
+        "200":
+          description: Issued simulated purchase orders in the visible organization scope
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PurchaseOrder" }
+  /redfp360/purchases/orders/{id}/receipts:
+    post:
+      operationId: recordPurchaseReceipt
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseReceiptInput" }
+      responses:
+        "201":
+          description: Receipt recorded; only accepted units enter simulated stock
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseReceipt" }
+        "400": { description: Receipt quantities or issue reasons are invalid }
+        "403": { description: Only the purchasing organization can register delivery }
+        "404": { description: Purchase order not found }
+        "409": { description: Receipt exceeds the remaining quantities or duplicates a record }
+  /redfp360/purchases/receipts:
+    get:
+      operationId: listPurchaseReceipts
+      tags: [redfp360]
+      responses:
+        "200":
+          description: Receipt history visible to the purchasing organization
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PurchaseReceipt" }
+  /redfp360/purchases/orders/{id}/invoices:
+    post:
+      operationId: createPurchaseInvoice
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseInvoiceInput" }
+      responses:
+        "201":
+          description: Supplier invoice stored with a deterministic order-receipt-invoice match result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseInvoice" }
+        "400": { description: Invoice fields or line items are inconsistent }
+        "404": { description: Completed order not found }
+        "409": { description: Invoice number or operation ID already used }
+  /redfp360/purchases/invoices:
+    get:
+      operationId: listPurchaseInvoices
+      tags: [redfp360]
+      responses:
+        "200":
+          description: Received invoices restricted to the buyer organization
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PurchaseInvoice" }
+  /redfp360/purchases/invoices/{id}/decision:
+    post:
+      operationId: decidePurchaseInvoice
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseInvoiceDecisionInput" }
+      responses:
+        "200":
+          description: Invoice conformity, block or correction request preserved in the audit trail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseInvoice" }
+        "400": { description: The invoice does not pass the requested decision }
+        "403": { description: The current profile cannot conform supplier invoices }
+        "404": { description: Invoice not found }
+  /redfp360/purchases/supplier-analysis:
+    get:
+      operationId: listPurchaseSupplierAnalysis
+      tags: [redfp360]
+      responses:
+        "200":
+          description: Supplier metrics derived solely from recorded orders and receipts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PurchaseSupplierMetric" }
+  /redfp360/crm/contacts:
+    get:
+      operationId: listCrmContacts
+      tags: [redfp360]
+      responses:
+        "200":
+          description: Simulated practice contacts within this network
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CrmContact" }
+    post:
+      operationId: createCrmContact
+      tags: [redfp360]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CrmContactInput" }
+      responses:
+        "201":
+          description: Fictional practice contact created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CrmContact" }
+        "400": { description: Invalid contact }
+        "403": { description: Read-only role }
+        "404": { description: Active organization not found in this network }
+        "409": { description: Duplicate contact }
+  /redfp360/crm/contacts/{id}:
+    patch:
+      operationId: updateCrmContact
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CrmContactUpdate" }
+      responses:
+        "200":
+          description: Updated contact, preserving linked history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CrmContact" }
+        "400": { description: Invalid contact }
+        "404": { description: Contact not found in this network }
+        "409": { description: Duplicate contact }
+  /redfp360/crm/opportunities:
+    get:
+      operationId: listCrmOpportunities
+      tags: [redfp360]
+      responses:
+        "200":
+          description: Opportunities within this network
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CrmOpportunity" }
+    post:
+      operationId: createCrmOpportunity
+      tags: [redfp360]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CrmOpportunityInput" }
+      responses:
+        "201":
+          description: Opportunity created in the new stage
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CrmOpportunity" }
+        "400": { description: Invalid opportunity }
+        "404": { description: Active organization not found in this network }
+  /redfp360/crm/opportunities/{id}:
+    patch:
+      operationId: updateCrmOpportunity
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CrmOpportunityUpdate" }
+      responses:
+        "200":
+          description: Opportunity details updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CrmOpportunity" }
+        "400": { description: Invalid changes }
+        "404": { description: Opportunity not found in this network }
+  /redfp360/crm/opportunities/{id}/stage:
+    post:
+      operationId: moveCrmOpportunity
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CrmOpportunityStageInput" }
+      responses:
+        "200":
+          description: Stage changed and audited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CrmOpportunity" }
+        "400": { description: Stage change requires a reason and a distinct stage }
+        "404": { description: Opportunity not found in this network }
+  /redfp360/crm/opportunity-history:
+    get:
+      operationId: listCrmOpportunityHistory
+      tags: [redfp360]
+      responses:
+        "200":
+          description: Opportunity stage changes for this network
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CrmOpportunityHistory" }
+  /redfp360/crm/activities:
+    get:
+      operationId: listCrmActivities
+      tags: [redfp360]
+      responses:
+        "200":
+          description: Simulated follow-up activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CrmActivity" }
+    post:
+      operationId: createCrmActivity
+      tags: [redfp360]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CrmActivityInput" }
+      responses:
+        "201":
+          description: Practice activity recorded; no communication is sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CrmActivity" }
+        "400": { description: Invalid activity or contact does not belong to the opportunity's organization }
+        "404": { description: Opportunity not found in this network }
+  /redfp360/crm/activities/{id}:
+    patch:
+      operationId: updateCrmActivity
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CrmActivityUpdate" }
+      responses:
+        "200":
+          description: Activity updated without deleting history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CrmActivity" }
+        "400": { description: Invalid activity changes }
+        "404": { description: Activity not found in this network }
   /redfp360/orders:
     get:
       operationId: listFp360Orders
@@ -582,24 +1492,86 @@ components:
       properties:
         sku: { type: string, minLength: 1, maxLength: 40, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]*$' }
         name: { type: string, minLength: 1, maxLength: 150 }
+        description: { type: string, maxLength: 2000 }
         category: { type: string, minLength: 1, maxLength: 100 }
+        itemType: { type: string, enum: [product, service] }
+        unit: { type: string, minLength: 1, maxLength: 40 }
+        tracksInventory: { type: boolean }
         unitPriceCents: { type: integer, minimum: 0, maximum: 100000000 }
         costCents: { type: integer, minimum: 0, maximum: 100000000 }
         igicBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
         stock: { type: integer, minimum: 0, maximum: 1000000 }
         minimumStock: { type: integer, minimum: 0, maximum: 1000000 }
+        maxDiscountBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+        leadTimeDays: { type: integer, minimum: 0, maximum: 3650 }
+        supplierOrganizationId: { type: ["string", "null"] }
     Fp360ProductUpdate:
       type: object
       properties:
         sku: { type: string, minLength: 1, maxLength: 40, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]*$' }
         name: { type: string, minLength: 1, maxLength: 150 }
+        description: { type: string, maxLength: 2000 }
         category: { type: string, minLength: 1, maxLength: 100 }
+        itemType: { type: string, enum: [product, service] }
+        unit: { type: string, minLength: 1, maxLength: 40 }
+        tracksInventory: { type: boolean }
         unitPriceCents: { type: integer, minimum: 0, maximum: 100000000 }
         costCents: { type: integer, minimum: 0, maximum: 100000000 }
         igicBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
         minimumStock: { type: integer, minimum: 0, maximum: 1000000 }
+        maxDiscountBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+        leadTimeDays: { type: integer, minimum: 0, maximum: 3650 }
+        supplierOrganizationId: { type: ["string", "null"] }
+        priceChangeReason: { type: string, minLength: 5, maxLength: 500 }
+        effectiveFrom: { type: string, format: date }
         isActive: { type: boolean }
         isPublished: { type: boolean }
+    Fp360ProductPriceVersion:
+      type: object
+      required: [id, unitPriceCents, costCents, igicBasisPoints, maxDiscountBasisPoints, validFrom, reason, actorName, createdAt]
+      properties:
+        id: { type: string }
+        unitPriceCents: { type: integer, minimum: 0 }
+        costCents: { type: integer, minimum: 0 }
+        igicBasisPoints: { type: integer, minimum: 0 }
+        maxDiscountBasisPoints: { type: integer, minimum: 0 }
+        validFrom: { type: string, format: date }
+        reason: { type: string }
+        actorName: { type: string }
+        createdAt: { type: string, format: date-time }
+    Fp360ProductDocumentUploadUrlInput:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        size: { type: integer, minimum: 1, maximum: 10485760 }
+        contentType:
+          type: string
+          enum: [application/pdf, image/jpeg, image/png, image/webp]
+        description: { type: string, maxLength: 500 }
+    Fp360ProductDocumentUploadUrl:
+      type: object
+      required: [documentId, uploadURL]
+      properties:
+        documentId: { type: string }
+        uploadURL: { type: string, format: uri }
+    Fp360ProductDocument:
+      type: object
+      required: [id, originalName, contentType, sizeBytes, description, status, uploaderName, createdAt]
+      properties:
+        id: { type: string }
+        originalName: { type: string }
+        contentType: { type: string }
+        sizeBytes: { type: integer, minimum: 1 }
+        description: { type: string }
+        status: { type: string, enum: [pending, ready] }
+        uploaderName: { type: string }
+        createdAt: { type: string, format: date-time }
+    Fp360ProductDocumentDeleteResponse:
+      type: object
+      required: [deleted]
+      properties:
+        deleted: { type: boolean }
     Fp360StockAdjustmentInput:
       type: object
       required: [operationId, quantityDelta, reason]
@@ -619,6 +1591,497 @@ components:
         actorName: { type: string }
         simulatedDate: { type: string, format: date }
         createdAt: { type: string, format: date-time }
+    PurchaseUrgency:
+      type: string
+      enum: [low, normal, high, urgent]
+    PurchaseRequestStatus:
+      type: string
+      enum: [draft, requested, pending_approval, approved, rejected, ordered, cancelled]
+    PurchaseOrderStatus:
+      type: string
+      enum: [ordered, partial, received]
+    PurchaseEventStatus:
+      type: string
+      enum: [draft, requested, pending_approval, approved, rejected, ordered, partial, received, cancelled, pending_review, conformed, blocked, correction_requested, rectified]
+    PurchaseRequestInput:
+      type: object
+      required: [operationId, organizationId, department, urgency, deadline, budgetCapCents, purpose, requestedSupplierIds, lines]
+      properties:
+        operationId: { type: string, format: uuid }
+        organizationId: { type: string, format: uuid }
+        department: { type: string, minLength: 2, maxLength: 100 }
+        urgency: { $ref: "#/components/schemas/PurchaseUrgency" }
+        deadline: { type: ["string", "null"], format: date }
+        budgetCapCents: { type: integer, minimum: 1, maximum: 100000000 }
+        purpose: { type: string, minLength: 5, maxLength: 500 }
+        requestedSupplierIds:
+          type: array
+          minItems: 2
+          maxItems: 5
+          items: { type: string, format: uuid }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { $ref: "#/components/schemas/PurchaseRequestLineInput" }
+    PurchaseRequestLineInput:
+      type: object
+      required: [productId, quantity, justification]
+      properties:
+        productId: { type: string, format: uuid }
+        quantity: { type: integer, minimum: 1, maximum: 1000000 }
+        justification: { type: string, minLength: 5, maxLength: 300 }
+    PurchaseRequestLine:
+      type: object
+      required: [id, productId, sku, productName, quantity, justification]
+      properties:
+        id: { type: string, format: uuid }
+        productId: { type: string, format: uuid }
+        sku: { type: string }
+        productName: { type: string }
+        quantity: { type: integer }
+        justification: { type: string }
+    PurchaseSupplier:
+      type: object
+      required: [id, name, island]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        island: { type: string }
+    PurchaseRequestSummary:
+      type: object
+      required: [id, requestNumber, organizationId, organizationName, department, urgency, deadline, budgetCapCents, status, lineCount, offerCount, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        requestNumber: { type: string }
+        organizationId: { type: string, format: uuid }
+        organizationName: { type: string }
+        department: { type: string }
+        urgency: { $ref: "#/components/schemas/PurchaseUrgency" }
+        deadline: { type: ["string", "null"], format: date }
+        budgetCapCents: { type: integer }
+        status: { $ref: "#/components/schemas/PurchaseRequestStatus" }
+        lineCount: { type: integer }
+        offerCount: { type: integer }
+        updatedAt: { type: string, format: date-time }
+    PurchaseRequest:
+      type: object
+      required: [id, requestNumber, organizationId, organizationName, department, urgency, deadline, budgetCapCents, purpose, status, lineCount, offerCount, requestedSuppliers, lines, createdByRole, decisionReason, awardedReason, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        requestNumber: { type: string }
+        organizationId: { type: string, format: uuid }
+        organizationName: { type: string }
+        department: { type: string }
+        urgency: { $ref: "#/components/schemas/PurchaseUrgency" }
+        deadline: { type: ["string", "null"], format: date }
+        budgetCapCents: { type: integer }
+        purpose: { type: string }
+        status: { $ref: "#/components/schemas/PurchaseRequestStatus" }
+        lineCount: { type: integer }
+        offerCount: { type: integer }
+        requestedSuppliers:
+          type: array
+          items: { $ref: "#/components/schemas/PurchaseSupplier" }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/PurchaseRequestLine" }
+        createdByRole: { type: string }
+        decisionReason: { type: ["string", "null"] }
+        awardedReason: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    PurchaseRequestTransitionInput:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 5, maxLength: 500 }
+    PurchaseDecisionInput:
+      type: object
+      required: [decision, reason]
+      properties:
+        decision: { type: string, enum: [approved, rejected] }
+        reason: { type: string, minLength: 5, maxLength: 500 }
+    PurchaseAwardInput:
+      type: object
+      required: [offerId, reason]
+      properties:
+        offerId: { type: string, format: uuid }
+        reason: { type: string, minLength: 5, maxLength: 500 }
+    PurchaseOfferInput:
+      type: object
+      required: [operationId, supplierOrganizationId, quoteReference, deliveryDays, paymentDays, freightCents, qualityScoreBasisPoints, validUntil, lines]
+      properties:
+        operationId: { type: string, format: uuid }
+        supplierOrganizationId: { type: string, format: uuid }
+        quoteReference: { type: string, minLength: 1, maxLength: 80 }
+        deliveryDays: { type: integer, minimum: 1, maximum: 365 }
+        paymentDays: { type: integer, minimum: 0, maximum: 365 }
+        freightCents: { type: integer, minimum: 0, maximum: 100000000 }
+        qualityScoreBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+        validUntil: { type: ["string", "null"], format: date }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { $ref: "#/components/schemas/PurchaseOfferLineInput" }
+    PurchaseOfferLineInput:
+      type: object
+      required: [requestLineId, unitPriceCents, igicBasisPoints]
+      properties:
+        requestLineId: { type: string, format: uuid }
+        unitPriceCents: { type: integer, minimum: 0, maximum: 100000000 }
+        igicBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+    PurchaseOfferLine:
+      type: object
+      required: [requestLineId, sku, productName, quantity, unitPriceCents, igicBasisPoints, baseCents, igicCents]
+      properties:
+        requestLineId: { type: string, format: uuid }
+        sku: { type: string }
+        productName: { type: string }
+        quantity: { type: integer }
+        unitPriceCents: { type: integer }
+        igicBasisPoints: { type: integer }
+        baseCents: { type: integer }
+        igicCents: { type: integer }
+    PurchaseOffer:
+      type: object
+      required: [id, requestId, supplierOrganizationId, supplierName, quoteReference, deliveryDays, paymentDays, freightCents, qualityScoreBasisPoints, validUntil, baseCents, igicCents, totalCents, priceScoreBasisPoints, deliveryScoreBasisPoints, termsScoreBasisPoints, weightedScoreBasisPoints, lines, createdByRole, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        requestId: { type: string, format: uuid }
+        supplierOrganizationId: { type: string, format: uuid }
+        supplierName: { type: string }
+        quoteReference: { type: string }
+        deliveryDays: { type: integer }
+        paymentDays: { type: integer }
+        freightCents: { type: integer }
+        qualityScoreBasisPoints: { type: integer }
+        validUntil: { type: ["string", "null"], format: date }
+        baseCents: { type: integer }
+        igicCents: { type: integer }
+        totalCents: { type: integer }
+        priceScoreBasisPoints: { type: integer }
+        deliveryScoreBasisPoints: { type: integer }
+        termsScoreBasisPoints: { type: integer }
+        weightedScoreBasisPoints: { type: integer }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/PurchaseOfferLine" }
+        createdByRole: { type: string }
+        createdAt: { type: string, format: date-time }
+    PurchaseEvent:
+      type: object
+      required: [id, requestId, action, fromStatus, toStatus, reason, actorRole, simulatedDate, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        requestId: { type: string, format: uuid }
+        action: { type: string }
+        fromStatus: { type: ["string", "null"] }
+        toStatus: { $ref: "#/components/schemas/PurchaseEventStatus" }
+        reason: { type: string }
+        actorRole: { type: string }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    PurchaseOrderLine:
+      type: object
+      required: [id, productId, sku, productName, quantity, unitPriceCents, igicBasisPoints, baseCents, igicCents]
+      properties:
+        id: { type: string, format: uuid }
+        productId: { type: string, format: uuid }
+        sku: { type: string }
+        productName: { type: string }
+        quantity: { type: integer }
+        unitPriceCents: { type: integer }
+        igicBasisPoints: { type: integer }
+        baseCents: { type: integer }
+        igicCents: { type: integer }
+    PurchaseOrder:
+      type: object
+      required: [id, orderNumber, requestId, requestNumber, buyerOrganizationId, buyerOrganizationName, supplierOrganizationId, supplierName, offerId, baseCents, igicCents, freightCents, totalCents, status, expectedDate, receivedDate, awardedReason, simulatedDate, lines, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        orderNumber: { type: string }
+        requestId: { type: string, format: uuid }
+        requestNumber: { type: string }
+        buyerOrganizationId: { type: string, format: uuid }
+        buyerOrganizationName: { type: string }
+        supplierOrganizationId: { type: string, format: uuid }
+        supplierName: { type: string }
+        offerId: { type: string, format: uuid }
+        baseCents: { type: integer }
+        igicCents: { type: integer }
+        freightCents: { type: integer }
+        totalCents: { type: integer }
+        status: { $ref: "#/components/schemas/PurchaseOrderStatus" }
+        expectedDate: { type: ["string", "null"], format: date }
+        receivedDate: { type: ["string", "null"], format: date }
+        awardedReason: { type: string }
+        simulatedDate: { type: string, format: date }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/PurchaseOrderLine" }
+        createdAt: { type: string, format: date-time }
+    PurchaseReceiptLineInput:
+      type: object
+      required: [purchaseOrderLineId, quantityAccepted, quantityRejected, issueReason]
+      properties:
+        purchaseOrderLineId: { type: string, format: uuid }
+        quantityAccepted: { type: integer, minimum: 0, maximum: 1000000 }
+        quantityRejected: { type: integer, minimum: 0, maximum: 1000000 }
+        issueReason: { type: ["string", "null"], maxLength: 500 }
+    PurchaseReceiptInput:
+      type: object
+      required: [operationId, receiptReference, receivedDate, lines]
+      properties:
+        operationId: { type: string, format: uuid }
+        receiptReference: { type: string, minLength: 1, maxLength: 80 }
+        receivedDate: { type: string, format: date }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { $ref: "#/components/schemas/PurchaseReceiptLineInput" }
+    PurchaseReceiptLine:
+      type: object
+      required: [purchaseOrderLineId, sku, productName, quantityOrdered, quantityAccepted, quantityRejected, issueReason]
+      properties:
+        purchaseOrderLineId: { type: string, format: uuid }
+        sku: { type: string }
+        productName: { type: string }
+        quantityOrdered: { type: integer }
+        quantityAccepted: { type: integer }
+        quantityRejected: { type: integer }
+        issueReason: { type: ["string", "null"] }
+    PurchaseReceipt:
+      type: object
+      required: [id, orderId, orderNumber, supplierName, receiptReference, receivedDate, status, acceptedUnits, rejectedUnits, lines, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        orderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        supplierName: { type: string }
+        receiptReference: { type: string }
+        receivedDate: { type: string, format: date }
+        status: { type: string, enum: [partial, received] }
+        acceptedUnits: { type: integer }
+        rejectedUnits: { type: integer }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/PurchaseReceiptLine" }
+        createdAt: { type: string, format: date-time }
+    PurchaseInvoiceStatus:
+      type: string
+      enum: [pending_review, conformed, blocked, correction_requested, rectified]
+    PurchaseInvoiceMatchStatus:
+      type: string
+      enum: [match, difference]
+    PurchaseInvoiceLineInput:
+      type: object
+      required: [purchaseOrderLineId, quantity, unitPriceCents, igicBasisPoints]
+      properties:
+        purchaseOrderLineId: { type: string, format: uuid }
+        quantity: { type: integer, minimum: 1, maximum: 1000000 }
+        unitPriceCents: { type: integer, minimum: 0, maximum: 100000000 }
+        igicBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+    PurchaseInvoiceInput:
+      type: object
+      required: [operationId, invoiceReference, invoiceDate, dueDate, supersedesInvoiceId, baseCents, igicCents, freightCents, totalCents, lines]
+      properties:
+        operationId: { type: string, format: uuid }
+        invoiceReference: { type: string, minLength: 1, maxLength: 80 }
+        invoiceDate: { type: string, format: date }
+        dueDate: { type: ["string", "null"], format: date }
+        supersedesInvoiceId: { type: ["string", "null"], format: uuid }
+        baseCents: { type: integer, minimum: 0, maximum: 100000000 }
+        igicCents: { type: integer, minimum: 0, maximum: 100000000 }
+        freightCents: { type: integer, minimum: 0, maximum: 100000000 }
+        totalCents: { type: integer, minimum: 0, maximum: 100000000 }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { $ref: "#/components/schemas/PurchaseInvoiceLineInput" }
+    PurchaseInvoiceLine:
+      type: object
+      required: [id, purchaseOrderLineId, sku, productName, quantity, expectedReceivedQuantity, unitPriceCents, expectedUnitPriceCents, igicBasisPoints, expectedIgicBasisPoints, baseCents, igicCents, matches]
+      properties:
+        id: { type: string, format: uuid }
+        purchaseOrderLineId: { type: string, format: uuid }
+        sku: { type: string }
+        productName: { type: string }
+        quantity: { type: integer }
+        expectedReceivedQuantity: { type: integer }
+        unitPriceCents: { type: integer }
+        expectedUnitPriceCents: { type: integer }
+        igicBasisPoints: { type: integer }
+        expectedIgicBasisPoints: { type: integer }
+        baseCents: { type: integer }
+        igicCents: { type: integer }
+        matches: { type: boolean }
+    PurchaseInvoice:
+      type: object
+      required: [id, orderId, orderNumber, requestId, supplierOrganizationId, supplierName, supersedesInvoiceId, invoiceReference, invoiceDate, dueDate, status, matchStatus, matchSummary, baseCents, igicCents, freightCents, totalCents, decisionReason, lines, createdByRole, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        orderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        requestId: { type: string, format: uuid }
+        supplierOrganizationId: { type: string, format: uuid }
+        supplierName: { type: string }
+        supersedesInvoiceId: { type: ["string", "null"], format: uuid }
+        invoiceReference: { type: string }
+        invoiceDate: { type: string, format: date }
+        dueDate: { type: ["string", "null"], format: date }
+        status: { $ref: "#/components/schemas/PurchaseInvoiceStatus" }
+        matchStatus: { $ref: "#/components/schemas/PurchaseInvoiceMatchStatus" }
+        matchSummary: { type: string }
+        baseCents: { type: integer }
+        igicCents: { type: integer }
+        freightCents: { type: integer }
+        totalCents: { type: integer }
+        decisionReason: { type: ["string", "null"] }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/PurchaseInvoiceLine" }
+        createdByRole: { type: string }
+        createdAt: { type: string, format: date-time }
+    PurchaseInvoiceDecisionInput:
+      type: object
+      required: [decision, reason]
+      properties:
+        decision: { type: string, enum: [conformed, blocked, correction_requested] }
+        reason: { type: string, minLength: 5, maxLength: 500 }
+    PurchaseSupplierMetric:
+      type: object
+      required: [supplierOrganizationId, supplierName, isActive, orderCount, receivedOrderCount, onTimeBasisPoints, acceptedUnits, rejectedUnits, qualityAcceptanceBasisPoints, complaintCount, orderedCents, averageOrderCents]
+      properties:
+        supplierOrganizationId: { type: string, format: uuid }
+        supplierName: { type: string }
+        isActive: { type: boolean }
+        orderCount: { type: integer }
+        receivedOrderCount: { type: integer }
+        onTimeBasisPoints: { type: integer }
+        acceptedUnits: { type: integer }
+        rejectedUnits: { type: integer }
+        qualityAcceptanceBasisPoints: { type: integer }
+        complaintCount: { type: integer }
+        orderedCents: { type: integer }
+        averageOrderCents: { type: integer }
+    CrmContact:
+      type: object
+      required: [id, organizationId, organizationName, fullName, position, channel, isActive, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        organizationId: { type: string }
+        organizationName: { type: string }
+        fullName: { type: string }
+        position: { type: string }
+        channel: { type: string, enum: [internal, school_mediated, practice_platform] }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    CrmContactInput:
+      type: object
+      required: [organizationId, fullName, position, channel]
+      properties:
+        organizationId: { type: string, format: uuid }
+        fullName: { type: string, minLength: 2, maxLength: 120 }
+        position: { type: string, minLength: 2, maxLength: 100 }
+        channel: { type: string, enum: [internal, school_mediated, practice_platform] }
+    CrmContactUpdate:
+      type: object
+      properties:
+        fullName: { type: string, minLength: 2, maxLength: 120 }
+        position: { type: string, minLength: 2, maxLength: 100 }
+        channel: { type: string, enum: [internal, school_mediated, practice_platform] }
+        isActive: { type: boolean }
+    CrmOpportunity:
+      type: object
+      required: [id, organizationId, organizationName, title, stage, estimatedValueCents, probabilityBasisPoints, expectedDate, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        organizationId: { type: string, format: uuid }
+        organizationName: { type: string }
+        title: { type: string }
+        stage: { type: string, enum: [new, qualified, proposal, negotiation, won, lost] }
+        estimatedValueCents: { type: integer }
+        probabilityBasisPoints: { type: integer }
+        expectedDate: { type: ["string", "null"], format: date }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CrmOpportunityInput:
+      type: object
+      required: [organizationId, title, estimatedValueCents, expectedDate, reason]
+      properties:
+        organizationId: { type: string, format: uuid }
+        title: { type: string, minLength: 2, maxLength: 150 }
+        estimatedValueCents: { type: integer, minimum: 0, maximum: 100000000 }
+        expectedDate: { type: ["string", "null"], format: date }
+        reason: { type: string, minLength: 5, maxLength: 500 }
+    CrmOpportunityUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        title: { type: string, minLength: 2, maxLength: 150 }
+        estimatedValueCents: { type: integer, minimum: 0, maximum: 100000000 }
+        expectedDate: { type: ["string", "null"], format: date }
+    CrmOpportunityStageInput:
+      type: object
+      required: [stage, reason]
+      properties:
+        stage: { type: string, enum: [new, qualified, proposal, negotiation, won, lost] }
+        reason: { type: string, minLength: 5, maxLength: 500 }
+    CrmOpportunityHistory:
+      type: object
+      required: [id, opportunityId, opportunityTitle, organizationId, organizationName, fromStage, toStage, reason, actorRole, simulatedDate, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        opportunityId: { type: string, format: uuid }
+        opportunityTitle: { type: string }
+        organizationId: { type: string, format: uuid }
+        organizationName: { type: string }
+        fromStage: { type: ["string", "null"], enum: [new, qualified, proposal, negotiation, won, lost, null] }
+        toStage: { type: string, enum: [new, qualified, proposal, negotiation, won, lost] }
+        reason: { type: string }
+        actorRole: { type: string }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    CrmActivity:
+      type: object
+      required: [id, opportunityId, opportunityTitle, organizationId, organizationName, contactId, contactName, kind, description, status, dueDate, simulatedDate, actorRole, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        opportunityId: { type: string, format: uuid }
+        opportunityTitle: { type: string }
+        organizationId: { type: string, format: uuid }
+        organizationName: { type: string }
+        contactId: { type: ["string", "null"], format: uuid }
+        contactName: { type: ["string", "null"] }
+        kind: { type: string, enum: [note, call_simulation, meeting_simulation, task] }
+        description: { type: string }
+        status: { type: string, enum: [planned, completed, cancelled] }
+        dueDate: { type: ["string", "null"], format: date }
+        simulatedDate: { type: string, format: date }
+        actorRole: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CrmActivityInput:
+      type: object
+      required: [opportunityId, kind, description, simulatedDate]
+      properties:
+        opportunityId: { type: string, format: uuid }
+        contactId: { type: ["string", "null"], format: uuid }
+        kind: { type: string, enum: [note, call_simulation, meeting_simulation, task] }
+        description: { type: string, minLength: 5, maxLength: 500 }
+        dueDate: { type: ["string", "null"], format: date }
+        simulatedDate: { type: string, format: date }
+    CrmActivityUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        description: { type: string, minLength: 5, maxLength: 500 }
+        status: { type: string, enum: [planned, completed, cancelled] }
+        dueDate: { type: ["string", "null"], format: date }
     AccessRole:
       type: string
       enum: [student, team_manager, teacher, promoter, mentor, administrator]
@@ -742,23 +2205,30 @@ components:
         isActive: { type: boolean }
     Fp360Product:
       type: object
-      required: [id, sku, name, category, unitPriceCents, igicBasisPoints, stock, reserved, costCents, minimumStock, isActive, isPublished]
+      required: [id, sku, name, description, category, itemType, unit, tracksInventory, unitPriceCents, igicBasisPoints, stock, reserved, costCents, minimumStock, maxDiscountBasisPoints, leadTimeDays, supplierOrganizationId, isActive, isPublished]
       properties:
         id: { type: string }
         sku: { type: string }
         name: { type: string }
+        description: { type: string }
         category: { type: string }
+        itemType: { type: string, enum: [product, service] }
+        unit: { type: string }
+        tracksInventory: { type: boolean }
         unitPriceCents: { type: integer, minimum: 0 }
         igicBasisPoints: { type: integer, minimum: 0 }
         stock: { type: integer, minimum: 0 }
         reserved: { type: integer, minimum: 0 }
         costCents: { type: integer, minimum: 0 }
         minimumStock: { type: integer, minimum: 0 }
+        maxDiscountBasisPoints: { type: integer, minimum: 0 }
+        leadTimeDays: { type: integer, minimum: 0 }
+        supplierOrganizationId: { type: ["string", "null"] }
         isActive: { type: boolean }
         isPublished: { type: boolean }
     Fp360OrderLine:
       type: object
-      required: [productId, productName, quantity, shippedQuantity, invoicedQuantity, unitPriceCents]
+      required: [productId, productName, quantity, shippedQuantity, invoicedQuantity, unitPriceCents, unitCostCents, itemType, tracksInventory]
       properties:
         productId: { type: string }
         productName: { type: string }
@@ -766,6 +2236,9 @@ components:
         shippedQuantity: { type: integer, minimum: 0 }
         invoicedQuantity: { type: integer, minimum: 0 }
         unitPriceCents: { type: integer, minimum: 0 }
+        unitCostCents: { type: ["integer", "null"], minimum: 0 }
+        itemType: { type: string, enum: [product, service] }
+        tracksInventory: { type: boolean }
     Fp360Order:
       type: object
       required: [id, reference, buyerOrganizationId, buyerName, status, lines, totalCents, simulatedDate, createdAt]
@@ -893,4 +2366,218 @@ components:
           items:
             $ref: "#/components/schemas/Fp360Activity"
         simulationOnly: { type: boolean, const: true }
+    DirectionPeriod:
+      type: object
+      required: [periodStart, periodEnd, periodLabel]
+      properties:
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
+        periodLabel: { type: string }
+    DirectionSeriesPoint:
+      type: object
+      required: [period, salesBaseCents, purchaseBaseCents]
+      properties:
+        period: { type: string }
+        salesBaseCents: { type: integer, minimum: 0 }
+        purchaseBaseCents: { type: integer, minimum: 0 }
+    DirectionOverview:
+      allOf:
+        - $ref: "#/components/schemas/DirectionPeriod"
+        - type: object
+          required: [salesBaseCents, purchaseBaseCents, outstandingCustomerCents, outstandingCustomerInvoiceCount, salesInvoiceCount, purchaseInvoiceCount, overdueCustomerInvoiceCount, overdueCustomerInvoiceUnavailableReason, treasuryBalanceCents, treasuryBalanceUnavailableReason, grossMarginCents, grossMarginUnavailableReason, series, activityByArea, simulationOnly]
+          properties:
+            salesBaseCents: { type: integer, minimum: 0 }
+            purchaseBaseCents: { type: integer, minimum: 0 }
+            outstandingCustomerCents: { type: integer, minimum: 0 }
+            outstandingCustomerInvoiceCount: { type: integer, minimum: 0 }
+            salesInvoiceCount: { type: integer, minimum: 0 }
+            purchaseInvoiceCount: { type: integer, minimum: 0 }
+            overdueCustomerInvoiceCount: { type: integer, minimum: 0, nullable: true }
+            overdueCustomerInvoiceUnavailableReason: { type: string, nullable: true }
+            treasuryBalanceCents: { type: integer, nullable: true }
+            treasuryBalanceUnavailableReason: { type: string, nullable: true }
+            grossMarginCents: { type: integer, nullable: true }
+            grossMarginUnavailableReason: { type: string, nullable: true }
+            series:
+              type: array
+              items: { $ref: "#/components/schemas/DirectionSeriesPoint" }
+            activityByArea:
+              type: array
+              items: { $ref: "#/components/schemas/DirectionAreaActivity" }
+            simulationOnly: { type: boolean, const: true }
+    DirectionAreaActivity:
+      type: object
+      required: [area, count]
+      properties:
+        area: { type: string }
+        count: { type: integer, minimum: 0 }
+    DirectionThreshold:
+      type: object
+      required: [key, value, enabled, updatedByUserId, updatedAt]
+      properties:
+        key: { type: string, enum: [stock_low_units, liquidity_min_cents] }
+        value: { type: integer, minimum: 0, nullable: true }
+        enabled: { type: boolean }
+        updatedByUserId: { type: string, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+    DirectionThresholdInput:
+      type: object
+      required: [value, enabled]
+      properties:
+        value: { type: integer, minimum: 0, nullable: true }
+        enabled: { type: boolean }
+    DirectionTask:
+      type: object
+      required: [id, title, detail, priority, status, dueSimulatedDate, assignedToUserId, createdByUserId, createdByRole, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        detail: { type: string }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        status: { type: string, enum: [open, in_progress, done] }
+        dueSimulatedDate: { type: string, format: date, nullable: true }
+        assignedToUserId: { type: string, nullable: true }
+        createdByUserId: { type: string }
+        createdByRole: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    DirectionTaskInput:
+      type: object
+      required: [title, priority]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 140 }
+        detail: { type: string, maxLength: 2000 }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        dueSimulatedDate: { type: string, format: date, nullable: true }
+        assignedToUserId: { type: string, nullable: true }
+    DirectionMember:
+      type: object
+      required: [id, displayName, role, organizationId]
+      properties:
+        id: { type: string }
+        displayName: { type: string }
+        role: { type: string, enum: [student, team_manager, teacher, promoter, mentor, administrator] }
+        organizationId: { type: string, nullable: true }
+    DirectionTaskUpdate:
+      type: object
+      required: [status, reason]
+      properties:
+        status: { type: string, enum: [open, in_progress, done] }
+        reason: { type: string, minLength: 3, maxLength: 1000 }
+    DirectionAlert:
+      type: object
+      required: [alertKey, severity, title, description, sourceType, sourceId, simulatedDate, status, assignedToUserId, justification, evidenceReference, requiresEvidence]
+      properties:
+        alertKey: { type: string }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        title: { type: string }
+        description: { type: string }
+        sourceType: { type: string }
+        sourceId: { type: string }
+        simulatedDate: { type: string, format: date }
+        status: { type: string, enum: [open, in_progress, resolved] }
+        assignedToUserId: { type: string, nullable: true }
+        justification: { type: string }
+        evidenceReference: { type: string }
+        requiresEvidence: { type: boolean }
+    DirectionAlertAction:
+      type: object
+      required: [status, justification]
+      properties:
+        status: { type: string, enum: [open, in_progress, resolved] }
+        assignedToUserId: { type: string, nullable: true }
+        justification: { type: string, minLength: 3, maxLength: 1000 }
+        evidenceReference: { type: string, maxLength: 300 }
+    DirectionDecision:
+      type: object
+      required: [id, title, reason, proposedAction, impactCents, impactNote, simulatedDate, status, submittedByUserId, submittedByRole, reviewedByUserId, reviewedByRole, reviewReason, reviewedAt, createdAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        reason: { type: string }
+        proposedAction: { type: string }
+        impactCents: { type: integer, nullable: true }
+        impactNote: { type: string }
+        simulatedDate: { type: string, format: date }
+        status: { type: string, enum: [pending, approved, rejected] }
+        submittedByUserId: { type: string }
+        submittedByRole: { type: string }
+        reviewedByUserId: { type: string, nullable: true }
+        reviewedByRole: { type: string, nullable: true }
+        reviewReason: { type: string, nullable: true }
+        reviewedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+    DirectionDecisionInput:
+      type: object
+      required: [title, reason, proposedAction, impactNote, simulatedDate]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 140 }
+        reason: { type: string, minLength: 3, maxLength: 2000 }
+        proposedAction: { type: string, minLength: 3, maxLength: 2000 }
+        impactCents: { type: integer, nullable: true }
+        impactNote: { type: string, minLength: 3, maxLength: 1000 }
+        simulatedDate: { type: string, format: date }
+    DirectionDecisionReview:
+      type: object
+      required: [decision, reason]
+      properties:
+        decision: { type: string, enum: [approve, reject] }
+        reason: { type: string, minLength: 3, maxLength: 1000 }
+    DirectionObjective:
+      type: object
+      required: [id, label, metric, targetValue, periodStart, periodEnd, notes, createdByUserId, createdAt, actualValue, progressAvailable]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        metric: { type: string, enum: [sales_base_cents, purchase_base_cents, open_orders, open_tasks] }
+        targetValue: { type: integer, minimum: 0 }
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
+        notes: { type: string }
+        createdByUserId: { type: string }
+        createdAt: { type: string, format: date-time }
+        actualValue: { type: integer, minimum: 0, nullable: true }
+        progressAvailable: { type: boolean }
+    DirectionObjectiveInput:
+      type: object
+      required: [label, metric, targetValue, periodStart, periodEnd]
+      properties:
+        label: { type: string, minLength: 3, maxLength: 140 }
+        metric: { type: string, enum: [sales_base_cents, purchase_base_cents, open_orders, open_tasks] }
+        targetValue: { type: integer, minimum: 0 }
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
+        notes: { type: string, maxLength: 1000 }
+    DirectionReport:
+      type: object
+      required: [id, title, periodStart, periodEnd, createdByUserId, createdByRole, createdAt, snapshot]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
+        createdByUserId: { type: string }
+        createdByRole: { type: string }
+        createdAt: { type: string, format: date-time }
+        snapshot: { $ref: "#/components/schemas/DirectionOverview" }
+    DirectionReportInput:
+      type: object
+      required: [title, periodStart, periodEnd]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 140 }
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
+    DirectionEvent:
+      type: object
+      required: [id, entityType, entityId, action, actorUserId, actorRole, reason, simulatedDate, createdAt]
+      properties:
+        id: { type: string }
+        entityType: { type: string, enum: [task, alert, decision, objective, report] }
+        entityId: { type: string }
+        action: { type: string }
+        actorUserId: { type: string }
+        actorRole: { type: string }
+        reason: { type: string }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
 

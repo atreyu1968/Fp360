@@ -286,6 +286,9 @@ async function loadOrder(id: string, tenantId: string) {
       shippedQuantity: line.shippedQuantity,
       invoicedQuantity: line.invoicedQuantity,
       unitPriceCents: line.unitPriceCents,
+      unitCostCents: line.unitCostCents,
+      itemType: line.itemType,
+      tracksInventory: line.tracksInventory,
     })),
     totalCents: order.totalCents,
     simulatedDate: order.simulatedDate,
@@ -458,13 +461,20 @@ router.get("/redfp360/products", async (req, res): Promise<void> => {
         id: product.id,
         sku: product.sku,
         name: product.name,
+        description: product.description,
         category: product.category,
+        itemType: product.itemType,
+        unit: product.unit,
+        tracksInventory: product.tracksInventory,
         unitPriceCents: product.unitPriceCents,
         igicBasisPoints: product.igicBasisPoints,
         stock: product.stock,
         reserved: product.reserved,
         costCents: product.costCents,
         minimumStock: product.minimumStock,
+        maxDiscountBasisPoints: product.maxDiscountBasisPoints,
+        leadTimeDays: product.leadTimeDays,
+        supplierOrganizationId: product.supplierOrganizationId,
         isActive: product.isActive,
         isPublished: product.isPublished,
       })),
@@ -535,7 +545,7 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
         return { ok: false as const, error: "Uno de los productos no está activo y aprobado para el mercado." };
       }
       const requested = productQuantities.get(product.id) ?? 0;
-      if (product.stock - product.reserved < requested) {
+      if (product.tracksInventory && product.stock - product.reserved < requested) {
         return { ok: false as const, error: `Stock insuficiente para ${product.name}.` };
       }
     }
@@ -569,7 +579,10 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
         shippedQuantity: 0,
         invoicedQuantity: 0,
         unitPriceCents: product.unitPriceCents,
+        unitCostCents: product.costCents,
         igicBasisPoints: product.igicBasisPoints,
+        itemType: product.itemType,
+        tracksInventory: product.tracksInventory,
       })),
     );
     return { ok: true as const };
@@ -639,17 +652,22 @@ router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
     const productById = new Map(products.map((product) => [product.id, product]));
     for (const line of lines) {
       const product = productById.get(line.productId);
-      if (!product || !product.isActive || !product.isPublished || product.stock - product.reserved < line.quantity) {
+      if (
+        !product ||
+        !product.isActive ||
+        !product.isPublished ||
+        (line.tracksInventory && product.stock - product.reserved < line.quantity)
+      ) {
         return {
           ok: false as const,
           status: 400 as const,
-          error: `No hay stock suficiente para reservar ${line.productName}.`,
+          error: `La referencia ${line.productName} ya no está disponible en las condiciones del pedido.`,
         };
       }
     }
     for (const line of lines) {
       const product = productById.get(line.productId);
-      if (!product) continue;
+      if (!product || !line.tracksInventory) continue;
       await tx
         .update(fpProducts)
         .set({ reserved: product.reserved + line.quantity })
@@ -753,7 +771,8 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
     const productById = new Map(products.map((product) => [product.id, product]));
     for (const [productId, quantity] of quantities) {
       const product = productById.get(productId);
-      if (!product || product.stock < quantity || product.reserved < quantity) {
+      const line = lines.find((item) => item.productId === productId);
+      if (!product || !line || (line.tracksInventory && (product.stock < quantity || product.reserved < quantity))) {
         return {
           ok: false as const,
           status: 400 as const,
@@ -765,13 +784,15 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
       const product = productById.get(productId);
       const line = lines.find((item) => item.productId === productId);
       if (!product || !line) continue;
-      await tx
-        .update(fpProducts)
-        .set({
-          stock: product.stock - quantity,
-          reserved: product.reserved - quantity,
-        })
-        .where(eq(fpProducts.id, productId));
+      if (line.tracksInventory) {
+        await tx
+          .update(fpProducts)
+          .set({
+            stock: product.stock - quantity,
+            reserved: product.reserved - quantity,
+          })
+          .where(eq(fpProducts.id, productId));
+      }
       await tx
         .update(fpOrderLines)
         .set({ shippedQuantity: line.shippedQuantity + quantity })

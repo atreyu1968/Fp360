@@ -1,2 +1,3 @@
 - [RED FP360 authentication](red-fp360-auth.md) — Use app-owned authentication, never Clerk; account invitation and preview-cookie constraints.
 - [Catalog approval](catalog-approval.md) — New B2B references need approval; preserve historical prices and reuse adjustment IDs on retries.
+- [CRM contact safety](crm-contact-safety.md) — Store fictional reference contacts without personal channels; CRM follow-ups are logs, never messages.

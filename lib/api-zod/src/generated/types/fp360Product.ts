@@ -5,12 +5,17 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+import type { Fp360ProductItemType } from './fp360ProductItemType';
 
 export interface Fp360Product {
   id: string;
   sku: string;
   name: string;
+  description: string;
   category: string;
+  itemType: Fp360ProductItemType;
+  unit: string;
+  tracksInventory: boolean;
   /** @minimum 0 */
   unitPriceCents: number;
   /** @minimum 0 */
@@ -23,6 +28,12 @@ export interface Fp360Product {
   costCents: number;
   /** @minimum 0 */
   minimumStock: number;
+  /** @minimum 0 */
+  maxDiscountBasisPoints: number;
+  /** @minimum 0 */
+  leadTimeDays: number;
+  /** @nullable */
+  supplierOrganizationId: string | null;
   isActive: boolean;
   isPublished: boolean;
 }

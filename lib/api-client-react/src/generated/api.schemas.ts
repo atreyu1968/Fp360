@@ -82,6 +82,14 @@ export interface Fp360OrganizationUpdate {
   isActive?: boolean;
 }
 
+export type Fp360ProductInputItemType = typeof Fp360ProductInputItemType[keyof typeof Fp360ProductInputItemType];
+
+
+export const Fp360ProductInputItemType = {
+  product: 'product',
+  service: 'service',
+} as const;
+
 export interface Fp360ProductInput {
   /**
      * @minLength 1
@@ -94,11 +102,20 @@ export interface Fp360ProductInput {
      * @maxLength 150
      */
   name: string;
+  /** @maxLength 2000 */
+  description?: string;
   /**
      * @minLength 1
      * @maxLength 100
      */
   category: string;
+  itemType?: Fp360ProductInputItemType;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  unit?: string;
+  tracksInventory?: boolean;
   /**
      * @minimum 0
      * @maximum 100000000
@@ -124,7 +141,27 @@ export interface Fp360ProductInput {
      * @maximum 1000000
      */
   minimumStock?: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  maxDiscountBasisPoints?: number;
+  /**
+     * @minimum 0
+     * @maximum 3650
+     */
+  leadTimeDays?: number;
+  /** @nullable */
+  supplierOrganizationId?: string | null;
 }
+
+export type Fp360ProductUpdateItemType = typeof Fp360ProductUpdateItemType[keyof typeof Fp360ProductUpdateItemType];
+
+
+export const Fp360ProductUpdateItemType = {
+  product: 'product',
+  service: 'service',
+} as const;
 
 export interface Fp360ProductUpdate {
   /**
@@ -138,11 +175,20 @@ export interface Fp360ProductUpdate {
      * @maxLength 150
      */
   name?: string;
+  /** @maxLength 2000 */
+  description?: string;
   /**
      * @minLength 1
      * @maxLength 100
      */
   category?: string;
+  itemType?: Fp360ProductUpdateItemType;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  unit?: string;
+  tracksInventory?: boolean;
   /**
      * @minimum 0
      * @maximum 100000000
@@ -163,8 +209,97 @@ export interface Fp360ProductUpdate {
      * @maximum 1000000
      */
   minimumStock?: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  maxDiscountBasisPoints?: number;
+  /**
+     * @minimum 0
+     * @maximum 3650
+     */
+  leadTimeDays?: number;
+  /** @nullable */
+  supplierOrganizationId?: string | null;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  priceChangeReason?: string;
+  effectiveFrom?: string;
   isActive?: boolean;
   isPublished?: boolean;
+}
+
+export interface Fp360ProductPriceVersion {
+  id: string;
+  /** @minimum 0 */
+  unitPriceCents: number;
+  /** @minimum 0 */
+  costCents: number;
+  /** @minimum 0 */
+  igicBasisPoints: number;
+  /** @minimum 0 */
+  maxDiscountBasisPoints: number;
+  validFrom: string;
+  reason: string;
+  actorName: string;
+  createdAt: string;
+}
+
+export type Fp360ProductDocumentUploadUrlInputContentType = typeof Fp360ProductDocumentUploadUrlInputContentType[keyof typeof Fp360ProductDocumentUploadUrlInputContentType];
+
+
+export const Fp360ProductDocumentUploadUrlInputContentType = {
+  'application/pdf': 'application/pdf',
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface Fp360ProductDocumentUploadUrlInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 10485760
+     */
+  size: number;
+  contentType: Fp360ProductDocumentUploadUrlInputContentType;
+  /** @maxLength 500 */
+  description?: string;
+}
+
+export interface Fp360ProductDocumentUploadUrl {
+  documentId: string;
+  uploadURL: string;
+}
+
+export type Fp360ProductDocumentStatus = typeof Fp360ProductDocumentStatus[keyof typeof Fp360ProductDocumentStatus];
+
+
+export const Fp360ProductDocumentStatus = {
+  pending: 'pending',
+  ready: 'ready',
+} as const;
+
+export interface Fp360ProductDocument {
+  id: string;
+  originalName: string;
+  contentType: string;
+  /** @minimum 1 */
+  sizeBytes: number;
+  description: string;
+  status: Fp360ProductDocumentStatus;
+  uploaderName: string;
+  createdAt: string;
+}
+
+export interface Fp360ProductDocumentDeleteResponse {
+  deleted: boolean;
 }
 
 export interface Fp360StockAdjustmentInput {
@@ -190,6 +325,829 @@ export interface Fp360StockAdjustment {
   actorName: string;
   simulatedDate: string;
   createdAt: string;
+}
+
+export type PurchaseUrgency = typeof PurchaseUrgency[keyof typeof PurchaseUrgency];
+
+
+export const PurchaseUrgency = {
+  low: 'low',
+  normal: 'normal',
+  high: 'high',
+  urgent: 'urgent',
+} as const;
+
+export type PurchaseRequestStatus = typeof PurchaseRequestStatus[keyof typeof PurchaseRequestStatus];
+
+
+export const PurchaseRequestStatus = {
+  draft: 'draft',
+  requested: 'requested',
+  pending_approval: 'pending_approval',
+  approved: 'approved',
+  rejected: 'rejected',
+  ordered: 'ordered',
+  cancelled: 'cancelled',
+} as const;
+
+export type PurchaseOrderStatus = typeof PurchaseOrderStatus[keyof typeof PurchaseOrderStatus];
+
+
+export const PurchaseOrderStatus = {
+  ordered: 'ordered',
+  partial: 'partial',
+  received: 'received',
+} as const;
+
+export type PurchaseEventStatus = typeof PurchaseEventStatus[keyof typeof PurchaseEventStatus];
+
+
+export const PurchaseEventStatus = {
+  draft: 'draft',
+  requested: 'requested',
+  pending_approval: 'pending_approval',
+  approved: 'approved',
+  rejected: 'rejected',
+  ordered: 'ordered',
+  partial: 'partial',
+  received: 'received',
+  cancelled: 'cancelled',
+  pending_review: 'pending_review',
+  conformed: 'conformed',
+  blocked: 'blocked',
+  correction_requested: 'correction_requested',
+  rectified: 'rectified',
+} as const;
+
+export interface PurchaseRequestLineInput {
+  productId: string;
+  /**
+     * @minimum 1
+     * @maximum 1000000
+     */
+  quantity: number;
+  /**
+     * @minLength 5
+     * @maxLength 300
+     */
+  justification: string;
+}
+
+export interface PurchaseRequestInput {
+  operationId: string;
+  organizationId: string;
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  department: string;
+  urgency: PurchaseUrgency;
+  /** @nullable */
+  deadline: string | null;
+  /**
+     * @minimum 1
+     * @maximum 100000000
+     */
+  budgetCapCents: number;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  purpose: string;
+  /**
+     * @minItems 2
+     * @maxItems 5
+     */
+  requestedSupplierIds: string[];
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  lines: PurchaseRequestLineInput[];
+}
+
+export interface PurchaseRequestLine {
+  id: string;
+  productId: string;
+  sku: string;
+  productName: string;
+  quantity: number;
+  justification: string;
+}
+
+export interface PurchaseSupplier {
+  id: string;
+  name: string;
+  island: string;
+}
+
+export interface PurchaseRequestSummary {
+  id: string;
+  requestNumber: string;
+  organizationId: string;
+  organizationName: string;
+  department: string;
+  urgency: PurchaseUrgency;
+  /** @nullable */
+  deadline: string | null;
+  budgetCapCents: number;
+  status: PurchaseRequestStatus;
+  lineCount: number;
+  offerCount: number;
+  updatedAt: string;
+}
+
+export interface PurchaseRequest {
+  id: string;
+  requestNumber: string;
+  organizationId: string;
+  organizationName: string;
+  department: string;
+  urgency: PurchaseUrgency;
+  /** @nullable */
+  deadline: string | null;
+  budgetCapCents: number;
+  purpose: string;
+  status: PurchaseRequestStatus;
+  lineCount: number;
+  offerCount: number;
+  requestedSuppliers: PurchaseSupplier[];
+  lines: PurchaseRequestLine[];
+  createdByRole: string;
+  /** @nullable */
+  decisionReason: string | null;
+  /** @nullable */
+  awardedReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PurchaseRequestTransitionInput {
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export type PurchaseDecisionInputDecision = typeof PurchaseDecisionInputDecision[keyof typeof PurchaseDecisionInputDecision];
+
+
+export const PurchaseDecisionInputDecision = {
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface PurchaseDecisionInput {
+  decision: PurchaseDecisionInputDecision;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export interface PurchaseAwardInput {
+  offerId: string;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export interface PurchaseOfferLineInput {
+  requestLineId: string;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  unitPriceCents: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  igicBasisPoints: number;
+}
+
+export interface PurchaseOfferInput {
+  operationId: string;
+  supplierOrganizationId: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  quoteReference: string;
+  /**
+     * @minimum 1
+     * @maximum 365
+     */
+  deliveryDays: number;
+  /**
+     * @minimum 0
+     * @maximum 365
+     */
+  paymentDays: number;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  freightCents: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  qualityScoreBasisPoints: number;
+  /** @nullable */
+  validUntil: string | null;
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  lines: PurchaseOfferLineInput[];
+}
+
+export interface PurchaseOfferLine {
+  requestLineId: string;
+  sku: string;
+  productName: string;
+  quantity: number;
+  unitPriceCents: number;
+  igicBasisPoints: number;
+  baseCents: number;
+  igicCents: number;
+}
+
+export interface PurchaseOffer {
+  id: string;
+  requestId: string;
+  supplierOrganizationId: string;
+  supplierName: string;
+  quoteReference: string;
+  deliveryDays: number;
+  paymentDays: number;
+  freightCents: number;
+  qualityScoreBasisPoints: number;
+  /** @nullable */
+  validUntil: string | null;
+  baseCents: number;
+  igicCents: number;
+  totalCents: number;
+  priceScoreBasisPoints: number;
+  deliveryScoreBasisPoints: number;
+  termsScoreBasisPoints: number;
+  weightedScoreBasisPoints: number;
+  lines: PurchaseOfferLine[];
+  createdByRole: string;
+  createdAt: string;
+}
+
+export interface PurchaseEvent {
+  id: string;
+  requestId: string;
+  action: string;
+  /** @nullable */
+  fromStatus: string | null;
+  toStatus: PurchaseEventStatus;
+  reason: string;
+  actorRole: string;
+  simulatedDate: string;
+  createdAt: string;
+}
+
+export interface PurchaseOrderLine {
+  id: string;
+  productId: string;
+  sku: string;
+  productName: string;
+  quantity: number;
+  unitPriceCents: number;
+  igicBasisPoints: number;
+  baseCents: number;
+  igicCents: number;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  orderNumber: string;
+  requestId: string;
+  requestNumber: string;
+  buyerOrganizationId: string;
+  buyerOrganizationName: string;
+  supplierOrganizationId: string;
+  supplierName: string;
+  offerId: string;
+  baseCents: number;
+  igicCents: number;
+  freightCents: number;
+  totalCents: number;
+  status: PurchaseOrderStatus;
+  /** @nullable */
+  expectedDate: string | null;
+  /** @nullable */
+  receivedDate: string | null;
+  awardedReason: string;
+  simulatedDate: string;
+  lines: PurchaseOrderLine[];
+  createdAt: string;
+}
+
+export interface PurchaseReceiptLineInput {
+  purchaseOrderLineId: string;
+  /**
+     * @minimum 0
+     * @maximum 1000000
+     */
+  quantityAccepted: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000
+     */
+  quantityRejected: number;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  issueReason: string | null;
+}
+
+export interface PurchaseReceiptInput {
+  operationId: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  receiptReference: string;
+  receivedDate: string;
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  lines: PurchaseReceiptLineInput[];
+}
+
+export interface PurchaseReceiptLine {
+  purchaseOrderLineId: string;
+  sku: string;
+  productName: string;
+  quantityOrdered: number;
+  quantityAccepted: number;
+  quantityRejected: number;
+  /** @nullable */
+  issueReason: string | null;
+}
+
+export type PurchaseReceiptStatus = typeof PurchaseReceiptStatus[keyof typeof PurchaseReceiptStatus];
+
+
+export const PurchaseReceiptStatus = {
+  partial: 'partial',
+  received: 'received',
+} as const;
+
+export interface PurchaseReceipt {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  supplierName: string;
+  receiptReference: string;
+  receivedDate: string;
+  status: PurchaseReceiptStatus;
+  acceptedUnits: number;
+  rejectedUnits: number;
+  lines: PurchaseReceiptLine[];
+  createdAt: string;
+}
+
+export type PurchaseInvoiceStatus = typeof PurchaseInvoiceStatus[keyof typeof PurchaseInvoiceStatus];
+
+
+export const PurchaseInvoiceStatus = {
+  pending_review: 'pending_review',
+  conformed: 'conformed',
+  blocked: 'blocked',
+  correction_requested: 'correction_requested',
+  rectified: 'rectified',
+} as const;
+
+export type PurchaseInvoiceMatchStatus = typeof PurchaseInvoiceMatchStatus[keyof typeof PurchaseInvoiceMatchStatus];
+
+
+export const PurchaseInvoiceMatchStatus = {
+  match: 'match',
+  difference: 'difference',
+} as const;
+
+export interface PurchaseInvoiceLineInput {
+  purchaseOrderLineId: string;
+  /**
+     * @minimum 1
+     * @maximum 1000000
+     */
+  quantity: number;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  unitPriceCents: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  igicBasisPoints: number;
+}
+
+export interface PurchaseInvoiceInput {
+  operationId: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  invoiceReference: string;
+  invoiceDate: string;
+  /** @nullable */
+  dueDate: string | null;
+  /** @nullable */
+  supersedesInvoiceId: string | null;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  baseCents: number;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  igicCents: number;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  freightCents: number;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  totalCents: number;
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  lines: PurchaseInvoiceLineInput[];
+}
+
+export interface PurchaseInvoiceLine {
+  id: string;
+  purchaseOrderLineId: string;
+  sku: string;
+  productName: string;
+  quantity: number;
+  expectedReceivedQuantity: number;
+  unitPriceCents: number;
+  expectedUnitPriceCents: number;
+  igicBasisPoints: number;
+  expectedIgicBasisPoints: number;
+  baseCents: number;
+  igicCents: number;
+  matches: boolean;
+}
+
+export interface PurchaseInvoice {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  requestId: string;
+  supplierOrganizationId: string;
+  supplierName: string;
+  /** @nullable */
+  supersedesInvoiceId: string | null;
+  invoiceReference: string;
+  invoiceDate: string;
+  /** @nullable */
+  dueDate: string | null;
+  status: PurchaseInvoiceStatus;
+  matchStatus: PurchaseInvoiceMatchStatus;
+  matchSummary: string;
+  baseCents: number;
+  igicCents: number;
+  freightCents: number;
+  totalCents: number;
+  /** @nullable */
+  decisionReason: string | null;
+  lines: PurchaseInvoiceLine[];
+  createdByRole: string;
+  createdAt: string;
+}
+
+export type PurchaseInvoiceDecisionInputDecision = typeof PurchaseInvoiceDecisionInputDecision[keyof typeof PurchaseInvoiceDecisionInputDecision];
+
+
+export const PurchaseInvoiceDecisionInputDecision = {
+  conformed: 'conformed',
+  blocked: 'blocked',
+  correction_requested: 'correction_requested',
+} as const;
+
+export interface PurchaseInvoiceDecisionInput {
+  decision: PurchaseInvoiceDecisionInputDecision;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export interface PurchaseSupplierMetric {
+  supplierOrganizationId: string;
+  supplierName: string;
+  isActive: boolean;
+  orderCount: number;
+  receivedOrderCount: number;
+  onTimeBasisPoints: number;
+  acceptedUnits: number;
+  rejectedUnits: number;
+  qualityAcceptanceBasisPoints: number;
+  complaintCount: number;
+  orderedCents: number;
+  averageOrderCents: number;
+}
+
+export type CrmContactChannel = typeof CrmContactChannel[keyof typeof CrmContactChannel];
+
+
+export const CrmContactChannel = {
+  internal: 'internal',
+  school_mediated: 'school_mediated',
+  practice_platform: 'practice_platform',
+} as const;
+
+export interface CrmContact {
+  id: string;
+  organizationId: string;
+  organizationName: string;
+  fullName: string;
+  position: string;
+  channel: CrmContactChannel;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export type CrmContactInputChannel = typeof CrmContactInputChannel[keyof typeof CrmContactInputChannel];
+
+
+export const CrmContactInputChannel = {
+  internal: 'internal',
+  school_mediated: 'school_mediated',
+  practice_platform: 'practice_platform',
+} as const;
+
+export interface CrmContactInput {
+  organizationId: string;
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  fullName: string;
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  position: string;
+  channel: CrmContactInputChannel;
+}
+
+export type CrmContactUpdateChannel = typeof CrmContactUpdateChannel[keyof typeof CrmContactUpdateChannel];
+
+
+export const CrmContactUpdateChannel = {
+  internal: 'internal',
+  school_mediated: 'school_mediated',
+  practice_platform: 'practice_platform',
+} as const;
+
+export interface CrmContactUpdate {
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  fullName?: string;
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  position?: string;
+  channel?: CrmContactUpdateChannel;
+  isActive?: boolean;
+}
+
+export type CrmOpportunityStage = typeof CrmOpportunityStage[keyof typeof CrmOpportunityStage];
+
+
+export const CrmOpportunityStage = {
+  new: 'new',
+  qualified: 'qualified',
+  proposal: 'proposal',
+  negotiation: 'negotiation',
+  won: 'won',
+  lost: 'lost',
+} as const;
+
+export interface CrmOpportunity {
+  id: string;
+  organizationId: string;
+  organizationName: string;
+  title: string;
+  stage: CrmOpportunityStage;
+  estimatedValueCents: number;
+  probabilityBasisPoints: number;
+  /** @nullable */
+  expectedDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrmOpportunityInput {
+  organizationId: string;
+  /**
+     * @minLength 2
+     * @maxLength 150
+     */
+  title: string;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  estimatedValueCents: number;
+  /** @nullable */
+  expectedDate: string | null;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export interface CrmOpportunityUpdate {
+  /**
+     * @minLength 2
+     * @maxLength 150
+     */
+  title?: string;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  estimatedValueCents?: number;
+  /** @nullable */
+  expectedDate?: string | null;
+}
+
+export type CrmOpportunityStageInputStage = typeof CrmOpportunityStageInputStage[keyof typeof CrmOpportunityStageInputStage];
+
+
+export const CrmOpportunityStageInputStage = {
+  new: 'new',
+  qualified: 'qualified',
+  proposal: 'proposal',
+  negotiation: 'negotiation',
+  won: 'won',
+  lost: 'lost',
+} as const;
+
+export interface CrmOpportunityStageInput {
+  stage: CrmOpportunityStageInputStage;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+/**
+ * @nullable
+ */
+export type CrmOpportunityHistoryFromStage = typeof CrmOpportunityHistoryFromStage[keyof typeof CrmOpportunityHistoryFromStage] | null;
+
+
+export const CrmOpportunityHistoryFromStage = {
+  new: 'new',
+  qualified: 'qualified',
+  proposal: 'proposal',
+  negotiation: 'negotiation',
+  won: 'won',
+  lost: 'lost',
+} as const;
+
+export type CrmOpportunityHistoryToStage = typeof CrmOpportunityHistoryToStage[keyof typeof CrmOpportunityHistoryToStage];
+
+
+export const CrmOpportunityHistoryToStage = {
+  new: 'new',
+  qualified: 'qualified',
+  proposal: 'proposal',
+  negotiation: 'negotiation',
+  won: 'won',
+  lost: 'lost',
+} as const;
+
+export interface CrmOpportunityHistory {
+  id: string;
+  opportunityId: string;
+  opportunityTitle: string;
+  organizationId: string;
+  organizationName: string;
+  /** @nullable */
+  fromStage: CrmOpportunityHistoryFromStage;
+  toStage: CrmOpportunityHistoryToStage;
+  reason: string;
+  actorRole: string;
+  simulatedDate: string;
+  createdAt: string;
+}
+
+export type CrmActivityKind = typeof CrmActivityKind[keyof typeof CrmActivityKind];
+
+
+export const CrmActivityKind = {
+  note: 'note',
+  call_simulation: 'call_simulation',
+  meeting_simulation: 'meeting_simulation',
+  task: 'task',
+} as const;
+
+export type CrmActivityStatus = typeof CrmActivityStatus[keyof typeof CrmActivityStatus];
+
+
+export const CrmActivityStatus = {
+  planned: 'planned',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface CrmActivity {
+  id: string;
+  opportunityId: string;
+  opportunityTitle: string;
+  organizationId: string;
+  organizationName: string;
+  /** @nullable */
+  contactId: string | null;
+  /** @nullable */
+  contactName: string | null;
+  kind: CrmActivityKind;
+  description: string;
+  status: CrmActivityStatus;
+  /** @nullable */
+  dueDate: string | null;
+  simulatedDate: string;
+  actorRole: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CrmActivityInputKind = typeof CrmActivityInputKind[keyof typeof CrmActivityInputKind];
+
+
+export const CrmActivityInputKind = {
+  note: 'note',
+  call_simulation: 'call_simulation',
+  meeting_simulation: 'meeting_simulation',
+  task: 'task',
+} as const;
+
+export interface CrmActivityInput {
+  opportunityId: string;
+  /** @nullable */
+  contactId?: string | null;
+  kind: CrmActivityInputKind;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  description: string;
+  /** @nullable */
+  dueDate?: string | null;
+  simulatedDate: string;
+}
+
+export type CrmActivityUpdateStatus = typeof CrmActivityUpdateStatus[keyof typeof CrmActivityUpdateStatus];
+
+
+export const CrmActivityUpdateStatus = {
+  planned: 'planned',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface CrmActivityUpdate {
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  description?: string;
+  status?: CrmActivityUpdateStatus;
+  /** @nullable */
+  dueDate?: string | null;
 }
 
 export type AccessRole = typeof AccessRole[keyof typeof AccessRole];
@@ -385,11 +1343,23 @@ export interface Fp360Organization {
   isActive: boolean;
 }
 
+export type Fp360ProductItemType = typeof Fp360ProductItemType[keyof typeof Fp360ProductItemType];
+
+
+export const Fp360ProductItemType = {
+  product: 'product',
+  service: 'service',
+} as const;
+
 export interface Fp360Product {
   id: string;
   sku: string;
   name: string;
+  description: string;
   category: string;
+  itemType: Fp360ProductItemType;
+  unit: string;
+  tracksInventory: boolean;
   /** @minimum 0 */
   unitPriceCents: number;
   /** @minimum 0 */
@@ -402,9 +1372,23 @@ export interface Fp360Product {
   costCents: number;
   /** @minimum 0 */
   minimumStock: number;
+  /** @minimum 0 */
+  maxDiscountBasisPoints: number;
+  /** @minimum 0 */
+  leadTimeDays: number;
+  /** @nullable */
+  supplierOrganizationId: string | null;
   isActive: boolean;
   isPublished: boolean;
 }
+
+export type Fp360OrderLineItemType = typeof Fp360OrderLineItemType[keyof typeof Fp360OrderLineItemType];
+
+
+export const Fp360OrderLineItemType = {
+  product: 'product',
+  service: 'service',
+} as const;
 
 export interface Fp360OrderLine {
   productId: string;
@@ -417,6 +1401,13 @@ export interface Fp360OrderLine {
   invoicedQuantity: number;
   /** @minimum 0 */
   unitPriceCents: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  unitCostCents: number | null;
+  itemType: Fp360OrderLineItemType;
+  tracksInventory: boolean;
 }
 
 export type Fp360OrderStatus = typeof Fp360OrderStatus[keyof typeof Fp360OrderStatus];
@@ -566,4 +1557,454 @@ export interface Fp360Dashboard {
   recentActivity: Fp360Activity[];
   simulationOnly: true;
 }
+
+export interface DirectionPeriod {
+  periodStart: string;
+  periodEnd: string;
+  periodLabel: string;
+}
+
+export interface DirectionSeriesPoint {
+  period: string;
+  /** @minimum 0 */
+  salesBaseCents: number;
+  /** @minimum 0 */
+  purchaseBaseCents: number;
+}
+
+export interface DirectionAreaActivity {
+  area: string;
+  /** @minimum 0 */
+  count: number;
+}
+
+export type DirectionOverview = DirectionPeriod & ({
+  /** @minimum 0 */
+  salesBaseCents: number;
+  /** @minimum 0 */
+  purchaseBaseCents: number;
+  /** @minimum 0 */
+  outstandingCustomerCents: number;
+  /** @minimum 0 */
+  outstandingCustomerInvoiceCount: number;
+  /** @minimum 0 */
+  salesInvoiceCount: number;
+  /** @minimum 0 */
+  purchaseInvoiceCount: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  overdueCustomerInvoiceCount: number | null;
+  /** @nullable */
+  overdueCustomerInvoiceUnavailableReason: string | null;
+  /** @nullable */
+  treasuryBalanceCents: number | null;
+  /** @nullable */
+  treasuryBalanceUnavailableReason: string | null;
+  /** @nullable */
+  grossMarginCents: number | null;
+  /** @nullable */
+  grossMarginUnavailableReason: string | null;
+  series: DirectionSeriesPoint[];
+  activityByArea: DirectionAreaActivity[];
+  simulationOnly: true;
+});
+
+export type DirectionThresholdKey = typeof DirectionThresholdKey[keyof typeof DirectionThresholdKey];
+
+
+export const DirectionThresholdKey = {
+  stock_low_units: 'stock_low_units',
+  liquidity_min_cents: 'liquidity_min_cents',
+} as const;
+
+export interface DirectionThreshold {
+  key: DirectionThresholdKey;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  value: number | null;
+  enabled: boolean;
+  /** @nullable */
+  updatedByUserId: string | null;
+  /** @nullable */
+  updatedAt: string | null;
+}
+
+export interface DirectionThresholdInput {
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  value: number | null;
+  enabled: boolean;
+}
+
+export type DirectionTaskPriority = typeof DirectionTaskPriority[keyof typeof DirectionTaskPriority];
+
+
+export const DirectionTaskPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export type DirectionTaskStatus = typeof DirectionTaskStatus[keyof typeof DirectionTaskStatus];
+
+
+export const DirectionTaskStatus = {
+  open: 'open',
+  in_progress: 'in_progress',
+  done: 'done',
+} as const;
+
+export interface DirectionTask {
+  id: string;
+  title: string;
+  detail: string;
+  priority: DirectionTaskPriority;
+  status: DirectionTaskStatus;
+  /** @nullable */
+  dueSimulatedDate: string | null;
+  /** @nullable */
+  assignedToUserId: string | null;
+  createdByUserId: string;
+  createdByRole: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DirectionTaskInputPriority = typeof DirectionTaskInputPriority[keyof typeof DirectionTaskInputPriority];
+
+
+export const DirectionTaskInputPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export interface DirectionTaskInput {
+  /**
+     * @minLength 3
+     * @maxLength 140
+     */
+  title: string;
+  /** @maxLength 2000 */
+  detail?: string;
+  priority: DirectionTaskInputPriority;
+  /** @nullable */
+  dueSimulatedDate?: string | null;
+  /** @nullable */
+  assignedToUserId?: string | null;
+}
+
+export type DirectionMemberRole = typeof DirectionMemberRole[keyof typeof DirectionMemberRole];
+
+
+export const DirectionMemberRole = {
+  student: 'student',
+  team_manager: 'team_manager',
+  teacher: 'teacher',
+  promoter: 'promoter',
+  mentor: 'mentor',
+  administrator: 'administrator',
+} as const;
+
+export interface DirectionMember {
+  id: string;
+  displayName: string;
+  role: DirectionMemberRole;
+  /** @nullable */
+  organizationId: string | null;
+}
+
+export type DirectionTaskUpdateStatus = typeof DirectionTaskUpdateStatus[keyof typeof DirectionTaskUpdateStatus];
+
+
+export const DirectionTaskUpdateStatus = {
+  open: 'open',
+  in_progress: 'in_progress',
+  done: 'done',
+} as const;
+
+export interface DirectionTaskUpdate {
+  status: DirectionTaskUpdateStatus;
+  /**
+     * @minLength 3
+     * @maxLength 1000
+     */
+  reason: string;
+}
+
+export type DirectionAlertSeverity = typeof DirectionAlertSeverity[keyof typeof DirectionAlertSeverity];
+
+
+export const DirectionAlertSeverity = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export type DirectionAlertStatus = typeof DirectionAlertStatus[keyof typeof DirectionAlertStatus];
+
+
+export const DirectionAlertStatus = {
+  open: 'open',
+  in_progress: 'in_progress',
+  resolved: 'resolved',
+} as const;
+
+export interface DirectionAlert {
+  alertKey: string;
+  severity: DirectionAlertSeverity;
+  title: string;
+  description: string;
+  sourceType: string;
+  sourceId: string;
+  simulatedDate: string;
+  status: DirectionAlertStatus;
+  /** @nullable */
+  assignedToUserId: string | null;
+  justification: string;
+  evidenceReference: string;
+  requiresEvidence: boolean;
+}
+
+export type DirectionAlertActionStatus = typeof DirectionAlertActionStatus[keyof typeof DirectionAlertActionStatus];
+
+
+export const DirectionAlertActionStatus = {
+  open: 'open',
+  in_progress: 'in_progress',
+  resolved: 'resolved',
+} as const;
+
+export interface DirectionAlertAction {
+  status: DirectionAlertActionStatus;
+  /** @nullable */
+  assignedToUserId?: string | null;
+  /**
+     * @minLength 3
+     * @maxLength 1000
+     */
+  justification: string;
+  /** @maxLength 300 */
+  evidenceReference?: string;
+}
+
+export type DirectionDecisionStatus = typeof DirectionDecisionStatus[keyof typeof DirectionDecisionStatus];
+
+
+export const DirectionDecisionStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface DirectionDecision {
+  id: string;
+  title: string;
+  reason: string;
+  proposedAction: string;
+  /** @nullable */
+  impactCents: number | null;
+  impactNote: string;
+  simulatedDate: string;
+  status: DirectionDecisionStatus;
+  submittedByUserId: string;
+  submittedByRole: string;
+  /** @nullable */
+  reviewedByUserId: string | null;
+  /** @nullable */
+  reviewedByRole: string | null;
+  /** @nullable */
+  reviewReason: string | null;
+  /** @nullable */
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+export interface DirectionDecisionInput {
+  /**
+     * @minLength 3
+     * @maxLength 140
+     */
+  title: string;
+  /**
+     * @minLength 3
+     * @maxLength 2000
+     */
+  reason: string;
+  /**
+     * @minLength 3
+     * @maxLength 2000
+     */
+  proposedAction: string;
+  /** @nullable */
+  impactCents?: number | null;
+  /**
+     * @minLength 3
+     * @maxLength 1000
+     */
+  impactNote: string;
+  simulatedDate: string;
+}
+
+export type DirectionDecisionReviewDecision = typeof DirectionDecisionReviewDecision[keyof typeof DirectionDecisionReviewDecision];
+
+
+export const DirectionDecisionReviewDecision = {
+  approve: 'approve',
+  reject: 'reject',
+} as const;
+
+export interface DirectionDecisionReview {
+  decision: DirectionDecisionReviewDecision;
+  /**
+     * @minLength 3
+     * @maxLength 1000
+     */
+  reason: string;
+}
+
+export type DirectionObjectiveMetric = typeof DirectionObjectiveMetric[keyof typeof DirectionObjectiveMetric];
+
+
+export const DirectionObjectiveMetric = {
+  sales_base_cents: 'sales_base_cents',
+  purchase_base_cents: 'purchase_base_cents',
+  open_orders: 'open_orders',
+  open_tasks: 'open_tasks',
+} as const;
+
+export interface DirectionObjective {
+  id: string;
+  label: string;
+  metric: DirectionObjectiveMetric;
+  /** @minimum 0 */
+  targetValue: number;
+  periodStart: string;
+  periodEnd: string;
+  notes: string;
+  createdByUserId: string;
+  createdAt: string;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  actualValue: number | null;
+  progressAvailable: boolean;
+}
+
+export type DirectionObjectiveInputMetric = typeof DirectionObjectiveInputMetric[keyof typeof DirectionObjectiveInputMetric];
+
+
+export const DirectionObjectiveInputMetric = {
+  sales_base_cents: 'sales_base_cents',
+  purchase_base_cents: 'purchase_base_cents',
+  open_orders: 'open_orders',
+  open_tasks: 'open_tasks',
+} as const;
+
+export interface DirectionObjectiveInput {
+  /**
+     * @minLength 3
+     * @maxLength 140
+     */
+  label: string;
+  metric: DirectionObjectiveInputMetric;
+  /** @minimum 0 */
+  targetValue: number;
+  periodStart: string;
+  periodEnd: string;
+  /** @maxLength 1000 */
+  notes?: string;
+}
+
+export interface DirectionReport {
+  id: string;
+  title: string;
+  periodStart: string;
+  periodEnd: string;
+  createdByUserId: string;
+  createdByRole: string;
+  createdAt: string;
+  snapshot: DirectionOverview;
+}
+
+export interface DirectionReportInput {
+  /**
+     * @minLength 3
+     * @maxLength 140
+     */
+  title: string;
+  periodStart: string;
+  periodEnd: string;
+}
+
+export type DirectionEventEntityType = typeof DirectionEventEntityType[keyof typeof DirectionEventEntityType];
+
+
+export const DirectionEventEntityType = {
+  task: 'task',
+  alert: 'alert',
+  decision: 'decision',
+  objective: 'objective',
+  report: 'report',
+} as const;
+
+export interface DirectionEvent {
+  id: string;
+  entityType: DirectionEventEntityType;
+  entityId: string;
+  action: string;
+  actorUserId: string;
+  actorRole: string;
+  reason: string;
+  simulatedDate: string;
+  createdAt: string;
+}
+
+export type GetFp360DirectionOverviewParams = {
+periodStart?: string;
+periodEnd?: string;
+};
+
+export type UpsertFp360DirectionThresholdParams = {
+key: UpsertFp360DirectionThresholdKey;
+};
+
+export type UpsertFp360DirectionThresholdKey = typeof UpsertFp360DirectionThresholdKey[keyof typeof UpsertFp360DirectionThresholdKey];
+
+
+export const UpsertFp360DirectionThresholdKey = {
+  stock_low_units: 'stock_low_units',
+  liquidity_min_cents: 'liquidity_min_cents',
+} as const;
+
+export type ListFp360DirectionObjectivesParams = {
+periodStart?: string;
+periodEnd?: string;
+};
+
+export type ListFp360DirectionEventsParams = {
+entityType?: ListFp360DirectionEventsEntityType;
+entityId?: string;
+};
+
+export type ListFp360DirectionEventsEntityType = typeof ListFp360DirectionEventsEntityType[keyof typeof ListFp360DirectionEventsEntityType];
+
+
+export const ListFp360DirectionEventsEntityType = {
+  task: 'task',
+  alert: 'alert',
+  decision: 'decision',
+  objective: 'objective',
+  report: 'report',
+} as const;
 
