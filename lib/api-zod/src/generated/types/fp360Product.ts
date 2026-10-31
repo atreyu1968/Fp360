@@ -19,4 +19,10 @@ export interface Fp360Product {
   stock: number;
   /** @minimum 0 */
   reserved: number;
+  /** @minimum 0 */
+  costCents: number;
+  /** @minimum 0 */
+  minimumStock: number;
+  isActive: boolean;
+  isPublished: boolean;
 }

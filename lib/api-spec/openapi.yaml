@@ -268,6 +268,44 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Fp360Organization"
+    post:
+      operationId: createFp360Organization
+      tags: [redfp360]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360OrganizationInput" }
+      responses:
+        "201":
+          description: Simulated organization created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360Organization" }
+        "400": { description: Invalid organization }
+        "403": { description: Read-only role }
+        "409": { description: Duplicate organization }
+  /redfp360/organizations/{id}:
+    patch:
+      operationId: updateFp360Organization
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360OrganizationUpdate" }
+      responses:
+        "200":
+          description: Organization updated without deleting history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360Organization" }
+        "400": { description: Invalid organization }
+        "403": { description: Read-only role }
+        "404": { description: Organization not found }
+        "409": { description: Duplicate or assigned organization cannot be archived }
   /redfp360/products:
     get:
       operationId: listFp360Products
@@ -282,6 +320,79 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Fp360Product"
+    post:
+      operationId: createFp360Product
+      tags: [redfp360]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProductInput" }
+      responses:
+        "201":
+          description: Unpublished product created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360Product" }
+        "400": { description: Invalid product }
+        "403": { description: Read-only role }
+        "409": { description: Duplicate SKU }
+  /redfp360/products/{id}:
+    patch:
+      operationId: updateFp360Product
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProductUpdate" }
+      responses:
+        "200":
+          description: Updated product; price or tax changes require republication
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360Product" }
+        "400": { description: Invalid product }
+        "403": { description: Publishing requires teacher or administrator }
+        "404": { description: Product not found }
+        "409": { description: Duplicate SKU or reserved stock prevents archiving }
+  /redfp360/products/{id}/stock-adjustments:
+    get:
+      operationId: listFp360StockAdjustments
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Manual stock adjustments for this product
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Fp360StockAdjustment" }
+        "404": { description: Product not found }
+    post:
+      operationId: adjustFp360Stock
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360StockAdjustmentInput" }
+      responses:
+        "200":
+          description: Stock adjusted atomically
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360Product" }
+        "400": { description: Invalid adjustment }
+        "403": { description: Read-only role }
+        "404": { description: Product not found }
+        "409": { description: Stock cannot fall below reserved units }
   /redfp360/orders:
     get:
       operationId: listFp360Orders
@@ -449,6 +560,65 @@ components:
       in: cookie
       name: redfp360_session
   schemas:
+    Fp360OrganizationInput:
+      type: object
+      required: [name, center, island, role]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 150 }
+        center: { type: string, minLength: 1, maxLength: 150 }
+        island: { type: string, enum: [Tenerife, Gran Canaria, Lanzarote, Fuerteventura, La Palma, La Gomera, El Hierro, La Graciosa] }
+        role: { type: string, enum: [seller, buyer, both] }
+    Fp360OrganizationUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 150 }
+        center: { type: string, minLength: 1, maxLength: 150 }
+        island: { type: string, enum: [Tenerife, Gran Canaria, Lanzarote, Fuerteventura, La Palma, La Gomera, El Hierro, La Graciosa] }
+        role: { type: string, enum: [seller, buyer, both] }
+        isActive: { type: boolean }
+    Fp360ProductInput:
+      type: object
+      required: [sku, name, category, unitPriceCents, igicBasisPoints, stock]
+      properties:
+        sku: { type: string, minLength: 1, maxLength: 40, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]*$' }
+        name: { type: string, minLength: 1, maxLength: 150 }
+        category: { type: string, minLength: 1, maxLength: 100 }
+        unitPriceCents: { type: integer, minimum: 0, maximum: 100000000 }
+        costCents: { type: integer, minimum: 0, maximum: 100000000 }
+        igicBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+        stock: { type: integer, minimum: 0, maximum: 1000000 }
+        minimumStock: { type: integer, minimum: 0, maximum: 1000000 }
+    Fp360ProductUpdate:
+      type: object
+      properties:
+        sku: { type: string, minLength: 1, maxLength: 40, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]*$' }
+        name: { type: string, minLength: 1, maxLength: 150 }
+        category: { type: string, minLength: 1, maxLength: 100 }
+        unitPriceCents: { type: integer, minimum: 0, maximum: 100000000 }
+        costCents: { type: integer, minimum: 0, maximum: 100000000 }
+        igicBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+        minimumStock: { type: integer, minimum: 0, maximum: 1000000 }
+        isActive: { type: boolean }
+        isPublished: { type: boolean }
+    Fp360StockAdjustmentInput:
+      type: object
+      required: [operationId, quantityDelta, reason]
+      properties:
+        operationId: { type: string, format: uuid }
+        quantityDelta: { type: integer, minimum: -1000000, maximum: 1000000 }
+        reason: { type: string, minLength: 5, maxLength: 500 }
+    Fp360StockAdjustment:
+      type: object
+      required: [id, quantityDelta, stockBefore, stockAfter, reason, actorName, simulatedDate, createdAt]
+      properties:
+        id: { type: string }
+        quantityDelta: { type: integer }
+        stockBefore: { type: integer }
+        stockAfter: { type: integer }
+        reason: { type: string }
+        actorName: { type: string }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
     AccessRole:
       type: string
       enum: [student, team_manager, teacher, promoter, mentor, administrator]
@@ -562,16 +732,17 @@ components:
         - status
     Fp360Organization:
       type: object
-      required: [id, name, center, island, role]
+      required: [id, name, center, island, role, isActive]
       properties:
         id: { type: string }
         name: { type: string }
         center: { type: string }
         island: { type: string }
         role: { type: string, enum: [seller, buyer, both] }
+        isActive: { type: boolean }
     Fp360Product:
       type: object
-      required: [id, sku, name, category, unitPriceCents, igicBasisPoints, stock, reserved]
+      required: [id, sku, name, category, unitPriceCents, igicBasisPoints, stock, reserved, costCents, minimumStock, isActive, isPublished]
       properties:
         id: { type: string }
         sku: { type: string }
@@ -581,6 +752,10 @@ components:
         igicBasisPoints: { type: integer, minimum: 0 }
         stock: { type: integer, minimum: 0 }
         reserved: { type: integer, minimum: 0 }
+        costCents: { type: integer, minimum: 0 }
+        minimumStock: { type: integer, minimum: 0 }
+        isActive: { type: boolean }
+        isPublished: { type: boolean }
     Fp360OrderLine:
       type: object
       required: [productId, productName, quantity, shippedQuantity, invoicedQuantity, unitPriceCents]

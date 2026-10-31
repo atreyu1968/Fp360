@@ -1,4 +1,5 @@
 import {
+  boolean,
   date,
   index,
   integer,
@@ -17,6 +18,7 @@ export const fpOrganizations = pgTable(
     center: text("center").notNull(),
     island: text("island").notNull(),
     role: text("role").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
   },
   (table) => [index("fp360_organizations_tenant_idx").on(table.tenantId)],
 );
@@ -33,11 +35,34 @@ export const fpProducts = pgTable(
     igicBasisPoints: integer("igic_basis_points").notNull(),
     stock: integer("stock").notNull().default(0),
     reserved: integer("reserved").notNull().default(0),
+    costCents: integer("cost_cents").notNull().default(0),
+    minimumStock: integer("minimum_stock").notNull().default(0),
+    isActive: boolean("is_active").notNull().default(true),
+    // Preserve the existing demo catalog. New API-created products explicitly start unpublished.
+    isPublished: boolean("is_published").notNull().default(true),
   },
   (table) => [
     index("fp360_products_tenant_idx").on(table.tenantId),
     uniqueIndex("fp360_products_tenant_sku_idx").on(table.tenantId, table.sku),
   ],
+);
+
+export const fpStockAdjustments = pgTable(
+  "fp360_stock_adjustments",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    productId: text("product_id").notNull().references(() => fpProducts.id),
+    quantityDelta: integer("quantity_delta").notNull(),
+    stockBefore: integer("stock_before").notNull(),
+    stockAfter: integer("stock_after").notNull(),
+    reason: text("reason").notNull(),
+    actorUserId: text("actor_user_id").notNull(),
+    actorName: text("actor_name").notNull(),
+    simulatedDate: date("simulated_date", { mode: "string" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("fp360_stock_adjustment_product_idx").on(table.tenantId, table.productId)],
 );
 
 export const fpOrders = pgTable(

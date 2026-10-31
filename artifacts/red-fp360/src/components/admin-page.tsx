@@ -122,7 +122,7 @@ export function AdminPage({ identity }: { identity: AuthIdentity }) {
 
 function UsersTab({ identity, users, loading, error, retry, orgs, orgName, onDone }: {
   identity: AuthIdentity; users?: ManagedUser[]; loading: boolean; error: boolean; retry: () => void;
-  orgs: { id: string; name: string }[]; orgName: (id?: string | null) => string;
+  orgs: { id: string; name: string; isActive: boolean }[]; orgName: (id?: string | null) => string;
   onDone: (text: string, kind: 'ok' | 'error', self?: boolean) => void;
 }) {
   const [search, setSearch] = useState('');
@@ -146,7 +146,7 @@ function UsersTab({ identity, users, loading, error, retry, orgs, orgName, onDon
   </>;
 }
 
-function EditUserDialog({ user, self, orgs, onClose, onDone }: { user: ManagedUser; self: boolean; orgs: { id: string; name: string }[]; onClose: () => void; onDone: (t: string, k: 'ok' | 'error') => void }) {
+function EditUserDialog({ user, self, orgs, onClose, onDone }: { user: ManagedUser; self: boolean; orgs: { id: string; name: string; isActive: boolean }[]; onClose: () => void; onDone: (t: string, k: 'ok' | 'error') => void }) {
   const update = useUpdateAdminUser();
   const [role, setRole] = useState<AccessRole>(user.role);
   const [active, setActive] = useState(user.isActive);
@@ -168,7 +168,7 @@ function EditUserDialog({ user, self, orgs, onClose, onDone }: { user: ManagedUs
       <p className="form-intro">{user.email}</p>
       {self && <div className="admin-hint"><Lock size={15} /><span>No puedes cambiar el rol ni desactivar tu propia cuenta.</span></div>}
       <label>Rol<select value={role} disabled={self} onChange={(e) => setRole(e.target.value as AccessRole)} data-testid="select-user-role">{ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</select></label>
-      <label>Organización<select value={org} onChange={(e) => setOrg(e.target.value)} data-testid="select-user-org"><option value="">Sin organización asignada</option>{orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
+      <label>Organización<select value={org} onChange={(e) => setOrg(e.target.value)} data-testid="select-user-org"><option value="">Sin organización asignada</option>{orgs.filter((o) => o.isActive || o.id === user.organizationId).map((o) => <option key={o.id} value={o.id}>{o.name}{o.isActive ? '' : ' (archivada)'}</option>)}</select></label>
       <label className="admin-check"><input type="checkbox" checked={active} disabled={self} onChange={(e) => setActive(e.target.checked)} data-testid="checkbox-user-active" /><span>Cuenta activa<small>Las cuentas desactivadas no pueden iniciar sesión.</small></span></label>
       <div className="modal-actions"><button type="button" className="button button-quiet" onClick={onClose}>Cancelar</button><button className="button button-primary" disabled={update.isPending} data-testid="button-save-user">{update.isPending ? 'Guardando…' : 'Guardar cambios'}</button></div>
     </form>
@@ -177,7 +177,7 @@ function EditUserDialog({ user, self, orgs, onClose, onDone }: { user: ManagedUs
 
 function InvitationsTab({ invitations, loading, error, retry, orgs, orgName, onDone }: {
   invitations?: UserInvitation[]; loading: boolean; error: boolean; retry: () => void;
-  orgs: { id: string; name: string }[]; orgName: (id?: string | null) => string; onDone: (t: string, k: 'ok' | 'error') => void;
+  orgs: { id: string; name: string; isActive: boolean }[]; orgName: (id?: string | null) => string; onDone: (t: string, k: 'ok' | 'error') => void;
 }) {
   const create = useCreateAdminInvitation();
   const revoke = useRevokeAdminInvitation();
@@ -217,7 +217,7 @@ function InvitationsTab({ invitations, loading, error, retry, orgs, orgName, onD
         <p className="form-intro">Solo para personas sin cuenta. Se generará un enlace de un solo uso válido durante 72 horas.</p>
         <label>Correo electrónico<input type="email" required maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@centro.edu" data-testid="input-invite-email" /></label>
         <label>Rol<select value={role} onChange={(e) => setRole(e.target.value as AccessRole)} data-testid="select-invite-role">{ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</select></label>
-        <label>Organización (opcional)<select value={org} onChange={(e) => setOrg(e.target.value)} data-testid="select-invite-org"><option value="">Sin organización</option>{orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
+        <label>Organización (opcional)<select value={org} onChange={(e) => setOrg(e.target.value)} data-testid="select-invite-org"><option value="">Sin organización</option>{orgs.filter((o) => o.isActive).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
         {formError && <div className="auth-error" role="alert"><CircleAlert size={16} /><span>{formError}</span></div>}
         <div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setCreating(false)}>Cancelar</button><button className="button button-primary" disabled={create.isPending} data-testid="button-submit-invitation">{create.isPending ? 'Creando…' : 'Crear invitación'}</button></div>
       </form>

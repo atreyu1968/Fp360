@@ -388,7 +388,7 @@ router.get("/redfp360/dashboard", async (req, res): Promise<void> => {
   const products = await db
     .select()
     .from(fpProducts)
-    .where(eq(fpProducts.tenantId, tenantId));
+    .where(and(eq(fpProducts.tenantId, tenantId), eq(fpProducts.isActive, true)));
   const activityRows = await db
     .select()
     .from(fpActivity)
@@ -438,6 +438,7 @@ router.get("/redfp360/organizations", async (req, res): Promise<void> => {
         center: organization.center,
         island: organization.island,
         role: organization.role,
+        isActive: organization.isActive,
       })),
     ),
   );
@@ -462,6 +463,10 @@ router.get("/redfp360/products", async (req, res): Promise<void> => {
         igicBasisPoints: product.igicBasisPoints,
         stock: product.stock,
         reserved: product.reserved,
+        costCents: product.costCents,
+        minimumStock: product.minimumStock,
+        isActive: product.isActive,
+        isPublished: product.isPublished,
       })),
     ),
   );
@@ -505,10 +510,10 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
         ),
       )
       .limit(1);
-    if (!buyer) {
+    if (!buyer || !buyer.isActive || !["buyer", "both"].includes(buyer.role)) {
       return {
         ok: false as const,
-        error: "La entidad seleccionada no pertenece a tu red.",
+        error: "Selecciona una empresa compradora activa de tu red.",
       };
     }
     const productIds = [...productQuantities.keys()];
@@ -526,6 +531,9 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
       return { ok: false as const, error: "Uno de los productos ya no está disponible." };
     }
     for (const product of products) {
+      if (!product.isActive || !product.isPublished) {
+        return { ok: false as const, error: "Uno de los productos no está activo y aprobado para el mercado." };
+      }
       const requested = productQuantities.get(product.id) ?? 0;
       if (product.stock - product.reserved < requested) {
         return { ok: false as const, error: `Stock insuficiente para ${product.name}.` };
@@ -631,7 +639,7 @@ router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
     const productById = new Map(products.map((product) => [product.id, product]));
     for (const line of lines) {
       const product = productById.get(line.productId);
-      if (!product || product.stock - product.reserved < line.quantity) {
+      if (!product || !product.isActive || !product.isPublished || product.stock - product.reserved < line.quantity) {
         return {
           ok: false as const,
           status: 400 as const,

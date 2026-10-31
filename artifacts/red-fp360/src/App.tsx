@@ -32,6 +32,8 @@ import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter
 import { AuthExperience } from '@/components/auth-experience';
 import { AdminAccessDenied, AdminPage } from '@/components/admin-page';
 import { AcceptInvitation } from '@/components/accept-invitation';
+import { CatalogPage } from '@/components/catalog-page';
+import { OrganizationsDirectory } from '@/components/organizations-directory';
 
 const queryClient = new QueryClient();
 type Product = Fp360Product;
@@ -57,6 +59,7 @@ const navItems = [
   { href: '/', label: 'Inicio', icon: LayoutDashboard },
   { href: '/mercado', label: 'Mercado', icon: Globe2 },
   { href: '/ventas', label: 'Ventas', icon: ShoppingCart },
+  { href: '/productos', label: 'Catálogo', icon: PackageCheck },
   { href: '/almacen', label: 'Almacén', icon: Boxes },
   { href: '/facturas', label: 'Facturas', icon: ReceiptText },
   { href: '/clientes', label: 'Clientes', icon: Users },
@@ -69,6 +72,7 @@ const titles: Record<string, { title: string; kicker: string; description: strin
   '/ventas': { title: 'Ventas', kicker: 'CICLO COMERCIAL · OPERACIONES', description: 'Crea pedidos, confirma reservas y registra expediciones simuladas.' },
   '/almacen': { title: 'Almacén', kicker: 'EXISTENCIAS · CONTROL', description: 'Consulta stock físico, reservas y disponibilidad comercial.' },
   '/facturas': { title: 'Facturación', kicker: 'DOCUMENTOS · COBROS', description: 'Emite facturas y registra pagos en el circuito de prácticas.' },
+  '/productos': { title: 'Catálogo de productos', kicker: 'CATÁLOGO · INVENTARIO', description: 'Productos inventariables, publicación y ajustes manuales.' },
   '/clientes': { title: 'Directorio de organizaciones', kicker: 'CRM · RED FP360', description: 'Empresas simuladas, centros participantes y relaciones de la red.' },
   '/aplicaciones': { title: 'Aplicaciones', kicker: 'PLATAFORMA · 26 MÓDULOS', description: 'Catálogo de capacidades previstas y módulos conectados en esta demostración.' },
   '/administracion': { title: 'Usuarios y accesos', kicker: 'ADMINISTRACIÓN', description: 'Gestión de cuentas e invitaciones.' },
@@ -203,12 +207,12 @@ function MarketPage({ organizations, products, stateOrg, stateProducts }: {
 }) {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'products' | 'partners'>('products');
-  const matchedOrgs = (organizations ?? []).filter((org) => `${org.name} ${org.center} ${org.island} ${org.role}`.toLowerCase().includes(search.toLowerCase()));
-  const matchedProducts = (products ?? []).filter((product) => `${product.name} ${product.category} ${product.sku}`.toLowerCase().includes(search.toLowerCase()));
+  const matchedOrgs = (organizations ?? []).filter((org) => org.isActive).filter((org) => `${org.name} ${org.center} ${org.island} ${org.role}`.toLowerCase().includes(search.toLowerCase()));
+  const matchedProducts = (products ?? []).filter((product) => product.isActive && product.isPublished).filter((product) => `${product.name} ${product.category} ${product.sku}`.toLowerCase().includes(search.toLowerCase()));
   return <main className="page-content">
     <PageHeading path="/mercado"><Link className="button button-primary" href="/ventas"><ShoppingCart size={16} /> Nuevo pedido</Link></PageHeading>
     <SimulationNotice />
-    <div className="market-banner"><div className="market-banner-mark"><Globe2 size={22} /></div><div><strong>Una red comercial entre centros de FP</strong><p>Busca empresas proveedoras y productos publicados en el mercado de prácticas.</p></div><span className="banner-count">{organizations?.length ?? '—'} organizaciones</span></div>
+    <div className="market-banner"><div className="market-banner-mark"><Globe2 size={22} /></div><div><strong>Una red comercial entre centros de FP</strong><p>Busca empresas proveedoras y productos publicados en el mercado de prácticas.</p></div><span className="banner-count">{organizations ? organizations.filter((o) => o.isActive).length : '—'} organizaciones activas</span></div>
     <section className="panel">
       <div className="list-toolbar">
         <div className="tabs" role="tablist" aria-label="Contenido del mercado">
@@ -256,8 +260,9 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
   const [productId, setProductId] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [dispatchQuantity, setDispatchQuantity] = useState(1);
-  const buyers = (organizations ?? []).filter((org) => org.role === 'buyer' || org.role === 'both');
-  const selectedProduct = products?.find((p) => p.id === productId);
+  const buyers = (organizations ?? []).filter((org) => org.isActive && (org.role === 'buyer' || org.role === 'both'));
+  const orderable = (products ?? []).filter((p) => p.isActive && p.isPublished);
+  const selectedProduct = orderable.find((p) => p.id === productId);
   const refreshOrders = () => { void queryClient.invalidateQueries({ queryKey: orderQuery.queryKey }); onRefresh(); };
   const submitOrder = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -317,12 +322,12 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
       <form className="form-stack" onSubmit={submitOrder}>
         <p className="form-intro">Selecciona una empresa de la red y una referencia disponible. Se creará un pedido en estado borrador.</p>
         <label>Empresa compradora<select required value={buyerId} onChange={(e) => setBuyerId(e.target.value)} data-testid="select-order-buyer"><option value="">Selecciona una organización</option>{buyers.map((org) => <option value={org.id} key={org.id}>{org.name} · {org.island}</option>)}</select></label>
-        <label>Producto<select required value={productId} onChange={(e) => setProductId(e.target.value)} data-testid="select-order-product"><option value="">Selecciona un producto</option>{products?.map((product) => <option value={product.id} key={product.id}>{product.name} · {money(product.unitPriceCents)} · disp. {Math.max(0, product.stock - product.reserved)}</option>)}</select></label>
+        <label>Producto<select required value={productId} onChange={(e) => setProductId(e.target.value)} data-testid="select-order-product"><option value="">Selecciona un producto</option>{orderable.map((product) => <option value={product.id} key={product.id}>{product.name} · {money(product.unitPriceCents)} · disp. {Math.max(0, product.stock - product.reserved)}</option>)}</select></label>
         <label>Unidades<input type="number" min={1} max={999} required value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} data-testid="input-order-quantity" /></label>
         {selectedProduct && <div className="calculation-box"><span>Subtotal estimado sin IGIC</span><strong>{money(selectedProduct.unitPriceCents * quantity)}</strong><small>El cálculo fiscal final se efectúa al emitir la factura simulada.</small></div>}
-        {(!buyers.length || !products?.length) && <div className="inline-error"><ShieldAlert size={16} />Faltan organizaciones compradoras o productos para crear el pedido.</div>}
+        {(!buyers.length || !orderable.length) && <div className="inline-error"><ShieldAlert size={16} />Faltan organizaciones compradoras activas o productos publicados para crear el pedido.</div>}
         <SimulationNotice compact />
-        <div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setNewOrder(false)}>Cancelar</button><button className="button button-primary" disabled={createOrder.isPending || !buyers.length || !products?.length} data-testid="button-submit-order">{createOrder.isPending ? 'Guardando…' : 'Crear borrador'}</button></div>
+        <div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setNewOrder(false)}>Cancelar</button><button className="button button-primary" disabled={createOrder.isPending || !buyers.length || !orderable.length} data-testid="button-submit-order">{createOrder.isPending ? 'Guardando…' : 'Crear borrador'}</button></div>
       </form>
     </Modal>}
     {dispatching && <Modal title={`Expedir ${dispatching.reference}`} onClose={() => setDispatching(null)}>
@@ -353,13 +358,13 @@ function InventoryPage({ products, orders, stateProducts, stateOrders }: {
       <div><span>Unidades reservadas</span><b>{stateProducts.loading ? '…' : totalReserved}</b><small>Comprometidas en pedidos</small></div>
     </div>
     <section className="panel">
-      <div className="list-toolbar"><SectionTitle title="Existencias" subtitle="Stock disponible y comprometido por producto" /><label className="search-field"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar referencia" aria-label="Buscar existencias" data-testid="input-stock-search" /></label></div>
+      <div className="list-toolbar"><SectionTitle title="Existencias" subtitle="Incluye productos archivados y sin publicar." aside={<Link href="/productos" className="subtle-link">Gestionar catálogo <ArrowRight size={14} /></Link>} /><label className="search-field"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar referencia" aria-label="Buscar existencias" data-testid="input-stock-search" /></label></div>
       <DataMessage state={stateProducts} />
       <DataTable minWidth={720}><thead><tr><th>Artículo</th><th>SKU</th><th>Tipo</th><th>En almacén</th><th>Reservado</th><th>Disponible</th><th>Estado de stock</th></tr></thead><tbody>
         {!stateProducts.loading && !stateProducts.error && rows.map((p) => {
           const available = Math.max(0, p.stock - p.reserved);
-          const level = available === 0 ? 'Agotado' : available <= 3 ? 'Bajo' : 'Disponible';
-          return <tr key={p.id} data-testid={`row-stock-${p.id}`}><td><div className="product-cell"><span className="product-glyph"><Package size={17} /></span><b>{p.name}</b></div></td><td className="mono">{p.sku}</td><td>{p.category}</td><td className="numeric">{p.stock}</td><td className="numeric">{p.reserved}</td><td className="numeric stock-value">{available}</td><td><span className={`stock-state ${level === 'Disponible' ? 'stock-ok' : level === 'Bajo' ? 'stock-low' : 'stock-empty'}`}><span />{level}</span></td></tr>;
+          const level = available === 0 ? 'Agotado' : available <= p.minimumStock ? 'Bajo' : 'Disponible';
+          return <tr key={p.id} data-testid={`row-stock-${p.id}`}><td><div className="product-cell"><span className="product-glyph"><Package size={17} /></span><span><b>{p.name}</b><small className="table-secondary">{!p.isActive ? 'Archivado · fuera de venta' : p.isPublished ? 'Publicado' : 'Sin publicar'}</small></span></div></td><td className="mono">{p.sku}</td><td>{p.category}</td><td className="numeric">{p.stock}</td><td className="numeric">{p.reserved}</td><td className="numeric stock-value">{available}</td><td><span className={`stock-state ${level === 'Disponible' ? 'stock-ok' : level === 'Bajo' ? 'stock-low' : 'stock-empty'}`}><span />{level}</span></td></tr>;
         })}
         {!stateProducts.loading && !stateProducts.error && rows.length === 0 && <TableEmpty colSpan={7} title="No hay artículos en este filtro" detail="Prueba otra búsqueda o consulta el catálogo del mercado." />}
       </tbody></DataTable>
@@ -438,31 +443,6 @@ function InvoicesPage({ invoices, orders, stateInvoices, stateOrders, onRefresh,
         <div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setPaymentTarget(null)}>Cancelar</button><button className="button button-primary" disabled={recordPayment.isPending}>{recordPayment.isPending ? 'Registrando…' : 'Registrar pago simulado'}</button></div>
       </form>
     </Modal>}
-  </main>;
-}
-
-function CustomersPage({ organizations, orders, stateOrg }: { organizations?: Organization[]; orders?: Order[]; stateOrg: DataState }) {
-  const [search, setSearch] = useState('');
-  const [role, setRole] = useState('all');
-  const results = (organizations ?? []).filter((org) => `${org.name} ${org.center} ${org.island}`.toLowerCase().includes(search.toLowerCase()) && (role === 'all' || org.role === role));
-  const ordersFor = (organization: Organization) => (orders ?? []).filter((order) => order.buyerOrganizationId === organization.id).length;
-  return <main className="page-content">
-    <PageHeading path="/clientes"><Link href="/mercado" className="button button-secondary"><Globe2 size={16} /> Ver mercado</Link></PageHeading>
-    <SimulationNotice />
-    <div className="sub-metrics">
-      <div><span>Organizaciones conectadas</span><b>{organizations?.length ?? '—'}</b><small>Empresas ficticias participantes</small></div>
-      <div><span>Islas representadas</span><b>{new Set((organizations ?? []).map((o) => o.island)).size || '—'}</b><small>En la red educativa</small></div>
-      <div><span>Pedidos de la red</span><b>{orders?.length ?? '—'}</b><small>Relaciones con actividad comercial</small></div>
-    </div>
-    <section className="panel">
-      <div className="list-toolbar"><SectionTitle title="Organizaciones" subtitle="Empresas simuladas vinculadas a centros de Formación Profesional." /><div className="filter-tools"><label className="search-field"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar organización" aria-label="Buscar organizaciones" data-testid="input-org-search" /></label><label className="select-filter"><Filter size={14} /><select value={role} onChange={(e) => setRole(e.target.value)} aria-label="Filtrar por participación"><option value="all">Todas</option><option value="seller">Vendedoras</option><option value="buyer">Compradoras</option><option value="both">Ambas</option></select></label></div></div>
-      <DataMessage state={stateOrg} />
-      <DataTable minWidth={760}><thead><tr><th>Organización</th><th>Centro</th><th>Isla</th><th>Rol en red</th><th>Pedidos</th><th>Acción</th></tr></thead><tbody>
-        {!stateOrg.loading && !stateOrg.error && results.map((org) => <tr key={org.id} data-testid={`row-org-${org.id}`}><td><div className="org-cell"><span className="org-avatar">{org.name.slice(0, 2).toUpperCase()}</span><span><b>{org.name}</b><small>Miembro de la red educativa</small></span></div></td><td>{org.center}</td><td><span className="island-label">{org.island}</span></td><td><span className="role-pill">{org.role === 'both' ? 'Compra y vende' : org.role === 'seller' ? 'Vende' : 'Compra'}</span></td><td className="numeric">{ordersFor(org)}</td><td><Link href="/mercado" className="row-link">Mercado <ArrowRight size={14} /></Link></td></tr>)}
-        {!stateOrg.loading && !stateOrg.error && !results.length && <TableEmpty colSpan={6} title="No hay resultados" detail="Modifica el filtro o busca por centro o isla." />}
-      </tbody></DataTable>
-      <div className="table-footer"><span>{results.length} organizaciones</span><span className="footer-simulation"><ShieldAlert size={13} /> Directorio de demostración</span></div>
-    </section>
   </main>;
 }
 
@@ -619,7 +599,8 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       case '/ventas': return <SalesPage products={productsQuery.data} organizations={organizationsQuery.data} orders={ordersQuery.data} states={{ products: states.products, organizations: states.organizations, orders: states.orders }} onRefresh={() => { void queryClient.invalidateQueries({ queryKey: getGetFp360DashboardQueryKey() }); void queryClient.invalidateQueries(); }} onNotice={setNotice} />;
       case '/almacen': return <InventoryPage products={productsQuery.data} orders={ordersQuery.data} stateProducts={states.products} stateOrders={states.orders} />;
       case '/facturas': return <InvoicesPage invoices={invoicesQuery.data} orders={ordersQuery.data} stateInvoices={states.invoices} stateOrders={states.orders} onRefresh={() => { void queryClient.invalidateQueries({ queryKey: getGetFp360DashboardQueryKey() }); void queryClient.invalidateQueries(); }} onNotice={setNotice} />;
-      case '/clientes': return <CustomersPage organizations={organizationsQuery.data} orders={ordersQuery.data} stateOrg={states.organizations} />;
+      case '/clientes': return <OrganizationsDirectory onNotice={setNotice} />;
+      case '/productos': return <CatalogPage onNotice={setNotice} />;
        case '/aplicaciones':
        case '/apps': return <ApplicationsPage />;
        case '/documentacion':
@@ -652,6 +633,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
         <Route path="/almacen">{page}</Route>
         <Route path="/facturas">{page}</Route>
         <Route path="/clientes">{page}</Route>
+        <Route path="/productos">{page}</Route>
         <Route path="/aplicaciones">{page}</Route>
         <Route path="/documentacion">{page}</Route>
         <Route path="/apps">{page}</Route>

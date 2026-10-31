@@ -279,9 +279,61 @@ export const ListFp360OrganizationsResponseItem = zod.object({
   "name": zod.string(),
   "center": zod.string(),
   "island": zod.string(),
-  "role": zod.enum(['seller', 'buyer', 'both'])
+  "role": zod.enum(['seller', 'buyer', 'both']),
+  "isActive": zod.boolean()
 })
 export const ListFp360OrganizationsResponse = zod.array(ListFp360OrganizationsResponseItem)
+
+
+export const createFp360OrganizationBodyNameMax = 150;
+
+export const createFp360OrganizationBodyCenterMax = 150;
+
+
+
+export const CreateFp360OrganizationBody = zod.object({
+  "name": zod.string().min(1).max(createFp360OrganizationBodyNameMax),
+  "center": zod.string().min(1).max(createFp360OrganizationBodyCenterMax),
+  "island": zod.enum(['Tenerife', 'Gran Canaria', 'Lanzarote', 'Fuerteventura', 'La Palma', 'La Gomera', 'El Hierro', 'La Graciosa']),
+  "role": zod.enum(['seller', 'buyer', 'both'])
+})
+
+export const CreateFp360OrganizationResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "center": zod.string(),
+  "island": zod.string(),
+  "role": zod.enum(['seller', 'buyer', 'both']),
+  "isActive": zod.boolean()
+})
+
+
+export const UpdateFp360OrganizationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateFp360OrganizationBodyNameMax = 150;
+
+export const updateFp360OrganizationBodyCenterMax = 150;
+
+
+
+export const UpdateFp360OrganizationBody = zod.object({
+  "name": zod.string().min(1).max(updateFp360OrganizationBodyNameMax).optional(),
+  "center": zod.string().min(1).max(updateFp360OrganizationBodyCenterMax).optional(),
+  "island": zod.enum(['Tenerife', 'Gran Canaria', 'Lanzarote', 'Fuerteventura', 'La Palma', 'La Gomera', 'El Hierro', 'La Graciosa']).optional(),
+  "role": zod.enum(['seller', 'buyer', 'both']).optional(),
+  "isActive": zod.boolean().optional()
+})
+
+export const UpdateFp360OrganizationResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "center": zod.string(),
+  "island": zod.string(),
+  "role": zod.enum(['seller', 'buyer', 'both']),
+  "isActive": zod.boolean()
+})
 
 
 /**
@@ -295,6 +347,10 @@ export const listFp360ProductsResponseStockMin = 0;
 
 export const listFp360ProductsResponseReservedMin = 0;
 
+export const listFp360ProductsResponseCostCentsMin = 0;
+
+export const listFp360ProductsResponseMinimumStockMin = 0;
+
 
 
 export const ListFp360ProductsResponseItem = zod.object({
@@ -305,9 +361,212 @@ export const ListFp360ProductsResponseItem = zod.object({
   "unitPriceCents": zod.number().int().min(listFp360ProductsResponseUnitPriceCentsMin),
   "igicBasisPoints": zod.number().int().min(listFp360ProductsResponseIgicBasisPointsMin),
   "stock": zod.number().int().min(listFp360ProductsResponseStockMin),
-  "reserved": zod.number().int().min(listFp360ProductsResponseReservedMin)
+  "reserved": zod.number().int().min(listFp360ProductsResponseReservedMin),
+  "costCents": zod.number().int().min(listFp360ProductsResponseCostCentsMin),
+  "minimumStock": zod.number().int().min(listFp360ProductsResponseMinimumStockMin),
+  "isActive": zod.boolean(),
+  "isPublished": zod.boolean()
 })
 export const ListFp360ProductsResponse = zod.array(ListFp360ProductsResponseItem)
+
+
+export const createFp360ProductBodySkuMax = 40;
+
+
+export const createFp360ProductBodySkuRegExp = new RegExp('^[A-Za-z0-9][A-Za-z0-9._-]*$');
+export const createFp360ProductBodyNameMax = 150;
+
+export const createFp360ProductBodyCategoryMax = 100;
+
+export const createFp360ProductBodyUnitPriceCentsMin = 0;
+export const createFp360ProductBodyUnitPriceCentsMax = 100000000;
+
+export const createFp360ProductBodyCostCentsMin = 0;
+export const createFp360ProductBodyCostCentsMax = 100000000;
+
+export const createFp360ProductBodyIgicBasisPointsMin = 0;
+export const createFp360ProductBodyIgicBasisPointsMax = 10000;
+
+export const createFp360ProductBodyStockMin = 0;
+export const createFp360ProductBodyStockMax = 1000000;
+
+export const createFp360ProductBodyMinimumStockMin = 0;
+export const createFp360ProductBodyMinimumStockMax = 1000000;
+
+
+
+export const CreateFp360ProductBody = zod.object({
+  "sku": zod.string().min(1).max(createFp360ProductBodySkuMax).regex(createFp360ProductBodySkuRegExp),
+  "name": zod.string().min(1).max(createFp360ProductBodyNameMax),
+  "category": zod.string().min(1).max(createFp360ProductBodyCategoryMax),
+  "unitPriceCents": zod.number().int().min(createFp360ProductBodyUnitPriceCentsMin).max(createFp360ProductBodyUnitPriceCentsMax),
+  "costCents": zod.number().int().min(createFp360ProductBodyCostCentsMin).max(createFp360ProductBodyCostCentsMax).optional(),
+  "igicBasisPoints": zod.number().int().min(createFp360ProductBodyIgicBasisPointsMin).max(createFp360ProductBodyIgicBasisPointsMax),
+  "stock": zod.number().int().min(createFp360ProductBodyStockMin).max(createFp360ProductBodyStockMax),
+  "minimumStock": zod.number().int().min(createFp360ProductBodyMinimumStockMin).max(createFp360ProductBodyMinimumStockMax).optional()
+})
+
+export const createFp360ProductResponseUnitPriceCentsMin = 0;
+
+export const createFp360ProductResponseIgicBasisPointsMin = 0;
+
+export const createFp360ProductResponseStockMin = 0;
+
+export const createFp360ProductResponseReservedMin = 0;
+
+export const createFp360ProductResponseCostCentsMin = 0;
+
+export const createFp360ProductResponseMinimumStockMin = 0;
+
+
+
+export const CreateFp360ProductResponse = zod.object({
+  "id": zod.string(),
+  "sku": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "unitPriceCents": zod.number().int().min(createFp360ProductResponseUnitPriceCentsMin),
+  "igicBasisPoints": zod.number().int().min(createFp360ProductResponseIgicBasisPointsMin),
+  "stock": zod.number().int().min(createFp360ProductResponseStockMin),
+  "reserved": zod.number().int().min(createFp360ProductResponseReservedMin),
+  "costCents": zod.number().int().min(createFp360ProductResponseCostCentsMin),
+  "minimumStock": zod.number().int().min(createFp360ProductResponseMinimumStockMin),
+  "isActive": zod.boolean(),
+  "isPublished": zod.boolean()
+})
+
+
+export const UpdateFp360ProductParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateFp360ProductBodySkuMax = 40;
+
+
+export const updateFp360ProductBodySkuRegExp = new RegExp('^[A-Za-z0-9][A-Za-z0-9._-]*$');
+export const updateFp360ProductBodyNameMax = 150;
+
+export const updateFp360ProductBodyCategoryMax = 100;
+
+export const updateFp360ProductBodyUnitPriceCentsMin = 0;
+export const updateFp360ProductBodyUnitPriceCentsMax = 100000000;
+
+export const updateFp360ProductBodyCostCentsMin = 0;
+export const updateFp360ProductBodyCostCentsMax = 100000000;
+
+export const updateFp360ProductBodyIgicBasisPointsMin = 0;
+export const updateFp360ProductBodyIgicBasisPointsMax = 10000;
+
+export const updateFp360ProductBodyMinimumStockMin = 0;
+export const updateFp360ProductBodyMinimumStockMax = 1000000;
+
+
+
+export const UpdateFp360ProductBody = zod.object({
+  "sku": zod.string().min(1).max(updateFp360ProductBodySkuMax).regex(updateFp360ProductBodySkuRegExp).optional(),
+  "name": zod.string().min(1).max(updateFp360ProductBodyNameMax).optional(),
+  "category": zod.string().min(1).max(updateFp360ProductBodyCategoryMax).optional(),
+  "unitPriceCents": zod.number().int().min(updateFp360ProductBodyUnitPriceCentsMin).max(updateFp360ProductBodyUnitPriceCentsMax).optional(),
+  "costCents": zod.number().int().min(updateFp360ProductBodyCostCentsMin).max(updateFp360ProductBodyCostCentsMax).optional(),
+  "igicBasisPoints": zod.number().int().min(updateFp360ProductBodyIgicBasisPointsMin).max(updateFp360ProductBodyIgicBasisPointsMax).optional(),
+  "minimumStock": zod.number().int().min(updateFp360ProductBodyMinimumStockMin).max(updateFp360ProductBodyMinimumStockMax).optional(),
+  "isActive": zod.boolean().optional(),
+  "isPublished": zod.boolean().optional()
+})
+
+export const updateFp360ProductResponseUnitPriceCentsMin = 0;
+
+export const updateFp360ProductResponseIgicBasisPointsMin = 0;
+
+export const updateFp360ProductResponseStockMin = 0;
+
+export const updateFp360ProductResponseReservedMin = 0;
+
+export const updateFp360ProductResponseCostCentsMin = 0;
+
+export const updateFp360ProductResponseMinimumStockMin = 0;
+
+
+
+export const UpdateFp360ProductResponse = zod.object({
+  "id": zod.string(),
+  "sku": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "unitPriceCents": zod.number().int().min(updateFp360ProductResponseUnitPriceCentsMin),
+  "igicBasisPoints": zod.number().int().min(updateFp360ProductResponseIgicBasisPointsMin),
+  "stock": zod.number().int().min(updateFp360ProductResponseStockMin),
+  "reserved": zod.number().int().min(updateFp360ProductResponseReservedMin),
+  "costCents": zod.number().int().min(updateFp360ProductResponseCostCentsMin),
+  "minimumStock": zod.number().int().min(updateFp360ProductResponseMinimumStockMin),
+  "isActive": zod.boolean(),
+  "isPublished": zod.boolean()
+})
+
+
+export const ListFp360StockAdjustmentsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ListFp360StockAdjustmentsResponseItem = zod.object({
+  "id": zod.string(),
+  "quantityDelta": zod.number().int(),
+  "stockBefore": zod.number().int(),
+  "stockAfter": zod.number().int(),
+  "reason": zod.string(),
+  "actorName": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListFp360StockAdjustmentsResponse = zod.array(ListFp360StockAdjustmentsResponseItem)
+
+
+export const AdjustFp360StockParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const adjustFp360StockBodyQuantityDeltaMin = -1000000;
+export const adjustFp360StockBodyQuantityDeltaMax = 1000000;
+
+export const adjustFp360StockBodyReasonMin = 5;
+export const adjustFp360StockBodyReasonMax = 500;
+
+
+
+export const AdjustFp360StockBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "quantityDelta": zod.number().int().min(adjustFp360StockBodyQuantityDeltaMin).max(adjustFp360StockBodyQuantityDeltaMax),
+  "reason": zod.string().min(adjustFp360StockBodyReasonMin).max(adjustFp360StockBodyReasonMax)
+})
+
+export const adjustFp360StockResponseUnitPriceCentsMin = 0;
+
+export const adjustFp360StockResponseIgicBasisPointsMin = 0;
+
+export const adjustFp360StockResponseStockMin = 0;
+
+export const adjustFp360StockResponseReservedMin = 0;
+
+export const adjustFp360StockResponseCostCentsMin = 0;
+
+export const adjustFp360StockResponseMinimumStockMin = 0;
+
+
+
+export const AdjustFp360StockResponse = zod.object({
+  "id": zod.string(),
+  "sku": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "unitPriceCents": zod.number().int().min(adjustFp360StockResponseUnitPriceCentsMin),
+  "igicBasisPoints": zod.number().int().min(adjustFp360StockResponseIgicBasisPointsMin),
+  "stock": zod.number().int().min(adjustFp360StockResponseStockMin),
+  "reserved": zod.number().int().min(adjustFp360StockResponseReservedMin),
+  "costCents": zod.number().int().min(adjustFp360StockResponseCostCentsMin),
+  "minimumStock": zod.number().int().min(adjustFp360StockResponseMinimumStockMin),
+  "isActive": zod.boolean(),
+  "isPublished": zod.boolean()
+})
 
 
 /**

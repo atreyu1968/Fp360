@@ -5,6 +5,193 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+export type Fp360OrganizationInputIsland = typeof Fp360OrganizationInputIsland[keyof typeof Fp360OrganizationInputIsland];
+
+
+export const Fp360OrganizationInputIsland = {
+  Tenerife: 'Tenerife',
+  Gran_Canaria: 'Gran Canaria',
+  Lanzarote: 'Lanzarote',
+  Fuerteventura: 'Fuerteventura',
+  La_Palma: 'La Palma',
+  La_Gomera: 'La Gomera',
+  El_Hierro: 'El Hierro',
+  La_Graciosa: 'La Graciosa',
+} as const;
+
+export type Fp360OrganizationInputRole = typeof Fp360OrganizationInputRole[keyof typeof Fp360OrganizationInputRole];
+
+
+export const Fp360OrganizationInputRole = {
+  seller: 'seller',
+  buyer: 'buyer',
+  both: 'both',
+} as const;
+
+export interface Fp360OrganizationInput {
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  name: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  center: string;
+  island: Fp360OrganizationInputIsland;
+  role: Fp360OrganizationInputRole;
+}
+
+export type Fp360OrganizationUpdateIsland = typeof Fp360OrganizationUpdateIsland[keyof typeof Fp360OrganizationUpdateIsland];
+
+
+export const Fp360OrganizationUpdateIsland = {
+  Tenerife: 'Tenerife',
+  Gran_Canaria: 'Gran Canaria',
+  Lanzarote: 'Lanzarote',
+  Fuerteventura: 'Fuerteventura',
+  La_Palma: 'La Palma',
+  La_Gomera: 'La Gomera',
+  El_Hierro: 'El Hierro',
+  La_Graciosa: 'La Graciosa',
+} as const;
+
+export type Fp360OrganizationUpdateRole = typeof Fp360OrganizationUpdateRole[keyof typeof Fp360OrganizationUpdateRole];
+
+
+export const Fp360OrganizationUpdateRole = {
+  seller: 'seller',
+  buyer: 'buyer',
+  both: 'both',
+} as const;
+
+export interface Fp360OrganizationUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  name?: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  center?: string;
+  island?: Fp360OrganizationUpdateIsland;
+  role?: Fp360OrganizationUpdateRole;
+  isActive?: boolean;
+}
+
+export interface Fp360ProductInput {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     * @pattern ^[A-Za-z0-9][A-Za-z0-9._-]*$
+     */
+  sku: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  name: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  category: string;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  unitPriceCents: number;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  costCents?: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  igicBasisPoints: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000
+     */
+  stock: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000
+     */
+  minimumStock?: number;
+}
+
+export interface Fp360ProductUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     * @pattern ^[A-Za-z0-9][A-Za-z0-9._-]*$
+     */
+  sku?: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  name?: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  category?: string;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  unitPriceCents?: number;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  costCents?: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  igicBasisPoints?: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000
+     */
+  minimumStock?: number;
+  isActive?: boolean;
+  isPublished?: boolean;
+}
+
+export interface Fp360StockAdjustmentInput {
+  operationId: string;
+  /**
+     * @minimum -1000000
+     * @maximum 1000000
+     */
+  quantityDelta: number;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export interface Fp360StockAdjustment {
+  id: string;
+  quantityDelta: number;
+  stockBefore: number;
+  stockAfter: number;
+  reason: string;
+  actorName: string;
+  simulatedDate: string;
+  createdAt: string;
+}
+
 export type AccessRole = typeof AccessRole[keyof typeof AccessRole];
 
 
@@ -195,6 +382,7 @@ export interface Fp360Organization {
   center: string;
   island: string;
   role: Fp360OrganizationRole;
+  isActive: boolean;
 }
 
 export interface Fp360Product {
@@ -210,6 +398,12 @@ export interface Fp360Product {
   stock: number;
   /** @minimum 0 */
   reserved: number;
+  /** @minimum 0 */
+  costCents: number;
+  /** @minimum 0 */
+  minimumStock: number;
+  isActive: boolean;
+  isPublished: boolean;
 }
 
 export interface Fp360OrderLine {

@@ -61,8 +61,9 @@ async function lockAdministration(tx: Transaction, actor: AuthContext) {
 async function checkOrganization(tx: Transaction, tenantId: string, organizationId?: string | null) {
   if (!organizationId) return;
   const [organization] = await tx.select({ id: fpOrganizations.id }).from(fpOrganizations)
-    .where(and(eq(fpOrganizations.id, organizationId), eq(fpOrganizations.tenantId, tenantId)));
-  if (!organization) fail(400, "La organización no pertenece a tu red.");
+    .where(and(eq(fpOrganizations.id, organizationId), eq(fpOrganizations.tenantId, tenantId), eq(fpOrganizations.isActive, true)))
+    .for("share");
+  if (!organization) fail(400, "Selecciona una organización activa de tu red.");
 }
 async function audit(tx: Transaction, tenantId: string, actorUserId: string, action: string, entityId: string) {
   await tx.insert(fpAuthAudit).values({ id: randomUUID(), tenantId, actorUserId, action, entityId });
@@ -106,6 +107,7 @@ router.post("/auth/invitations/accept", async (req, res): Promise<void> => {
   const identity = await db.transaction(async (tx) => {
     const [invitation] = await tx.select().from(fpAuthInvitations).where(pendingInvitation(body.data.token)).for("update");
     if (!invitation) fail(410, "La invitación ha caducado, se ha revocado o ya se ha utilizado.");
+    await checkOrganization(tx, invitation.tenantId, invitation.organizationId);
     const userId = randomUUID();
     const [user] = await tx.insert(fpAuthUsers).values({
       id: userId, email: invitation.email, displayName: body.data.displayName.trim(), passwordHash,

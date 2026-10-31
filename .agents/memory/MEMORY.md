@@ -1,1 +1,2 @@
-- [RED FP360 authentication](red-fp360-auth.md) — Clerk is not permitted for this project; confirm an alternative before implementing auth.
+- [RED FP360 authentication](red-fp360-auth.md) — Use app-owned authentication, never Clerk; account invitation and preview-cookie constraints.
+- [Catalog approval](catalog-approval.md) — New B2B references need approval; preserve historical prices and reuse adjustment IDs on retries.

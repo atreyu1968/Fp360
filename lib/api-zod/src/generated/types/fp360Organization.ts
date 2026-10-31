@@ -13,4 +13,5 @@ export interface Fp360Organization {
   center: string;
   island: string;
   role: Fp360OrganizationRole;
+  isActive: boolean;
 }
