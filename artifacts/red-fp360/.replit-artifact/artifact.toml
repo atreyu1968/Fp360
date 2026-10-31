@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "RED FP360"
+description = "ERP educativo para conectar empresas simuladas de centros de Formación Profesional en Canarias. MVP con CRM, compras y ventas, inventario, facturación y tesorería en modo simulado."
+version = "1.0.0"
+id = "artifacts/red-fp360"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19362
+
+[services.development]
+run = "pnpm --filter @workspace/red-fp360 run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/red-fp360", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/red-fp360/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19362"
+BASE_PATH = "/"

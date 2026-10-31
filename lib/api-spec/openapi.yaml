@@ -3,13 +3,15 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: RED FP360 demo ERP — all monetary and institutional actions are simulated.
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: redfp360
+    description: RED FP360 simulated business operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,206 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /redfp360/dashboard:
+    get:
+      operationId: getFp360Dashboard
+      tags: [redfp360]
+      summary: Get the simulated company dashboard
+      responses:
+        "200":
+          description: Dashboard totals and recent activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360Dashboard"
+  /redfp360/organizations:
+    get:
+      operationId: listFp360Organizations
+      tags: [redfp360]
+      summary: List simulated market organizations
+      responses:
+        "200":
+          description: Organizations in the demo network
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fp360Organization"
+  /redfp360/products:
+    get:
+      operationId: listFp360Products
+      tags: [redfp360]
+      summary: List the simulated product catalog
+      responses:
+        "200":
+          description: Products and available stock
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fp360Product"
+  /redfp360/orders:
+    get:
+      operationId: listFp360Orders
+      tags: [redfp360]
+      summary: List purchase and sales orders
+      responses:
+        "200":
+          description: Orders in the demo company
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fp360Order"
+    post:
+      operationId: createFp360Order
+      tags: [redfp360]
+      summary: Create a simulated draft order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360OrderInput"
+      responses:
+        "201":
+          description: Draft order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360Order"
+        "400":
+          description: Invalid order data or insufficient stock
+  /redfp360/orders/{id}/confirm:
+    post:
+      operationId: confirmFp360Order
+      tags: [redfp360]
+      summary: Confirm an order and reserve its stock
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Confirmed order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360Order"
+        "400":
+          description: Order cannot be confirmed
+        "404":
+          description: Order not found
+  /redfp360/orders/{id}/dispatch:
+    post:
+      operationId: dispatchFp360Order
+      tags: [redfp360]
+      summary: Record a full or partial simulated shipment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360DispatchInput"
+      responses:
+        "200":
+          description: Updated shipment and order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360Order"
+        "400":
+          description: Invalid or unavailable quantities
+        "404":
+          description: Order not found
+  /redfp360/invoices:
+    get:
+      operationId: listFp360Invoices
+      tags: [redfp360]
+      summary: List issued simulated invoices
+      responses:
+        "200":
+          description: Invoices and outstanding balances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fp360Invoice"
+    post:
+      operationId: issueFp360Invoice
+      tags: [redfp360]
+      summary: Issue an immutable simulated invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360InvoiceInput"
+      responses:
+        "201":
+          description: Issued invoice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360Invoice"
+        "400":
+          description: Order has no uninvoiced shipped quantities
+        "404":
+          description: Order not found
+  /redfp360/invoices/{id}/payments:
+    post:
+      operationId: recordFp360Payment
+      tags: [redfp360]
+      summary: Record a simulated bank payment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360PaymentInput"
+      responses:
+        "201":
+          description: Simulated payment recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360Invoice"
+        "400":
+          description: Invalid payment amount
+        "404":
+          description: Invoice not found
+  /redfp360/activity:
+    get:
+      operationId: listFp360Activity
+      tags: [redfp360]
+      summary: List recent simulated business activity
+      responses:
+        "200":
+          description: Chronological audit activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fp360Activity"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +235,162 @@ components:
           type: string
       required:
         - status
+    Fp360Organization:
+      type: object
+      required: [id, name, center, island, role]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        center: { type: string }
+        island: { type: string }
+        role: { type: string, enum: [seller, buyer, both] }
+    Fp360Product:
+      type: object
+      required: [id, sku, name, category, unitPriceCents, igicBasisPoints, stock, reserved]
+      properties:
+        id: { type: string }
+        sku: { type: string }
+        name: { type: string }
+        category: { type: string }
+        unitPriceCents: { type: integer, minimum: 0 }
+        igicBasisPoints: { type: integer, minimum: 0 }
+        stock: { type: integer, minimum: 0 }
+        reserved: { type: integer, minimum: 0 }
+    Fp360OrderLine:
+      type: object
+      required: [productId, productName, quantity, shippedQuantity, invoicedQuantity, unitPriceCents]
+      properties:
+        productId: { type: string }
+        productName: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        shippedQuantity: { type: integer, minimum: 0 }
+        invoicedQuantity: { type: integer, minimum: 0 }
+        unitPriceCents: { type: integer, minimum: 0 }
+    Fp360Order:
+      type: object
+      required: [id, reference, buyerOrganizationId, buyerName, status, lines, totalCents, simulatedDate, createdAt]
+      properties:
+        id: { type: string }
+        reference: { type: string }
+        buyerOrganizationId: { type: string }
+        buyerName: { type: string }
+        status:
+          type: string
+          enum: [draft, confirmed, partial, delivered, invoiced, paid]
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/Fp360OrderLine"
+        totalCents: { type: integer, minimum: 0 }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    Fp360OrderLineInput:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId: { type: string, minLength: 1 }
+        quantity: { type: integer, minimum: 1, maximum: 999 }
+    Fp360OrderInput:
+      type: object
+      required: [buyerOrganizationId, lines]
+      properties:
+        buyerOrganizationId: { type: string, minLength: 1 }
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Fp360OrderLineInput"
+    Fp360DispatchLine:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId: { type: string, minLength: 1 }
+        quantity: { type: integer, minimum: 1, maximum: 999 }
+    Fp360DispatchInput:
+      type: object
+      required: [lines]
+      properties:
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Fp360DispatchLine"
+    Fp360InvoiceLine:
+      type: object
+      required: [productName, quantity, unitPriceCents, baseCents, igicBasisPoints, igicCents, totalCents]
+      properties:
+        productName: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        unitPriceCents: { type: integer, minimum: 0 }
+        baseCents: { type: integer, minimum: 0 }
+        igicBasisPoints: { type: integer, minimum: 0 }
+        igicCents: { type: integer, minimum: 0 }
+        totalCents: { type: integer, minimum: 0 }
+    Fp360Payment:
+      type: object
+      required: [id, amountCents, simulatedDate, createdAt]
+      properties:
+        id: { type: string }
+        amountCents: { type: integer, minimum: 1 }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    Fp360Invoice:
+      type: object
+      required: [id, reference, orderId, buyerName, status, lines, baseCents, igicCents, totalCents, paidCents, balanceCents, simulatedDate, createdAt, payments]
+      properties:
+        id: { type: string }
+        reference: { type: string }
+        orderId: { type: string }
+        buyerName: { type: string }
+        status: { type: string, enum: [outstanding, partial, paid] }
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/Fp360InvoiceLine"
+        baseCents: { type: integer, minimum: 0 }
+        igicCents: { type: integer, minimum: 0 }
+        totalCents: { type: integer, minimum: 0 }
+        paidCents: { type: integer, minimum: 0 }
+        balanceCents: { type: integer, minimum: 0 }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Fp360Payment"
+    Fp360InvoiceInput:
+      type: object
+      required: [orderId]
+      properties:
+        orderId: { type: string, minLength: 1 }
+    Fp360PaymentInput:
+      type: object
+      required: [amountCents]
+      properties:
+        amountCents: { type: integer, minimum: 1 }
+    Fp360Activity:
+      type: object
+      required: [id, action, description, reference, simulatedDate, createdAt]
+      properties:
+        id: { type: string }
+        action: { type: string }
+        description: { type: string }
+        reference: { type: string }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    Fp360Dashboard:
+      type: object
+      required: [salesCents, outstandingCents, orderCount, productCount, openOrders, invoicesDue, recentActivity, simulationOnly]
+      properties:
+        salesCents: { type: integer, minimum: 0 }
+        outstandingCents: { type: integer, minimum: 0 }
+        orderCount: { type: integer, minimum: 0 }
+        productCount: { type: integer, minimum: 0 }
+        openOrders: { type: integer, minimum: 0 }
+        invoicesDue: { type: integer, minimum: 0 }
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/Fp360Activity"
+        simulationOnly: { type: boolean, const: true }
 
