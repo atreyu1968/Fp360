@@ -103,6 +103,138 @@ export const GetCurrentIdentityResponse = zod.object({
 export const LogoutResponse = zod.void()
 
 
+export const ListAdminUsersResponseItem = zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "displayName": zod.string(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "organizationId": zod.string().nullish(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem)
+
+
+export const UpdateAdminUserParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+export const UpdateAdminUserBody = zod.object({
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']).optional(),
+  "isActive": zod.boolean().optional(),
+  "organizationId": zod.string().min(1).nullish()
+})
+
+export const UpdateAdminUserResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "displayName": zod.string(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "organizationId": zod.string().nullish(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+export const ListAdminInvitationsResponseItem = zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "organizationId": zod.string().nullish(),
+  "status": zod.enum(['pending', 'accepted', 'revoked', 'expired']),
+  "expiresAt": zod.string().datetime({"offset":true}),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListAdminInvitationsResponse = zod.array(ListAdminInvitationsResponseItem)
+
+
+export const createAdminInvitationBodyEmailMax = 254;
+
+
+
+
+export const CreateAdminInvitationBody = zod.object({
+  "email": zod.string().email().max(createAdminInvitationBodyEmailMax),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "organizationId": zod.string().min(1).nullish()
+})
+
+export const CreateAdminInvitationResponse = zod.object({
+  "invitation": zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "organizationId": zod.string().nullish(),
+  "status": zod.enum(['pending', 'accepted', 'revoked', 'expired']),
+  "expiresAt": zod.string().datetime({"offset":true}),
+  "createdAt": zod.string().datetime({"offset":true})
+}),
+  "token": zod.string()
+})
+
+
+export const RevokeAdminInvitationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RevokeAdminInvitationResponse = zod.void()
+
+
+export const ListAdminAuditResponseItem = zod.object({
+  "id": zod.string(),
+  "action": zod.string(),
+  "entityId": zod.string(),
+  "actorUserId": zod.string().nullish(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListAdminAuditResponse = zod.array(ListAdminAuditResponseItem)
+
+
+export const inspectInvitationBodyTokenMin = 32;
+export const inspectInvitationBodyTokenMax = 128;
+
+
+
+export const InspectInvitationBody = zod.object({
+  "token": zod.string().min(inspectInvitationBodyTokenMin).max(inspectInvitationBodyTokenMax)
+})
+
+export const InspectInvitationResponse = zod.object({
+  "email": zod.string().email(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "expiresAt": zod.string().datetime({"offset":true})
+})
+
+
+export const acceptInvitationBodyTokenMin = 32;
+export const acceptInvitationBodyTokenMax = 128;
+
+export const acceptInvitationBodyDisplayNameMax = 100;
+
+export const acceptInvitationBodyPasswordMin = 12;
+export const acceptInvitationBodyPasswordMax = 128;
+
+
+
+export const AcceptInvitationBody = zod.object({
+  "token": zod.string().min(acceptInvitationBodyTokenMin).max(acceptInvitationBodyTokenMax),
+  "displayName": zod.string().min(1).max(acceptInvitationBodyDisplayNameMax),
+  "password": zod.string().min(acceptInvitationBodyPasswordMin).max(acceptInvitationBodyPasswordMax)
+})
+
+export const AcceptInvitationResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "displayName": zod.string(),
+  "tenantId": zod.string(),
+  "organizationId": zod.string().optional(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator'])
+})
+
+
 /**
  * @summary Get the simulated company dashboard
  */

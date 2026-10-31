@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './accessAuditEvent';
+export * from './accessRole';
 export * from './authIdentity';
 export * from './authIdentityRole';
 export * from './authLoginInput';
@@ -30,3 +32,12 @@ export * from './fp360Payment';
 export * from './fp360PaymentInput';
 export * from './fp360Product';
 export * from './healthStatus';
+export * from './invitationAcceptanceInput';
+export * from './invitationPreview';
+export * from './invitationTokenInput';
+export * from './issuedInvitation';
+export * from './managedUser';
+export * from './managedUserUpdate';
+export * from './userInvitation';
+export * from './userInvitationInput';
+export * from './userInvitationStatus';

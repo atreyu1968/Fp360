@@ -5,6 +5,117 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+export type AccessRole = typeof AccessRole[keyof typeof AccessRole];
+
+
+export const AccessRole = {
+  student: 'student',
+  team_manager: 'team_manager',
+  teacher: 'teacher',
+  promoter: 'promoter',
+  mentor: 'mentor',
+  administrator: 'administrator',
+} as const;
+
+export interface ManagedUser {
+  id: string;
+  email: string;
+  displayName: string;
+  role: AccessRole;
+  /** @nullable */
+  organizationId?: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface ManagedUserUpdate {
+  role?: AccessRole;
+  isActive?: boolean;
+  /**
+     * @minLength 1
+     * @nullable
+     */
+  organizationId?: string | null;
+}
+
+export interface UserInvitationInput {
+  /** @maxLength 254 */
+  email: string;
+  role: AccessRole;
+  /**
+     * @minLength 1
+     * @nullable
+     */
+  organizationId?: string | null;
+}
+
+export type UserInvitationStatus = typeof UserInvitationStatus[keyof typeof UserInvitationStatus];
+
+
+export const UserInvitationStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  revoked: 'revoked',
+  expired: 'expired',
+} as const;
+
+export interface UserInvitation {
+  id: string;
+  email: string;
+  role: AccessRole;
+  /** @nullable */
+  organizationId?: string | null;
+  status: UserInvitationStatus;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface IssuedInvitation {
+  invitation: UserInvitation;
+  token: string;
+}
+
+export interface InvitationTokenInput {
+  /**
+     * @minLength 32
+     * @maxLength 128
+     */
+  token: string;
+}
+
+export interface InvitationPreview {
+  email: string;
+  role: AccessRole;
+  expiresAt: string;
+}
+
+export interface InvitationAcceptanceInput {
+  /**
+     * @minLength 32
+     * @maxLength 128
+     */
+  token: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  displayName: string;
+  /**
+     * @minLength 12
+     * @maxLength 128
+     */
+  password: string;
+}
+
+export interface AccessAuditEvent {
+  id: string;
+  action: string;
+  entityId: string;
+  /** @nullable */
+  actorUserId?: string | null;
+  createdAt: string;
+}
+
 export interface AuthStatus {
   setupRequired: boolean;
 }

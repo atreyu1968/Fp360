@@ -5,7 +5,7 @@ import {
   BookOpen, Boxes, Building2, Check, CheckCircle2, ChevronDown, CircleHelp, ClipboardList,
   Clock3, CreditCard, Download, FileArchive, FileCheck2, FileText, Filter, Globe2,
   GraduationCap, LayoutDashboard, LifeBuoy, Menu, Package, PackageCheck, Plus,
-  ReceiptText, RefreshCw, Search, ShieldAlert, ShoppingBag, ShoppingCart, Truck, Users, X, CircleAlert,
+  ReceiptText, RefreshCw, Search, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Truck, Users, X, CircleAlert,
 } from 'lucide-react';
 import {
   getGetFp360DashboardQueryKey, useConfirmFp360Order, useCreateFp360Order,
@@ -30,6 +30,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter';
 import { AuthExperience } from '@/components/auth-experience';
+import { AdminAccessDenied, AdminPage } from '@/components/admin-page';
+import { AcceptInvitation } from '@/components/accept-invitation';
 
 const queryClient = new QueryClient();
 type Product = Fp360Product;
@@ -69,6 +71,7 @@ const titles: Record<string, { title: string; kicker: string; description: strin
   '/facturas': { title: 'Facturación', kicker: 'DOCUMENTOS · COBROS', description: 'Emite facturas y registra pagos en el circuito de prácticas.' },
   '/clientes': { title: 'Directorio de organizaciones', kicker: 'CRM · RED FP360', description: 'Empresas simuladas, centros participantes y relaciones de la red.' },
   '/aplicaciones': { title: 'Aplicaciones', kicker: 'PLATAFORMA · 26 MÓDULOS', description: 'Catálogo de capacidades previstas y módulos conectados en esta demostración.' },
+  '/administracion': { title: 'Usuarios y accesos', kicker: 'ADMINISTRACIÓN', description: 'Gestión de cuentas e invitaciones.' },
   '/documentacion': { title: 'Documentación', kicker: 'CENTRO DE RECURSOS', description: 'Especificación funcional, referencias visuales y materiales del proyecto.' },
 };
 
@@ -621,9 +624,10 @@ function Shell({ identity }: { identity: AuthIdentity }) {
        case '/apps': return <ApplicationsPage />;
        case '/documentacion':
        case '/docs': return <DocumentationPage />;
+      case '/administracion': return identity.role === 'administrator' ? <AdminPage identity={identity} /> : <AdminAccessDenied />;
       default: return null;
     }
-  }, [location, dashboardQuery.data, dashboardQuery.isLoading, dashboardQuery.isError, organizationsQuery.data, organizationsQuery.isLoading, organizationsQuery.isError, productsQuery.data, productsQuery.isLoading, productsQuery.isError, ordersQuery.data, ordersQuery.isLoading, ordersQuery.isError, invoicesQuery.data, invoicesQuery.isLoading, invoicesQuery.isError, activityQuery.data, activityQuery.isLoading, activityQuery.isError]);
+  }, [location, dashboardQuery.data, dashboardQuery.isLoading, dashboardQuery.isError, organizationsQuery.data, organizationsQuery.isLoading, organizationsQuery.isError, productsQuery.data, productsQuery.isLoading, productsQuery.isError, ordersQuery.data, ordersQuery.isLoading, ordersQuery.isError, invoicesQuery.data, invoicesQuery.isLoading, invoicesQuery.isError, activityQuery.data, activityQuery.isLoading, activityQuery.isError, identity]);
   return <div className="app-shell">
     <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
       <Link href="/" className="brand-lockup" onClick={() => setMobileNav(false)}>
@@ -631,7 +635,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       </Link>
       <div className="sidebar-context"><span className="context-label">ENTORNO ACTIVO</span><button className="context-selector" type="button"><span className="context-avatar">CE</span><span><b>Empresa de prácticas</b><small>Centro educativo · Canarias</small></span><ChevronDown size={14} /></button></div>
       <div className="nav-caption">ESPACIO DE TRABAJO</div>
-      <nav className="main-nav" aria-label="Navegación principal">{navItems.map(({ href, label, icon: Icon }) => <Link href={href} key={href} className={`nav-link ${location === href ? 'nav-active' : ''}`} onClick={() => setMobileNav(false)} aria-current={location === href ? 'page' : undefined}><Icon size={18} strokeWidth={1.8} /><span>{label}</span>{href === '/aplicaciones' && <span className="nav-count">26</span>}</Link>)}</nav>
+      <nav className="main-nav" aria-label="Navegación principal">{[...navItems, ...(identity.role === 'administrator' ? [{ href: '/administracion', label: 'Usuarios y accesos', icon: ShieldCheck }] : [])].map(({ href, label, icon: Icon }) => <Link href={href} key={href} className={`nav-link ${location === href ? 'nav-active' : ''}`} onClick={() => setMobileNav(false)} aria-current={location === href ? 'page' : undefined}><Icon size={18} strokeWidth={1.8} /><span>{label}</span>{href === '/aplicaciones' && <span className="nav-count">26</span>}</Link>)}</nav>
       <div className="sidebar-bottom"><div className="help-card"><div className="help-icon"><LifeBuoy size={17} /></div><b>¿Primera vez por aquí?</b><p>Consulta la guía de aprendizaje de la red.</p><Link href="/documentacion" onClick={() => setMobileNav(false)}>Abrir recursos <ArrowRight size={13} /></Link></div>
          <div className="profile-chip"><span className="profile-avatar">{identityInitials(identity)}</span><span><b>{identity.displayName}</b><small>{roleLabel(identity.role)}</small></span><button className="profile-logout" type="button" disabled={logout.isPending} onClick={() => logout.mutate(undefined, { onSuccess: () => { clearBusinessCache(); void queryClient.resetQueries({ queryKey: getGetCurrentIdentityQueryKey(), exact: true }); setLocation('/sign-in'); }, onError: () => setNotice('No se pudo cerrar la sesión. Comprueba la conexión e inténtalo de nuevo.') })} aria-label="Cerrar sesión" title="Cerrar sesión" data-testid="button-logout"><ArrowRight size={15} /></button></div>
       </div>
@@ -652,6 +656,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
         <Route path="/documentacion">{page}</Route>
         <Route path="/apps">{page}</Route>
         <Route path="/docs">{page}</Route>
+        <Route path="/administracion">{page}</Route>
         <Route component={NotFound} />
       </Switch></div>
       <footer className="app-footer"><span>RED FP360 <i>·</i> Entorno educativo de prácticas</span><span>Sin conexión a sistemas reales <b>·</b> © 2027</span></footer>
@@ -697,6 +702,7 @@ function AuthRouter() {
     setLocation('/');
   };
 
+  if (location === '/accept-invitation') return <AcceptInvitation onAuthenticated={onAuthenticated} />;
   if (authStatus.isLoading) return <AuthLoading label="Cargando configuración del acceso" />;
   if (authStatus.isError || !authStatus.data) return <main className="auth-loading"><div className="auth-state-card"><CircleHelp size={22} /><h1>No podemos comprobar el acceso</h1><p>El servicio de autenticación no responde. Comprueba la conexión e inténtalo otra vez.</p><button className="auth-submit" type="button" onClick={() => { void authStatus.refetch(); void identityQuery.refetch(); }} data-testid="button-retry-auth">Reintentar <ArrowRight size={16} /></button></div></main>;
 

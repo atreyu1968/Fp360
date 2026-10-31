@@ -81,3 +81,37 @@ export const fpAuthSetupState = pgTable("fp360_auth_setup_state", {
   id: text("id").primaryKey(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
 });
+
+export const fpAuthInvitations = pgTable(
+  "fp360_auth_invitations",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    email: text("email").notNull(),
+    role: text("role").notNull(),
+    organizationId: text("organization_id").references(() => fpOrganizations.id, { onDelete: "set null" }),
+    tokenHash: text("token_hash").notNull(),
+    createdBy: text("created_by").references(() => fpAuthUsers.id, { onDelete: "set null" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("fp360_auth_invitation_token_idx").on(table.tokenHash),
+    index("fp360_auth_invitation_tenant_idx").on(table.tenantId),
+  ],
+);
+
+export const fpAuthAudit = pgTable(
+  "fp360_auth_audit",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    actorUserId: text("actor_user_id").references(() => fpAuthUsers.id, { onDelete: "set null" }),
+    action: text("action").notNull(),
+    entityId: text("entity_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("fp360_auth_audit_tenant_idx").on(table.tenantId)],
+);

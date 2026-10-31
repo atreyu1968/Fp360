@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID, scrypt, timingSafeEqual } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import rateLimit from "express-rate-limit";
@@ -24,17 +24,11 @@ import {
   type AuthContext,
   type AuthRole,
 } from "../middlewares/auth";
+import { hashPassword, verifyPassword } from "../lib/passwords";
 
 const router: IRouter = Router();
 const setupTenantId = "red-fp360-demo";
 const setupLockId = "global";
-const PASSWORD_KEY_LENGTH = 64;
-const PASSWORD_SCRYPT_OPTIONS = {
-  N: 32768,
-  r: 8,
-  p: 1,
-  maxmem: 128 * 1024 * 1024,
-};
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -67,64 +61,6 @@ function safeTokenMatch(candidate: string, expected: string): boolean {
     candidateBytes.length === expectedBytes.length &&
     timingSafeEqual(candidateBytes, expectedBytes)
   );
-}
-
-async function derivePasswordKey(
-  password: string,
-  salt: Buffer,
-): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    scrypt(
-      password,
-      salt,
-      PASSWORD_KEY_LENGTH,
-      PASSWORD_SCRYPT_OPTIONS,
-      (error, key) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        resolve(key);
-      },
-    );
-  });
-}
-
-async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16);
-  const key = await derivePasswordKey(password, salt);
-  return `scrypt$32768$8$1$${salt.toString("base64url")}$${key.toString("base64url")}`;
-}
-
-async function verifyPassword(
-  password: string,
-  encodedHash: string,
-): Promise<boolean> {
-  const [algorithm, n, r, p, saltValue, keyValue, extra] =
-    encodedHash.split("$");
-  if (
-    algorithm !== "scrypt" ||
-    n !== "32768" ||
-    r !== "8" ||
-    p !== "1" ||
-    !saltValue ||
-    !keyValue ||
-    extra !== undefined
-  ) {
-    return false;
-  }
-
-  try {
-    const salt = Buffer.from(saltValue, "base64url");
-    const expectedKey = Buffer.from(keyValue, "base64url");
-    if (salt.length !== 16 || expectedKey.length !== PASSWORD_KEY_LENGTH) {
-      return false;
-    }
-    const candidateKey = await derivePasswordKey(password, salt);
-    return timingSafeEqual(candidateKey, expectedKey);
-  } catch {
-    return false;
-  }
 }
 
 function identityResponse(

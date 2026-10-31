@@ -116,6 +116,132 @@ paths:
           description: Session ended
         "401":
           description: Sign-in required
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [administration]
+      responses:
+        "200":
+          description: Users in the administrator's network
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ManagedUser" }
+        "403": { description: Administrator required }
+  /admin/users/{id}:
+    patch:
+      operationId: updateAdminUser
+      tags: [administration]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ManagedUserUpdate" }
+      responses:
+        "200":
+          description: Updated membership
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ManagedUser" }
+        "400": { description: Invalid changes }
+        "403": { description: Administrator required }
+        "404": { description: User not found in this network }
+        "409": { description: Last administrator cannot be removed }
+  /admin/invitations:
+    get:
+      operationId: listAdminInvitations
+      tags: [administration]
+      responses:
+        "200":
+          description: Invitations in this network
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/UserInvitation" }
+        "403": { description: Administrator required }
+    post:
+      operationId: createAdminInvitation
+      tags: [administration]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserInvitationInput" }
+      responses:
+        "201":
+          description: Invitation with token disclosed only once
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IssuedInvitation" }
+        "400": { description: Invalid invitation }
+        "403": { description: Administrator required }
+        "409": { description: Account or pending invitation already exists }
+  /admin/invitations/{id}:
+    delete:
+      operationId: revokeAdminInvitation
+      tags: [administration]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Invitation revoked }
+        "403": { description: Administrator required }
+        "404": { description: Invitation not found }
+        "409": { description: Invitation is no longer pending }
+  /admin/audit:
+    get:
+      operationId: listAdminAudit
+      tags: [administration]
+      responses:
+        "200":
+          description: Recent access administration events in this network
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AccessAuditEvent" }
+        "403": { description: Administrator required }
+  /auth/invitations/inspect:
+    post:
+      security: []
+      operationId: inspectInvitation
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvitationTokenInput" }
+      responses:
+        "200":
+          description: Valid pending invitation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InvitationPreview" }
+        "400": { description: Invalid request }
+        "410": { description: "Invitation invalid, expired or already used" }
+    # Tokens belong in the request body, never in access-logged URL paths.
+  /auth/invitations/accept:
+    post:
+      security: []
+      operationId: acceptInvitation
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvitationAcceptanceInput" }
+      responses:
+        "201":
+          description: Account created and signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthIdentity" }
+        "400": { description: Invalid account details }
+        "409": { description: Account already exists }
+        "410": { description: "Invitation invalid, expired or already used" }
   /redfp360/dashboard:
     get:
       operationId: getFp360Dashboard
@@ -323,6 +449,78 @@ components:
       in: cookie
       name: redfp360_session
   schemas:
+    AccessRole:
+      type: string
+      enum: [student, team_manager, teacher, promoter, mentor, administrator]
+    ManagedUser:
+      type: object
+      required: [id, email, displayName, role, isActive, createdAt]
+      properties:
+        id: { type: string }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        role: { $ref: "#/components/schemas/AccessRole" }
+        organizationId: { type: ["string", "null"] }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    ManagedUserUpdate:
+      type: object
+      properties:
+        role: { $ref: "#/components/schemas/AccessRole" }
+        isActive: { type: boolean }
+        organizationId: { type: ["string", "null"], minLength: 1 }
+    UserInvitationInput:
+      type: object
+      required: [email, role]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        role: { $ref: "#/components/schemas/AccessRole" }
+        organizationId: { type: ["string", "null"], minLength: 1 }
+    UserInvitation:
+      type: object
+      required: [id, email, role, status, expiresAt, createdAt]
+      properties:
+        id: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: "#/components/schemas/AccessRole" }
+        organizationId: { type: ["string", "null"] }
+        status: { type: string, enum: [pending, accepted, revoked, expired] }
+        expiresAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+    IssuedInvitation:
+      type: object
+      required: [invitation, token]
+      properties:
+        invitation: { $ref: "#/components/schemas/UserInvitation" }
+        token: { type: string }
+    InvitationTokenInput:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 32, maxLength: 128 }
+    InvitationPreview:
+      type: object
+      required: [email, role, expiresAt]
+      properties:
+        email: { type: string, format: email }
+        role: { $ref: "#/components/schemas/AccessRole" }
+        expiresAt: { type: string, format: date-time }
+    InvitationAcceptanceInput:
+      type: object
+      required: [token, displayName, password]
+      properties:
+        token: { type: string, minLength: 32, maxLength: 128 }
+        displayName: { type: string, minLength: 1, maxLength: 100 }
+        password: { type: string, minLength: 12, maxLength: 128 }
+    AccessAuditEvent:
+      type: object
+      required: [id, action, entityId, createdAt]
+      properties:
+        id: { type: string }
+        action: { type: string }
+        entityId: { type: string }
+        actorUserId: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
     AuthStatus:
       type: object
       required: [setupRequired]

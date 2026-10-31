@@ -16,3 +16,11 @@ Distinguish the application's cookie settings from the attributes observed throu
 **Why:** browser verification confirmed that the local development response sends HttpOnly and SameSite=Lax without Secure, while the public HTTPS preview transforms it to HttpOnly, Secure, and SameSite=None for iframe use.
 
 **How to apply:** compare local and proxied responses separately when diagnosing sessions. Do not weaken same-origin checks or change production cookie policy merely to match preview gateway attributes.
+
+## Invitations and existing accounts
+
+Invitations currently provision new accounts only. Do not automatically attach an existing email account to another network.
+
+**Why:** cross-network membership changes need an explicit authenticated consent flow; matching an email alone must not change an existing account's access.
+
+**How to apply:** keep existing-account invitations rejected until a deliberate membership-acceptance and network-switching flow is implemented.
