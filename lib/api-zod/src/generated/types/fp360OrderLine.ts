@@ -15,6 +15,8 @@ export interface Fp360OrderLine {
   /** @minimum 0 */
   shippedQuantity: number;
   /** @minimum 0 */
+  receivedQuantity: number;
+  /** @minimum 0 */
   invoicedQuantity: number;
   /** @minimum 0 */
   unitPriceCents: number;

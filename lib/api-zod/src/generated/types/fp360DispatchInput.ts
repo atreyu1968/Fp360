@@ -8,6 +8,11 @@
 import type { Fp360DispatchLine } from './fp360DispatchLine';
 
 export interface Fp360DispatchInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  operationId: string;
   /** @minItems 1 */
   lines: Fp360DispatchLine[];
 }

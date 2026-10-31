@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
@@ -26,19 +26,28 @@ import {
   fpActivity,
   fpInvoiceLines,
   fpInvoices,
+  fpLogisticsEvents,
+  fpLogisticsShipmentLines,
+  fpLogisticsShipments,
   fpOrderLines,
   fpOrders,
   fpOrganizations,
   fpPayments,
   fpProducts,
 } from "@workspace/db";
-import { requireAuth, requireSimulationWriteAccess } from "../middlewares/auth";
+import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 
 const router: IRouter = Router();
 router.use(requireAuth);
 router.use(requireSimulationWriteAccess);
 const DEMO_TENANT_ID = "red-fp360-demo";
 const SIMULATED_DATE = "2027-09-15";
+function isNetworkSupervisor(actor: AuthContext) {
+  return actor.role === "administrator" || (actor.role === "teacher" && actor.organizationId === null);
+}
+function operationFingerprint(value: unknown) {
+  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
 
 const seedOrganizations = [
   {
@@ -284,6 +293,7 @@ async function loadOrder(id: string, tenantId: string) {
       productName: line.productName,
       quantity: line.quantity,
       shippedQuantity: line.shippedQuantity,
+      receivedQuantity: line.receivedQuantity,
       invoicedQuantity: line.invoicedQuantity,
       unitPriceCents: line.unitPriceCents,
       unitCostCents: line.unitCostCents,
@@ -694,7 +704,8 @@ router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
 });
 
 router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => {
-  const tenantId = req.auth!.tenantId;
+  const actor = req.auth!;
+  const tenantId = actor.tenantId;
   await ensureDemoData(tenantId);
   const params = DispatchFp360OrderParams.safeParse(req.params);
   const body = DispatchFp360OrderBody.safeParse(req.body);
@@ -717,7 +728,27 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
     res.status(400).json({ error: "No repitas productos en una entrega." });
     return;
   }
+  const requestFingerprint = operationFingerprint({
+    orderId: params.data.id,
+    userId: actor.userId,
+    lines: [...body.data.lines].sort((a, b) => a.productId.localeCompare(b.productId)),
+  });
   const result = await db.transaction(async (tx) => {
+    const [previousShipment] = await tx
+      .select()
+      .from(fpLogisticsShipments)
+      .where(and(
+        eq(fpLogisticsShipments.tenantId, tenantId),
+        eq(fpLogisticsShipments.operationId, body.data.operationId),
+      ))
+      .for("update")
+      .limit(1);
+    if (previousShipment) {
+      if (previousShipment.requestFingerprint !== requestFingerprint) {
+        return { ok: false as const, status: 409 as const, error: "La clave de operación ya se usó con otros datos." };
+      }
+      return { ok: true as const, reference: previousShipment.reference, replay: true as const };
+    }
     const [order] = await tx
       .select()
       .from(fpOrders)
@@ -780,6 +811,28 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
         };
       }
     }
+    const supplierIds = [...new Set(products.map((product) => product.supplierOrganizationId).filter((id): id is string => Boolean(id)))];
+    if (supplierIds.length > 1 && !isNetworkSupervisor(actor)) {
+      return { ok: false as const, status: 400 as const, error: "Separa la expedición cuando los productos tengan distintos proveedores." };
+    }
+    let originOrganizationId = supplierIds.length === 1 ? supplierIds[0] : null;
+    if (!isNetworkSupervisor(actor)) {
+      if (!actor.organizationId) {
+        return { ok: false as const, status: 403 as const, error: "Tu perfil no puede registrar expediciones para esta organización." };
+      }
+      const [actorOrganization] = await tx
+        .select()
+        .from(fpOrganizations)
+        .where(and(eq(fpOrganizations.id, actor.organizationId), eq(fpOrganizations.tenantId, tenantId)))
+        .limit(1);
+      if (!actorOrganization || !["seller", "both"].includes(actorOrganization.role)) {
+        return { ok: false as const, status: 403 as const, error: "La organización debe tener perfil vendedor para expedir pedidos." };
+      }
+      if (supplierIds.length && supplierIds[0] !== actor.organizationId) {
+        return { ok: false as const, status: 403 as const, error: "Solo la organización proveedora puede expedir estos productos." };
+      }
+      originOrganizationId = actor.organizationId;
+    }
     for (const [productId, quantity] of quantities) {
       const product = productById.get(productId);
       const line = lines.find((item) => item.productId === productId);
@@ -795,7 +848,10 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
       }
       await tx
         .update(fpOrderLines)
-        .set({ shippedQuantity: line.shippedQuantity + quantity })
+        .set({
+          shippedQuantity: line.shippedQuantity + quantity,
+          receivedQuantity: line.receivedQuantity + (line.itemType === "service" ? quantity : 0),
+        })
         .where(eq(fpOrderLines.id, line.id));
     }
     const updated = lines.map((line) => ({
@@ -803,25 +859,73 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
       shippedQuantity:
         line.shippedQuantity + (quantities.get(line.productId) ?? 0),
     }));
-    const status = updated.every((line) => line.shippedQuantity === line.quantity)
-      ? "delivered"
-      : "partial";
+    const allLinesComplete = updated.every((line) => line.shippedQuantity === line.quantity);
+    const hasPhysicalGoods = lines.some((line) => line.itemType === "product");
+    const status = allLinesComplete && !hasPhysicalGoods ? "delivered" : "partial";
     await tx
       .update(fpOrders)
       .set({ status })
       .where(eq(fpOrders.id, order.id));
-    return { ok: true as const, reference: order.reference };
+    const shipmentLines = [...quantities.entries()]
+      .map(([productId, quantity]) => ({
+        product: productById.get(productId),
+        orderLine: lines.find((line) => line.productId === productId),
+        quantity,
+      }))
+      .filter((entry) => entry.product && entry.orderLine?.itemType === "product");
+    if (shipmentLines.length) {
+      const shipmentId = randomUUID();
+      const shipmentReference = `EXP-${randomUUID().slice(0, 8).toUpperCase()}`;
+      await tx.insert(fpLogisticsShipments).values({
+        id: shipmentId,
+        tenantId,
+        operationId: body.data.operationId,
+        requestFingerprint,
+        orderId: order.id,
+        reference: shipmentReference,
+        originOrganizationId,
+        destinationOrganizationId: order.buyerOrganizationId,
+        status: "in_transit",
+        simulatedDate: SIMULATED_DATE,
+        createdByUserId: actor.userId,
+        createdByName: actor.displayName,
+      });
+      await tx.insert(fpLogisticsShipmentLines).values(shipmentLines.map(({ product, orderLine, quantity }) => ({
+        id: randomUUID(),
+        tenantId,
+        shipmentId,
+        orderLineId: orderLine!.id,
+        productId: product!.id,
+        productName: orderLine!.productName,
+        quantity,
+      })));
+      await tx.insert(fpLogisticsEvents).values({
+        id: randomUUID(),
+        tenantId,
+        shipmentId,
+        operationId: body.data.operationId,
+        requestFingerprint,
+        eventType: "shipment_created",
+        status: "in_transit",
+        description: `Salida simulada registrada para ${order.reference}.`,
+        actorUserId: actor.userId,
+        actorName: actor.displayName,
+      });
+    }
+    return { ok: true as const, reference: order.reference, replay: false as const };
   });
   if (!result.ok) {
     res.status(result.status).json({ error: result.error });
     return;
   }
-  await addActivity(
-    tenantId,
-    "Albarán simulado",
-    "Se ha registrado una entrega de mercancía.",
-    result.reference,
-  );
+  if (!result.replay) {
+    await addActivity(
+      tenantId,
+      "Albarán simulado",
+      "Se ha registrado una expedición simulada.",
+      result.reference,
+    );
+  }
   const order = await loadOrder(params.data.id, tenantId);
   res.json(DispatchFp360OrderResponse.parse(order));
 });

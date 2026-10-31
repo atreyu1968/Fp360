@@ -149,6 +149,7 @@ export const fpOrderLines = pgTable(
     productName: text("product_name").notNull(),
     quantity: integer("quantity").notNull(),
     shippedQuantity: integer("shipped_quantity").notNull().default(0),
+    receivedQuantity: integer("received_quantity").notNull().default(0),
     invoicedQuantity: integer("invoiced_quantity").notNull().default(0),
     unitPriceCents: integer("unit_price_cents").notNull(),
     unitCostCents: integer("unit_cost_cents"),
@@ -157,6 +158,116 @@ export const fpOrderLines = pgTable(
     tracksInventory: boolean("tracks_inventory").notNull().default(true),
   },
   (table) => [index("fp360_order_lines_order_idx").on(table.orderId)],
+);
+
+export const fpLogisticsShipments = pgTable(
+  "fp360_logistics_shipments",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    operationId: text("operation_id").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
+    orderId: text("order_id").notNull().references(() => fpOrders.id),
+    reference: text("reference").notNull(),
+    originOrganizationId: text("origin_organization_id").references(() => fpOrganizations.id),
+    destinationOrganizationId: text("destination_organization_id")
+      .notNull()
+      .references(() => fpOrganizations.id),
+    routeName: text("route_name"),
+    carrierName: text("carrier_name"),
+    parcelCount: integer("parcel_count").notNull().default(1),
+    plannedDeliveryDate: date("planned_delivery_date", { mode: "string" }),
+    status: text("status").notNull().default("in_transit"),
+    simulatedDate: date("simulated_date", { mode: "string" }).notNull(),
+    deliveredDate: date("delivered_date", { mode: "string" }),
+    createdByUserId: text("created_by_user_id").notNull(),
+    createdByName: text("created_by_name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("fp360_logistics_shipment_op_idx").on(table.tenantId, table.operationId),
+    uniqueIndex("fp360_logistics_shipment_ref_idx").on(table.tenantId, table.reference),
+    index("fp360_logistics_shipment_order_idx").on(table.tenantId, table.orderId),
+    index("fp360_logistics_shipment_origin_idx").on(table.tenantId, table.originOrganizationId),
+    index("fp360_logistics_shipment_destination_idx").on(table.tenantId, table.destinationOrganizationId),
+  ],
+);
+
+export const fpLogisticsShipmentLines = pgTable(
+  "fp360_logistics_shipment_lines",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    shipmentId: text("shipment_id")
+      .notNull()
+      .references(() => fpLogisticsShipments.id, { onDelete: "cascade" }),
+    orderLineId: text("order_line_id")
+      .notNull()
+      .references(() => fpOrderLines.id),
+    productId: text("product_id").notNull(),
+    productName: text("product_name").notNull(),
+    quantity: integer("quantity").notNull(),
+    receivedQuantity: integer("received_quantity").notNull().default(0),
+  },
+  (table) => [
+    index("fp360_logistics_shipment_lines_shipment_idx").on(table.tenantId, table.shipmentId),
+    index("fp360_logistics_shipment_lines_order_line_idx").on(table.orderLineId),
+  ],
+);
+
+export const fpLogisticsEvents = pgTable(
+  "fp360_logistics_events",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    shipmentId: text("shipment_id")
+      .notNull()
+      .references(() => fpLogisticsShipments.id, { onDelete: "cascade" }),
+    operationId: text("operation_id").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
+    eventType: text("event_type").notNull(),
+    status: text("status").notNull(),
+    description: text("description").notNull(),
+    actorUserId: text("actor_user_id").notNull(),
+    actorName: text("actor_name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("fp360_logistics_event_op_idx").on(table.tenantId, table.operationId),
+    index("fp360_logistics_event_shipment_idx").on(table.tenantId, table.shipmentId),
+  ],
+);
+
+export const fpLogisticsIncidents = pgTable(
+  "fp360_logistics_incidents",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    shipmentId: text("shipment_id")
+      .notNull()
+      .references(() => fpLogisticsShipments.id, { onDelete: "cascade" }),
+    operationId: text("operation_id").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
+    type: text("type").notNull(),
+    description: text("description").notNull(),
+    affectedQuantity: integer("affected_quantity").notNull().default(0),
+    status: text("status").notNull().default("open"),
+    resolution: text("resolution"),
+    createdByUserId: text("created_by_user_id").notNull(),
+    createdByName: text("created_by_name").notNull(),
+    resolvedByUserId: text("resolved_by_user_id"),
+    resolvedByName: text("resolved_by_name"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("fp360_logistics_incident_op_idx").on(table.tenantId, table.operationId),
+    index("fp360_logistics_incident_shipment_idx").on(table.tenantId, table.shipmentId),
+  ],
 );
 
 export const fpInvoices = pgTable(

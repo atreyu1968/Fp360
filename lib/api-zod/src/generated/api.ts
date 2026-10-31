@@ -2580,6 +2580,8 @@ export const UpdateCrmActivityResponse = zod.object({
 
 export const listFp360OrdersResponseLinesItemShippedQuantityMin = 0;
 
+export const listFp360OrdersResponseLinesItemReceivedQuantityMin = 0;
+
 export const listFp360OrdersResponseLinesItemInvoicedQuantityMin = 0;
 
 export const listFp360OrdersResponseLinesItemUnitPriceCentsMin = 0;
@@ -2601,6 +2603,7 @@ export const ListFp360OrdersResponseItem = zod.object({
   "productName": zod.string(),
   "quantity": zod.number().int().min(1),
   "shippedQuantity": zod.number().int().min(listFp360OrdersResponseLinesItemShippedQuantityMin),
+  "receivedQuantity": zod.number().int().min(listFp360OrdersResponseLinesItemReceivedQuantityMin),
   "invoicedQuantity": zod.number().int().min(listFp360OrdersResponseLinesItemInvoicedQuantityMin),
   "unitPriceCents": zod.number().int().min(listFp360OrdersResponseLinesItemUnitPriceCentsMin),
   "unitCostCents": zod.number().int().min(listFp360OrdersResponseLinesItemUnitCostCentsMin).nullable(),
@@ -2635,6 +2638,8 @@ export const CreateFp360OrderBody = zod.object({
 
 export const createFp360OrderResponseLinesItemShippedQuantityMin = 0;
 
+export const createFp360OrderResponseLinesItemReceivedQuantityMin = 0;
+
 export const createFp360OrderResponseLinesItemInvoicedQuantityMin = 0;
 
 export const createFp360OrderResponseLinesItemUnitPriceCentsMin = 0;
@@ -2656,6 +2661,7 @@ export const CreateFp360OrderResponse = zod.object({
   "productName": zod.string(),
   "quantity": zod.number().int().min(1),
   "shippedQuantity": zod.number().int().min(createFp360OrderResponseLinesItemShippedQuantityMin),
+  "receivedQuantity": zod.number().int().min(createFp360OrderResponseLinesItemReceivedQuantityMin),
   "invoicedQuantity": zod.number().int().min(createFp360OrderResponseLinesItemInvoicedQuantityMin),
   "unitPriceCents": zod.number().int().min(createFp360OrderResponseLinesItemUnitPriceCentsMin),
   "unitCostCents": zod.number().int().min(createFp360OrderResponseLinesItemUnitCostCentsMin).nullable(),
@@ -2678,6 +2684,8 @@ export const ConfirmFp360OrderParams = zod.object({
 
 export const confirmFp360OrderResponseLinesItemShippedQuantityMin = 0;
 
+export const confirmFp360OrderResponseLinesItemReceivedQuantityMin = 0;
+
 export const confirmFp360OrderResponseLinesItemInvoicedQuantityMin = 0;
 
 export const confirmFp360OrderResponseLinesItemUnitPriceCentsMin = 0;
@@ -2699,6 +2707,7 @@ export const ConfirmFp360OrderResponse = zod.object({
   "productName": zod.string(),
   "quantity": zod.number().int().min(1),
   "shippedQuantity": zod.number().int().min(confirmFp360OrderResponseLinesItemShippedQuantityMin),
+  "receivedQuantity": zod.number().int().min(confirmFp360OrderResponseLinesItemReceivedQuantityMin),
   "invoicedQuantity": zod.number().int().min(confirmFp360OrderResponseLinesItemInvoicedQuantityMin),
   "unitPriceCents": zod.number().int().min(confirmFp360OrderResponseLinesItemUnitPriceCentsMin),
   "unitCostCents": zod.number().int().min(confirmFp360OrderResponseLinesItemUnitCostCentsMin).nullable(),
@@ -2718,6 +2727,8 @@ export const DispatchFp360OrderParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const dispatchFp360OrderBodyOperationIdMax = 120;
+
 
 export const dispatchFp360OrderBodyLinesItemQuantityMax = 999;
 
@@ -2725,6 +2736,7 @@ export const dispatchFp360OrderBodyLinesItemQuantityMax = 999;
 
 
 export const DispatchFp360OrderBody = zod.object({
+  "operationId": zod.string().min(1).max(dispatchFp360OrderBodyOperationIdMax),
   "lines": zod.array(zod.object({
   "productId": zod.string().min(1),
   "quantity": zod.number().int().min(1).max(dispatchFp360OrderBodyLinesItemQuantityMax)
@@ -2733,6 +2745,8 @@ export const DispatchFp360OrderBody = zod.object({
 
 
 export const dispatchFp360OrderResponseLinesItemShippedQuantityMin = 0;
+
+export const dispatchFp360OrderResponseLinesItemReceivedQuantityMin = 0;
 
 export const dispatchFp360OrderResponseLinesItemInvoicedQuantityMin = 0;
 
@@ -2755,6 +2769,7 @@ export const DispatchFp360OrderResponse = zod.object({
   "productName": zod.string(),
   "quantity": zod.number().int().min(1),
   "shippedQuantity": zod.number().int().min(dispatchFp360OrderResponseLinesItemShippedQuantityMin),
+  "receivedQuantity": zod.number().int().min(dispatchFp360OrderResponseLinesItemReceivedQuantityMin),
   "invoicedQuantity": zod.number().int().min(dispatchFp360OrderResponseLinesItemInvoicedQuantityMin),
   "unitPriceCents": zod.number().int().min(dispatchFp360OrderResponseLinesItemUnitPriceCentsMin),
   "unitCostCents": zod.number().int().min(dispatchFp360OrderResponseLinesItemUnitCostCentsMin).nullable(),
@@ -2763,6 +2778,373 @@ export const DispatchFp360OrderResponse = zod.object({
 })),
   "totalCents": zod.number().int().min(dispatchFp360OrderResponseTotalCentsMin),
   "simulatedDate": zod.string().date(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary List shipments visible to the current organization
+ */
+
+
+export const listFp360LogisticsShipmentsResponseLinesItemReceivedQuantityMin = 0;
+
+export const listFp360LogisticsShipmentsResponseIncidentsItemAffectedQuantityMin = 0;
+
+
+
+export const ListFp360LogisticsShipmentsResponseItem = zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "orderReference": zod.string(),
+  "originOrganizationId": zod.string().nullable(),
+  "originName": zod.string().nullable(),
+  "destinationOrganizationId": zod.string(),
+  "destinationName": zod.string(),
+  "routeName": zod.string().nullable(),
+  "carrierName": zod.string().nullable(),
+  "parcelCount": zod.number().int().min(1),
+  "plannedDeliveryDate": zod.string().date().nullable(),
+  "status": zod.enum(['in_transit', 'incident', 'delivered']),
+  "simulatedDate": zod.string().date(),
+  "deliveredDate": zod.string().date().nullable(),
+  "lines": zod.array(zod.object({
+  "productId": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int().min(1),
+  "receivedQuantity": zod.number().int().min(listFp360LogisticsShipmentsResponseLinesItemReceivedQuantityMin)
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "eventType": zod.string(),
+  "status": zod.enum(['in_transit', 'incident', 'delivered']),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "incidents": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['delay', 'damage', 'missing', 'address', 'rejected', 'other']),
+  "description": zod.string(),
+  "affectedQuantity": zod.number().int().min(listFp360LogisticsShipmentsResponseIncidentsItemAffectedQuantityMin),
+  "status": zod.enum(['open', 'resolved']),
+  "resolution": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "resolvedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "resolvedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+export const ListFp360LogisticsShipmentsResponse = zod.array(ListFp360LogisticsShipmentsResponseItem)
+
+
+/**
+ * @summary Assign a simulated carrier and route to a shipment
+ */
+export const UpdateFp360LogisticsRouteParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateFp360LogisticsRouteBodyOperationIdMax = 120;
+
+export const updateFp360LogisticsRouteBodyRouteNameMin = 2;
+export const updateFp360LogisticsRouteBodyRouteNameMax = 120;
+
+export const updateFp360LogisticsRouteBodyCarrierNameMin = 2;
+export const updateFp360LogisticsRouteBodyCarrierNameMax = 100;
+
+export const updateFp360LogisticsRouteBodyParcelCountMax = 9999;
+
+
+
+export const UpdateFp360LogisticsRouteBody = zod.object({
+  "operationId": zod.string().min(1).max(updateFp360LogisticsRouteBodyOperationIdMax),
+  "routeName": zod.string().min(updateFp360LogisticsRouteBodyRouteNameMin).max(updateFp360LogisticsRouteBodyRouteNameMax),
+  "carrierName": zod.string().min(updateFp360LogisticsRouteBodyCarrierNameMin).max(updateFp360LogisticsRouteBodyCarrierNameMax),
+  "parcelCount": zod.number().int().min(1).max(updateFp360LogisticsRouteBodyParcelCountMax),
+  "plannedDeliveryDate": zod.string().date().nullable()
+})
+
+
+
+export const updateFp360LogisticsRouteResponseLinesItemReceivedQuantityMin = 0;
+
+export const updateFp360LogisticsRouteResponseIncidentsItemAffectedQuantityMin = 0;
+
+
+
+export const UpdateFp360LogisticsRouteResponse = zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "orderReference": zod.string(),
+  "originOrganizationId": zod.string().nullable(),
+  "originName": zod.string().nullable(),
+  "destinationOrganizationId": zod.string(),
+  "destinationName": zod.string(),
+  "routeName": zod.string().nullable(),
+  "carrierName": zod.string().nullable(),
+  "parcelCount": zod.number().int().min(1),
+  "plannedDeliveryDate": zod.string().date().nullable(),
+  "status": zod.enum(['in_transit', 'incident', 'delivered']),
+  "simulatedDate": zod.string().date(),
+  "deliveredDate": zod.string().date().nullable(),
+  "lines": zod.array(zod.object({
+  "productId": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int().min(1),
+  "receivedQuantity": zod.number().int().min(updateFp360LogisticsRouteResponseLinesItemReceivedQuantityMin)
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "eventType": zod.string(),
+  "status": zod.enum(['in_transit', 'incident', 'delivered']),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "incidents": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['delay', 'damage', 'missing', 'address', 'rejected', 'other']),
+  "description": zod.string(),
+  "affectedQuantity": zod.number().int().min(updateFp360LogisticsRouteResponseIncidentsItemAffectedQuantityMin),
+  "status": zod.enum(['open', 'resolved']),
+  "resolution": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "resolvedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "resolvedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Confirm simulated receipt of a shipment
+ */
+export const ConfirmFp360LogisticsDeliveryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const confirmFp360LogisticsDeliveryBodyOperationIdMax = 120;
+
+export const confirmFp360LogisticsDeliveryBodyDeliveryNoteMax = 300;
+
+
+export const confirmFp360LogisticsDeliveryBodyLinesItemReceivedQuantityMin = 0;
+export const confirmFp360LogisticsDeliveryBodyLinesItemReceivedQuantityMax = 9999;
+
+
+
+
+export const ConfirmFp360LogisticsDeliveryBody = zod.object({
+  "operationId": zod.string().min(1).max(confirmFp360LogisticsDeliveryBodyOperationIdMax),
+  "deliveryNote": zod.string().max(confirmFp360LogisticsDeliveryBodyDeliveryNoteMax).optional(),
+  "lines": zod.array(zod.object({
+  "productId": zod.string().min(1),
+  "receivedQuantity": zod.number().int().min(confirmFp360LogisticsDeliveryBodyLinesItemReceivedQuantityMin).max(confirmFp360LogisticsDeliveryBodyLinesItemReceivedQuantityMax)
+})).min(1)
+})
+
+
+
+export const confirmFp360LogisticsDeliveryResponseLinesItemReceivedQuantityMin = 0;
+
+export const confirmFp360LogisticsDeliveryResponseIncidentsItemAffectedQuantityMin = 0;
+
+
+
+export const ConfirmFp360LogisticsDeliveryResponse = zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "orderReference": zod.string(),
+  "originOrganizationId": zod.string().nullable(),
+  "originName": zod.string().nullable(),
+  "destinationOrganizationId": zod.string(),
+  "destinationName": zod.string(),
+  "routeName": zod.string().nullable(),
+  "carrierName": zod.string().nullable(),
+  "parcelCount": zod.number().int().min(1),
+  "plannedDeliveryDate": zod.string().date().nullable(),
+  "status": zod.enum(['in_transit', 'incident', 'delivered']),
+  "simulatedDate": zod.string().date(),
+  "deliveredDate": zod.string().date().nullable(),
+  "lines": zod.array(zod.object({
+  "productId": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int().min(1),
+  "receivedQuantity": zod.number().int().min(confirmFp360LogisticsDeliveryResponseLinesItemReceivedQuantityMin)
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "eventType": zod.string(),
+  "status": zod.enum(['in_transit', 'incident', 'delivered']),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "incidents": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['delay', 'damage', 'missing', 'address', 'rejected', 'other']),
+  "description": zod.string(),
+  "affectedQuantity": zod.number().int().min(confirmFp360LogisticsDeliveryResponseIncidentsItemAffectedQuantityMin),
+  "status": zod.enum(['open', 'resolved']),
+  "resolution": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "resolvedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "resolvedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Report an incident against a shipment
+ */
+export const CreateFp360LogisticsIncidentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const createFp360LogisticsIncidentBodyOperationIdMax = 120;
+
+export const createFp360LogisticsIncidentBodyDescriptionMin = 5;
+export const createFp360LogisticsIncidentBodyDescriptionMax = 500;
+
+export const createFp360LogisticsIncidentBodyAffectedQuantityMin = 0;
+export const createFp360LogisticsIncidentBodyAffectedQuantityMax = 9999;
+
+
+
+export const CreateFp360LogisticsIncidentBody = zod.object({
+  "operationId": zod.string().min(1).max(createFp360LogisticsIncidentBodyOperationIdMax),
+  "type": zod.enum(['delay', 'damage', 'missing', 'address', 'rejected', 'other']),
+  "description": zod.string().min(createFp360LogisticsIncidentBodyDescriptionMin).max(createFp360LogisticsIncidentBodyDescriptionMax),
+  "affectedQuantity": zod.number().int().min(createFp360LogisticsIncidentBodyAffectedQuantityMin).max(createFp360LogisticsIncidentBodyAffectedQuantityMax)
+})
+
+
+
+export const createFp360LogisticsIncidentResponseLinesItemReceivedQuantityMin = 0;
+
+export const createFp360LogisticsIncidentResponseIncidentsItemAffectedQuantityMin = 0;
+
+
+
+export const CreateFp360LogisticsIncidentResponse = zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "orderReference": zod.string(),
+  "originOrganizationId": zod.string().nullable(),
+  "originName": zod.string().nullable(),
+  "destinationOrganizationId": zod.string(),
+  "destinationName": zod.string(),
+  "routeName": zod.string().nullable(),
+  "carrierName": zod.string().nullable(),
+  "parcelCount": zod.number().int().min(1),
+  "plannedDeliveryDate": zod.string().date().nullable(),
+  "status": zod.enum(['in_transit', 'incident', 'delivered']),
+  "simulatedDate": zod.string().date(),
+  "deliveredDate": zod.string().date().nullable(),
+  "lines": zod.array(zod.object({
+  "productId": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int().min(1),
+  "receivedQuantity": zod.number().int().min(createFp360LogisticsIncidentResponseLinesItemReceivedQuantityMin)
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "eventType": zod.string(),
+  "status": zod.enum(['in_transit', 'incident', 'delivered']),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "incidents": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['delay', 'damage', 'missing', 'address', 'rejected', 'other']),
+  "description": zod.string(),
+  "affectedQuantity": zod.number().int().min(createFp360LogisticsIncidentResponseIncidentsItemAffectedQuantityMin),
+  "status": zod.enum(['open', 'resolved']),
+  "resolution": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "resolvedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "resolvedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Resolve an open shipment incident
+ */
+export const ResolveFp360LogisticsIncidentParams = zod.object({
+  "id": zod.coerce.string(),
+  "incidentId": zod.coerce.string()
+})
+
+export const resolveFp360LogisticsIncidentBodyOperationIdMax = 120;
+
+export const resolveFp360LogisticsIncidentBodyResolutionMin = 5;
+export const resolveFp360LogisticsIncidentBodyResolutionMax = 500;
+
+
+
+export const ResolveFp360LogisticsIncidentBody = zod.object({
+  "operationId": zod.string().min(1).max(resolveFp360LogisticsIncidentBodyOperationIdMax),
+  "resolution": zod.string().min(resolveFp360LogisticsIncidentBodyResolutionMin).max(resolveFp360LogisticsIncidentBodyResolutionMax)
+})
+
+
+
+export const resolveFp360LogisticsIncidentResponseLinesItemReceivedQuantityMin = 0;
+
+export const resolveFp360LogisticsIncidentResponseIncidentsItemAffectedQuantityMin = 0;
+
+
+
+export const ResolveFp360LogisticsIncidentResponse = zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "orderReference": zod.string(),
+  "originOrganizationId": zod.string().nullable(),
+  "originName": zod.string().nullable(),
+  "destinationOrganizationId": zod.string(),
+  "destinationName": zod.string(),
+  "routeName": zod.string().nullable(),
+  "carrierName": zod.string().nullable(),
+  "parcelCount": zod.number().int().min(1),
+  "plannedDeliveryDate": zod.string().date().nullable(),
+  "status": zod.enum(['in_transit', 'incident', 'delivered']),
+  "simulatedDate": zod.string().date(),
+  "deliveredDate": zod.string().date().nullable(),
+  "lines": zod.array(zod.object({
+  "productId": zod.string(),
+  "productName": zod.string(),
+  "quantity": zod.number().int().min(1),
+  "receivedQuantity": zod.number().int().min(resolveFp360LogisticsIncidentResponseLinesItemReceivedQuantityMin)
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "eventType": zod.string(),
+  "status": zod.enum(['in_transit', 'incident', 'delivered']),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "incidents": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['delay', 'damage', 'missing', 'address', 'rejected', 'other']),
+  "description": zod.string(),
+  "affectedQuantity": zod.number().int().min(resolveFp360LogisticsIncidentResponseIncidentsItemAffectedQuantityMin),
+  "status": zod.enum(['open', 'resolved']),
+  "resolution": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "resolvedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "resolvedAt": zod.string().datetime({"offset":true}).nullable()
+})),
   "createdAt": zod.string().datetime({"offset":true})
 })
 

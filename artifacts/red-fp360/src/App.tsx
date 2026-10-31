@@ -9,9 +9,11 @@ import {
 } from 'lucide-react';
 import {
   getGetFp360DashboardQueryKey, useConfirmFp360Order, useCreateFp360Order,
-  useDispatchFp360Order, useIssueFp360Invoice,
+  useConfirmFp360LogisticsDelivery, useCreateFp360LogisticsIncident,
+  useDispatchFp360Order, useIssueFp360Invoice, useListFp360LogisticsShipments,
   useListFp360Invoices, useListFp360Orders,
   useListFp360Organizations, useListFp360Products, useRecordFp360Payment,
+  useResolveFp360LogisticsIncident, useUpdateFp360LogisticsRoute,
   getGetAuthStatusQueryKey, getGetCurrentIdentityQueryKey, useGetAuthStatus,
   useGetCurrentIdentity, useLogout,
 } from '@workspace/api-client-react';
@@ -20,6 +22,7 @@ import type {
   Fp360Activity,
   Fp360Dashboard,
   Fp360Invoice,
+  Fp360LogisticsShipment,
   Fp360Order,
   Fp360Organization,
   Fp360Product,
@@ -43,6 +46,7 @@ type Product = Fp360Product;
 type Organization = Fp360Organization;
 type Order = Fp360Order;
 type Invoice = Fp360Invoice;
+type LogisticsShipment = Fp360LogisticsShipment;
 type ActivityItem = Fp360Activity;
 type Dashboard = Fp360Dashboard;
 type DataState = { loading?: boolean; error?: boolean; retry?: () => void };
@@ -404,6 +408,7 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
   const [productId, setProductId] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [dispatchQuantity, setDispatchQuantity] = useState(1);
+  const [dispatchOperationId, setDispatchOperationId] = useState('');
   const buyers = (organizations ?? []).filter((org) => org.isActive && (org.role === 'buyer' || org.role === 'both'));
   const orderable = (products ?? []).filter((p) => p.isActive && p.isPublished);
   const selectedProduct = orderable.find((p) => p.id === productId);
@@ -422,6 +427,7 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
   });
   const openDispatch = (order: Order) => {
     setDispatching(order);
+    setDispatchOperationId(crypto.randomUUID());
     setDispatchQuantity(Math.max(1, order.lines.reduce((sum, line) => sum + line.quantity - line.shippedQuantity, 0)));
   };
   const dispatch = (event: FormEvent<HTMLFormElement>) => {
@@ -432,7 +438,7 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
     const isService = line.itemType === 'service';
     const remaining = line.quantity - line.shippedQuantity;
     const shipQty = Math.min(Math.max(1, dispatchQuantity), remaining);
-    dispatchOrder.mutate({ id: dispatching.id, data: { lines: [{ productId: line.productId, quantity: shipQty }] } }, {
+    dispatchOrder.mutate({ id: dispatching.id, data: { operationId: dispatchOperationId, lines: [{ productId: line.productId, quantity: shipQty }] } }, {
       onSuccess: () => { setDispatching(null); refreshOrders(); void queryClient.invalidateQueries({ queryKey: productsQuery.queryKey }); onNotice(isService ? 'Prestación de servicio registrada.' : 'Expedición simulada registrada.'); },
       onError: () => onNotice('No se pudo registrar la expedición. Revisa las unidades pendientes.'),
     });
@@ -532,13 +538,18 @@ function LogisticsPage({ orders, organizations, stateOrders, onRefresh, onNotice
   const queryClient = useQueryClient();
   const ordersQuery = useListFp360Orders<Order[]>();
   const productsQuery = useListFp360Products<Product[]>();
+  const shipmentsQuery = useListFp360LogisticsShipments<LogisticsShipment[]>();
   const dispatchOrder = useDispatchFp360Order();
   const [tab, setTab] = useState<'dispatch' | 'tracking' | 'delivered' | 'analysis'>('dispatch');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState('');
   const [dispatching, setDispatching] = useState<Order | null>(null);
   const [dispatchQuantities, setDispatchQuantities] = useState<Record<string, number>>({});
+  const [dispatchOperationId, setDispatchOperationId] = useState('');
   const readOnly = !identity.data || ['mentor', 'promoter'].includes(identity.data.role);
+  const isSupervisor = identity.data?.role === 'administrator' || (identity.data?.role === 'teacher' && !identity.data.organizationId);
+  const currentOrganization = organizations?.find((organization) => organization.id === identity.data?.organizationId);
+  const shipmentRows = shipmentsQuery.data ?? [];
   const physicalLines = (order: Order) => order.lines.filter((line) => line.itemType === 'product');
   const shipmentProgress = (order: Order) => {
     const lines = physicalLines(order);
@@ -548,23 +559,39 @@ function LogisticsPage({ orders, organizations, stateOrders, onRefresh, onNotice
       remaining: lines.reduce((sum, line) => sum + line.quantity - line.shippedQuantity, 0),
     };
   };
-  const physicalOrders = (orders ?? []).filter((order) => physicalLines(order).length > 0);
+  const physicalOrders = (orders ?? []).filter((order) => {
+    const pendingLines = physicalLines(order).filter((line) => line.quantity > line.shippedQuantity);
+    if (!pendingLines.length) return false;
+    if (isSupervisor) return true;
+    if (!identity.data?.organizationId || !currentOrganization || !['seller', 'both'].includes(currentOrganization.role)) return false;
+    return pendingLines.every((line) => {
+      const product = productsQuery.data?.find((item) => item.id === line.productId);
+      return Boolean(product && (!product.supplierOrganizationId || product.supplierOrganizationId === identity.data?.organizationId));
+    });
+  });
   const awaitingDispatch = physicalOrders.filter((order) => shipmentProgress(order).remaining > 0);
-  const inTransit = physicalOrders.filter((order) => shipmentProgress(order).shipped > 0 && shipmentProgress(order).remaining > 0);
-  const fullyShipped = physicalOrders.filter((order) => shipmentProgress(order).total > 0 && shipmentProgress(order).remaining === 0);
+  const inTransit = physicalOrders.filter((order) => shipmentRows.some((shipment) => shipment.orderId === order.id && shipment.status !== 'delivered'));
+  const fullyShipped = physicalOrders.filter((order) => {
+    const orderShipments = shipmentRows.filter((shipment) => shipment.orderId === order.id);
+    return orderShipments.length > 0 && orderShipments.every((shipment) => shipment.status === 'delivered') && shipmentProgress(order).remaining === 0;
+  });
   const tabOrders = tab === 'dispatch' ? awaitingDispatch : tab === 'tracking' ? inTransit : tab === 'delivered' ? fullyShipped : physicalOrders;
   const filteredOrders = tabOrders.filter((order) => `${order.reference} ${order.buyerName}`.toLocaleLowerCase('es').includes(search.trim().toLocaleLowerCase('es')));
   const selectedOrder = filteredOrders.find((order) => order.id === selectedId) ?? filteredOrders[0] ?? null;
   const buyer = organizations?.find((organization) => organization.id === selectedOrder?.buyerOrganizationId);
   const origin = organizations?.find((organization) => organization.id === identity.data?.organizationId);
-  const progressPercent = orders?.length ? Math.round((fullyShipped.length / Math.max(1, physicalOrders.length)) * 100) : 0;
+  const completedShipments = shipmentRows.filter((shipment) => shipment.status === 'delivered').length;
+  const openIncidents = shipmentRows.flatMap((shipment) => shipment.incidents).filter((incident) => incident.status === 'open').length;
+  const progressPercent = shipmentRows.length ? Math.round((completedShipments / shipmentRows.length) * 100) : 0;
   const openDispatch = (order: Order) => {
     setDispatching(order);
+    setDispatchOperationId(crypto.randomUUID());
     setDispatchQuantities(Object.fromEntries(physicalLines(order).filter((line) => line.quantity > line.shippedQuantity).map((line) => [line.productId, line.quantity - line.shippedQuantity])));
   };
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ordersQuery.queryKey });
     void queryClient.invalidateQueries({ queryKey: productsQuery.queryKey });
+    void queryClient.invalidateQueries({ queryKey: shipmentsQuery.queryKey });
     onRefresh();
   };
   const submitDispatch = (event: FormEvent<HTMLFormElement>) => {
@@ -574,7 +601,7 @@ function LogisticsPage({ orders, organizations, stateOrders, onRefresh, onNotice
       .map((line) => ({ productId: line.productId, quantity: dispatchQuantities[line.productId] ?? 0 }))
       .filter((line) => line.quantity > 0);
     if (!lines.length) return;
-    dispatchOrder.mutate({ id: dispatching.id, data: { lines } }, {
+    dispatchOrder.mutate({ id: dispatching.id, data: { operationId: dispatchOperationId, lines } }, {
       onSuccess: () => {
         setDispatching(null);
         refresh();
@@ -589,11 +616,11 @@ function LogisticsPage({ orders, organizations, stateOrders, onRefresh, onNotice
     <SimulationNotice />
     <div className="logistics-kpis">
       <div><span className="market-kpi-icon blue"><Truck size={16} /></span><small>Pedidos pendientes</small><b>{orders ? awaitingDispatch.length : '—'}</b><span>Con mercancía por expedir</span></div>
-      <div><span className="market-kpi-icon amber"><Activity size={16} /></span><small>Seguimiento cuantitativo</small><b>{orders ? inTransit.length : '—'}</b><span>Expedición parcial registrada</span></div>
-      <div><span className="market-kpi-icon green"><CheckCircle2 size={16} /></span><small>Mercancía completada</small><b>{orders ? fullyShipped.length : '—'}</b><span>Unidades expedidas</span></div>
-      <div><span className="market-kpi-icon violet"><CircleAlert size={16} /></span><small>Ruta e incidencias</small><b>—</b><span>Sin registros logísticos aún</span></div>
+      <div><span className="market-kpi-icon amber"><Activity size={16} /></span><small>Expediciones en curso</small><b>{shipmentsQuery.data ? shipmentRows.filter((shipment) => shipment.status !== 'delivered').length : '—'}</b><span>Con ruta pendiente de recepción</span></div>
+      <div><span className="market-kpi-icon green"><CheckCircle2 size={16} /></span><small>Entregas confirmadas</small><b>{shipmentsQuery.data ? completedShipments : '—'}</b><span>Confirmadas por destino</span></div>
+      <div><span className="market-kpi-icon violet"><CircleAlert size={16} /></span><small>Incidencias abiertas</small><b>{shipmentsQuery.data ? openIncidents : '—'}</b><span>Requieren resolución</span></div>
     </div>
-    <section className="logistics-disclaimer"><ShieldAlert size={15} /><span>El sistema registra cantidades expedidas y reservas de almacén. No simula geolocalización, rutas reales ni incidencias hasta que esos datos estén configurados.</span></section>
+    <section className="logistics-disclaimer"><ShieldAlert size={15} /><span>Las rutas, transportistas y fechas son datos simulados introducidos por la organización. No se calculan distancias, costes ni geolocalización reales.</span></section>
     <div className="logistics-workspace">
       <section className="panel logistics-list-panel">
         <div className="market-section-heading"><div><h2>Operaciones logísticas</h2><p>Expediciones vinculadas a pedidos y mercancía disponible.</p></div><Link href="/almacen" className="market-text-link">Ver almacén <ArrowRight size={13} /></Link></div>
@@ -645,6 +672,7 @@ function LogisticsPage({ orders, organizations, stateOrders, onRefresh, onNotice
         </> : <div className="market-context-empty"><Truck size={21} /><b>{tab === 'analysis' ? 'Resumen del escenario' : 'Selecciona una operación'}</b><span>{tab === 'analysis' ? 'Indicadores calculados con pedidos y cantidades expedidas.' : 'El panel mostrará el detalle del pedido seleccionado.'}</span></div>}
       </aside>
     </div>
+    <LogisticsShipmentsPanel organizations={organizations} onRefresh={refresh} onNotice={onNotice} />
     <div className="market-quick-actions">
       <Link href="/ventas"><ShoppingCart size={14} /> Gestionar pedidos</Link>
       <Link href="/almacen"><Package size={14} /> Revisar existencias</Link>
@@ -660,6 +688,191 @@ function LogisticsPage({ orders, organizations, stateOrders, onRefresh, onNotice
       </form>
     </Modal>}
   </main>;
+}
+
+function LogisticsShipmentsPanel({ organizations, onRefresh, onNotice }: {
+  organizations?: Organization[];
+  onRefresh: () => void;
+  onNotice: (message: string) => void;
+}) {
+  const identity = useGetCurrentIdentity();
+  const queryClient = useQueryClient();
+  const shipmentsQuery = useListFp360LogisticsShipments<LogisticsShipment[]>();
+  const updateRoute = useUpdateFp360LogisticsRoute();
+  const confirmDelivery = useConfirmFp360LogisticsDelivery();
+  const createIncident = useCreateFp360LogisticsIncident();
+  const resolveIncident = useResolveFp360LogisticsIncident();
+  const [selectedId, setSelectedId] = useState('');
+  const [routeModal, setRouteModal] = useState<LogisticsShipment | null>(null);
+  const [incidentModal, setIncidentModal] = useState<LogisticsShipment | null>(null);
+  const [deliveryModal, setDeliveryModal] = useState<LogisticsShipment | null>(null);
+  const [resolutionModal, setResolutionModal] = useState<{ shipment: LogisticsShipment; incident: LogisticsShipment['incidents'][number] } | null>(null);
+  const [routeName, setRouteName] = useState('');
+  const [carrierName, setCarrierName] = useState('');
+  const [parcelCount, setParcelCount] = useState(1);
+  const [plannedDeliveryDate, setPlannedDeliveryDate] = useState('');
+  const [incidentType, setIncidentType] = useState<'delay' | 'damage' | 'missing' | 'address' | 'rejected' | 'other'>('delay');
+  const [incidentDescription, setIncidentDescription] = useState('');
+  const [affectedQuantity, setAffectedQuantity] = useState(0);
+  const [deliveryNote, setDeliveryNote] = useState('');
+  const [resolution, setResolution] = useState('');
+  const [operationId, setOperationId] = useState('');
+  const shipments = shipmentsQuery.data ?? [];
+  const selectedShipment = shipments.find((shipment) => shipment.id === selectedId) ?? shipments[0] ?? null;
+  const isSupervisor = identity.data?.role === 'administrator' || (identity.data?.role === 'teacher' && !identity.data.organizationId);
+  const readOnly = !identity.data || ['mentor', 'promoter'].includes(identity.data.role);
+  const currentOrganization = organizations?.find((organization) => organization.id === identity.data?.organizationId);
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: shipmentsQuery.queryKey });
+    onRefresh();
+  };
+  const canPlan = (shipment: LogisticsShipment) => !readOnly && (isSupervisor || Boolean(identity.data?.organizationId && identity.data.organizationId === shipment.originOrganizationId));
+  const canReceive = (shipment: LogisticsShipment) => !readOnly && (isSupervisor || Boolean(identity.data?.organizationId && identity.data.organizationId === shipment.destinationOrganizationId));
+  const canParticipate = (shipment: LogisticsShipment) => !readOnly && (isSupervisor || Boolean(identity.data?.organizationId && [shipment.originOrganizationId, shipment.destinationOrganizationId].includes(identity.data.organizationId)));
+  const openRoute = (shipment: LogisticsShipment) => {
+    setRouteModal(shipment);
+    setRouteName(shipment.routeName ?? '');
+    setCarrierName(shipment.carrierName ?? '');
+    setParcelCount(shipment.parcelCount);
+    setPlannedDeliveryDate(shipment.plannedDeliveryDate ?? '');
+    setOperationId(crypto.randomUUID());
+  };
+  const openIncident = (shipment: LogisticsShipment) => {
+    setIncidentModal(shipment);
+    setIncidentType('delay');
+    setIncidentDescription('');
+    setAffectedQuantity(0);
+    setOperationId(crypto.randomUUID());
+  };
+  const submitRoute = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!routeModal) return;
+    updateRoute.mutate({ id: routeModal.id, data: {
+      operationId, routeName, carrierName, parcelCount,
+      plannedDeliveryDate: plannedDeliveryDate || null,
+    } }, {
+      onSuccess: () => {
+        setRouteModal(null);
+        refresh();
+        onNotice(`Ruta simulada guardada para ${routeModal.reference}.`);
+      },
+      onError: () => onNotice('No se pudo guardar la planificación de ruta.'),
+    });
+  };
+  const submitIncident = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!incidentModal) return;
+    createIncident.mutate({ id: incidentModal.id, data: {
+      operationId, type: incidentType, description: incidentDescription, affectedQuantity,
+    } }, {
+      onSuccess: () => {
+        setIncidentModal(null);
+        refresh();
+        onNotice(`Incidencia registrada en ${incidentModal.reference}.`);
+      },
+      onError: () => onNotice('No se pudo registrar la incidencia. Revisa la cantidad afectada.'),
+    });
+  };
+  const submitDelivery = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!deliveryModal) return;
+    confirmDelivery.mutate({ id: deliveryModal.id, data: { operationId, deliveryNote } }, {
+      onSuccess: () => {
+        setDeliveryModal(null);
+        refresh();
+        onNotice(`Recepción confirmada para ${deliveryModal.reference}.`);
+      },
+      onError: () => onNotice('No se pudo confirmar la recepción. Comprueba que no haya incidencias abiertas.'),
+    });
+  };
+  const submitResolution = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!resolutionModal) return;
+    resolveIncident.mutate({ id: resolutionModal.shipment.id, incidentId: resolutionModal.incident.id, data: { operationId, resolution } }, {
+      onSuccess: () => {
+        setResolutionModal(null);
+        refresh();
+        onNotice('Incidencia resuelta; la expedición puede continuar.');
+      },
+      onError: () => onNotice('No se pudo resolver la incidencia.'),
+    });
+  };
+
+  return <section className="panel logistics-records">
+    <div className="market-section-heading"><div><h2>Expediciones registradas</h2><p>Planificación, confirmación de entrega e incidencias con historial auditable.</p></div><span className="market-context-icon"><Activity size={16} /></span></div>
+    <DataMessage state={{ loading: shipmentsQuery.isLoading, error: shipmentsQuery.isError }} />
+    {!shipmentsQuery.isLoading && !shipmentsQuery.isError && shipments.length === 0 && <EmptyState title="Todavía no hay expediciones" detail="Cuando se registre una salida de mercancía, aquí podrás asignar ruta, transportista y fecha prevista." icon={Truck} />}
+    {shipments.length > 0 && <div className="logistics-record-layout">
+      <div className="logistics-record-list" role="list" aria-label="Expediciones registradas">
+        {shipments.map((shipment) => <button key={shipment.id} className={`logistics-record-row ${selectedShipment?.id === shipment.id ? 'logistics-record-selected' : ''}`} onClick={() => setSelectedId(shipment.id)} role="listitem" data-testid={`shipment-${shipment.id}`}>
+          <span className="logistics-record-row-top"><b className="mono">{shipment.reference}</b><Status status={shipment.status} /></span>
+          <span>{shipment.orderReference} · {shipment.destinationName}</span>
+          <small>{shipment.lines.reduce((sum, line) => sum + line.quantity, 0)} unidades · {shipment.routeName ?? 'Ruta sin planificar'}</small>
+        </button>)}
+      </div>
+      {selectedShipment && <div className="logistics-record-detail">
+        <div className="market-context-heading"><span className="market-context-icon"><Truck size={17} /></span><div><small>EXPEDICIÓN · {selectedShipment.orderReference}</small><h3>{selectedShipment.reference}</h3><span>{selectedShipment.originName ?? currentOrganization?.name ?? 'Origen de red'} → {selectedShipment.destinationName}</span></div></div>
+        <div className="logistics-route-summary">
+          <span><small>Ruta</small><b>{selectedShipment.routeName ?? 'Sin planificar'}</b></span>
+          <span><small>Transportista simulado</small><b>{selectedShipment.carrierName ?? 'Sin asignar'}</b></span>
+          <span><small>Bultos</small><b>{selectedShipment.parcelCount}</b></span>
+          <span><small>Fecha prevista</small><b>{selectedShipment.plannedDeliveryDate ? dateLabel(selectedShipment.plannedDeliveryDate) : 'No indicada'}</b></span>
+        </div>
+        <div className="market-context-subtitle">Mercancía expedida</div>
+        <div className="market-context-listing">{selectedShipment.lines.map((line) => <div key={line.productId}><span>{line.productName}<small>{line.quantity} unidades en esta expedición</small></span><b>{line.quantity} ud.</b></div>)}</div>
+        <div className="logistics-record-actions">
+          {canPlan(selectedShipment) && selectedShipment.status !== 'delivered' && <button className="button button-secondary" onClick={() => openRoute(selectedShipment)}><Truck size={14} /> Planificar ruta</button>}
+          {canParticipate(selectedShipment) && selectedShipment.status !== 'delivered' && <button className="button button-secondary" onClick={() => openIncident(selectedShipment)}><CircleAlert size={14} /> Registrar incidencia</button>}
+          {canReceive(selectedShipment) && selectedShipment.status === 'in_transit' && <button className="button button-primary" onClick={() => { setDeliveryModal(selectedShipment); setDeliveryNote(''); setOperationId(crypto.randomUUID()); }}><CheckCircle2 size={14} /> Confirmar recepción</button>}
+        </div>
+        {selectedShipment.incidents.length > 0 && <div className="logistics-incidents">
+          <div className="market-context-subtitle">Incidencias</div>
+          {selectedShipment.incidents.map((incident) => <div className={`logistics-incident ${incident.status === 'open' ? 'incident-open' : ''}`} key={incident.id}>
+            <div><b>{incident.type} · {incident.status === 'open' ? 'Abierta' : 'Resuelta'}</b><small>{incident.description}</small><small>Unidades afectadas: {incident.affectedQuantity} · Registró {incident.createdByName}</small>{incident.resolution && <small>Resolución: {incident.resolution}</small>}</div>
+            {incident.status === 'open' && canParticipate(selectedShipment) && <button className="mini-button" onClick={() => { setResolutionModal({ shipment: selectedShipment, incident }); setResolution(''); setOperationId(crypto.randomUUID()); }}>Resolver</button>}
+          </div>)}
+        </div>}
+        <div className="market-context-subtitle">Historial de operación</div>
+        <ol className="logistics-event-timeline">{selectedShipment.events.map((event) => <li key={event.id}><span className="event-dot" /><div><b>{event.eventType.replaceAll('_', ' ')}</b><small>{event.description}</small><small>{event.actorName} · {dateLabel(event.createdAt)}</small></div><Status status={event.status} /></li>)}</ol>
+      </div>}
+    </div>}
+    {routeModal && <Modal title={`Planificar ruta · ${routeModal.reference}`} onClose={() => setRouteModal(null)}>
+      <form className="form-stack" onSubmit={submitRoute}>
+        <p className="form-intro">Introduce datos simulados del recorrido. No se consultan mapas ni se calculan distancias o costes reales.</p>
+        <label>Ruta o itinerario<input required minLength={2} maxLength={120} value={routeName} onChange={(event) => setRouteName(event.target.value)} /></label>
+        <label>Transportista simulado<input required minLength={2} maxLength={100} value={carrierName} onChange={(event) => setCarrierName(event.target.value)} /></label>
+        <label>Número de bultos<input type="number" min={1} max={9999} required value={parcelCount} onChange={(event) => setParcelCount(Number(event.target.value))} /></label>
+        <label>Fecha prevista<input type="date" min="2027-09-15" value={plannedDeliveryDate} onChange={(event) => setPlannedDeliveryDate(event.target.value)} /></label>
+        <SimulationNotice compact />
+        <div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setRouteModal(null)}>Cancelar</button><button className="button button-primary" disabled={updateRoute.isPending}>{updateRoute.isPending ? 'Guardando…' : 'Guardar planificación'}</button></div>
+      </form>
+    </Modal>}
+    {incidentModal && <Modal title={`Registrar incidencia · ${incidentModal.reference}`} onClose={() => setIncidentModal(null)}>
+      <form className="form-stack" onSubmit={submitIncident}>
+        <label>Tipo<select value={incidentType} onChange={(event) => setIncidentType(event.target.value as typeof incidentType)}><option value="delay">Retraso</option><option value="damage">Daño</option><option value="missing">Faltante</option><option value="address">Dirección</option><option value="rejected">Rechazo</option><option value="other">Otra</option></select></label>
+        <label>Descripción<textarea required minLength={5} maxLength={500} value={incidentDescription} onChange={(event) => setIncidentDescription(event.target.value)} /></label>
+        <label>Unidades afectadas<input type="number" min={0} max={incidentModal.lines.reduce((sum, line) => sum + line.quantity, 0)} required value={affectedQuantity} onChange={(event) => setAffectedQuantity(Number(event.target.value))} /></label>
+        <SimulationNotice compact />
+        <div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setIncidentModal(null)}>Cancelar</button><button className="button button-primary" disabled={createIncident.isPending}>{createIncident.isPending ? 'Registrando…' : 'Registrar incidencia'}</button></div>
+      </form>
+    </Modal>}
+    {deliveryModal && <Modal title={`Confirmar recepción · ${deliveryModal.reference}`} onClose={() => setDeliveryModal(null)}>
+      <form className="form-stack" onSubmit={submitDelivery}>
+        <p className="form-intro">Confirma que tu organización ha recibido todas las unidades de la expedición. Las incidencias abiertas deben resolverse antes.</p>
+        <label>Nota de recepción<textarea maxLength={300} value={deliveryNote} onChange={(event) => setDeliveryNote(event.target.value)} /></label>
+        <SimulationNotice compact />
+        <div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setDeliveryModal(null)}>Cancelar</button><button className="button button-primary" disabled={confirmDelivery.isPending}>{confirmDelivery.isPending ? 'Confirmando…' : 'Confirmar entrega'}</button></div>
+      </form>
+    </Modal>}
+    {resolutionModal && <Modal title={`Resolver incidencia · ${resolutionModal.shipment.reference}`} onClose={() => setResolutionModal(null)}>
+      <form className="form-stack" onSubmit={submitResolution}>
+        <p className="form-intro">{resolutionModal.incident.description}</p>
+        <label>Resolución aplicada<textarea required minLength={5} maxLength={500} value={resolution} onChange={(event) => setResolution(event.target.value)} /></label>
+        <SimulationNotice compact />
+        <div className="modal-actions"><button type="button" className="button button-quiet" onClick={() => setResolutionModal(null)}>Cancelar</button><button className="button button-primary" disabled={resolveIncident.isPending}>{resolveIncident.isPending ? 'Guardando…' : 'Resolver incidencia'}</button></div>
+      </form>
+    </Modal>}
+  </section>;
 }
 
 function InvoicesPage({ invoices, orders, stateInvoices, stateOrders, onRefresh, onNotice }: {

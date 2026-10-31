@@ -1386,6 +1386,142 @@ paths:
           description: Invalid or unavailable quantities
         "404":
           description: Order not found
+  /redfp360/logistics/shipments:
+    get:
+      operationId: listFp360LogisticsShipments
+      tags: [redfp360]
+      summary: List shipments visible to the current organization
+      responses:
+        "200":
+          description: Shipments, route plans, delivery events, and incidents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fp360LogisticsShipment"
+  /redfp360/logistics/shipments/{id}/route:
+    patch:
+      operationId: updateFp360LogisticsRoute
+      tags: [redfp360]
+      summary: Assign a simulated carrier and route to a shipment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360LogisticsRouteInput"
+      responses:
+        "200":
+          description: Updated route and event history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360LogisticsShipment"
+        "400":
+          description: Invalid route data
+        "403":
+          description: Organization cannot plan this shipment
+        "404":
+          description: Shipment not found
+  /redfp360/logistics/shipments/{id}/delivery:
+    post:
+      operationId: confirmFp360LogisticsDelivery
+      tags: [redfp360]
+      summary: Confirm simulated receipt of a shipment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360LogisticsDeliveryInput"
+      responses:
+        "200":
+          description: Shipment and order delivery status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360LogisticsShipment"
+        "400":
+          description: Shipment cannot be delivered
+        "403":
+          description: Only the destination organization can confirm receipt
+        "404":
+          description: Shipment not found
+        "409":
+          description: Shipment has unresolved incidents
+  /redfp360/logistics/shipments/{id}/incidents:
+    post:
+      operationId: createFp360LogisticsIncident
+      tags: [redfp360]
+      summary: Report an incident against a shipment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360LogisticsIncidentInput"
+      responses:
+        "201":
+          description: Incident and updated shipment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360LogisticsShipment"
+        "400":
+          description: Invalid incident
+        "403":
+          description: Organization cannot report on this shipment
+        "404":
+          description: Shipment not found
+  /redfp360/logistics/shipments/{id}/incidents/{incidentId}/resolve:
+    post:
+      operationId: resolveFp360LogisticsIncident
+      tags: [redfp360]
+      summary: Resolve an open shipment incident
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: incidentId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fp360LogisticsIncidentResolutionInput"
+      responses:
+        "200":
+          description: Resolved incident and updated shipment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360LogisticsShipment"
+        "400":
+          description: Incident cannot be resolved
+        "403":
+          description: Organization cannot resolve this incident
+        "404":
+          description: Incident or shipment not found
   /redfp360/invoices:
     get:
       operationId: listFp360Invoices
@@ -2228,12 +2364,13 @@ components:
         isPublished: { type: boolean }
     Fp360OrderLine:
       type: object
-      required: [productId, productName, quantity, shippedQuantity, invoicedQuantity, unitPriceCents, unitCostCents, itemType, tracksInventory]
+      required: [productId, productName, quantity, shippedQuantity, receivedQuantity, invoicedQuantity, unitPriceCents, unitCostCents, itemType, tracksInventory]
       properties:
         productId: { type: string }
         productName: { type: string }
         quantity: { type: integer, minimum: 1 }
         shippedQuantity: { type: integer, minimum: 0 }
+        receivedQuantity: { type: integer, minimum: 0 }
         invoicedQuantity: { type: integer, minimum: 0 }
         unitPriceCents: { type: integer, minimum: 0 }
         unitCostCents: { type: ["integer", "null"], minimum: 0 }
@@ -2281,13 +2418,118 @@ components:
         quantity: { type: integer, minimum: 1, maximum: 999 }
     Fp360DispatchInput:
       type: object
-      required: [lines]
+      required: [operationId, lines]
       properties:
+        operationId: { type: string, minLength: 1, maxLength: 120 }
         lines:
           type: array
           minItems: 1
           items:
             $ref: "#/components/schemas/Fp360DispatchLine"
+    Fp360LogisticsShipmentLine:
+      type: object
+      required: [productId, productName, quantity, receivedQuantity]
+      properties:
+        productId: { type: string }
+        productName: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        receivedQuantity: { type: integer, minimum: 0 }
+    Fp360LogisticsEvent:
+      type: object
+      required: [id, eventType, status, description, actorName, createdAt]
+      properties:
+        id: { type: string }
+        eventType: { type: string }
+        status: { type: string, enum: [in_transit, incident, delivered] }
+        description: { type: string }
+        actorName: { type: string }
+        createdAt: { type: string, format: date-time }
+    Fp360LogisticsIncident:
+      type: object
+      required: [id, type, description, affectedQuantity, status, resolution, createdByName, resolvedByName, createdAt, resolvedAt]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [delay, damage, missing, address, rejected, other] }
+        description: { type: string }
+        affectedQuantity: { type: integer, minimum: 0 }
+        status: { type: string, enum: [open, resolved] }
+        resolution: { type: ["string", "null"] }
+        createdByName: { type: string }
+        resolvedByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        resolvedAt: { type: ["string", "null"], format: date-time }
+    Fp360LogisticsShipment:
+      type: object
+      required: [id, orderId, orderReference, originOrganizationId, originName, destinationOrganizationId, destinationName, routeName, carrierName, parcelCount, plannedDeliveryDate, status, simulatedDate, deliveredDate, lines, events, incidents, createdAt]
+      properties:
+        id: { type: string }
+        orderId: { type: string }
+        orderReference: { type: string }
+        originOrganizationId: { type: ["string", "null"] }
+        originName: { type: ["string", "null"] }
+        destinationOrganizationId: { type: string }
+        destinationName: { type: string }
+        routeName: { type: ["string", "null"] }
+        carrierName: { type: ["string", "null"] }
+        parcelCount: { type: integer, minimum: 1 }
+        plannedDeliveryDate: { type: ["string", "null"], format: date }
+        status: { type: string, enum: [in_transit, incident, delivered] }
+        simulatedDate: { type: string, format: date }
+        deliveredDate: { type: ["string", "null"], format: date }
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/Fp360LogisticsShipmentLine"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/Fp360LogisticsEvent"
+        incidents:
+          type: array
+          items:
+            $ref: "#/components/schemas/Fp360LogisticsIncident"
+        createdAt: { type: string, format: date-time }
+    Fp360LogisticsRouteInput:
+      type: object
+      required: [operationId, routeName, carrierName, parcelCount, plannedDeliveryDate]
+      properties:
+        operationId: { type: string, minLength: 1, maxLength: 120 }
+        routeName: { type: string, minLength: 2, maxLength: 120 }
+        carrierName: { type: string, minLength: 2, maxLength: 100 }
+        parcelCount: { type: integer, minimum: 1, maximum: 9999 }
+        plannedDeliveryDate: { type: ["string", "null"], format: date }
+    Fp360LogisticsDeliveryInput:
+      type: object
+      required: [operationId, lines]
+      properties:
+        operationId: { type: string, minLength: 1, maxLength: 120 }
+        deliveryNote: { type: string, maxLength: 300 }
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Fp360LogisticsDeliveryLine"
+    Fp360LogisticsDeliveryLine:
+      type: object
+      required: [productId, receivedQuantity]
+      properties:
+        productId: { type: string, minLength: 1 }
+        receivedQuantity: { type: integer, minimum: 0, maximum: 9999 }
+    Fp360LogisticsIncidentInput:
+      type: object
+      required: [operationId, type, description, affectedQuantity]
+      properties:
+        operationId: { type: string, minLength: 1, maxLength: 120 }
+        type: { type: string, enum: [delay, damage, missing, address, rejected, other] }
+        description: { type: string, minLength: 5, maxLength: 500 }
+        affectedQuantity: { type: integer, minimum: 0, maximum: 9999 }
+    Fp360LogisticsIncidentResolutionInput:
+      type: object
+      required: [operationId, resolution, outcome]
+      properties:
+        operationId: { type: string, minLength: 1, maxLength: 120 }
+        resolution: { type: string, minLength: 5, maxLength: 500 }
+        outcome: { type: string, enum: [resume, close_partial] }
     Fp360InvoiceLine:
       type: object
       required: [productName, quantity, unitPriceCents, baseCents, igicBasisPoints, igicCents, totalCents]

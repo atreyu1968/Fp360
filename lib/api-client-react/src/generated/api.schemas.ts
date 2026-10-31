@@ -1398,6 +1398,8 @@ export interface Fp360OrderLine {
   /** @minimum 0 */
   shippedQuantity: number;
   /** @minimum 0 */
+  receivedQuantity: number;
+  /** @minimum 0 */
   invoicedQuantity: number;
   /** @minimum 0 */
   unitPriceCents: number;
@@ -1463,8 +1465,205 @@ export interface Fp360DispatchLine {
 }
 
 export interface Fp360DispatchInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  operationId: string;
   /** @minItems 1 */
   lines: Fp360DispatchLine[];
+}
+
+export interface Fp360LogisticsShipmentLine {
+  productId: string;
+  productName: string;
+  /** @minimum 1 */
+  quantity: number;
+  /** @minimum 0 */
+  receivedQuantity: number;
+}
+
+export type Fp360LogisticsEventStatus = typeof Fp360LogisticsEventStatus[keyof typeof Fp360LogisticsEventStatus];
+
+
+export const Fp360LogisticsEventStatus = {
+  in_transit: 'in_transit',
+  incident: 'incident',
+  delivered: 'delivered',
+} as const;
+
+export interface Fp360LogisticsEvent {
+  id: string;
+  eventType: string;
+  status: Fp360LogisticsEventStatus;
+  description: string;
+  actorName: string;
+  createdAt: string;
+}
+
+export type Fp360LogisticsIncidentType = typeof Fp360LogisticsIncidentType[keyof typeof Fp360LogisticsIncidentType];
+
+
+export const Fp360LogisticsIncidentType = {
+  delay: 'delay',
+  damage: 'damage',
+  missing: 'missing',
+  address: 'address',
+  rejected: 'rejected',
+  other: 'other',
+} as const;
+
+export type Fp360LogisticsIncidentStatus = typeof Fp360LogisticsIncidentStatus[keyof typeof Fp360LogisticsIncidentStatus];
+
+
+export const Fp360LogisticsIncidentStatus = {
+  open: 'open',
+  resolved: 'resolved',
+} as const;
+
+export interface Fp360LogisticsIncident {
+  id: string;
+  type: Fp360LogisticsIncidentType;
+  description: string;
+  /** @minimum 0 */
+  affectedQuantity: number;
+  status: Fp360LogisticsIncidentStatus;
+  /** @nullable */
+  resolution: string | null;
+  createdByName: string;
+  /** @nullable */
+  resolvedByName: string | null;
+  createdAt: string;
+  /** @nullable */
+  resolvedAt: string | null;
+}
+
+export type Fp360LogisticsShipmentStatus = typeof Fp360LogisticsShipmentStatus[keyof typeof Fp360LogisticsShipmentStatus];
+
+
+export const Fp360LogisticsShipmentStatus = {
+  in_transit: 'in_transit',
+  incident: 'incident',
+  delivered: 'delivered',
+} as const;
+
+export interface Fp360LogisticsShipment {
+  id: string;
+  orderId: string;
+  orderReference: string;
+  /** @nullable */
+  originOrganizationId: string | null;
+  /** @nullable */
+  originName: string | null;
+  destinationOrganizationId: string;
+  destinationName: string;
+  /** @nullable */
+  routeName: string | null;
+  /** @nullable */
+  carrierName: string | null;
+  /** @minimum 1 */
+  parcelCount: number;
+  /** @nullable */
+  plannedDeliveryDate: string | null;
+  status: Fp360LogisticsShipmentStatus;
+  simulatedDate: string;
+  /** @nullable */
+  deliveredDate: string | null;
+  lines: Fp360LogisticsShipmentLine[];
+  events: Fp360LogisticsEvent[];
+  incidents: Fp360LogisticsIncident[];
+  createdAt: string;
+}
+
+export interface Fp360LogisticsRouteInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  operationId: string;
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  routeName: string;
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  carrierName: string;
+  /**
+     * @minimum 1
+     * @maximum 9999
+     */
+  parcelCount: number;
+  /** @nullable */
+  plannedDeliveryDate: string | null;
+}
+
+export interface Fp360LogisticsDeliveryLine {
+  /** @minLength 1 */
+  productId: string;
+  /**
+     * @minimum 0
+     * @maximum 9999
+     */
+  receivedQuantity: number;
+}
+
+export interface Fp360LogisticsDeliveryInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  operationId: string;
+  /** @maxLength 300 */
+  deliveryNote?: string;
+  /** @minItems 1 */
+  lines: Fp360LogisticsDeliveryLine[];
+}
+
+export type Fp360LogisticsIncidentInputType = typeof Fp360LogisticsIncidentInputType[keyof typeof Fp360LogisticsIncidentInputType];
+
+
+export const Fp360LogisticsIncidentInputType = {
+  delay: 'delay',
+  damage: 'damage',
+  missing: 'missing',
+  address: 'address',
+  rejected: 'rejected',
+  other: 'other',
+} as const;
+
+export interface Fp360LogisticsIncidentInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  operationId: string;
+  type: Fp360LogisticsIncidentInputType;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  description: string;
+  /**
+     * @minimum 0
+     * @maximum 9999
+     */
+  affectedQuantity: number;
+}
+
+export interface Fp360LogisticsIncidentResolutionInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  operationId: string;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  resolution: string;
 }
 
 export interface Fp360InvoiceLine {

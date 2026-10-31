@@ -63,6 +63,11 @@ import type {
   Fp360DispatchInput,
   Fp360Invoice,
   Fp360InvoiceInput,
+  Fp360LogisticsDeliveryInput,
+  Fp360LogisticsIncidentInput,
+  Fp360LogisticsIncidentResolutionInput,
+  Fp360LogisticsRouteInput,
+  Fp360LogisticsShipment,
   Fp360Order,
   Fp360OrderInput,
   Fp360Organization,
@@ -7432,6 +7437,465 @@ export const useDispatchFp360Order = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDispatchFp360OrderMutationOptions(options), queryClient);
+    }
+
+export const getListFp360LogisticsShipmentsUrl = () => {
+
+
+
+
+  return `/api/redfp360/logistics/shipments`
+}
+
+/**
+ * @summary List shipments visible to the current organization
+ */
+export const listFp360LogisticsShipments = async ( options?: Parameters<typeof customFetch>[1]): Promise<Fp360LogisticsShipment[]> => {
+
+  return customFetch<Fp360LogisticsShipment[]>(getListFp360LogisticsShipmentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFp360LogisticsShipmentsQueryKey = () => {
+    return [
+    `/api/redfp360/logistics/shipments`
+    ] as const;
+    }
+
+
+export const getListFp360LogisticsShipmentsQueryOptions = <TData = Awaited<ReturnType<typeof listFp360LogisticsShipments>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360LogisticsShipments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFp360LogisticsShipmentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFp360LogisticsShipments>>> = ({ signal }) => listFp360LogisticsShipments({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFp360LogisticsShipments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFp360LogisticsShipmentsQueryResult = NonNullable<Awaited<ReturnType<typeof listFp360LogisticsShipments>>>
+export type ListFp360LogisticsShipmentsQueryError = ErrorType<unknown>
+
+
+export function useListFp360LogisticsShipments<TData = Awaited<ReturnType<typeof listFp360LogisticsShipments>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360LogisticsShipments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360LogisticsShipments>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360LogisticsShipments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360LogisticsShipments<TData = Awaited<ReturnType<typeof listFp360LogisticsShipments>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360LogisticsShipments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360LogisticsShipments>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360LogisticsShipments>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360LogisticsShipments<TData = Awaited<ReturnType<typeof listFp360LogisticsShipments>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360LogisticsShipments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List shipments visible to the current organization
+ */
+
+export function useListFp360LogisticsShipments<TData = Awaited<ReturnType<typeof listFp360LogisticsShipments>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360LogisticsShipments>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFp360LogisticsShipmentsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateFp360LogisticsRouteUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/logistics/shipments/${id}/route`
+}
+
+/**
+ * @summary Assign a simulated carrier and route to a shipment
+ */
+export const updateFp360LogisticsRoute = async (id: string,
+    fp360LogisticsRouteInput: Fp360LogisticsRouteInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360LogisticsShipment> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360LogisticsShipment>(getUpdateFp360LogisticsRouteUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360LogisticsRouteInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateFp360LogisticsRouteMutationKey = () => ['updateFp360LogisticsRoute'] as const;
+
+export const getUpdateFp360LogisticsRouteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360LogisticsRoute>>, TError,UpdateFp360LogisticsRouteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFp360LogisticsRoute>>, TError,UpdateFp360LogisticsRouteMutationVariables, TContext> => {
+
+const mutationKey = getUpdateFp360LogisticsRouteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFp360LogisticsRoute>>, UpdateFp360LogisticsRouteMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateFp360LogisticsRoute(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFp360LogisticsRouteMutationResult = NonNullable<Awaited<ReturnType<typeof updateFp360LogisticsRoute>>>
+    export type UpdateFp360LogisticsRouteMutationBody = BodyType<Fp360LogisticsRouteInput>
+    export type UpdateFp360LogisticsRouteMutationError = ErrorType<void>
+    export type UpdateFp360LogisticsRouteMutationVariables = {id: string;data: BodyType<Fp360LogisticsRouteInput>}
+
+    /**
+ * @summary Assign a simulated carrier and route to a shipment
+ */
+export const useUpdateFp360LogisticsRoute = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360LogisticsRoute>>, TError,UpdateFp360LogisticsRouteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateFp360LogisticsRoute>>,
+        TError,
+        UpdateFp360LogisticsRouteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateFp360LogisticsRouteMutationOptions(options), queryClient);
+    }
+
+export const getConfirmFp360LogisticsDeliveryUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/logistics/shipments/${id}/delivery`
+}
+
+/**
+ * @summary Confirm simulated receipt of a shipment
+ */
+export const confirmFp360LogisticsDelivery = async (id: string,
+    fp360LogisticsDeliveryInput: Fp360LogisticsDeliveryInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360LogisticsShipment> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360LogisticsShipment>(getConfirmFp360LogisticsDeliveryUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360LogisticsDeliveryInput)
+  }
+);}
+
+
+
+
+
+export const getConfirmFp360LogisticsDeliveryMutationKey = () => ['confirmFp360LogisticsDelivery'] as const;
+
+export const getConfirmFp360LogisticsDeliveryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmFp360LogisticsDelivery>>, TError,ConfirmFp360LogisticsDeliveryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmFp360LogisticsDelivery>>, TError,ConfirmFp360LogisticsDeliveryMutationVariables, TContext> => {
+
+const mutationKey = getConfirmFp360LogisticsDeliveryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmFp360LogisticsDelivery>>, ConfirmFp360LogisticsDeliveryMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  confirmFp360LogisticsDelivery(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmFp360LogisticsDeliveryMutationResult = NonNullable<Awaited<ReturnType<typeof confirmFp360LogisticsDelivery>>>
+    export type ConfirmFp360LogisticsDeliveryMutationBody = BodyType<Fp360LogisticsDeliveryInput>
+    export type ConfirmFp360LogisticsDeliveryMutationError = ErrorType<void>
+    export type ConfirmFp360LogisticsDeliveryMutationVariables = {id: string;data: BodyType<Fp360LogisticsDeliveryInput>}
+
+    /**
+ * @summary Confirm simulated receipt of a shipment
+ */
+export const useConfirmFp360LogisticsDelivery = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmFp360LogisticsDelivery>>, TError,ConfirmFp360LogisticsDeliveryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof confirmFp360LogisticsDelivery>>,
+        TError,
+        ConfirmFp360LogisticsDeliveryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmFp360LogisticsDeliveryMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360LogisticsIncidentUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/logistics/shipments/${id}/incidents`
+}
+
+/**
+ * @summary Report an incident against a shipment
+ */
+export const createFp360LogisticsIncident = async (id: string,
+    fp360LogisticsIncidentInput: Fp360LogisticsIncidentInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360LogisticsShipment> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360LogisticsShipment>(getCreateFp360LogisticsIncidentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360LogisticsIncidentInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360LogisticsIncidentMutationKey = () => ['createFp360LogisticsIncident'] as const;
+
+export const getCreateFp360LogisticsIncidentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360LogisticsIncident>>, TError,CreateFp360LogisticsIncidentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360LogisticsIncident>>, TError,CreateFp360LogisticsIncidentMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360LogisticsIncidentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360LogisticsIncident>>, CreateFp360LogisticsIncidentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createFp360LogisticsIncident(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360LogisticsIncidentMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360LogisticsIncident>>>
+    export type CreateFp360LogisticsIncidentMutationBody = BodyType<Fp360LogisticsIncidentInput>
+    export type CreateFp360LogisticsIncidentMutationError = ErrorType<void>
+    export type CreateFp360LogisticsIncidentMutationVariables = {id: string;data: BodyType<Fp360LogisticsIncidentInput>}
+
+    /**
+ * @summary Report an incident against a shipment
+ */
+export const useCreateFp360LogisticsIncident = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360LogisticsIncident>>, TError,CreateFp360LogisticsIncidentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360LogisticsIncident>>,
+        TError,
+        CreateFp360LogisticsIncidentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360LogisticsIncidentMutationOptions(options), queryClient);
+    }
+
+export const getResolveFp360LogisticsIncidentUrl = (id: string,
+    incidentId: string,) => {
+
+
+
+
+  return `/api/redfp360/logistics/shipments/${id}/incidents/${incidentId}/resolve`
+}
+
+/**
+ * @summary Resolve an open shipment incident
+ */
+export const resolveFp360LogisticsIncident = async (id: string,
+    incidentId: string,
+    fp360LogisticsIncidentResolutionInput: Fp360LogisticsIncidentResolutionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360LogisticsShipment> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360LogisticsShipment>(getResolveFp360LogisticsIncidentUrl(id,incidentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360LogisticsIncidentResolutionInput)
+  }
+);}
+
+
+
+
+
+export const getResolveFp360LogisticsIncidentMutationKey = () => ['resolveFp360LogisticsIncident'] as const;
+
+export const getResolveFp360LogisticsIncidentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveFp360LogisticsIncident>>, TError,ResolveFp360LogisticsIncidentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resolveFp360LogisticsIncident>>, TError,ResolveFp360LogisticsIncidentMutationVariables, TContext> => {
+
+const mutationKey = getResolveFp360LogisticsIncidentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveFp360LogisticsIncident>>, ResolveFp360LogisticsIncidentMutationVariables> = (props) => {
+          const {id,incidentId,data} = props ?? {};
+
+          return  resolveFp360LogisticsIncident(id,incidentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResolveFp360LogisticsIncidentMutationResult = NonNullable<Awaited<ReturnType<typeof resolveFp360LogisticsIncident>>>
+    export type ResolveFp360LogisticsIncidentMutationBody = BodyType<Fp360LogisticsIncidentResolutionInput>
+    export type ResolveFp360LogisticsIncidentMutationError = ErrorType<void>
+    export type ResolveFp360LogisticsIncidentMutationVariables = {id: string;incidentId: string;data: BodyType<Fp360LogisticsIncidentResolutionInput>}
+
+    /**
+ * @summary Resolve an open shipment incident
+ */
+export const useResolveFp360LogisticsIncident = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveFp360LogisticsIncident>>, TError,ResolveFp360LogisticsIncidentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof resolveFp360LogisticsIncident>>,
+        TError,
+        ResolveFp360LogisticsIncidentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResolveFp360LogisticsIncidentMutationOptions(options), queryClient);
     }
 
 export const getListFp360InvoicesUrl = () => {
