@@ -32,8 +32,10 @@ import {
   fpPayments,
   fpProducts,
 } from "@workspace/db";
+import { requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
+router.use(requireAuth);
 const DEMO_TENANT_ID = "red-fp360-demo";
 const SIMULATED_DATE = "2027-09-15";
 

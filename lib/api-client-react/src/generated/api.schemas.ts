@@ -5,6 +5,66 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+export interface AuthStatus {
+  setupRequired: boolean;
+}
+
+export interface AuthSetupInput {
+  /** @maxLength 254 */
+  email: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  displayName: string;
+  /**
+     * @minLength 12
+     * @maxLength 128
+     */
+  password: string;
+  /**
+     * @minLength 32
+     * @maxLength 256
+     */
+  setupToken: string;
+}
+
+export interface AuthLoginInput {
+  /** @maxLength 254 */
+  email: string;
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  password: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  tenantId?: string;
+}
+
+export type AuthIdentityRole = typeof AuthIdentityRole[keyof typeof AuthIdentityRole];
+
+
+export const AuthIdentityRole = {
+  student: 'student',
+  team_manager: 'team_manager',
+  teacher: 'teacher',
+  promoter: 'promoter',
+  mentor: 'mentor',
+  administrator: 'administrator',
+} as const;
+
+export interface AuthIdentity {
+  id: string;
+  email: string;
+  displayName: string;
+  tenantId: string;
+  organizationId?: string;
+  role: AuthIdentityRole;
+}
+
 export interface HealthStatus {
   status: string;
 }

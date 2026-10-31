@@ -6,6 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './authIdentity';
+export * from './authIdentityRole';
+export * from './authLoginInput';
+export * from './authSetupInput';
+export * from './authStatus';
 export * from './fp360Activity';
 export * from './fp360Dashboard';
 export * from './fp360DispatchInput';

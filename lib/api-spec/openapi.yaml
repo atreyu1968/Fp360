@@ -12,9 +12,12 @@ tags:
     description: Health operations
   - name: redfp360
     description: RED FP360 simulated business operations
+security:
+  - sessionCookie: []
 paths:
   /healthz:
     get:
+      security: []
       operationId: healthCheck
       tags: [health]
       summary: Health check
@@ -26,6 +29,93 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/status:
+    get:
+      security: []
+      operationId: getAuthStatus
+      tags: [auth]
+      summary: Check whether initial administrator setup is required
+      responses:
+        "200":
+          description: Authentication setup status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthStatus"
+  /auth/setup:
+    post:
+      security: []
+      operationId: setupInitialAdministrator
+      tags: [auth]
+      summary: Create the first administrator using the setup token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthSetupInput"
+      responses:
+        "201":
+          description: Initial administrator created and signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthIdentity"
+        "400":
+          description: Invalid setup details
+        "403":
+          description: Invalid setup token
+        "409":
+          description: Administrator setup has already been completed
+        "503":
+          description: Initial setup is not enabled
+  /auth/login:
+    post:
+      security: []
+      operationId: login
+      tags: [auth]
+      summary: Sign in with an email address and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthLoginInput"
+      responses:
+        "200":
+          description: Signed in identity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthIdentity"
+        "401":
+          description: Email or password is incorrect
+        "429":
+          description: Too many sign-in attempts
+  /auth/me:
+    get:
+      operationId: getCurrentIdentity
+      tags: [auth]
+      summary: Get the signed-in user's current organization and role
+      responses:
+        "200":
+          description: Current signed-in identity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthIdentity"
+        "401":
+          description: Sign-in required
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: End the current server-side session
+      responses:
+        "204":
+          description: Session ended
+        "401":
+          description: Sign-in required
   /redfp360/dashboard:
     get:
       operationId: getFp360Dashboard
@@ -227,7 +317,44 @@ paths:
                 items:
                   $ref: "#/components/schemas/Fp360Activity"
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: redfp360_session
   schemas:
+    AuthStatus:
+      type: object
+      required: [setupRequired]
+      properties:
+        setupRequired: { type: boolean }
+    AuthSetupInput:
+      type: object
+      required: [email, displayName, password, setupToken]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        displayName: { type: string, minLength: 1, maxLength: 100 }
+        password: { type: string, minLength: 12, maxLength: 128 }
+        setupToken: { type: string, minLength: 32, maxLength: 256 }
+    AuthLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 1, maxLength: 128 }
+        tenantId: { type: string, minLength: 1, maxLength: 100 }
+    AuthIdentity:
+      type: object
+      required: [id, email, displayName, tenantId, role]
+      properties:
+        id: { type: string }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        tenantId: { type: string }
+        organizationId: { type: string }
+        role:
+          type: string
+          enum: [student, team_manager, teacher, promoter, mentor, administrator]
     HealthStatus:
       type: object
       properties:

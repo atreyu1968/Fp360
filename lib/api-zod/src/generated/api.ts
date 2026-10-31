@@ -18,6 +18,92 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Check whether initial administrator setup is required
+ */
+export const GetAuthStatusResponse = zod.object({
+  "setupRequired": zod.boolean()
+})
+
+
+/**
+ * @summary Create the first administrator using the setup token
+ */
+export const setupInitialAdministratorBodyEmailMax = 254;
+
+export const setupInitialAdministratorBodyDisplayNameMax = 100;
+
+export const setupInitialAdministratorBodyPasswordMin = 12;
+export const setupInitialAdministratorBodyPasswordMax = 128;
+
+export const setupInitialAdministratorBodySetupTokenMin = 32;
+export const setupInitialAdministratorBodySetupTokenMax = 256;
+
+
+
+export const SetupInitialAdministratorBody = zod.object({
+  "email": zod.string().email().max(setupInitialAdministratorBodyEmailMax),
+  "displayName": zod.string().min(1).max(setupInitialAdministratorBodyDisplayNameMax),
+  "password": zod.string().min(setupInitialAdministratorBodyPasswordMin).max(setupInitialAdministratorBodyPasswordMax),
+  "setupToken": zod.string().min(setupInitialAdministratorBodySetupTokenMin).max(setupInitialAdministratorBodySetupTokenMax)
+})
+
+export const SetupInitialAdministratorResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "displayName": zod.string(),
+  "tenantId": zod.string(),
+  "organizationId": zod.string().optional(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator'])
+})
+
+
+/**
+ * @summary Sign in with an email address and password
+ */
+export const loginBodyEmailMax = 254;
+
+export const loginBodyPasswordMax = 128;
+
+export const loginBodyTenantIdMax = 100;
+
+
+
+export const LoginBody = zod.object({
+  "email": zod.string().email().max(loginBodyEmailMax),
+  "password": zod.string().min(1).max(loginBodyPasswordMax),
+  "tenantId": zod.string().min(1).max(loginBodyTenantIdMax).optional()
+})
+
+export const LoginResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "displayName": zod.string(),
+  "tenantId": zod.string(),
+  "organizationId": zod.string().optional(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator'])
+})
+
+
+/**
+ * @summary Get the signed-in user's current organization and role
+ */
+export const GetCurrentIdentityResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "displayName": zod.string(),
+  "tenantId": zod.string(),
+  "organizationId": zod.string().optional(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator'])
+})
+
+
+/**
+ * @summary End the current server-side session
+ */
+export const LogoutResponse = zod.void()
+
+
+/**
  * @summary Get the simulated company dashboard
  */
 export const getFp360DashboardResponseSalesCentsMin = 0;

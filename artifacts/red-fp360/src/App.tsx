@@ -1,19 +1,22 @@
-import { type FormEvent, type ReactNode, useMemo, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import {
   Activity, Archive, ArrowDownLeft, ArrowRight, BadgeCheck, Banknote, BarChart3, Bell,
   BookOpen, Boxes, Building2, Check, CheckCircle2, ChevronDown, CircleHelp, ClipboardList,
   Clock3, CreditCard, Download, FileArchive, FileCheck2, FileText, Filter, Globe2,
   GraduationCap, LayoutDashboard, LifeBuoy, Menu, Package, PackageCheck, Plus,
-  ReceiptText, RefreshCw, Search, ShieldAlert, ShoppingBag, ShoppingCart, Truck, Users, X,
+  ReceiptText, RefreshCw, Search, ShieldAlert, ShoppingBag, ShoppingCart, Truck, Users, X, CircleAlert,
 } from 'lucide-react';
 import {
   getGetFp360DashboardQueryKey, useConfirmFp360Order, useCreateFp360Order,
   useDispatchFp360Order, useGetFp360Dashboard, useIssueFp360Invoice,
   useListFp360Activity, useListFp360Invoices, useListFp360Orders,
   useListFp360Organizations, useListFp360Products, useRecordFp360Payment,
+  getGetAuthStatusQueryKey, getGetCurrentIdentityQueryKey, useGetAuthStatus,
+  useGetCurrentIdentity, useLogout,
 } from '@workspace/api-client-react';
 import type {
+  AuthIdentity,
   Fp360Activity,
   Fp360Dashboard,
   Fp360Invoice,
@@ -26,6 +29,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter';
+import { AuthExperience } from '@/components/auth-experience';
 
 const queryClient = new QueryClient();
 type Product = Fp360Product;
@@ -124,6 +128,12 @@ function DataTable({ children, minWidth = 650 }: { children: ReactNode; minWidth
 function ToastMessage({ message, onClose }: { message: string; onClose: () => void }) {
   if (!message) return null;
   return <div className="toast-message" role="status"><CheckCircle2 size={17} /><span>{message}</span><button onClick={onClose} aria-label="Cerrar aviso"><X size={16} /></button></div>;
+}
+function clearBusinessCache() {
+  void queryClient.removeQueries({ predicate: (query) => {
+    const key = query.queryKey[0];
+    return key !== getGetAuthStatusQueryKey()[0] && key !== getGetCurrentIdentityQueryKey()[0];
+  } });
 }
 function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
@@ -562,10 +572,22 @@ function DocumentationPage() {
   </main>;
 }
 
-function Shell() {
-  const [location] = useLocation();
+function identityInitials(identity: AuthIdentity) {
+  return identity.displayName.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || 'RF';
+}
+function roleLabel(role: AuthIdentity['role']) {
+  const labels: Record<AuthIdentity['role'], string> = {
+    student: 'Estudiante', team_manager: 'Responsable de equipo', teacher: 'Docente',
+    promoter: 'Promotor/a', mentor: 'Mentoría', administrator: 'Administración',
+  };
+  return labels[role];
+}
+
+function Shell({ identity }: { identity: AuthIdentity }) {
+  const [location, setLocation] = useLocation();
   const [mobileNav, setMobileNav] = useState(false);
   const [notice, setNotice] = useState('');
+  const logout = useLogout();
   const dashboardQuery = useGetFp360Dashboard<Dashboard>();
   const organizationsQuery = useListFp360Organizations<Organization[]>();
   const productsQuery = useListFp360Products<Product[]>();
@@ -589,8 +611,10 @@ function Shell() {
       case '/almacen': return <InventoryPage products={productsQuery.data} orders={ordersQuery.data} stateProducts={states.products} stateOrders={states.orders} />;
       case '/facturas': return <InvoicesPage invoices={invoicesQuery.data} orders={ordersQuery.data} stateInvoices={states.invoices} stateOrders={states.orders} onRefresh={() => { void queryClient.invalidateQueries({ queryKey: getGetFp360DashboardQueryKey() }); void queryClient.invalidateQueries(); }} onNotice={setNotice} />;
       case '/clientes': return <CustomersPage organizations={organizationsQuery.data} orders={ordersQuery.data} stateOrg={states.organizations} />;
-      case '/aplicaciones': return <ApplicationsPage />;
-      case '/documentacion': return <DocumentationPage />;
+       case '/aplicaciones':
+       case '/apps': return <ApplicationsPage />;
+       case '/documentacion':
+       case '/docs': return <DocumentationPage />;
       default: return null;
     }
   }, [location, dashboardQuery.data, dashboardQuery.isLoading, dashboardQuery.isError, organizationsQuery.data, organizationsQuery.isLoading, organizationsQuery.isError, productsQuery.data, productsQuery.isLoading, productsQuery.isError, ordersQuery.data, ordersQuery.isLoading, ordersQuery.isError, invoicesQuery.data, invoicesQuery.isLoading, invoicesQuery.isError, activityQuery.data, activityQuery.isLoading, activityQuery.isError]);
@@ -603,13 +627,13 @@ function Shell() {
       <div className="nav-caption">ESPACIO DE TRABAJO</div>
       <nav className="main-nav" aria-label="Navegación principal">{navItems.map(({ href, label, icon: Icon }) => <Link href={href} key={href} className={`nav-link ${location === href ? 'nav-active' : ''}`} onClick={() => setMobileNav(false)} aria-current={location === href ? 'page' : undefined}><Icon size={18} strokeWidth={1.8} /><span>{label}</span>{href === '/aplicaciones' && <span className="nav-count">26</span>}</Link>)}</nav>
       <div className="sidebar-bottom"><div className="help-card"><div className="help-icon"><LifeBuoy size={17} /></div><b>¿Primera vez por aquí?</b><p>Consulta la guía de aprendizaje de la red.</p><Link href="/documentacion" onClick={() => setMobileNav(false)}>Abrir recursos <ArrowRight size={13} /></Link></div>
-        <div className="profile-chip"><span className="profile-avatar">AL</span><span><b>Alumna demo</b><small>Equipo comercial</small></span><ChevronDown size={14} /></div>
+         <div className="profile-chip"><span className="profile-avatar">{identityInitials(identity)}</span><span><b>{identity.displayName}</b><small>{roleLabel(identity.role)}</small></span><button className="profile-logout" type="button" disabled={logout.isPending} onClick={() => logout.mutate(undefined, { onSuccess: () => { clearBusinessCache(); void queryClient.resetQueries({ queryKey: getGetCurrentIdentityQueryKey(), exact: true }); setLocation('/sign-in'); }, onError: () => setNotice('No se pudo cerrar la sesión. Comprueba la conexión e inténtalo de nuevo.') })} aria-label="Cerrar sesión" title="Cerrar sesión" data-testid="button-logout"><ArrowRight size={15} /></button></div>
       </div>
     </aside>
     {mobileNav && <button className="mobile-scrim" aria-label="Cerrar menú" onClick={() => setMobileNav(false)} />}
     <div className="main-shell">
       <header className="topbar"><div className="topbar-left"><button className="mobile-menu icon-button" aria-label="Abrir menú" onClick={() => setMobileNav(true)}><Menu size={20} /></button><div className="topbar-path"><span>Curso 2027–2028</span><i>/</i><b>Simulación intercentros</b></div></div>
-        <div className="topbar-right"><span className="environment-pill"><span /> ENTORNO DEMO</span><button className="top-icon" aria-label="Notificaciones de demostración" title="Sin notificaciones"><Bell size={17} /><i /></button><span className="top-divider" /><span className="top-user">AL</span></div>
+        <div className="topbar-right"><span className="environment-pill"><span /> SIMULACIÓN · SIN OPERACIONES REALES</span><button className="top-icon" aria-label="Notificaciones de demostración" title="Sin notificaciones"><Bell size={17} /><i /></button><span className="top-divider" /><span className="top-user" aria-label={identity.displayName}>{identityInitials(identity)}</span></div>
       </header>
       <div className="content-scroll redfp-scroll"><Switch>
         <Route path="/">{page}</Route>
@@ -620,6 +644,8 @@ function Shell() {
         <Route path="/clientes">{page}</Route>
         <Route path="/aplicaciones">{page}</Route>
         <Route path="/documentacion">{page}</Route>
+        <Route path="/apps">{page}</Route>
+        <Route path="/docs">{page}</Route>
         <Route component={NotFound} />
       </Switch></div>
       <footer className="app-footer"><span>RED FP360 <i>·</i> Entorno educativo de prácticas</span><span>Sin conexión a sistemas reales <b>·</b> © 2027</span></footer>
@@ -628,9 +654,66 @@ function Shell() {
   </div>;
 }
 
+function isUnauthorized(error: unknown) {
+  return Boolean(error && typeof error === 'object' && 'status' in error && (error as { status: unknown }).status === 401);
+}
+function AuthLoading({ label = 'Comprobando acceso seguro' }: { label?: string }) {
+  return <main className="auth-loading" role="status" aria-live="polite"><div className="auth-loading-brand"><span className="brand-mark"><span>R</span><i /></span><b>RED FP360</b></div><div className="auth-skeleton"><span /><span /><span /></div><p>{label}…</p></main>;
+}
+function AuthRouter() {
+  const [location, setLocation] = useLocation();
+  const authStatus = useGetAuthStatus({ query: { queryKey: getGetAuthStatusQueryKey(), retry: 1 } });
+  const identityQuery = useGetCurrentIdentity({ query: { queryKey: getGetCurrentIdentityQueryKey(), retry: false } });
+  const [validatedIdentity, setValidatedIdentity] = useState('');
+  const previousIdentity = useRef('');
+  const identity = identityQuery.data;
+  const identityKey = identity ? `${identity.id}:${identity.tenantId}:${identity.organizationId ?? ''}` : '';
+
+  useEffect(() => {
+    if (!identity || identityQuery.isFetching || identityQuery.isError) return;
+    if (previousIdentity.current && previousIdentity.current !== identityKey) clearBusinessCache();
+    previousIdentity.current = identityKey;
+    setValidatedIdentity(identityKey);
+  }, [identity, identityQuery.isFetching, identityQuery.isError, identityKey]);
+
+  const onAuthenticated = (nextIdentity: AuthIdentity) => {
+    const nextKey = `${nextIdentity.id}:${nextIdentity.tenantId}:${nextIdentity.organizationId ?? ''}`;
+    if (previousIdentity.current && previousIdentity.current !== nextKey) clearBusinessCache();
+    previousIdentity.current = nextKey;
+    setValidatedIdentity(nextKey);
+    queryClient.setQueryData(getGetCurrentIdentityQueryKey(), nextIdentity);
+    queryClient.setQueryData(getGetAuthStatusQueryKey(), { setupRequired: false });
+    setLocation('/');
+  };
+
+  if (authStatus.isLoading) return <AuthLoading label="Cargando configuración del acceso" />;
+  if (authStatus.isError || !authStatus.data) return <main className="auth-loading"><div className="auth-state-card"><CircleHelp size={22} /><h1>No podemos comprobar el acceso</h1><p>El servicio de autenticación no responde. Comprueba la conexión e inténtalo otra vez.</p><button className="auth-submit" type="button" onClick={() => { void authStatus.refetch(); void identityQuery.refetch(); }} data-testid="button-retry-auth">Reintentar <ArrowRight size={16} /></button></div></main>;
+
+  if (identityQuery.isLoading || (identity && identityQuery.isFetching) || (identity && validatedIdentity !== identityKey)) return <AuthLoading />;
+  if (identity && !identityQuery.isError && validatedIdentity === identityKey) {
+    if (location === '/sign-in' || location === '/setup') {
+      return <AuthRedirect target="/" />;
+    }
+    return <ErrorBoundary resetKey={location}><Shell identity={identity} /></ErrorBoundary>;
+  }
+
+  if (identityQuery.isError && !isUnauthorized(identityQuery.error)) {
+    return <main className="auth-loading"><div className="auth-state-card"><CircleAlert size={22} /><h1>Acceso temporalmente no disponible</h1><p>No se pudo verificar tu sesión. No se han cargado datos del espacio de trabajo.</p><button className="auth-submit" type="button" onClick={() => void identityQuery.refetch()} data-testid="button-retry-identity">Volver a comprobar <ArrowRight size={16} /></button></div></main>;
+  }
+
+  const setupRequired = authStatus.data.setupRequired;
+  if (location === '/setup' && !setupRequired) return <AuthExperience mode="setup-complete" onAuthenticated={onAuthenticated} setupEnabled={false} />;
+  if (setupRequired && location !== '/sign-in' && location !== '/setup') return <AuthRedirect target="/setup" />;
+  if (location !== '/sign-in' && location !== '/setup') return <AuthRedirect target="/sign-in" />;
+  return <AuthExperience mode={location === '/setup' ? 'setup' : 'sign-in'} onAuthenticated={onAuthenticated} setupEnabled={setupRequired} />;
+}
+function AuthRedirect({ target }: { target: string }) {
+  const [, setLocation] = useLocation();
+  useEffect(() => { setLocation(target); }, [target, setLocation]);
+  return <AuthLoading label={`Abriendo ${target === '/setup' ? 'la configuración inicial' : 'el espacio de trabajo'}`} />;
+}
 function Router() {
-  const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}><Shell /></ErrorBoundary>;
+  return <AuthRouter />;
 }
 function App() {
   return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router /></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;

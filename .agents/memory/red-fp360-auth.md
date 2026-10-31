@@ -3,8 +3,8 @@ name: RED FP360 authentication
 description: Authentication provider constraint for the RED FP360 project.
 ---
 
-Do not use Clerk for RED FP360.
+Use app-owned authentication for RED FP360; do not use Clerk.
 
-**Why:** the user explicitly said it cannot be used and asked that this be remembered.
+**Why:** the user explicitly ruled out Clerk and selected custom authentication.
 
-**How to apply:** do not add Clerk packages, middleware, or client components. Confirm the replacement authentication approach before implementing authentication.
+**How to apply:** use server-side sessions and enforce role and tenant access in the API. Do not add Clerk packages, middleware, or client components.
