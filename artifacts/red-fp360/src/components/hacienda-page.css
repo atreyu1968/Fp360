@@ -1,0 +1,158 @@
+.hacienda-page { max-width:1510px; --tax-ink:#24364c; --tax-muted:#768797; --tax-line:#dfe7e8; --tax-teal:#167e78; }
+.hacienda-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:22px; margin-bottom:16px; }
+.hacienda-heading h1 { margin:9px 0 5px; color:#233b4d; font-family:var(--app-font-serif); font-size:clamp(28px,3vw,37px); letter-spacing:-.055em; line-height:1.03; }
+.hacienda-heading p { max-width:640px; margin:0; color:#758695; font-size:12px; line-height:1.6; }
+.hacienda-tools { display:flex; align-items:center; gap:12px; }
+.hacienda-org-select { display:flex; flex-direction:column; gap:4px; color:#768797; font-size:9px; font-weight:700; }
+.hacienda-org-select select,.hacienda-unselected select { min-width:200px; height:35px; padding:0 10px; border:1px solid #d8e3e3; border-radius:5px; color:#3d5b65; background:#fff; font-size:10px; }
+.hacienda-date { display:flex; align-items:center; gap:7px; padding:8px 10px; border:1px solid #e8dfca; border-radius:5px; color:#806a3a; background:#fbf7ed; font-size:9px; font-weight:700; white-space:nowrap; }
+.hacienda-legal { display:flex; align-items:center; gap:11px; padding:11px 14px; margin:0 0 16px; border:1px solid #ecd8bc; border-radius:7px; color:#795d39; background:#fff8ed; font-size:9px; line-height:1.5; }
+.hacienda-legal > svg { flex:0 0 auto; color:#b17b35; }
+.hacienda-legal div { display:flex; flex:1; flex-direction:column; gap:2px; }
+.hacienda-legal strong { color:#794a2f; font-size:9px; letter-spacing:.12em; }
+.hacienda-legal span { color:#8d7656; }
+.hacienda-legal > b { padding:5px 7px; border:1px solid #ead5b8; border-radius:4px; color:#9b6730; font-size:7px; letter-spacing:.08em; white-space:nowrap; }
+.hacienda-tabs { display:flex; gap:4px; overflow:auto; margin-bottom:11px; padding:4px; border:1px solid #e1e9e7; border-radius:7px; background:#edf3f1; scrollbar-width:thin; }
+.hacienda-tabs button { display:inline-flex; flex:0 0 auto; min-height:34px; align-items:center; gap:7px; padding:0 11px; border:0; border-radius:5px; color:#70847f; background:transparent; font-size:9px; font-weight:700; cursor:pointer; transition:background .16s ease,color .16s ease; }
+.hacienda-tabs button:hover { color:#264e4b; background:#fff9; }
+.hacienda-tabs button.active { color:#177871; background:#fff; box-shadow:0 1px 4px #24433e17; }
+.hacienda-topline { display:flex; justify-content:space-between; gap:12px; margin:0 3px 12px; color:#929d9e; font-size:9px; }
+.hacienda-topline span:first-child { display:flex; align-items:center; gap:7px; color:#5b8374; font-weight:700; }
+.hacienda-topline i { width:6px; height:6px; border-radius:50%; background:#49a47d; }
+.hacienda-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:11px; margin-bottom:14px; }
+.hacienda-metric { position:relative; display:flex; min-width:0; min-height:120px; flex-direction:column; align-items:flex-start; padding:13px 16px 12px; overflow:hidden; border:1px solid #dfe8e5; border-radius:7px; background:#fff; }
+.hacienda-metric::before { position:absolute; inset:0 auto 0 0; width:3px; background:#818f9c; content:""; }
+.hacienda-metric.blue::before { background:#4c7e9b; }.hacienda-metric.teal::before { background:#229489; }.hacienda-metric.amber::before { background:#c7994d; }.hacienda-metric.violet::before { background:#8f849d; }
+.hacienda-metric > span { display:grid; width:28px; height:28px; place-items:center; margin-bottom:7px; border-radius:7px; color:#497d94; background:#edf4f5; }
+.hacienda-metric.teal > span { color:#21837a; background:#eaf6f1; }.hacienda-metric.amber > span { color:#a27a39; background:#fbf4e7; }.hacienda-metric.violet > span { color:#74677f; background:#f2eff4; }
+.hacienda-metric small { color:#7e8e98; font-size:9px; font-weight:700; }
+.hacienda-metric strong { max-width:100%; margin:3px 0; overflow:hidden; color:#2c4654; font-family:var(--app-font-mono); font-size:clamp(16px,2vw,22px); letter-spacing:-.05em; text-overflow:ellipsis; white-space:nowrap; }
+.hacienda-metric em { overflow:hidden; color:#99a5a6; font-size:8px; font-style:normal; text-overflow:ellipsis; white-space:nowrap; }
+.hacienda-view { min-width:0; }
+.hacienda-calendar-grid { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(250px,.75fr); align-items:start; gap:13px; }
+.hacienda-panel { min-width:0; padding:18px 19px 13px; border:1px solid #dfe8e5; border-radius:8px; background:#fff; box-shadow:0 3px 10px #17375805; }
+.hacienda-section-head { display:flex; align-items:flex-end; justify-content:space-between; gap:14px; margin-bottom:14px; }
+.hacienda-section-head h2 { margin:4px 0; color:#274858; font-family:var(--app-font-serif); font-size:19px; line-height:1.2; letter-spacing:-.04em; }
+.hacienda-section-head p { margin:0; color:#81908f; font-size:9px; line-height:1.55; }
+.hacienda-overline { display:block; color:#1c8279; font-size:8px; font-weight:800; letter-spacing:.14em; }
+.hacienda-obligation-list { display:flex; flex-direction:column; }
+.hacienda-obligation { display:grid; grid-template-columns:39px minmax(0,1fr) auto; align-items:center; gap:11px; min-height:72px; padding:7px 0; border-top:1px solid #edf1ef; }
+.hacienda-calendar-mark { display:flex; width:36px; height:40px; flex-direction:column; align-items:center; justify-content:center; border:1px solid #dfe9e5; border-radius:5px; color:#547469; background:#f5faf7; }
+.hacienda-calendar-mark b { font-family:var(--app-font-mono); font-size:13px; line-height:1.1; }.hacienda-calendar-mark small { margin-top:2px; color:#94a59c; font-size:7px; text-transform:uppercase; }
+.hacienda-obligation-copy { min-width:0; display:flex; flex-direction:column; gap:3px; }
+.hacienda-obligation-copy > small { color:#82958e; font-size:7px; font-weight:800; letter-spacing:.08em; }
+.hacienda-obligation-copy b { color:#3c5861; font-size:10px; }
+.hacienda-obligation-copy > span { color:#98a5a2; font-size:8px; }
+.hacienda-row-link { display:flex; align-items:center; gap:4px; padding:4px 0; border:0; color:#197c77; background:transparent; font-size:8px; font-weight:700; cursor:pointer; }
+.hacienda-side-stack { display:flex; flex-direction:column; gap:12px; }
+.hacienda-focus { position:relative; min-height:180px; overflow:hidden; padding:18px; border-color:#d2e5df; background:linear-gradient(120deg,#edf7f2,#f7faf6 65%,#e8f2ec); }
+.hacienda-focus h3 { position:relative; z-index:1; max-width:235px; margin:8px 0 6px; color:#28594f; font-family:var(--app-font-serif); font-size:18px; line-height:1.12; letter-spacing:-.04em; }
+.hacienda-focus p { position:relative; z-index:1; max-width:245px; margin:0; color:#708a7e; font-size:8px; line-height:1.6; }
+.hacienda-focus button { position:relative; z-index:1; display:flex; align-items:center; gap:5px; margin-top:12px; padding:0; border:0; color:#197f77; background:transparent; font-size:8px; font-weight:800; cursor:pointer; }
+.hacienda-focus-mark { position:absolute; top:21px; right:18px; display:grid; width:49px; height:49px; place-items:center; border:1px solid #b9d8c9; border-radius:50%; color:#4a9480; box-shadow:0 0 0 8px #deeee5,0 0 0 17px #deeee580; }
+.hacienda-quick { padding:16px; }.hacienda-quick .hacienda-section-head { margin-bottom:9px; }.hacienda-quick .hacienda-section-head h2 { font-size:16px; }
+.hacienda-quick > div:not(.hacienda-section-head) { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-top:1px solid #edf1ef; color:#81918f; font-size:8px; }.hacienda-quick > div b { color:#41645e; font-family:var(--app-font-mono); font-size:9px; }
+.hacienda-quick > p { margin:8px 0 0; color:#9aa6a1; font-size:8px; line-height:1.5; }
+.hacienda-status { width:max-content; display:inline-flex; align-items:center; gap:5px; padding:4px 7px; border:1px solid #e4ebe8; border-radius:20px; color:#738580; background:#f8faf9; font-size:7px; font-weight:700; white-space:nowrap; }
+.hacienda-status i { width:5px; height:5px; border-radius:50%; background:#92a49d; }.hacienda-status.good { color:#36785e; border-color:#d7ece1; background:#f1faf5; }.hacienda-status.good i { background:#38a275; }.hacienda-status.warn { color:#936d30; border-color:#f0e3c7; background:#fffaf1; }.hacienda-status.warn i { background:#d1a044; }
+.hacienda-empty { min-height:135px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center; }.hacienda-empty > span { display:grid; width:35px; height:35px; place-items:center; margin-bottom:9px; border-radius:8px; color:#648d8c; background:#edf5f3; }.hacienda-empty b { color:#526f70; font-size:10px; }.hacienda-empty p { max-width:370px; margin:5px 0 0; color:#93a19d; font-size:8px; line-height:1.55; }
+.hacienda-skeleton { display:flex; flex-direction:column; gap:9px; padding:16px; border:1px solid #e1e9e6; border-radius:7px; background:#fff; }.hacienda-skeleton span { height:12px; border-radius:8px; background:linear-gradient(90deg,#e8f0ec,#f7f9f7,#e8f0ec); background-size:220% 100%; animation:hacienda-shimmer 1.4s ease-in-out infinite; }.hacienda-skeleton span:nth-child(2) { width:78%; }.hacienda-skeleton span:nth-child(3) { width:59%; }.hacienda-skeleton span:nth-child(4) { width:86%; }
+.hacienda-error,.hacienda-inline-error { display:flex; align-items:center; gap:9px; padding:11px 13px; border:1px solid #efd7d1; border-radius:6px; color:#98574c; background:#fff8f6; font-size:9px; }.hacienda-error button { margin-left:auto; border:0; color:#177c83; background:transparent; font-size:9px; font-weight:750; cursor:pointer; }.hacienda-inline-error { margin-bottom:11px; }.hacienda-inline-error > button { display:grid; width:22px; height:22px; place-items:center; margin-left:auto; border:0; color:#98574c; background:transparent; cursor:pointer; }
+.hacienda-search { display:flex; align-items:center; gap:8px; width:min(100%,320px); padding:7px 9px; margin:0 0 11px auto; border:1px solid #dfe8e5; border-radius:5px; color:#849491; background:#fcfdfc; font-size:8px; }.hacienda-search input { width:100%; min-width:0; border:0; outline:0; color:#3e5c61; background:transparent; font-size:9px; }.hacienda-search input::placeholder { color:#a4b0aa; }
+.hacienda-table-scroll { width:100%; overflow:auto; border:1px solid #e4ece8; border-radius:6px; }.hacienda-table { width:100%; border-collapse:collapse; text-align:left; font-size:9px; }.hacienda-table th { height:34px; padding:0 10px; border-bottom:1px solid #e4ece8; color:#84948f; background:#f6f9f7; font-size:8px; font-weight:700; white-space:nowrap; }.hacienda-table td { height:48px; padding:7px 10px; border-bottom:1px solid #edf1ef; color:#5d7580; vertical-align:middle; white-space:nowrap; }.hacienda-table tbody tr:last-child td { border-bottom:0; }.hacienda-table td b { color:#36556a; font-size:9px; }.hacienda-table td small { display:block; margin-top:3px; color:#96a3a5; font-size:8px; }.hacienda-table .mono,.mono { font-family:var(--app-font-mono); font-size:8px; }
+.hacienda-panel-foot { display:flex; justify-content:space-between; align-items:center; gap:10px; min-height:36px; margin-top:8px; padding-top:5px; border-top:1px solid #edf1ef; color:#96a29e; font-size:8px; }.hacienda-panel-foot span:first-child { display:flex; align-items:center; gap:5px; }.hacienda-panel-foot svg { flex:0 0 auto; color:#b17b35; }
+.hacienda-manual-note { display:flex; align-items:flex-start; gap:8px; padding:10px 11px; margin-bottom:12px; border:1px solid #eadfc6; border-radius:5px; color:#876c38; background:#fffaf0; font-size:8px; line-height:1.5; }.hacienda-manual-note svg { flex:0 0 auto; color:#ad8236; }
+.hacienda-draft-layout { display:grid; grid-template-columns:minmax(265px,.72fr) minmax(0,1.45fr); align-items:start; gap:13px; }
+.hacienda-form { display:flex; flex-direction:column; gap:11px; }.hacienda-form > label,.hacienda-modal form > label,.hacienda-response-form label { display:flex; flex-direction:column; gap:6px; color:#627b7d; font-size:9px; font-weight:700; }
+.hacienda-form input,.hacienda-form select,.hacienda-modal input,.hacienda-modal textarea,.hacienda-response-form textarea { width:100%; min-height:37px; padding:8px 10px; border:1px solid #d9e5e1; border-radius:5px; color:#36566a; background:#fbfdfc; font-size:10px; }
+.hacienda-form-divider { display:flex; align-items:center; gap:8px; color:#9a9e91; font-size:8px; }.hacienda-form-divider::before,.hacienda-form-divider::after { height:1px; flex:1; background:#e9efec; content:""; }
+.hacienda-form-hint { display:flex; align-items:flex-start; gap:7px; margin:0; padding:9px; border:1px solid #dce9e6; border-radius:5px; color:#718986; background:#f4f9f7; font-size:8px; line-height:1.5; }.hacienda-form-hint svg { flex:0 0 auto; color:#a17a39; }
+.hacienda-form-error { display:flex; align-items:flex-start; gap:6px; margin:0; padding:9px; border:1px solid #efd7d1; border-radius:5px; color:#99584d; background:#fff8f6; font-size:8px; line-height:1.5; }.hacienda-form-error svg { flex:0 0 auto; }
+.hacienda-button { min-height:32px; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:0 10px; border:1px solid #d9e4e0; border-radius:5px; color:#58716e; background:#fff; font-size:8px; font-weight:750; white-space:nowrap; cursor:pointer; transition:background .15s ease,transform .15s ease; }.hacienda-button:hover:not(:disabled) { transform:translateY(-1px); background:#f5faf8; }.hacienda-button:disabled { opacity:.5; cursor:not-allowed; }.hacienda-button.primary { border-color:#1b8179; color:#fff; background:#1b8179; }.hacienda-button.primary:hover:not(:disabled) { background:#166e68; }.hacienda-button.small { min-height:27px; padding:0 8px; }
+.hacienda-declaration-list { display:flex; flex-direction:column; gap:9px; }.hacienda-declaration { padding:12px; border:1px solid #e3ebe7; border-radius:6px; background:#fcfdfc; }.hacienda-declaration-top { display:flex; align-items:center; gap:9px; }.hacienda-model-icon { display:grid; width:31px; height:31px; flex:0 0 auto; place-items:center; border-radius:7px; color:#297e79; background:#eaf5f1; }.hacienda-declaration-top > div { display:flex; flex:1; min-width:0; flex-direction:column; gap:3px; }.hacienda-declaration-top > div small { color:#849790; font-size:7px; font-weight:800; letter-spacing:.07em; }.hacienda-declaration-top > div b { color:#385861; font-size:10px; }
+.hacienda-declaration-values { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:11px 0; margin-top:10px; border-top:1px solid #edf1ef; border-bottom:1px solid #edf1ef; }.hacienda-declaration-values span { display:flex; flex-direction:column; gap:4px; color:#879793; font-size:7px; }.hacienda-declaration-values b { color:#3a5965; font-family:var(--app-font-mono); font-size:9px; font-weight:600; }
+.hacienda-negative { color:#a45d4e!important; }
+.hacienda-declaration-foot { display:flex; justify-content:space-between; gap:10px; padding:8px 0; color:#889793; font-size:7px; }.hacienda-declaration-foot span:first-child { display:flex; align-items:center; gap:4px; }
+.hacienda-receipt { display:flex; align-items:center; gap:7px; padding:8px 9px; border:1px solid #d8e9df; border-radius:4px; color:#43806b; background:#f2faf5; font-size:8px; }.hacienda-receipt > span { flex:1; }.hacienda-receipt b { color:#326c5c; }.hacienda-receipt small { color:#87a194; font-size:7px; }
+.hacienda-version-note { padding:7px 0; color:#8a806a; font-size:8px; }.hacienda-version-note span { color:#687b80; }
+.hacienda-actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }.hacienda-actions button { min-height:27px; display:inline-flex; align-items:center; gap:5px; padding:0 8px; border:1px solid #dce7e2; border-radius:4px; color:#55736c; background:#fff; font-size:7px; font-weight:750; cursor:pointer; }.hacienda-actions button:hover:not(:disabled) { background:#f1f8f5; }.hacienda-actions button.primary { border-color:#1d8178; color:#fff; background:#1d8178; }.hacienda-actions button:disabled { opacity:.5; cursor:not-allowed; }
+.hacienda-requirement-list { display:flex; flex-direction:column; gap:9px; }.hacienda-requirement { padding:14px; border:1px solid #e3ebe7; border-radius:6px; background:#fcfdfc; }.hacienda-req-top { display:flex; align-items:center; gap:9px; }.hacienda-req-top > span { display:grid; width:30px; height:30px; flex:0 0 auto; place-items:center; border-radius:7px; color:#9a7332; background:#faf3e6; }.hacienda-req-top > div { display:flex; flex:1; min-width:0; flex-direction:column; gap:3px; }.hacienda-req-top small { color:#879692; font-size:7px; }.hacienda-req-top b { color:#3d5861; font-size:10px; }.hacienda-requirement > p { margin:12px 0; color:#71858a; font-size:9px; line-height:1.6; }.hacienda-req-meta { display:flex; justify-content:space-between; gap:10px; padding-top:8px; border-top:1px solid #edf1ef; color:#98a39f; font-size:8px; }.hacienda-requirement blockquote { display:flex; flex-direction:column; gap:5px; margin:10px 0; padding:10px 12px; border-left:2px solid #6aa18a; color:#627d72; background:#f3f9f5; font-size:9px; line-height:1.6; }.hacienda-requirement blockquote b { font-size:8px; color:#477c64; }.hacienda-response-form { display:flex; align-items:flex-end; gap:9px; margin-top:12px; }.hacienda-response-form label { flex:1; }.hacienda-response-form textarea,.hacienda-modal textarea { min-height:75px; resize:vertical; }
+.hacienda-payment-view { display:flex; flex-direction:column; gap:12px; }.hacienda-payment-banner { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:19px 22px; border:1px solid #e7dfcd; border-radius:8px; background:linear-gradient(110deg,#fff,#faf7ef); }.hacienda-payment-banner h2 { margin:6px 0 5px; color:#4e5146; font-family:var(--app-font-serif); font-size:22px; letter-spacing:-.04em; }.hacienda-payment-banner p { max-width:650px; margin:0; color:#867f6c; font-size:9px; line-height:1.6; }.hacienda-payment-mark { display:grid; width:47px; height:47px; flex:0 0 auto; place-items:center; border:1px solid #e6d9b9; border-radius:50%; color:#a17c37; background:#fffaf0; box-shadow:0 0 0 8px #f7f1e3,0 0 0 17px #f7f1e380; }.hacienda-confirmed { display:inline-flex; align-items:center; gap:4px; color:#37795e; font-size:8px; }.hacienda-pending { color:#997744; font-size:8px; }
+.hacienda-event-list { display:flex; flex-direction:column; }.hacienda-event-list article { display:grid; grid-template-columns:27px minmax(0,1fr) auto; align-items:center; gap:10px; min-height:53px; border-top:1px solid #edf1ef; }.hacienda-event-list article > span { display:grid; width:26px; height:26px; place-items:center; border-radius:6px; color:#328878; background:#edf7f2; }.hacienda-event-list article div { display:flex; min-width:0; flex-direction:column; gap:4px; }.hacienda-event-list article b { color:#476674; font-size:9px; }.hacienda-event-list article small { color:#98a5a4; font-size:8px; }.hacienda-event-type { color:#82918d; text-transform:capitalize; }
+.hacienda-unselected { display:grid; justify-items:center; max-width:530px; margin:50px auto; padding:30px; border:1px solid #dce7e3; border-radius:9px; text-align:center; background:#fff; }.hacienda-unselected > svg { margin-bottom:13px; color:#20847b; }.hacienda-unselected h2 { margin:7px 0; color:#2b4b57; font-family:var(--app-font-serif); font-size:21px; letter-spacing:-.04em; }.hacienda-unselected p { max-width:390px; margin:0 0 13px; color:#829390; font-size:9px; line-height:1.6; }.hacienda-unselected label { display:flex; align-items:center; gap:8px; color:#71878b; font-size:9px; font-weight:700; }
+.hacienda-modal-scrim { position:fixed; inset:0; z-index:85; display:grid; place-items:center; padding:18px; background:#172e35a6; }.hacienda-modal { width:min(100%,490px); max-height:calc(100dvh - 36px); overflow:auto; padding:21px; border:1px solid #dce6e1; border-radius:9px; background:#fff; box-shadow:0 22px 70px #173b3533; animation:hacienda-enter .2s ease-out both; }.hacienda-modal > header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }.hacienda-modal h2 { margin:5px 0 0; color:#2a4a56; font-family:var(--app-font-serif); font-size:21px; letter-spacing:-.04em; }.hacienda-modal > header > button { display:grid; width:29px; height:29px; place-items:center; border:1px solid #e1e9e5; border-radius:5px; color:#768b88; background:#f8faf9; cursor:pointer; }.hacienda-modal > p { color:#82918d; font-size:9px; line-height:1.5; }.hacienda-modal form { display:flex; flex-direction:column; gap:12px; }.hacienda-modal footer { display:flex; justify-content:flex-end; gap:7px; margin-top:4px; }
+@keyframes hacienda-shimmer { 0% { background-position:100% 0; } 100% { background-position:-100% 0; } }@keyframes hacienda-enter { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@media(max-width:1050px) { .hacienda-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }.hacienda-calendar-grid { grid-template-columns:minmax(0,1.2fr) minmax(230px,.8fr); }.hacienda-draft-layout { grid-template-columns:minmax(230px,.75fr) minmax(0,1.25fr); }.hacienda-table { min-width:780px; } }
+@media(max-width:760px) { .hacienda-heading { align-items:flex-start; flex-direction:column; gap:12px; }.hacienda-tools { flex-wrap:wrap; }.hacienda-calendar-grid,.hacienda-draft-layout { grid-template-columns:1fr; }.hacienda-section-head { align-items:flex-start; flex-direction:column; }.hacienda-panel { padding:16px 13px 12px; }.hacienda-tabs { margin-right:-4px; }.hacienda-panel-foot { align-items:flex-start; flex-direction:column; }.hacienda-legal { align-items:flex-start; }.hacienda-legal > b { display:none; }.hacienda-declaration-values { grid-template-columns:repeat(2,minmax(0,1fr)); }.hacienda-payment-banner { align-items:flex-start; }.hacienda-search { width:100%; }.hacienda-response-form { align-items:stretch; flex-direction:column; }.hacienda-event-list article { grid-template-columns:27px minmax(0,1fr); padding:8px 0; }.hacienda-event-type { grid-column:2; }.hacienda-obligation { grid-template-columns:39px minmax(0,1fr) auto; }.hacienda-obligation > .hacienda-status { grid-column:2; }.hacienda-row-link { grid-column:3; grid-row:1; } }
+@media(max-width:460px) { .hacienda-metrics { gap:7px; }.hacienda-metric { min-height:110px; padding:11px 10px; }.hacienda-metric strong { font-size:14px; }.hacienda-metric small,.hacienda-metric em { font-size:7px; }.hacienda-date { font-size:8px; }.hacienda-declaration-top { flex-wrap:wrap; }.hacienda-declaration-top > div { min-width:calc(100% - 50px); }.hacienda-declaration-top > .hacienda-status { margin-left:40px; }.hacienda-declaration-foot { align-items:flex-start; flex-direction:column; }.hacienda-receipt { align-items:flex-start; flex-wrap:wrap; }.hacienda-receipt small { width:100%; }.hacienda-modal { padding:17px; }.hacienda-payment-banner { padding:16px; }.hacienda-payment-mark { width:39px; height:39px; }.hacienda-obligation-copy > small { font-size:6px; } }
+
+.hacienda-agency-switch { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 12px; }
+.hacienda-agency-switch button { min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:5px; padding:13px 16px; border:1px solid #dce7e4; border-radius:7px; text-align:left; color:#58716e; background:#fff; cursor:pointer; transition:background .16s ease,border-color .16s ease,transform .16s ease; }
+.hacienda-agency-switch button:hover { transform:translateY(-1px); border-color:#a9cbc2; }
+.hacienda-agency-switch button.active { border-color:#237f78; background:#eef7f3; box-shadow:inset 3px 0 #237f78; }
+.hacienda-agency-switch button > span { color:#8da09a; font-size:7px; font-weight:800; letter-spacing:.15em; }
+.hacienda-agency-switch button > b { color:#294e55; font-family:var(--app-font-serif); font-size:15px; letter-spacing:-.025em; }
+.hacienda-agency-switch button > small { color:#81928d; font-size:8px; line-height:1.5; }
+.hacienda-agency-section { margin:0 0 11px; border:1px solid #dfe8e5; border-radius:8px; background:#fff; overflow:hidden; }
+.hacienda-agency-section.atc { border-top:3px solid #34877a; }
+.hacienda-agency-section.aeat { border-top:3px solid #547a9a; }
+.hacienda-agency-heading { display:flex; align-items:center; justify-content:space-between; gap:15px; padding:14px 17px 11px; }
+.hacienda-agency-heading h2 { margin:4px 0; color:#274858; font-family:var(--app-font-serif); font-size:20px; letter-spacing:-.04em; }
+.hacienda-agency-heading p { margin:0; color:#81908f; font-size:9px; }
+.hacienda-agency-code { display:grid; width:41px; height:41px; flex:0 0 auto; place-items:center; border:1px solid #dce8e4; border-radius:50%; color:#347f75; background:#f3f8f5; font-family:var(--app-font-mono); font-size:10px; font-weight:700; }
+.hacienda-agency-section .hacienda-tabs { margin:0 10px 10px; }
+.hacienda-profile-panel { margin-bottom:12px; background:linear-gradient(135deg,#fff 0%,#fbfdfb 100%); }
+.hacienda-profile-form { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:end; gap:10px; }
+.hacienda-profile-form > label,.hacienda-form > label { display:flex; flex-direction:column; gap:6px; color:#627b7d; font-size:9px; font-weight:700; }
+.hacienda-profile-form select,.hacienda-form select,.hacienda-form input:not([type="checkbox"]) { width:100%; min-height:37px; padding:8px 10px; border:1px solid #d9e5e1; border-radius:5px; color:#36566a; background:#fbfdfc; font-size:10px; }
+.hacienda-profile-form .hacienda-form-error { grid-column:1/-1; }
+.hacienda-profile-form .hacienda-button { justify-self:start; }
+.hacienda-profile-summary { margin:13px 0 0; padding-top:10px; border-top:1px solid #e8efeb; color:#768a85; font-size:9px; line-height:1.6; }
+.hacienda-profile-summary b { color:#456960; }
+.hacienda-profile-missing { display:flex; align-items:flex-start; gap:8px; padding:11px 12px; margin:8px 0 12px; border:1px solid #eadfc6; border-radius:5px; color:#876c38; background:#fffaf0; font-size:9px; line-height:1.55; }
+.hacienda-profile-missing svg { flex:0 0 auto; }
+.hacienda-applicability { padding:9px 10px; margin:2px 0 4px; border:1px solid #d7e9df; border-radius:5px; background:#f3faf5; }
+.hacienda-applicability > span { color:#37785d; font-size:7px; font-weight:850; letter-spacing:.1em; }
+.hacienda-applicability p { margin:4px 0 0; color:#71877a; font-size:8px; line-height:1.5; }
+.hacienda-applicability.does-not-apply { border-color:#ecd8bc; background:#fff8ed; }
+.hacienda-applicability.does-not-apply > span { color:#9b6730; }
+.hacienda-applicability.does-not-apply p { color:#8d7656; }
+.hacienda-applicability.review-required { border-color:#e8d4a3; background:#fff9e9; }
+.hacienda-applicability.review-required > span { color:#8b6a22; }
+.hacienda-applicability.review-required p { color:#7f6c48; }
+.hacienda-applicability.compact { margin:10px 0 0; padding:7px 9px; }
+.hacienda-applicability.compact p { margin-top:3px; }
+.hacienda-retention-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.hacienda-retention-card { display:flex; flex-direction:column; align-items:flex-start; gap:9px; padding:12px; border:1px solid #e3ece8; border-radius:6px; background:#fcfefd; }
+.hacienda-retention-title { display:flex; flex-direction:column; gap:4px; }
+.hacienda-retention-title > span { color:#387f76; font-size:7px; font-weight:850; letter-spacing:.09em; }
+.hacienda-retention-title > b { color:#284640; font-size:10px; line-height:1.4; }
+.hacienda-retention-card > small { color:#7b8f89; font-size:8px; }
+.hacienda-retention-card .hacienda-button { margin-top:auto; }
+.hacienda-model-meta { display:flex; flex-wrap:wrap; justify-content:space-between; gap:7px; padding:2px 0 5px; color:#8a9994; font-size:8px; }
+.hacienda-official-warning { display:flex; align-items:center; flex-wrap:wrap; gap:7px; padding:8px 9px; border:1px solid #eadfc6; border-radius:5px; color:#876c38; background:#fffaf0; font-size:8px; line-height:1.45; }
+.hacienda-official-warning > svg { flex:0 0 auto; }
+.hacienda-official-warning > span { flex:1; }
+.hacienda-official-warning a { display:inline-flex; align-items:center; gap:4px; color:#28766e; font-weight:800; text-decoration:none; white-space:nowrap; }
+.hacienda-official-warning a:hover { text-decoration:underline; }
+.hacienda-fields-title { display:flex; flex-direction:column; gap:4px; padding-top:8px; border-top:1px solid #e9efec; }
+.hacienda-fields-title b { color:#3d5c63; font-size:9px; }
+.hacienda-fields-title small,.hacienda-form > label > small { color:#929f99; font-size:8px; line-height:1.45; font-weight:500; }
+.hacienda-check-field { display:grid; grid-template-columns:16px 1fr; align-items:start; gap:7px; padding:9px; border:1px solid #e1eae5; border-radius:5px; color:#627b7d; background:#fbfdfc; font-size:9px; line-height:1.5; }
+.hacienda-check-field input { margin:2px 0 0; accent-color:#237f78; }
+.hacienda-check-field small { grid-column:2; color:#929f99; font-size:8px; }
+.hacienda-formdata { margin:9px 0; border:1px solid #e5ece8; border-radius:5px; color:#667d78; background:#f9fbf9; font-size:8px; }
+.hacienda-formdata summary { padding:8px 10px; cursor:pointer; font-weight:750; }
+.hacienda-formdata dl { display:grid; gap:5px; padding:0 10px 10px; margin:0; }
+.hacienda-formdata dl > div { display:flex; justify-content:space-between; gap:10px; border-top:1px solid #e9efec; padding-top:5px; }
+.hacienda-formdata dt { color:#899893; }
+.hacienda-formdata dd { margin:0; color:#405d62; font-family:var(--app-font-mono); overflow-wrap:anywhere; text-align:right; }
+.hacienda-profile-form select:focus,.hacienda-form select:focus,.hacienda-form input:focus { outline:2px solid #72b7aa; outline-offset:1px; }
+@media(max-width:760px) {
+  .hacienda-agency-switch { grid-template-columns:1fr; }
+  .hacienda-agency-heading { padding:12px; }
+  .hacienda-agency-heading h2 { font-size:17px; }
+  .hacienda-profile-form { grid-template-columns:1fr; }
+  .hacienda-profile-form .hacienda-form-error { grid-column:auto; }
+  .hacienda-retention-grid { grid-template-columns:1fr; }
+}

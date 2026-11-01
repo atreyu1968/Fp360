@@ -1,0 +1,9 @@
+- [RED FP360 authentication](red-fp360-auth.md) — Use app-owned authentication, never Clerk; account invitation and preview-cookie constraints.
+- [Catalog approval](catalog-approval.md) — New B2B references need approval; preserve historical prices and reuse adjustment IDs on retries.
+- [CRM contact safety](crm-contact-safety.md) — Store fictional reference contacts without personal channels; CRM follow-ups are logs, never messages.
+- [RED FP360 financial controls](red-fp360-financial-controls.md) — Keep dispatch, receipt, invoicing, collection, accounting, and reconciliation as separate auditable simulation stages.
+- [RED FP360 labor and payroll safeguards](red-fp360-labor-safety.md) — Keep workforce records fictional and payroll rates didactic, versioned, and disconnected from real filings or payments.
+- [Hacienda official-form scope](tax-forms-scope.md) — Keep separate AEAT and ATC sections, profile-based applicability, and official templates educational-only.
+- [RED FP360 evaluation scope](redfp360-evaluation-scope.md) — Keep curriculum criteria configurable per center; grades, rubrics, recoveries, and closure remain didactic and auditable.
+- [RED FP360 administration safety](redfp360-administration-safety.md) — Keep recovery and integrations simulation-only; global privilege changes require independent administrator approval.
+- [Idempotent replay authorization](redfp360-idempotency-access.md) — Bind retries to the original actor and recheck current resource scope before returning stored results.

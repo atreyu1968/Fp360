@@ -1,0 +1,44 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "8XCjRUJGOJ6QQ0P8kRL8m"
+uri = "file://.local/conversation-workspace/files/attached_assets/redfp360/RED_FP360_DOCUMENTACION_FUNCIONAL_COMPLETA_26_APLICACIONES.zip"
+type = "unspecified"
+title = "RED FP360 — 26 dossieres y maquetas"
+description = "Paquete original con los 26 dossieres funcionales, guías, sistema de diseño, catálogo y las 26 maquetas PNG de 1920 × 1080."
+logical_id = "34eb6d1b-4350-41cc-b0f1-c3a1567db49f"
+content_hash = "sha256:702f6668e9554183caf329f2031d9fdc5ab027a6425aa0146fff8468e26c827d"
+size = 47031400
+mtime_ms = 1793465611000
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:9edeccfa-f722-44ac-9d4f-ff496c994419/34eb6d1b-4350-41cc-b0f1-c3a1567db49f/a3f17714-8cde-4945-bb37-a684636f1a1b"
+storage_version_token = "1793466579904046"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "JHsKEL5SD8F6cLrSH01nM"
+uri = "file://.local/conversation-workspace/files/attached_assets/redfp360/RED_FP360_Memoria_Borrador.pdf"
+type = "pdf"
+title = "RED FP360 — memoria del proyecto"
+description = "Documento PDF en borrador descargado de la web del proyecto."
+logical_id = "dbfbc8a4-4516-4860-8033-c8845dc94291"
+content_hash = "sha256:0b95e0672fecccdcd2947788fc83fecb6fd6bddf3b41ed78c2f1e7cff3280ab3"
+size = 624248
+mtime_ms = 1793465618000
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:9edeccfa-f722-44ac-9d4f-ff496c994419/dbfbc8a4-4516-4860-8033-c8845dc94291/c063cda1-8b6c-425d-a122-9c945c9b5b0d"
+storage_version_token = "1793466580593561"
+content_type = "application/pdf"
+
+[[outputs]]
+id = "MOHpGfk0e3635phr0F5yS"
+uri = "file://generated-artifacts/redfp360-coverage-matrix.html"
+type = "html"
+title = "Matriz de cobertura RED FP360"
+description = "Inventario interactivo de las 26 aplicaciones con dossieres, maquetas, 174 vistas, 241 pasos de flujo, roles, reglas, datos, dependencias y estado actual. Incluye la hoja visual de las 26 maquetas."
+logical_id = "871fd36f-bfd6-4444-8eea-e3b457405c5b"
+content_hash = "sha256:1be8167f964f1b336cda9843414c3ff2dd8838bd188d5d6be851a47ab6d181bd"
+size = 665529
+mtime_ms = 1793480515940
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:9edeccfa-f722-44ac-9d4f-ff496c994419/871fd36f-bfd6-4444-8eea-e3b457405c5b/5b68b7ab-d159-4d12-80ec-324e4fb93bdd"
+storage_version_token = "1793480527502308"
+content_type = "text/html"
