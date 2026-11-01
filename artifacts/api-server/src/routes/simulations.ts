@@ -80,7 +80,7 @@ function sanitizedAuditOperation(module: string, value: unknown): NetworkOperati
   };
 }
 
-async function networkSituationSnapshot(tenantId: string) {
+export async function networkSituationSnapshot(tenantId: string) {
   const eventQueries: Array<Promise<{ module: string; rows: unknown[] }>> = [
     db.select().from(fpAccountingEvents).where(eq(fpAccountingEvents.tenantId, tenantId)).then((rows) => ({ module: "contabilidad", rows })),
     db.select().from(fpBankEvents).where(eq(fpBankEvents.tenantId, tenantId)).then((rows) => ({ module: "tesoreria", rows })),

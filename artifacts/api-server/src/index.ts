@@ -1,6 +1,7 @@
 import app from "./app";
 import { pool } from "@workspace/db";
 import { logger } from "./lib/logger";
+import { startDelegationScheduler } from "./lib/ai-delegation";
 
 if (!process.env.SESSION_SECRET) {
   throw new Error("SESSION_SECRET must be configured before starting the API server.");
@@ -30,6 +31,7 @@ const server = app.listen(port, (err) => {
 });
 
 let shuttingDown = false;
+const stopDelegationScheduler = startDelegationScheduler();
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => {
@@ -37,6 +39,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
       process.exit(1);
     }
     shuttingDown = true;
+    stopDelegationScheduler();
     logger.info({ signal }, "Graceful shutdown started");
 
     const forceExit = setTimeout(() => {

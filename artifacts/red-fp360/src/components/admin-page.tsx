@@ -20,6 +20,7 @@ import type { AccessRole, AdminPolicyPermission, AdminSystemOverview, AuthIdenti
 import { ROLE_OPTIONS, accessRoleLabel, dateTime, httpStatus } from './admin-shared';
 import './admin-page.css';
 import './admin-ai.css';
+import { AdminAiDelegations } from './admin-ai-delegations';
 
 type View = 'health' | 'organizations' | 'users' | 'policies' | 'scenario' | 'security' | 'recovery' | 'integrations';
 const views: { id: View; label: string; icon: typeof Activity; eyebrow: string; title: string; intro: string }[] = [
@@ -319,7 +320,8 @@ function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t:
     });
   };
   return <div className="ac-stack">
-    <Panel title="Coordinador económico con IA" note="La IA analiza la red antes de proponer campañas; no ejecuta operaciones.">
+    <AdminAiDelegations data={data} done={done} />
+    <Panel title="Coordinador económico con IA" note="Las campañas requieren revisión; solo las empresas delegadas permiten operaciones didácticas automáticas.">
       <form className="ac-ai-config" onSubmit={saveCoordinator}>
         <div className="ac-ai-config-grid">
           <label>Proveedor de IA

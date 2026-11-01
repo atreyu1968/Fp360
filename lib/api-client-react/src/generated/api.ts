@@ -46,6 +46,11 @@ import type {
   AdminScenarioVersion,
   AdminScenarioVersionInput,
   AdminSystemOverview,
+  AiDelegation,
+  AiDelegationInput,
+  AiDelegationOverview,
+  AiDelegationRun,
+  AiDelegationRunInput,
   AuthIdentity,
   AuthLoginInput,
   AuthMfaCodeInput,
@@ -2029,6 +2034,267 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getTestAdminAiCoordinatorConnectionMutationOptions(options), queryClient);
+    }
+
+export const getListAdminAiDelegationsUrl = () => {
+
+
+
+
+  return `/api/admin/ai-coordinator/delegations`
+}
+
+export const listAdminAiDelegations = async ( options?: Parameters<typeof customFetch>[1]): Promise<AiDelegationOverview> => {
+
+  return customFetch<AiDelegationOverview>(getListAdminAiDelegationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminAiDelegationsQueryKey = () => {
+    return [
+    `/api/admin/ai-coordinator/delegations`
+    ] as const;
+    }
+
+
+export const getListAdminAiDelegationsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminAiDelegations>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminAiDelegations>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminAiDelegationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminAiDelegations>>> = ({ signal }) => listAdminAiDelegations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminAiDelegations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListAdminAiDelegationsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminAiDelegations>>>
+export type ListAdminAiDelegationsQueryError = ErrorType<unknown>
+
+
+export function useListAdminAiDelegations<TData = Awaited<ReturnType<typeof listAdminAiDelegations>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminAiDelegations>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAdminAiDelegations>>,
+          TError,
+          Awaited<ReturnType<typeof listAdminAiDelegations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAdminAiDelegations<TData = Awaited<ReturnType<typeof listAdminAiDelegations>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminAiDelegations>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAdminAiDelegations>>,
+          TError,
+          Awaited<ReturnType<typeof listAdminAiDelegations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAdminAiDelegations<TData = Awaited<ReturnType<typeof listAdminAiDelegations>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminAiDelegations>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListAdminAiDelegations<TData = Awaited<ReturnType<typeof listAdminAiDelegations>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminAiDelegations>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListAdminAiDelegationsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAdminAiDelegationUrl = (organizationId: string,) => {
+
+
+
+
+  return `/api/admin/ai-coordinator/delegations/${organizationId}`
+}
+
+export const updateAdminAiDelegation = async (organizationId: string,
+    aiDelegationInput: AiDelegationInput, options?: Parameters<typeof customFetch>[1]): Promise<AiDelegation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AiDelegation>(getUpdateAdminAiDelegationUrl(organizationId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(aiDelegationInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminAiDelegationMutationKey = () => ['updateAdminAiDelegation'] as const;
+
+export const getUpdateAdminAiDelegationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminAiDelegation>>, TError,UpdateAdminAiDelegationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminAiDelegation>>, TError,UpdateAdminAiDelegationMutationVariables, TContext> => {
+
+const mutationKey = getUpdateAdminAiDelegationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminAiDelegation>>, UpdateAdminAiDelegationMutationVariables> = (props) => {
+          const {organizationId,data} = props ?? {};
+
+          return  updateAdminAiDelegation(organizationId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminAiDelegationMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminAiDelegation>>>
+    export type UpdateAdminAiDelegationMutationBody = BodyType<AiDelegationInput>
+    export type UpdateAdminAiDelegationMutationError = ErrorType<void>
+    export type UpdateAdminAiDelegationMutationVariables = {organizationId: string;data: BodyType<AiDelegationInput>}
+
+    export const useUpdateAdminAiDelegation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminAiDelegation>>, TError,UpdateAdminAiDelegationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminAiDelegation>>,
+        TError,
+        UpdateAdminAiDelegationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateAdminAiDelegationMutationOptions(options), queryClient);
+    }
+
+export const getRunAdminAiDelegationUrl = (organizationId: string,) => {
+
+
+
+
+  return `/api/admin/ai-coordinator/delegations/${organizationId}/run`
+}
+
+export const runAdminAiDelegation = async (organizationId: string,
+    aiDelegationRunInput: AiDelegationRunInput, options?: Parameters<typeof customFetch>[1]): Promise<AiDelegationRun> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AiDelegationRun>(getRunAdminAiDelegationUrl(organizationId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(aiDelegationRunInput)
+  }
+);}
+
+
+
+
+
+export const getRunAdminAiDelegationMutationKey = () => ['runAdminAiDelegation'] as const;
+
+export const getRunAdminAiDelegationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runAdminAiDelegation>>, TError,RunAdminAiDelegationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runAdminAiDelegation>>, TError,RunAdminAiDelegationMutationVariables, TContext> => {
+
+const mutationKey = getRunAdminAiDelegationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runAdminAiDelegation>>, RunAdminAiDelegationMutationVariables> = (props) => {
+          const {organizationId,data} = props ?? {};
+
+          return  runAdminAiDelegation(organizationId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunAdminAiDelegationMutationResult = NonNullable<Awaited<ReturnType<typeof runAdminAiDelegation>>>
+    export type RunAdminAiDelegationMutationBody = BodyType<AiDelegationRunInput>
+    export type RunAdminAiDelegationMutationError = ErrorType<void>
+    export type RunAdminAiDelegationMutationVariables = {organizationId: string;data: BodyType<AiDelegationRunInput>}
+
+    export const useRunAdminAiDelegation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runAdminAiDelegation>>, TError,RunAdminAiDelegationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof runAdminAiDelegation>>,
+        TError,
+        RunAdminAiDelegationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRunAdminAiDelegationMutationOptions(options), queryClient);
     }
 
 export const getCreateAdminOrganizationUrl = () => {

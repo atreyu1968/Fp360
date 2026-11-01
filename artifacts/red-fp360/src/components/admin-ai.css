@@ -6,6 +6,11 @@
 .ac-ai-toggle input { accent-color: #167b91; }
 .ac-ai-config-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .ac-ai-note { margin: 0; padding: 10px 12px; border-radius: 6px; color: #6c8293; background: #f4f8fa; font-size: 9px; line-height: 1.55; }
+.ac-ai-form { display: grid; gap: 12px; padding: 15px; color: #526d82; font-size: 11px; line-height: 1.5; }
+.ac-ai-form .ac-field { display: grid; gap: 6px; }
+.ac-ai-form select { max-width: 100%; min-height: 36px; border: 1px solid #d8e3eb; border-radius: 5px; padding: 6px; color: #294960; }
+.ac-ai-form fieldset { display: grid; gap: 10px; border: 1px solid #d8e3eb; border-radius: 5px; padding: 12px; }
+.ac-ai-form .ac-form-actions { flex-wrap: wrap; justify-content: flex-start; }
 @media (max-width: 620px) {
   .ac-ai-config-grid { grid-template-columns: 1fr; }
 }

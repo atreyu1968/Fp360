@@ -31,6 +31,8 @@ import { checkLocalAiEndpoint, normalizeLocalAiBaseUrl } from "../lib/local-ai";
 import { checkMistralAiEndpoint } from "../lib/mistral-ai";
 import { hashSessionToken, issueAuthSession, requireAuth, requireSameOrigin, type AuthContext } from "../middlewares/auth";
 
+import aiDelegationsRouter from "./ai-delegations";
+
 const router: IRouter = Router();
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Invitation = typeof fpAuthInvitations.$inferSelect;
@@ -304,6 +306,7 @@ router.post("/auth/invitations/accept", async (req, res): Promise<void> => {
 });
 
 router.use("/admin", requireAuth, administratorOnly, requireSameOrigin);
+router.use("/admin/ai-coordinator/delegations", aiDelegationsRouter);
 
 router.get("/admin/users", async (req, res): Promise<void> => {
   const users = await db.select({
@@ -529,6 +532,7 @@ router.get("/admin/system/overview", async (req, res): Promise<void> => {
     policyMatrix,
     simulationOnly: true,
   }));
+});
 
 router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => {
   const body = UpdateAdminAiCoordinatorSettingsBody.safeParse(req.body);
@@ -660,7 +664,6 @@ router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
     checkedAt,
     message: settings.provider === "mistral" ? "La API de Mistral respondió correctamente." : "La API local respondió correctamente.",
   }));
-});
 });
 
 router.post("/admin/organizations", async (req, res): Promise<void> => {

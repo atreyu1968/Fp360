@@ -1446,6 +1446,74 @@ export interface AdminIntegrationStatus {
   simulationOnly: boolean;
 }
 
+export type AiDelegationOperation = typeof AiDelegationOperation[keyof typeof AiDelegationOperation];
+
+
+export const AiDelegationOperation = {
+  create_simulated_document: 'create_simulated_document',
+  complete_simulation_event: 'complete_simulation_event',
+} as const;
+
+export interface AiDelegationInput {
+  operationId: string;
+  enabled: boolean;
+  /** @minimum 0 */
+  expectedRevision: number;
+  /** @maxItems 2 */
+  allowedOperations: AiDelegationOperation[];
+}
+
+export interface AiDelegation {
+  organizationId: string;
+  enabled: boolean;
+  allowedOperations: AiDelegationOperation[];
+  revision: number;
+  serviceActorId: string;
+  updatedAt: string;
+}
+
+export interface AiDelegationRunInput {
+  operationId: string;
+}
+
+export type AiDelegationRunStatus = typeof AiDelegationRunStatus[keyof typeof AiDelegationRunStatus];
+
+
+export const AiDelegationRunStatus = {
+  running: 'running',
+  applied: 'applied',
+  cancelled: 'cancelled',
+  failed: 'failed',
+} as const;
+
+export interface AiDelegationRun {
+  id: string;
+  organizationId: string;
+  serviceActorId: string;
+  revision: number;
+  status: AiDelegationRunStatus;
+  detail: string;
+  createdAt: string;
+  requestedBy: string;
+  /** @nullable */
+  model: string | null;
+  /** @nullable */
+  snapshotAt: string | null;
+  /** @nullable */
+  contextHash: string | null;
+  /** @nullable */
+  companyCount: number | null;
+  /** @nullable */
+  operationCount: number | null;
+  /** @nullable */
+  finishedAt: string | null;
+}
+
+export interface AiDelegationOverview {
+  delegations: AiDelegation[];
+  runs: AiDelegationRun[];
+}
+
 export type AdminAiCoordinatorSettingsProvider = typeof AdminAiCoordinatorSettingsProvider[keyof typeof AdminAiCoordinatorSettingsProvider];
 
 

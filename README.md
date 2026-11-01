@@ -200,7 +200,25 @@ El endpoint de configuración inicial falla de forma cerrada si `RED_FP360_SETUP
 
 ## Coordinador económico con IA local o Mistral
 
-El coordinador crea propuestas didácticas de campañas y eventos para conectar el trabajo de varias empresas simuladas. No ejecuta pedidos, pagos, cambios de stock, asientos, declaraciones ni otras operaciones del ERP.
+El coordinador crea propuestas didácticas de campañas y eventos para conectar el trabajo de varias empresas simuladas. Por defecto requiere aprobación humana. La administración puede delegar una empresa concreta para ejecutar únicamente las operaciones didácticas autorizadas abajo. No ejecuta pedidos, pagos, cambios de stock, asientos, declaraciones ni trámites reales.
+
+### Delegar una empresa y recuperar su control
+
+En **Administración → Integraciones → Autonomía simulada por empresa**, selecciona la empresa, marca los permisos y confirma la autorización explícita. No basta con elegir la modalidad autónoma de una campaña. La delegación requiere el proveedor local; Mistral sigue disponible para generar propuestas supervisadas, no para los ciclos autónomos.
+
+- `create_simulated_document`: crea borradores de notas didácticas, sintéticos, privados para la empresa y descargables desde Documentación. Nunca confirma documentos automáticamente.
+- `complete_simulation_event`: vincula un documento ficticio ya confirmado, visible en la empresa y del tipo exigido, y completa un evento publicado de una campaña activa. No actúa sobre eventos futuros, con precondiciones pendientes o con evidencia ya vinculada.
+- Cada empresa tiene un identificador de servicio sin cuenta de acceso ni sesión. El servicio solo puede escribir mediante estas dos operaciones, dentro de su tenant y empresa. La IA consulta el estado y el historial de toda la red antes de cada ciclo, pero no recibe identidades ni contactos personales.
+- El servidor revisa las delegaciones cada 30 segundos y programa un ciclo cada cinco minutos (hasta tres acciones por ciclo). **Ejecutar ciclo ahora** permite adelantarlo. El modelo puede decidir no actuar.
+- **Revocar y recuperar control** cancela los ciclos pendientes inmediatamente. Una respuesta que llegue tarde no puede guardar cambios, ni siquiera si después se vuelve a delegar la empresa. Lo ya registrado se conserva.
+- Cambiar los permisos también invalida los ciclos pendientes. Las revisiones evitan sobrescribir cambios de otra sesión. Los identificadores de operación, los bloqueos por empresa y la detección de notas idénticas impiden duplicados.
+- La actividad administrativa conserva quién delegó/revocó y los permisos exactos. Cada ciclo registra el actor de servicio, revisión, modelo, fecha y huella del contexto completo, volumen del historial, resultado y documentos/eventos afectados. Los fallos no aplican cambios parciales.
+
+Prueba de integración con un modelo local ficticio y tenants temporales, con el API en ejecución:
+
+```sh
+node --test lib/db/tests/ai-delegations.test.mjs
+```
 
 ### Configuración
 

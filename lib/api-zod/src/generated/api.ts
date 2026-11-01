@@ -475,6 +475,87 @@ export const TestAdminAiCoordinatorConnectionResponse = zod.object({
 })
 
 
+export const ListAdminAiDelegationsResponse = zod.object({
+  "delegations": zod.array(zod.object({
+  "organizationId": zod.string(),
+  "enabled": zod.boolean(),
+  "allowedOperations": zod.array(zod.enum(['create_simulated_document', 'complete_simulation_event'])),
+  "revision": zod.int(),
+  "serviceActorId": zod.string(),
+  "updatedAt": zod.iso.datetime({"offset":true})
+})),
+  "runs": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "serviceActorId": zod.string(),
+  "revision": zod.int(),
+  "status": zod.enum(['running', 'applied', 'cancelled', 'failed']),
+  "detail": zod.string(),
+  "createdAt": zod.iso.datetime({"offset":true}),
+  "requestedBy": zod.string(),
+  "model": zod.string().nullable(),
+  "snapshotAt": zod.iso.datetime({"offset":true}).nullable(),
+  "contextHash": zod.string().nullable(),
+  "companyCount": zod.int().nullable(),
+  "operationCount": zod.int().nullable(),
+  "finishedAt": zod.iso.datetime({"offset":true}).nullable()
+}))
+})
+
+
+export const UpdateAdminAiDelegationParams = zod.object({
+  "organizationId": zod.string()
+})
+
+export const updateAdminAiDelegationBodyExpectedRevisionMin = 0;
+
+export const updateAdminAiDelegationBodyAllowedOperationsMax = 2;
+
+
+
+export const UpdateAdminAiDelegationBody = zod.object({
+  "operationId": zod.uuid(),
+  "enabled": zod.boolean(),
+  "expectedRevision": zod.int().min(updateAdminAiDelegationBodyExpectedRevisionMin),
+  "allowedOperations": zod.array(zod.enum(['create_simulated_document', 'complete_simulation_event'])).max(updateAdminAiDelegationBodyAllowedOperationsMax)
+})
+
+export const UpdateAdminAiDelegationResponse = zod.object({
+  "organizationId": zod.string(),
+  "enabled": zod.boolean(),
+  "allowedOperations": zod.array(zod.enum(['create_simulated_document', 'complete_simulation_event'])),
+  "revision": zod.int(),
+  "serviceActorId": zod.string(),
+  "updatedAt": zod.iso.datetime({"offset":true})
+})
+
+
+export const RunAdminAiDelegationParams = zod.object({
+  "organizationId": zod.string()
+})
+
+export const RunAdminAiDelegationBody = zod.object({
+  "operationId": zod.uuid()
+})
+
+export const RunAdminAiDelegationResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "serviceActorId": zod.string(),
+  "revision": zod.int(),
+  "status": zod.enum(['running', 'applied', 'cancelled', 'failed']),
+  "detail": zod.string(),
+  "createdAt": zod.iso.datetime({"offset":true}),
+  "requestedBy": zod.string(),
+  "model": zod.string().nullable(),
+  "snapshotAt": zod.iso.datetime({"offset":true}).nullable(),
+  "contextHash": zod.string().nullable(),
+  "companyCount": zod.int().nullable(),
+  "operationCount": zod.int().nullable(),
+  "finishedAt": zod.iso.datetime({"offset":true}).nullable()
+})
+
+
 export const createAdminOrganizationBodyNameMin = 2;
 export const createAdminOrganizationBodyNameMax = 120;
 

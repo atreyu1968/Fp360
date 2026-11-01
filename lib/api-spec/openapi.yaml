@@ -305,7 +305,7 @@ paths:
             schema: { $ref: "#/components/schemas/AdminAiCoordinatorSettingsInput" }
       responses:
         "200":
-              description: AI provider configuration without credentials
+          description: AI provider configuration without credentials
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminAiCoordinatorSettings" }
@@ -329,6 +329,59 @@ paths:
         "403": { description: Administrator required }
         "409": { description: AI provider is not configured }
         "502": { description: Configured AI provider unavailable }
+  /admin/ai-coordinator/delegations:
+    get:
+      operationId: listAdminAiDelegations
+      tags: [administration]
+      responses:
+        "200":
+          description: Company delegations and recent execution audit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiDelegationOverview" }
+  /admin/ai-coordinator/delegations/{organizationId}:
+    put:
+      operationId: updateAdminAiDelegation
+      tags: [administration]
+      parameters:
+        - in: path
+          name: organizationId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AiDelegationInput" }
+      responses:
+        "200":
+          description: Delegation saved or revoked; old executions cannot commit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiDelegation" }
+        "403": { description: Administrator required }
+        "409": { description: Stale revision or conflicting operation }
+  /admin/ai-coordinator/delegations/{organizationId}/run:
+    post:
+      operationId: runAdminAiDelegation
+      tags: [administration]
+      parameters:
+        - in: path
+          name: organizationId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AiDelegationRunInput" }
+      responses:
+        "200":
+          description: Audited simulation-only execution
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiDelegationRun" }
+        "409": { description: Delegation revoked or cycle already running }
   /admin/organizations:
     post:
       operationId: createAdminOrganization
@@ -5696,6 +5749,67 @@ components:
         status: { type: string, enum: [not_configured, simulation_only] }
         checkedAt: { type: ["string", "null"], format: date-time }
         simulationOnly: { type: boolean }
+    AiDelegationOperation:
+      type: string
+      enum: [create_simulated_document, complete_simulation_event]
+    AiDelegationInput:
+      type: object
+      additionalProperties: false
+      required: [operationId, enabled, allowedOperations, expectedRevision]
+      properties:
+        operationId: { type: string, format: uuid }
+        enabled: { type: boolean }
+        expectedRevision: { type: integer, minimum: 0 }
+        allowedOperations:
+          type: array
+          uniqueItems: true
+          maxItems: 2
+          items: { $ref: "#/components/schemas/AiDelegationOperation" }
+    AiDelegation:
+      type: object
+      required: [organizationId, enabled, allowedOperations, revision, serviceActorId, updatedAt]
+      properties:
+        organizationId: { type: string }
+        enabled: { type: boolean }
+        allowedOperations:
+          type: array
+          items: { $ref: "#/components/schemas/AiDelegationOperation" }
+        revision: { type: integer }
+        serviceActorId: { type: string }
+        updatedAt: { type: string, format: date-time }
+    AiDelegationRunInput:
+      type: object
+      required: [operationId]
+      properties:
+        operationId: { type: string, format: uuid }
+    AiDelegationRun:
+      type: object
+      required: [id, organizationId, serviceActorId, status, detail, createdAt, revision, requestedBy, model, snapshotAt, contextHash, companyCount, operationCount, finishedAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        serviceActorId: { type: string }
+        revision: { type: integer }
+        status: { type: string, enum: [running, applied, cancelled, failed] }
+        detail: { type: string }
+        createdAt: { type: string, format: date-time }
+        requestedBy: { type: string }
+        model: { type: ["string", "null"] }
+        snapshotAt: { type: ["string", "null"], format: date-time }
+        contextHash: { type: ["string", "null"] }
+        companyCount: { type: ["integer", "null"] }
+        operationCount: { type: ["integer", "null"] }
+        finishedAt: { type: ["string", "null"], format: date-time }
+    AiDelegationOverview:
+      type: object
+      required: [delegations, runs]
+      properties:
+        delegations:
+          type: array
+          items: { $ref: "#/components/schemas/AiDelegation" }
+        runs:
+          type: array
+          items: { $ref: "#/components/schemas/AiDelegationRun" }
     AdminAiCoordinatorSettings:
       type: object
       required: [configured, enabled, provider, baseUrl, model, mistralApiKeyConfigured, updatedAt]
