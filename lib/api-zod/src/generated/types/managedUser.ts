@@ -15,5 +15,6 @@ export interface ManagedUser {
   /** @nullable */
   organizationId?: string | null;
   isActive: boolean;
+  mfaEnabled: boolean;
   createdAt: string;
 }

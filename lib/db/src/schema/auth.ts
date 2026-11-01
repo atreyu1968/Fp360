@@ -1,6 +1,7 @@
 import {
   boolean,
   index,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -15,6 +16,11 @@ export const fpAuthUsers = pgTable(
     email: text("email").notNull(),
     displayName: text("display_name").notNull(),
     passwordHash: text("password_hash").notNull(),
+    mfaSecretEncrypted: text("mfa_secret_encrypted"),
+    mfaPendingSecretEncrypted: text("mfa_pending_secret_encrypted"),
+    mfaPendingExpiresAt: timestamp("mfa_pending_expires_at", { withTimezone: true }),
+    mfaEnabledAt: timestamp("mfa_enabled_at", { withTimezone: true }),
+    mfaRecoveryCodeHashes: jsonb("mfa_recovery_code_hashes").$type<string[]>().notNull().default([]),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -63,6 +69,7 @@ export const fpAuthSessions = pgTable(
       .notNull()
       .references(() => fpAuthMemberships.id, { onDelete: "cascade" }),
     tokenHash: text("token_hash").notNull(),
+    mfaVerifiedAt: timestamp("mfa_verified_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -111,7 +118,12 @@ export const fpAuthAudit = pgTable(
     actorUserId: text("actor_user_id").references(() => fpAuthUsers.id, { onDelete: "set null" }),
     action: text("action").notNull(),
     entityId: text("entity_id").notNull(),
+    operationId: text("operation_id"),
+    operationFingerprint: text("operation_fingerprint"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("fp360_auth_audit_tenant_idx").on(table.tenantId)],
+  (table) => [
+    index("fp360_auth_audit_tenant_idx").on(table.tenantId),
+    uniqueIndex("fp360_auth_audit_operation_unique").on(table.tenantId, table.operationId),
+  ],
 );

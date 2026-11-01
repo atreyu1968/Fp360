@@ -32,4 +32,6 @@ export * from "./redfp360-simulations";
 export * from "./redfp360-portfolios";
 export * from "./redfp360-evaluations";
 export * from "./redfp360-mentorship";
+export * from "./redfp360-coordination";
+export * from "./redfp360-administration";
 export * from "./auth";

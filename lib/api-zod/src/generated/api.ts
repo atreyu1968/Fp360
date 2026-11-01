@@ -53,7 +53,9 @@ export const SetupInitialAdministratorResponse = zod.object({
   "displayName": zod.string(),
   "tenantId": zod.string(),
   "organizationId": zod.string().optional(),
-  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator'])
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "mfaSetupRequired": zod.boolean(),
+  "mfaVerificationRequired": zod.boolean()
 })
 
 
@@ -80,7 +82,85 @@ export const LoginResponse = zod.object({
   "displayName": zod.string(),
   "tenantId": zod.string(),
   "organizationId": zod.string().optional(),
-  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator'])
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "mfaSetupRequired": zod.boolean(),
+  "mfaVerificationRequired": zod.boolean()
+})
+
+
+/**
+ * @summary Begin local administrator authenticator enrollment
+ */
+export const beginAdminMfaSetupResponseSecretMin = 24;
+export const beginAdminMfaSetupResponseSecretMax = 64;
+
+export const beginAdminMfaSetupResponseOtpauthUrlMax = 500;
+
+
+
+export const BeginAdminMfaSetupResponse = zod.object({
+  "secret": zod.string().min(beginAdminMfaSetupResponseSecretMin).max(beginAdminMfaSetupResponseSecretMax),
+  "otpauthUrl": zod.string().min(1).max(beginAdminMfaSetupResponseOtpauthUrlMax),
+  "expiresAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Confirm authenticator enrollment and issue recovery codes
+ */
+export const confirmAdminMfaBodyCodeMin = 6;
+export const confirmAdminMfaBodyCodeMax = 32;
+
+
+
+export const ConfirmAdminMfaBody = zod.object({
+  "code": zod.string().min(confirmAdminMfaBodyCodeMin).max(confirmAdminMfaBodyCodeMax)
+})
+
+export const confirmAdminMfaResponseRecoveryCodesItemMin = 12;
+export const confirmAdminMfaResponseRecoveryCodesItemMax = 24;
+
+export const confirmAdminMfaResponseRecoveryCodesMin = 8;
+export const confirmAdminMfaResponseRecoveryCodesMax = 12;
+
+
+
+export const ConfirmAdminMfaResponse = zod.object({
+  "identity": zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "displayName": zod.string(),
+  "tenantId": zod.string(),
+  "organizationId": zod.string().optional(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "mfaSetupRequired": zod.boolean(),
+  "mfaVerificationRequired": zod.boolean()
+}),
+  "recoveryCodes": zod.array(zod.string().min(confirmAdminMfaResponseRecoveryCodesItemMin).max(confirmAdminMfaResponseRecoveryCodesItemMax)).min(confirmAdminMfaResponseRecoveryCodesMin).max(confirmAdminMfaResponseRecoveryCodesMax)
+})
+
+
+/**
+ * @summary Verify a time-based code or one-time recovery code
+ */
+export const verifyAdminMfaBodyCodeMin = 6;
+export const verifyAdminMfaBodyCodeMax = 32;
+
+
+
+export const VerifyAdminMfaBody = zod.object({
+  "code": zod.string().min(verifyAdminMfaBodyCodeMin).max(verifyAdminMfaBodyCodeMax)
+})
+
+export const VerifyAdminMfaResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "displayName": zod.string(),
+  "tenantId": zod.string(),
+  "organizationId": zod.string().optional(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "mfaSetupRequired": zod.boolean(),
+  "mfaVerificationRequired": zod.boolean()
 })
 
 
@@ -93,7 +173,9 @@ export const GetCurrentIdentityResponse = zod.object({
   "displayName": zod.string(),
   "tenantId": zod.string(),
   "organizationId": zod.string().optional(),
-  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator'])
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "mfaSetupRequired": zod.boolean(),
+  "mfaVerificationRequired": zod.boolean()
 })
 
 
@@ -110,6 +192,7 @@ export const ListAdminUsersResponseItem = zod.object({
   "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
   "organizationId": zod.string().nullish(),
   "isActive": zod.boolean(),
+  "mfaEnabled": zod.boolean(),
   "createdAt": zod.string().datetime({"offset":true})
 })
 export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem)
@@ -135,6 +218,7 @@ export const UpdateAdminUserResponse = zod.object({
   "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
   "organizationId": zod.string().nullish(),
   "isActive": zod.boolean(),
+  "mfaEnabled": zod.boolean(),
   "createdAt": zod.string().datetime({"offset":true})
 })
 
@@ -193,6 +277,377 @@ export const ListAdminAuditResponseItem = zod.object({
 export const ListAdminAuditResponse = zod.array(ListAdminAuditResponseItem)
 
 
+export const getAdminSystemOverviewResponseHealthUptimeSecondsMin = 0;
+
+export const getAdminSystemOverviewResponseHealthMemoryRssBytesMin = 0;
+
+export const getAdminSystemOverviewResponseHealthHeapUsedBytesMin = 0;
+
+export const getAdminSystemOverviewResponseHealthHeapTotalBytesMin = 0;
+
+export const getAdminSystemOverviewResponseCountsOrganizationsMin = 0;
+
+export const getAdminSystemOverviewResponseCountsActiveOrganizationsMin = 0;
+
+export const getAdminSystemOverviewResponseCountsUsersMin = 0;
+
+export const getAdminSystemOverviewResponseCountsActiveUsersMin = 0;
+
+export const getAdminSystemOverviewResponseCountsAuditEventsMin = 0;
+
+export const getAdminSystemOverviewResponseCountsScenarioVersionsMin = 0;
+
+export const getAdminSystemOverviewResponseCountsBackupExercisesMin = 0;
+
+
+export const getAdminSystemOverviewResponseScenarioVersionsItemSettingsAcademicPeriodMin = 4;
+export const getAdminSystemOverviewResponseScenarioVersionsItemSettingsAcademicPeriodMax = 30;
+
+export const getAdminSystemOverviewResponseScenarioVersionsItemSettingsCatalogVersionMax = 40;
+
+export const getAdminSystemOverviewResponseScenarioVersionsItemSettingsDocumentRetentionDaysMin = 30;
+export const getAdminSystemOverviewResponseScenarioVersionsItemSettingsDocumentRetentionDaysMax = 3650;
+
+export const getAdminSystemOverviewResponseBackupExercisesItemDatasetCountsOrganizationsMin = 0;
+
+export const getAdminSystemOverviewResponseBackupExercisesItemDatasetCountsUsersMin = 0;
+
+export const getAdminSystemOverviewResponseBackupExercisesItemDatasetCountsDocumentsMin = 0;
+
+export const getAdminSystemOverviewResponseBackupExercisesItemDatasetCountsSimulationCampaignsMin = 0;
+
+
+
+export const GetAdminSystemOverviewResponse = zod.object({
+  "health": zod.object({
+  "apiStatus": zod.enum(['ok']),
+  "databaseStatus": zod.enum(['ok', 'unavailable']),
+  "checkedAt": zod.string().datetime({"offset":true}),
+  "uptimeSeconds": zod.number().int().min(getAdminSystemOverviewResponseHealthUptimeSecondsMin),
+  "memoryRssBytes": zod.number().int().min(getAdminSystemOverviewResponseHealthMemoryRssBytesMin),
+  "heapUsedBytes": zod.number().int().min(getAdminSystemOverviewResponseHealthHeapUsedBytesMin),
+  "heapTotalBytes": zod.number().int().min(getAdminSystemOverviewResponseHealthHeapTotalBytesMin)
+}),
+  "counts": zod.object({
+  "organizations": zod.number().int().min(getAdminSystemOverviewResponseCountsOrganizationsMin),
+  "activeOrganizations": zod.number().int().min(getAdminSystemOverviewResponseCountsActiveOrganizationsMin),
+  "users": zod.number().int().min(getAdminSystemOverviewResponseCountsUsersMin),
+  "activeUsers": zod.number().int().min(getAdminSystemOverviewResponseCountsActiveUsersMin),
+  "auditEvents": zod.number().int().min(getAdminSystemOverviewResponseCountsAuditEventsMin),
+  "scenarioVersions": zod.number().int().min(getAdminSystemOverviewResponseCountsScenarioVersionsMin),
+  "backupExercises": zod.number().int().min(getAdminSystemOverviewResponseCountsBackupExercisesMin)
+}),
+  "organizations": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "center": zod.string(),
+  "island": zod.string(),
+  "role": zod.enum(['buyer', 'supplier', 'both']),
+  "isActive": zod.boolean()
+})),
+  "scenarioVersions": zod.array(zod.object({
+  "id": zod.string(),
+  "version": zod.number().int().min(1),
+  "validFrom": zod.string().date(),
+  "settings": zod.object({
+  "academicPeriod": zod.string().min(getAdminSystemOverviewResponseScenarioVersionsItemSettingsAcademicPeriodMin).max(getAdminSystemOverviewResponseScenarioVersionsItemSettingsAcademicPeriodMax),
+  "simulatedDate": zod.string().date(),
+  "catalogVersion": zod.string().min(1).max(getAdminSystemOverviewResponseScenarioVersionsItemSettingsCatalogVersionMax),
+  "documentRetentionDays": zod.number().int().min(getAdminSystemOverviewResponseScenarioVersionsItemSettingsDocumentRetentionDaysMin).max(getAdminSystemOverviewResponseScenarioVersionsItemSettingsDocumentRetentionDaysMax)
+}),
+  "createdByUserId": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "backupExercises": zod.array(zod.object({
+  "id": zod.string(),
+  "operationId": zod.string().uuid(),
+  "label": zod.string(),
+  "status": zod.enum(['verified', 'attention']),
+  "datasetCounts": zod.object({
+  "organizations": zod.number().int().min(getAdminSystemOverviewResponseBackupExercisesItemDatasetCountsOrganizationsMin),
+  "users": zod.number().int().min(getAdminSystemOverviewResponseBackupExercisesItemDatasetCountsUsersMin),
+  "documents": zod.number().int().min(getAdminSystemOverviewResponseBackupExercisesItemDatasetCountsDocumentsMin),
+  "simulationCampaigns": zod.number().int().min(getAdminSystemOverviewResponseBackupExercisesItemDatasetCountsSimulationCampaignsMin)
+}),
+  "actorUserId": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "privilegeRequests": zod.array(zod.object({
+  "id": zod.string(),
+  "operationId": zod.string().uuid(),
+  "requestType": zod.enum(['promote_user', 'invite_administrator', 'deactivate_administrator']),
+  "targetUserId": zod.string().nullable(),
+  "email": zod.string().email().nullable(),
+  "organizationId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "requestedByUserId": zod.string(),
+  "approvedByUserId": zod.string().nullable(),
+  "decisionNote": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "decidedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "integrations": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "status": zod.enum(['not_configured', 'simulation_only']),
+  "checkedAt": zod.string().datetime({"offset":true}).nullable(),
+  "simulationOnly": zod.boolean()
+})),
+  "policyMatrix": zod.array(zod.object({
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "label": zod.string(),
+  "permissions": zod.array(zod.enum(['system_admin', 'network_admin', 'manage_center_accounts', 'manage_scenario_settings', 'run_backup_exercise', 'manage_intercenter_campaigns', 'manage_company_operations', 'work_assigned_cases']))
+})),
+  "simulationOnly": zod.literal(true)
+})
+
+
+export const createAdminOrganizationBodyNameMin = 2;
+export const createAdminOrganizationBodyNameMax = 120;
+
+export const createAdminOrganizationBodyCenterMin = 2;
+export const createAdminOrganizationBodyCenterMax = 120;
+
+export const createAdminOrganizationBodyIslandMin = 2;
+export const createAdminOrganizationBodyIslandMax = 60;
+
+
+
+export const CreateAdminOrganizationBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "name": zod.string().min(createAdminOrganizationBodyNameMin).max(createAdminOrganizationBodyNameMax),
+  "center": zod.string().min(createAdminOrganizationBodyCenterMin).max(createAdminOrganizationBodyCenterMax),
+  "island": zod.string().min(createAdminOrganizationBodyIslandMin).max(createAdminOrganizationBodyIslandMax),
+  "role": zod.enum(['buyer', 'supplier', 'both'])
+})
+
+export const CreateAdminOrganizationResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "center": zod.string(),
+  "island": zod.string(),
+  "role": zod.enum(['buyer', 'supplier', 'both']),
+  "isActive": zod.boolean()
+})
+
+
+export const ActOnAdminOrganizationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const actOnAdminOrganizationBodyNoteMin = 5;
+export const actOnAdminOrganizationBodyNoteMax = 300;
+
+
+
+export const ActOnAdminOrganizationBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "action": zod.enum(['activate', 'suspend', 'archive']),
+  "note": zod.string().min(actOnAdminOrganizationBodyNoteMin).max(actOnAdminOrganizationBodyNoteMax)
+})
+
+export const ActOnAdminOrganizationResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "center": zod.string(),
+  "island": zod.string(),
+  "role": zod.enum(['buyer', 'supplier', 'both']),
+  "isActive": zod.boolean()
+})
+
+
+export const EvaluateAdminPolicyBody = zod.object({
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "permission": zod.enum(['system_admin', 'network_admin', 'manage_center_accounts', 'manage_scenario_settings', 'run_backup_exercise', 'manage_intercenter_campaigns', 'manage_company_operations', 'work_assigned_cases'])
+})
+
+export const EvaluateAdminPolicyResponse = zod.object({
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "permission": zod.enum(['system_admin', 'network_admin', 'manage_center_accounts', 'manage_scenario_settings', 'run_backup_exercise', 'manage_intercenter_campaigns', 'manage_company_operations', 'work_assigned_cases']),
+  "allowed": zod.boolean(),
+  "scope": zod.string(),
+  "explanation": zod.string(),
+  "simulationOnly": zod.literal(true)
+})
+
+
+export const createAdminScenarioVersionBodySettingsAcademicPeriodMin = 4;
+export const createAdminScenarioVersionBodySettingsAcademicPeriodMax = 30;
+
+export const createAdminScenarioVersionBodySettingsCatalogVersionMax = 40;
+
+export const createAdminScenarioVersionBodySettingsDocumentRetentionDaysMin = 30;
+export const createAdminScenarioVersionBodySettingsDocumentRetentionDaysMax = 3650;
+
+
+
+export const CreateAdminScenarioVersionBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "validFrom": zod.string().date(),
+  "settings": zod.object({
+  "academicPeriod": zod.string().min(createAdminScenarioVersionBodySettingsAcademicPeriodMin).max(createAdminScenarioVersionBodySettingsAcademicPeriodMax),
+  "simulatedDate": zod.string().date(),
+  "catalogVersion": zod.string().min(1).max(createAdminScenarioVersionBodySettingsCatalogVersionMax),
+  "documentRetentionDays": zod.number().int().min(createAdminScenarioVersionBodySettingsDocumentRetentionDaysMin).max(createAdminScenarioVersionBodySettingsDocumentRetentionDaysMax)
+})
+})
+
+
+export const createAdminScenarioVersionResponseSettingsAcademicPeriodMin = 4;
+export const createAdminScenarioVersionResponseSettingsAcademicPeriodMax = 30;
+
+export const createAdminScenarioVersionResponseSettingsCatalogVersionMax = 40;
+
+export const createAdminScenarioVersionResponseSettingsDocumentRetentionDaysMin = 30;
+export const createAdminScenarioVersionResponseSettingsDocumentRetentionDaysMax = 3650;
+
+
+
+export const CreateAdminScenarioVersionResponse = zod.object({
+  "id": zod.string(),
+  "version": zod.number().int().min(1),
+  "validFrom": zod.string().date(),
+  "settings": zod.object({
+  "academicPeriod": zod.string().min(createAdminScenarioVersionResponseSettingsAcademicPeriodMin).max(createAdminScenarioVersionResponseSettingsAcademicPeriodMax),
+  "simulatedDate": zod.string().date(),
+  "catalogVersion": zod.string().min(1).max(createAdminScenarioVersionResponseSettingsCatalogVersionMax),
+  "documentRetentionDays": zod.number().int().min(createAdminScenarioVersionResponseSettingsDocumentRetentionDaysMin).max(createAdminScenarioVersionResponseSettingsDocumentRetentionDaysMax)
+}),
+  "createdByUserId": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+export const createAdminBackupExerciseBodyLabelMin = 5;
+export const createAdminBackupExerciseBodyLabelMax = 120;
+
+
+
+export const CreateAdminBackupExerciseBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "label": zod.string().min(createAdminBackupExerciseBodyLabelMin).max(createAdminBackupExerciseBodyLabelMax)
+})
+
+export const createAdminBackupExerciseResponseDatasetCountsOrganizationsMin = 0;
+
+export const createAdminBackupExerciseResponseDatasetCountsUsersMin = 0;
+
+export const createAdminBackupExerciseResponseDatasetCountsDocumentsMin = 0;
+
+export const createAdminBackupExerciseResponseDatasetCountsSimulationCampaignsMin = 0;
+
+
+
+export const CreateAdminBackupExerciseResponse = zod.object({
+  "id": zod.string(),
+  "operationId": zod.string().uuid(),
+  "label": zod.string(),
+  "status": zod.enum(['verified', 'attention']),
+  "datasetCounts": zod.object({
+  "organizations": zod.number().int().min(createAdminBackupExerciseResponseDatasetCountsOrganizationsMin),
+  "users": zod.number().int().min(createAdminBackupExerciseResponseDatasetCountsUsersMin),
+  "documents": zod.number().int().min(createAdminBackupExerciseResponseDatasetCountsDocumentsMin),
+  "simulationCampaigns": zod.number().int().min(createAdminBackupExerciseResponseDatasetCountsSimulationCampaignsMin)
+}),
+  "actorUserId": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+export const CheckAdminIntegrationParams = zod.object({
+  "integrationId": zod.coerce.string()
+})
+
+export const CheckAdminIntegrationBody = zod.object({
+  "operationId": zod.string().uuid()
+})
+
+export const CheckAdminIntegrationResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "status": zod.enum(['not_configured', 'simulation_only']),
+  "checkedAt": zod.string().datetime({"offset":true}).nullable(),
+  "simulationOnly": zod.boolean()
+})
+
+
+export const ListAdminPrivilegeRequestsResponseItem = zod.object({
+  "id": zod.string(),
+  "operationId": zod.string().uuid(),
+  "requestType": zod.enum(['promote_user', 'invite_administrator', 'deactivate_administrator']),
+  "targetUserId": zod.string().nullable(),
+  "email": zod.string().email().nullable(),
+  "organizationId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "requestedByUserId": zod.string(),
+  "approvedByUserId": zod.string().nullable(),
+  "decisionNote": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "decidedAt": zod.string().datetime({"offset":true}).nullable()
+})
+export const ListAdminPrivilegeRequestsResponse = zod.array(ListAdminPrivilegeRequestsResponseItem)
+
+
+export const CreateAdminPrivilegeRequestBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "requestType": zod.enum(['promote_user', 'invite_administrator', 'deactivate_administrator']),
+  "targetUserId": zod.string().nullish(),
+  "email": zod.string().email().nullish(),
+  "organizationId": zod.string().nullish()
+})
+
+export const CreateAdminPrivilegeRequestResponse = zod.object({
+  "id": zod.string(),
+  "operationId": zod.string().uuid(),
+  "requestType": zod.enum(['promote_user', 'invite_administrator', 'deactivate_administrator']),
+  "targetUserId": zod.string().nullable(),
+  "email": zod.string().email().nullable(),
+  "organizationId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "requestedByUserId": zod.string(),
+  "approvedByUserId": zod.string().nullable(),
+  "decisionNote": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "decidedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+export const ActOnAdminPrivilegeRequestParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const actOnAdminPrivilegeRequestBodyNoteMin = 5;
+export const actOnAdminPrivilegeRequestBodyNoteMax = 300;
+
+
+
+export const ActOnAdminPrivilegeRequestBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "action": zod.enum(['approve', 'reject']),
+  "note": zod.string().min(actOnAdminPrivilegeRequestBodyNoteMin).max(actOnAdminPrivilegeRequestBodyNoteMax)
+})
+
+export const ActOnAdminPrivilegeRequestResponse = zod.object({
+  "request": zod.object({
+  "id": zod.string(),
+  "operationId": zod.string().uuid(),
+  "requestType": zod.enum(['promote_user', 'invite_administrator', 'deactivate_administrator']),
+  "targetUserId": zod.string().nullable(),
+  "email": zod.string().email().nullable(),
+  "organizationId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "requestedByUserId": zod.string(),
+  "approvedByUserId": zod.string().nullable(),
+  "decisionNote": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "decidedAt": zod.string().datetime({"offset":true}).nullable()
+}),
+  "invitationToken": zod.string().nullable()
+})
+
+
 export const inspectInvitationBodyTokenMin = 32;
 export const inspectInvitationBodyTokenMax = 128;
 
@@ -231,7 +686,9 @@ export const AcceptInvitationResponse = zod.object({
   "displayName": zod.string(),
   "tenantId": zod.string(),
   "organizationId": zod.string().optional(),
-  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator'])
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "mfaSetupRequired": zod.boolean(),
+  "mfaVerificationRequired": zod.boolean()
 })
 
 
@@ -1971,6 +2428,578 @@ export const UpdateMentorRecommendationResponse = zod.object({
   "reviewId": zod.string(),
   "text": zod.string(),
   "status": zod.enum(['proposed', 'accepted', 'implemented', 'rejected']),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Read the authenticated user's intercenter coordination workspace
+ */
+export const GetCoordinationOverviewQueryParams = zod.object({
+  "campaignId": zod.coerce.string().optional()
+})
+
+export const GetCoordinationOverviewResponse = zod.object({
+  "currentCenterId": zod.string().nullable(),
+  "centers": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "island": zod.string(),
+  "companyCount": zod.number().int()
+})),
+  "availableCenters": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "island": zod.string(),
+  "companyCount": zod.number().int()
+})),
+  "campaigns": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "objective": zod.string(),
+  "ownerCenterId": zod.string(),
+  "ownerCenterName": zod.string(),
+  "ownerIsland": zod.string(),
+  "simulationCampaignId": zod.string().nullable(),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date(),
+  "status": zod.enum(['pending_approval', 'active', 'paused', 'closed']),
+  "resourcePlan": zod.string(),
+  "participants": zod.array(zod.object({
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "island": zod.string(),
+  "role": zod.enum(['lead', 'participant', 'recipient']),
+  "status": zod.enum(['pending_approval', 'approved', 'rejected', 'withdrawn', 'invited']),
+  "decisionNote": zod.string()
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerIds": zod.array(zod.string()),
+  "title": zod.string(),
+  "eventType": zod.enum(['meeting', 'deadline', 'test', 'local_break', 'mentoring', 'async_activity']),
+  "startDate": zod.string().date(),
+  "startTime": zod.string(),
+  "endTime": zod.string(),
+  "modality": zod.enum(['in_person', 'remote', 'async']),
+  "summary": zod.string(),
+  "status": zod.enum(['proposed', 'confirmed', 'rescheduled', 'completed', 'cancelled']),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "tasks": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "department": zod.string(),
+  "responsibleRole": zod.enum(['student', 'team_manager', 'teacher']),
+  "dueDate": zod.string().date(),
+  "status": zod.enum(['open', 'in_progress', 'blocked', 'completed', 'cancelled']),
+  "evidenceSummary": zod.string(),
+  "documentId": zod.string().nullable(),
+  "documentReference": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "incidents": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "incidentType": zod.enum(['supplier_block', 'absence', 'schedule_conflict', 'permission_conflict', 'center_withdrawal', 'other']),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "summary": zod.string(),
+  "status": zod.enum(['open', 'escalated', 'mediation', 'resolved']),
+  "assignedCenterId": zod.string().nullable(),
+  "assignedCenterName": zod.string().nullable(),
+  "resolution": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "transfers": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "status": zod.enum(['proposed', 'interested', 'prepared', 'training', 'adopted', 'declined']),
+  "adoptionSummary": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "documents": zod.array(zod.object({
+  "id": zod.string(),
+  "reference": zod.string(),
+  "title": zod.string(),
+  "organizationId": zod.string()
+})),
+  "audit": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerName": zod.string().nullable(),
+  "resourceType": zod.string(),
+  "resourceId": zod.string(),
+  "action": zod.string(),
+  "actorLabel": zod.string(),
+  "summary": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "impact": zod.object({
+  "centersActive": zod.number().int(),
+  "recipients": zod.number().int(),
+  "eventsPlanned": zod.number().int(),
+  "tasksOpen": zod.number().int(),
+  "tasksCompleted": zod.number().int(),
+  "incidentsOpen": zod.number().int(),
+  "incidentsResolved": zod.number().int(),
+  "adoptions": zod.number().int(),
+  "mentorshipSessions": zod.number().int()
+}),
+  "capabilities": zod.object({
+  "isGlobalCoordinator": zod.boolean(),
+  "canCreateCampaign": zod.boolean(),
+  "canApproveCenter": zod.boolean(),
+  "canSchedule": zod.boolean(),
+  "canManageTasks": zod.boolean(),
+  "canUpdateTasks": zod.boolean(),
+  "canReportIncident": zod.boolean(),
+  "canMediate": zod.boolean(),
+  "canManageTransfer": zod.boolean(),
+  "canViewAudit": zod.boolean()
+})
+})
+
+
+/**
+ * @summary Propose an intercenter campaign with explicit center commitments
+ */
+
+export const createCoordinationCampaignBodyTitleMin = 4;
+export const createCoordinationCampaignBodyTitleMax = 140;
+
+export const createCoordinationCampaignBodyObjectiveMin = 10;
+export const createCoordinationCampaignBodyObjectiveMax = 1200;
+
+export const createCoordinationCampaignBodyResourcePlanMax = 1200;
+
+
+export const createCoordinationCampaignBodyCentersMax = 30;
+
+
+
+export const CreateCoordinationCampaignBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "ownerCenterId": zod.string().min(1),
+  "title": zod.string().min(createCoordinationCampaignBodyTitleMin).max(createCoordinationCampaignBodyTitleMax),
+  "objective": zod.string().min(createCoordinationCampaignBodyObjectiveMin).max(createCoordinationCampaignBodyObjectiveMax),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date(),
+  "resourcePlan": zod.string().max(createCoordinationCampaignBodyResourcePlanMax),
+  "simulationCampaignId": zod.string().nullable(),
+  "centers": zod.array(zod.object({
+  "centerId": zod.string().min(1),
+  "role": zod.enum(['participant', 'recipient'])
+})).max(createCoordinationCampaignBodyCentersMax)
+})
+
+export const CreateCoordinationCampaignResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "objective": zod.string(),
+  "ownerCenterId": zod.string(),
+  "ownerCenterName": zod.string(),
+  "ownerIsland": zod.string(),
+  "simulationCampaignId": zod.string().nullable(),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date(),
+  "status": zod.enum(['pending_approval', 'active', 'paused', 'closed']),
+  "resourcePlan": zod.string(),
+  "participants": zod.array(zod.object({
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "island": zod.string(),
+  "role": zod.enum(['lead', 'participant', 'recipient']),
+  "status": zod.enum(['pending_approval', 'approved', 'rejected', 'withdrawn', 'invited']),
+  "decisionNote": zod.string()
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Activate, pause, or close a campaign after checking approvals
+ */
+
+
+
+export const ActOnCoordinationCampaignParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const actOnCoordinationCampaignBodyReasonMin = 5;
+export const actOnCoordinationCampaignBodyReasonMax = 400;
+
+
+
+export const ActOnCoordinationCampaignBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "action": zod.enum(['activate', 'pause', 'close']),
+  "reason": zod.string().min(actOnCoordinationCampaignBodyReasonMin).max(actOnCoordinationCampaignBodyReasonMax)
+})
+
+export const ActOnCoordinationCampaignResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "objective": zod.string(),
+  "ownerCenterId": zod.string(),
+  "ownerCenterName": zod.string(),
+  "ownerIsland": zod.string(),
+  "simulationCampaignId": zod.string().nullable(),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date(),
+  "status": zod.enum(['pending_approval', 'active', 'paused', 'closed']),
+  "resourcePlan": zod.string(),
+  "participants": zod.array(zod.object({
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "island": zod.string(),
+  "role": zod.enum(['lead', 'participant', 'recipient']),
+  "status": zod.enum(['pending_approval', 'approved', 'rejected', 'withdrawn', 'invited']),
+  "decisionNote": zod.string()
+})),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Approve, reject, or withdraw a center's participation
+ */
+
+
+
+
+export const ActOnCoordinationParticipationParams = zod.object({
+  "id": zod.coerce.string().min(1),
+  "centerId": zod.coerce.string().min(1)
+})
+
+export const actOnCoordinationParticipationBodyNoteMin = 3;
+export const actOnCoordinationParticipationBodyNoteMax = 400;
+
+
+
+export const ActOnCoordinationParticipationBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "action": zod.enum(['approve', 'reject', 'withdraw']),
+  "note": zod.string().min(actOnCoordinationParticipationBodyNoteMin).max(actOnCoordinationParticipationBodyNoteMax)
+})
+
+export const ActOnCoordinationParticipationResponse = zod.object({
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "island": zod.string(),
+  "role": zod.enum(['lead', 'participant', 'recipient']),
+  "status": zod.enum(['pending_approval', 'approved', 'rejected', 'withdrawn', 'invited']),
+  "decisionNote": zod.string()
+})
+
+
+/**
+ * @summary Schedule a simulated intercenter meeting, deadline, or activity
+ */
+export const createCoordinationEventBodyCenterIdsMax = 30;
+
+export const createCoordinationEventBodyTitleMin = 3;
+export const createCoordinationEventBodyTitleMax = 140;
+
+export const createCoordinationEventBodyStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const createCoordinationEventBodyEndTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const createCoordinationEventBodySummaryMax = 1000;
+
+
+
+export const CreateCoordinationEventBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "campaignId": zod.string(),
+  "centerIds": zod.array(zod.string()).min(1).max(createCoordinationEventBodyCenterIdsMax),
+  "title": zod.string().min(createCoordinationEventBodyTitleMin).max(createCoordinationEventBodyTitleMax),
+  "eventType": zod.enum(['meeting', 'deadline', 'test', 'local_break', 'mentoring', 'async_activity']),
+  "startDate": zod.string().date(),
+  "startTime": zod.string().regex(createCoordinationEventBodyStartTimeRegExp),
+  "endTime": zod.string().regex(createCoordinationEventBodyEndTimeRegExp),
+  "modality": zod.enum(['in_person', 'remote', 'async']),
+  "summary": zod.string().max(createCoordinationEventBodySummaryMax)
+})
+
+export const CreateCoordinationEventResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerIds": zod.array(zod.string()),
+  "title": zod.string(),
+  "eventType": zod.enum(['meeting', 'deadline', 'test', 'local_break', 'mentoring', 'async_activity']),
+  "startDate": zod.string().date(),
+  "startTime": zod.string(),
+  "endTime": zod.string(),
+  "modality": zod.enum(['in_person', 'remote', 'async']),
+  "summary": zod.string(),
+  "status": zod.enum(['proposed', 'confirmed', 'rescheduled', 'completed', 'cancelled']),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Confirm, reschedule, complete, or cancel a shared event
+ */
+
+
+
+export const ActOnCoordinationEventParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const actOnCoordinationEventBodyReasonMin = 3;
+export const actOnCoordinationEventBodyReasonMax = 400;
+
+export const actOnCoordinationEventBodyStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const actOnCoordinationEventBodyEndTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+
+
+export const ActOnCoordinationEventBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "action": zod.enum(['confirm', 'reschedule', 'complete', 'cancel']),
+  "reason": zod.string().min(actOnCoordinationEventBodyReasonMin).max(actOnCoordinationEventBodyReasonMax),
+  "startDate": zod.string().date().nullable(),
+  "startTime": zod.string().regex(actOnCoordinationEventBodyStartTimeRegExp).nullable(),
+  "endTime": zod.string().regex(actOnCoordinationEventBodyEndTimeRegExp).nullable()
+})
+
+export const ActOnCoordinationEventResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerIds": zod.array(zod.string()),
+  "title": zod.string(),
+  "eventType": zod.enum(['meeting', 'deadline', 'test', 'local_break', 'mentoring', 'async_activity']),
+  "startDate": zod.string().date(),
+  "startTime": zod.string(),
+  "endTime": zod.string(),
+  "modality": zod.enum(['in_person', 'remote', 'async']),
+  "summary": zod.string(),
+  "status": zod.enum(['proposed', 'confirmed', 'rescheduled', 'completed', 'cancelled']),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Assign a task to an approved participating center
+ */
+export const createCoordinationTaskBodyTitleMin = 3;
+export const createCoordinationTaskBodyTitleMax = 140;
+
+export const createCoordinationTaskBodyDescriptionMax = 1200;
+
+export const createCoordinationTaskBodyDepartmentMin = 2;
+export const createCoordinationTaskBodyDepartmentMax = 100;
+
+
+
+export const CreateCoordinationTaskBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "campaignId": zod.string(),
+  "centerId": zod.string(),
+  "title": zod.string().min(createCoordinationTaskBodyTitleMin).max(createCoordinationTaskBodyTitleMax),
+  "description": zod.string().max(createCoordinationTaskBodyDescriptionMax),
+  "department": zod.string().min(createCoordinationTaskBodyDepartmentMin).max(createCoordinationTaskBodyDepartmentMax),
+  "responsibleRole": zod.enum(['student', 'team_manager', 'teacher']),
+  "dueDate": zod.string().date()
+})
+
+export const CreateCoordinationTaskResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "department": zod.string(),
+  "responsibleRole": zod.enum(['student', 'team_manager', 'teacher']),
+  "dueDate": zod.string().date(),
+  "status": zod.enum(['open', 'in_progress', 'blocked', 'completed', 'cancelled']),
+  "evidenceSummary": zod.string(),
+  "documentId": zod.string().nullable(),
+  "documentReference": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Progress, comment on, reassign, or close a task with evidence
+ */
+
+
+
+export const ActOnCoordinationTaskParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const actOnCoordinationTaskBodyNoteMin = 3;
+export const actOnCoordinationTaskBodyNoteMax = 800;
+
+export const actOnCoordinationTaskBodyEvidenceSummaryMax = 1200;
+
+
+
+export const ActOnCoordinationTaskBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "action": zod.enum(['start', 'block', 'complete', 'cancel', 'reassign', 'comment']),
+  "note": zod.string().min(actOnCoordinationTaskBodyNoteMin).max(actOnCoordinationTaskBodyNoteMax),
+  "evidenceSummary": zod.string().max(actOnCoordinationTaskBodyEvidenceSummaryMax).nullable(),
+  "documentId": zod.string().nullable(),
+  "targetCenterId": zod.string().nullable()
+})
+
+export const ActOnCoordinationTaskResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "department": zod.string(),
+  "responsibleRole": zod.enum(['student', 'team_manager', 'teacher']),
+  "dueDate": zod.string().date(),
+  "status": zod.enum(['open', 'in_progress', 'blocked', 'completed', 'cancelled']),
+  "evidenceSummary": zod.string(),
+  "documentId": zod.string().nullable(),
+  "documentReference": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Report a simulated coordination block or center change
+ */
+export const createCoordinationIncidentBodySummaryMin = 10;
+export const createCoordinationIncidentBodySummaryMax = 1600;
+
+
+
+export const CreateCoordinationIncidentBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "campaignId": zod.string(),
+  "centerId": zod.string(),
+  "incidentType": zod.enum(['supplier_block', 'absence', 'schedule_conflict', 'permission_conflict', 'center_withdrawal', 'other']),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "summary": zod.string().min(createCoordinationIncidentBodySummaryMin).max(createCoordinationIncidentBodySummaryMax)
+})
+
+export const CreateCoordinationIncidentResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "incidentType": zod.enum(['supplier_block', 'absence', 'schedule_conflict', 'permission_conflict', 'center_withdrawal', 'other']),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "summary": zod.string(),
+  "status": zod.enum(['open', 'escalated', 'mediation', 'resolved']),
+  "assignedCenterId": zod.string().nullable(),
+  "assignedCenterName": zod.string().nullable(),
+  "resolution": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Escalate, mediate, resolve, or reassign an incident
+ */
+
+
+
+export const ActOnCoordinationIncidentParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const actOnCoordinationIncidentBodyNoteMin = 3;
+export const actOnCoordinationIncidentBodyNoteMax = 800;
+
+
+
+export const ActOnCoordinationIncidentBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "action": zod.enum(['escalate', 'mediate', 'resolve', 'reassign']),
+  "note": zod.string().min(actOnCoordinationIncidentBodyNoteMin).max(actOnCoordinationIncidentBodyNoteMax),
+  "targetCenterId": zod.string().nullable()
+})
+
+export const ActOnCoordinationIncidentResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "incidentType": zod.enum(['supplier_block', 'absence', 'schedule_conflict', 'permission_conflict', 'center_withdrawal', 'other']),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "summary": zod.string(),
+  "status": zod.enum(['open', 'escalated', 'mediation', 'resolved']),
+  "assignedCenterId": zod.string().nullable(),
+  "assignedCenterName": zod.string().nullable(),
+  "resolution": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Register a recipient center's transfer or adoption record
+ */
+export const createCoordinationTransferBodyAdoptionSummaryMax = 800;
+
+
+
+export const CreateCoordinationTransferBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "campaignId": zod.string(),
+  "centerId": zod.string(),
+  "adoptionSummary": zod.string().max(createCoordinationTransferBodyAdoptionSummaryMax)
+})
+
+export const CreateCoordinationTransferResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "status": zod.enum(['proposed', 'interested', 'prepared', 'training', 'adopted', 'declined']),
+  "adoptionSummary": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Record recipient interest, preparation, training, adoption, or decline
+ */
+
+
+
+export const UpdateCoordinationTransferParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const updateCoordinationTransferBodyAdoptionSummaryMin = 3;
+export const updateCoordinationTransferBodyAdoptionSummaryMax = 800;
+
+
+
+export const UpdateCoordinationTransferBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "status": zod.enum(['interested', 'prepared', 'training', 'adopted', 'declined']),
+  "adoptionSummary": zod.string().min(updateCoordinationTransferBodyAdoptionSummaryMin).max(updateCoordinationTransferBodyAdoptionSummaryMax)
+})
+
+export const UpdateCoordinationTransferResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "centerId": zod.string(),
+  "centerName": zod.string(),
+  "status": zod.enum(['proposed', 'interested', 'prepared', 'training', 'adopted', 'declined']),
+  "adoptionSummary": zod.string(),
   "createdAt": zod.string().datetime({"offset":true})
 })
 

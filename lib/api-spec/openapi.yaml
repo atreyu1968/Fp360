@@ -92,6 +92,66 @@ paths:
           description: Email or password is incorrect
         "429":
           description: Too many sign-in attempts
+  /auth/mfa/setup:
+    post:
+      operationId: beginAdminMfaSetup
+      tags: [auth]
+      summary: Begin local administrator authenticator enrollment
+      responses:
+        "200":
+          description: Secret for manual authenticator enrollment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMfaSetupResult"
+        "403":
+          description: Administrator enrollment is not available
+        "429":
+          description: Too many MFA attempts
+  /auth/mfa/confirm:
+    post:
+      operationId: confirmAdminMfa
+      tags: [auth]
+      summary: Confirm authenticator enrollment and issue recovery codes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthMfaCodeInput"
+      responses:
+        "200":
+          description: Enrollment confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMfaConfirmationResponse"
+        "400":
+          description: Invalid verification code
+        "429":
+          description: Too many MFA attempts
+  /auth/mfa/verify:
+    post:
+      operationId: verifyAdminMfa
+      tags: [auth]
+      summary: Verify a time-based code or one-time recovery code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthMfaCodeInput"
+      responses:
+        "200":
+          description: MFA verification completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthIdentity"
+        "400":
+          description: Invalid verification code
+        "429":
+          description: Too many MFA attempts
   /auth/me:
     get:
       operationId: getCurrentIdentity
@@ -204,6 +264,174 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/AccessAuditEvent" }
         "403": { description: Administrator required }
+  /admin/system/overview:
+    get:
+      operationId: getAdminSystemOverview
+      tags: [administration]
+      responses:
+        "200":
+          description: Sanitized system status and administrative views
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminSystemOverview" }
+        "403": { description: Administrator required }
+  /admin/organizations:
+    post:
+      operationId: createAdminOrganization
+      tags: [administration]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminOrganizationInput" }
+      responses:
+        "201":
+          description: Organization created in the current network
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminOrganization" }
+        "400": { description: Invalid organization }
+        "403": { description: Administrator required }
+        "409": { description: Organization already exists }
+  /admin/organizations/{id}/action:
+    post:
+      operationId: actOnAdminOrganization
+      tags: [administration]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminOrganizationActionInput" }
+      responses:
+        "200":
+          description: Organization status changed without deleting data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminOrganization" }
+        "403": { description: Administrator required }
+        "404": { description: Organization not found }
+        "409": { description: Organization contains the last active administrator }
+  /admin/policies/evaluate:
+    post:
+      operationId: evaluateAdminPolicy
+      tags: [administration]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminPolicyEvaluationInput" }
+      responses:
+        "200":
+          description: Didactic permission check; does not change live permissions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminPolicyEvaluation" }
+        "403": { description: Administrator required }
+  /admin/scenario-versions:
+    post:
+      operationId: createAdminScenarioVersion
+      tags: [administration]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminScenarioVersionInput" }
+      responses:
+        "201":
+          description: New versioned didactic configuration
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminScenarioVersion" }
+        "400": { description: Invalid settings }
+        "403": { description: Administrator required }
+  /admin/backup-exercises:
+    post:
+      operationId: createAdminBackupExercise
+      tags: [administration]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminBackupExerciseInput" }
+      responses:
+        "201":
+          description: Recorded backup-readiness exercise; no actual backup was created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminBackupExercise" }
+        "400": { description: Invalid exercise }
+        "403": { description: Administrator required }
+  /admin/integrations/{integrationId}/check:
+    post:
+      operationId: checkAdminIntegration
+      tags: [administration]
+      parameters:
+        - { name: integrationId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminOperationInput" }
+      responses:
+        "200":
+          description: Safe simulation check; no external connection or credential is used
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminIntegrationStatus" }
+        "403": { description: Administrator required }
+        "404": { description: Integration not found }
+  /admin/privilege-requests:
+    get:
+      operationId: listAdminPrivilegeRequests
+      tags: [administration]
+      responses:
+        "200":
+          description: Two-person global privilege change requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AdminPrivilegeRequest" }
+        "403": { description: Administrator required }
+    post:
+      operationId: createAdminPrivilegeRequest
+      tags: [administration]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminPrivilegeRequestInput" }
+      responses:
+        "201":
+          description: Request awaiting review by another administrator
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminPrivilegeRequest" }
+        "400": { description: Invalid request }
+        "403": { description: Administrator required }
+        "409": { description: Duplicate account or request }
+  /admin/privilege-requests/{id}/action:
+    post:
+      operationId: actOnAdminPrivilegeRequest
+      tags: [administration]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminPrivilegeRequestActionInput" }
+      responses:
+        "200":
+          description: Reviewed request; administrator invitation token is disclosed only once
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminPrivilegeRequestActionResult" }
+        "403": { description: Administrator required }
+        "404": { description: Request not found }
+        "409": { description: A different administrator must review a pending request }
   /auth/invitations/inspect:
     post:
       security: []
@@ -928,6 +1156,246 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/MentorRecommendation" }
         "409": { description: Recommendation transition is not permitted }
+  /redfp360/intercenter/overview:
+    get:
+      operationId: getCoordinationOverview
+      tags: [redfp360]
+      summary: Read the authenticated user's intercenter coordination workspace
+      parameters:
+        - in: query
+          name: campaignId
+          schema: { type: string }
+      responses:
+        "200":
+          description: Scoped centers, campaigns, calendar, tasks, incidents, transfer, and aggregate indicators
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoordinationOverview" }
+        "403": { description: This profile has no intercenter coordination access }
+  /redfp360/intercenter/campaigns:
+    post:
+      operationId: createCoordinationCampaign
+      tags: [redfp360]
+      summary: Propose an intercenter campaign with explicit center commitments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CoordinationCampaignInput" }
+      responses:
+        "201":
+          description: Campaign proposal and initial center participation records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoordinationCampaign" }
+        "400": { description: "Invalid centers, dates, or linked simulation campaign" }
+        "403": { description: Campaign is outside the user's center scope }
+  /redfp360/intercenter/campaigns/{id}/action:
+    post:
+      operationId: actOnCoordinationCampaign
+      tags: [redfp360]
+      summary: Activate, pause, or close a campaign after checking approvals
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CoordinationCampaignAction" }
+      responses:
+        "200":
+          description: Updated campaign
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoordinationCampaign" }
+        "409": { description: Campaign transition or approval requirements are not satisfied }
+  /redfp360/intercenter/campaigns/{id}/centers/{centerId}/action:
+    post:
+      operationId: actOnCoordinationParticipation
+      tags: [redfp360]
+      summary: Approve, reject, or withdraw a center's participation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+        - in: path
+          name: centerId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CoordinationParticipationAction" }
+      responses:
+        "200":
+          description: Updated center participation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoordinationParticipant" }
+        "403": { description: Only an authorized center lead or coordinator can decide }
+        "409": { description: Participation transition is not permitted }
+  /redfp360/intercenter/events:
+    post:
+      operationId: createCoordinationEvent
+      tags: [redfp360]
+      summary: Schedule a simulated intercenter meeting, deadline, or activity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CoordinationEventInput" }
+      responses:
+        "201":
+          description: Proposed shared event
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoordinationEvent" }
+        "409": { description: Schedule conflicts with an existing active event }
+  /redfp360/intercenter/events/{id}/action:
+    post:
+      operationId: actOnCoordinationEvent
+      tags: [redfp360]
+      summary: Confirm, reschedule, complete, or cancel a shared event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CoordinationEventAction" }
+      responses:
+        "200":
+          description: Updated shared event
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoordinationEvent" }
+        "409": { description: Event transition or schedule constraints are not satisfied }
+  /redfp360/intercenter/tasks:
+    post:
+      operationId: createCoordinationTask
+      tags: [redfp360]
+      summary: Assign a task to an approved participating center
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CoordinationTaskInput" }
+      responses:
+        "201":
+          description: Created center-scoped task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoordinationTask" }
+        "403": { description: Task is outside the user's center delegation }
+  /redfp360/intercenter/tasks/{id}/action:
+    post:
+      operationId: actOnCoordinationTask
+      tags: [redfp360]
+      summary: Progress, comment on, reassign, or close a task with evidence
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CoordinationTaskAction" }
+      responses:
+        "200":
+          description: Updated task and appended audit event
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoordinationTask" }
+        "409": { description: Task transition or evidence requirements are not satisfied }
+  /redfp360/intercenter/incidents:
+    post:
+      operationId: createCoordinationIncident
+      tags: [redfp360]
+      summary: Report a simulated coordination block or center change
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CoordinationIncidentInput" }
+      responses:
+        "201":
+          description: Created incident record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoordinationIncident" }
+        "403": { description: Incident is outside the user's center scope }
+  /redfp360/intercenter/incidents/{id}/action:
+    post:
+      operationId: actOnCoordinationIncident
+      tags: [redfp360]
+      summary: Escalate, mediate, resolve, or reassign an incident
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CoordinationIncidentAction" }
+      responses:
+        "200":
+          description: Updated incident with preserved assignment history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoordinationIncident" }
+        "409": { description: Incident transition is not permitted }
+  /redfp360/intercenter/transfers:
+    post:
+      operationId: createCoordinationTransfer
+      tags: [redfp360]
+      summary: Register a recipient center's transfer or adoption record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CoordinationTransferInput" }
+      responses:
+        "201":
+          description: Created transfer record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoordinationTransfer" }
+        "409": { description: Transfer record already exists for this campaign and center }
+  /redfp360/intercenter/transfers/{id}:
+    put:
+      operationId: updateCoordinationTransfer
+      tags: [redfp360]
+      summary: Record recipient interest, preparation, training, adoption, or decline
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CoordinationTransferUpdate" }
+      responses:
+        "200":
+          description: Updated recipient adoption
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoordinationTransfer" }
+        "403": { description: Transfer is outside the user's center scope }
+        "409": { description: Transfer transition is not permitted }
   /redfp360/direction/overview:
     get:
       operationId: getFp360DirectionOverview
@@ -4859,7 +5327,7 @@ components:
       enum: [student, team_manager, teacher, promoter, mentor, administrator]
     ManagedUser:
       type: object
-      required: [id, email, displayName, role, isActive, createdAt]
+      required: [id, email, displayName, role, isActive, mfaEnabled, createdAt]
       properties:
         id: { type: string }
         email: { type: string, format: email }
@@ -4867,6 +5335,7 @@ components:
         role: { $ref: "#/components/schemas/AccessRole" }
         organizationId: { type: ["string", "null"] }
         isActive: { type: boolean }
+        mfaEnabled: { type: boolean }
         createdAt: { type: string, format: date-time }
     ManagedUserUpdate:
       type: object
@@ -4926,6 +5395,210 @@ components:
         entityId: { type: string }
         actorUserId: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
+    AdminHealthStatus:
+      type: object
+      required: [apiStatus, databaseStatus, checkedAt, uptimeSeconds, memoryRssBytes, heapUsedBytes, heapTotalBytes]
+      properties:
+        apiStatus: { type: string, enum: [ok] }
+        databaseStatus: { type: string, enum: [ok, unavailable] }
+        checkedAt: { type: string, format: date-time }
+        uptimeSeconds: { type: integer, minimum: 0 }
+        memoryRssBytes: { type: integer, minimum: 0 }
+        heapUsedBytes: { type: integer, minimum: 0 }
+        heapTotalBytes: { type: integer, minimum: 0 }
+    AdminSystemCounts:
+      type: object
+      required: [organizations, activeOrganizations, users, activeUsers, auditEvents, scenarioVersions, backupExercises]
+      properties:
+        organizations: { type: integer, minimum: 0 }
+        activeOrganizations: { type: integer, minimum: 0 }
+        users: { type: integer, minimum: 0 }
+        activeUsers: { type: integer, minimum: 0 }
+        auditEvents: { type: integer, minimum: 0 }
+        scenarioVersions: { type: integer, minimum: 0 }
+        backupExercises: { type: integer, minimum: 0 }
+    AdminOrganization:
+      type: object
+      required: [id, name, center, island, role, isActive]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        center: { type: string }
+        island: { type: string }
+        role: { type: string, enum: [buyer, supplier, both] }
+        isActive: { type: boolean }
+    AdminScenarioSettings:
+      type: object
+      required: [academicPeriod, simulatedDate, catalogVersion, documentRetentionDays]
+      properties:
+        academicPeriod: { type: string, minLength: 4, maxLength: 30 }
+        simulatedDate: { type: string, format: date }
+        catalogVersion: { type: string, minLength: 1, maxLength: 40 }
+        documentRetentionDays: { type: integer, minimum: 30, maximum: 3650 }
+    AdminScenarioVersion:
+      type: object
+      required: [id, version, validFrom, settings, createdByUserId, createdAt]
+      properties:
+        id: { type: string }
+        version: { type: integer, minimum: 1 }
+        validFrom: { type: string, format: date }
+        settings: { $ref: "#/components/schemas/AdminScenarioSettings" }
+        createdByUserId: { type: string }
+        createdAt: { type: string, format: date-time }
+    AdminBackupDatasetCounts:
+      type: object
+      required: [organizations, users, documents, simulationCampaigns]
+      properties:
+        organizations: { type: integer, minimum: 0 }
+        users: { type: integer, minimum: 0 }
+        documents: { type: integer, minimum: 0 }
+        simulationCampaigns: { type: integer, minimum: 0 }
+    AdminBackupExercise:
+      type: object
+      required: [id, operationId, label, status, datasetCounts, actorUserId, createdAt]
+      properties:
+        id: { type: string }
+        operationId: { type: string, format: uuid }
+        label: { type: string }
+        status: { type: string, enum: [verified, attention] }
+        datasetCounts: { $ref: "#/components/schemas/AdminBackupDatasetCounts" }
+        actorUserId: { type: string }
+        createdAt: { type: string, format: date-time }
+    AdminPrivilegeRequest:
+      type: object
+      required: [id, operationId, requestType, targetUserId, email, organizationId, status, requestedByUserId, approvedByUserId, decisionNote, createdAt, decidedAt]
+      properties:
+        id: { type: string }
+        operationId: { type: string, format: uuid }
+        requestType: { type: string, enum: [promote_user, invite_administrator, deactivate_administrator] }
+        targetUserId: { type: ["string", "null"] }
+        email: { type: ["string", "null"], format: email }
+        organizationId: { type: ["string", "null"] }
+        status: { type: string, enum: [pending, approved, rejected] }
+        requestedByUserId: { type: string }
+        approvedByUserId: { type: ["string", "null"] }
+        decisionNote: { type: string }
+        createdAt: { type: string, format: date-time }
+        decidedAt: { type: ["string", "null"], format: date-time }
+    AdminIntegrationStatus:
+      type: object
+      required: [id, name, description, status, checkedAt, simulationOnly]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        status: { type: string, enum: [not_configured, simulation_only] }
+        checkedAt: { type: ["string", "null"], format: date-time }
+        simulationOnly: { type: boolean }
+    AdminPolicyPermission:
+      type: string
+      enum: [system_admin, network_admin, manage_center_accounts, manage_scenario_settings, run_backup_exercise, manage_intercenter_campaigns, manage_company_operations, work_assigned_cases]
+    AdminPolicyMatrixEntry:
+      type: object
+      required: [role, label, permissions]
+      properties:
+        role: { $ref: "#/components/schemas/AccessRole" }
+        label: { type: string }
+        permissions:
+          type: array
+          items: { $ref: "#/components/schemas/AdminPolicyPermission" }
+    AdminSystemOverview:
+      type: object
+      required: [health, counts, organizations, scenarioVersions, backupExercises, privilegeRequests, integrations, policyMatrix, simulationOnly]
+      properties:
+        health: { $ref: "#/components/schemas/AdminHealthStatus" }
+        counts: { $ref: "#/components/schemas/AdminSystemCounts" }
+        organizations:
+          type: array
+          items: { $ref: "#/components/schemas/AdminOrganization" }
+        scenarioVersions:
+          type: array
+          items: { $ref: "#/components/schemas/AdminScenarioVersion" }
+        backupExercises:
+          type: array
+          items: { $ref: "#/components/schemas/AdminBackupExercise" }
+        privilegeRequests:
+          type: array
+          items: { $ref: "#/components/schemas/AdminPrivilegeRequest" }
+        integrations:
+          type: array
+          items: { $ref: "#/components/schemas/AdminIntegrationStatus" }
+        policyMatrix:
+          type: array
+          items: { $ref: "#/components/schemas/AdminPolicyMatrixEntry" }
+        simulationOnly: { type: boolean, enum: [true] }
+    AdminOrganizationInput:
+      type: object
+      required: [operationId, name, center, island, role]
+      properties:
+        operationId: { type: string, format: uuid }
+        name: { type: string, minLength: 2, maxLength: 120 }
+        center: { type: string, minLength: 2, maxLength: 120 }
+        island: { type: string, minLength: 2, maxLength: 60 }
+        role: { type: string, enum: [buyer, supplier, both] }
+    AdminOrganizationActionInput:
+      type: object
+      required: [operationId, action, note]
+      properties:
+        operationId: { type: string, format: uuid }
+        action: { type: string, enum: [activate, suspend, archive] }
+        note: { type: string, minLength: 5, maxLength: 300 }
+    AdminPolicyEvaluationInput:
+      type: object
+      required: [role, permission]
+      properties:
+        role: { $ref: "#/components/schemas/AccessRole" }
+        permission: { $ref: "#/components/schemas/AdminPolicyPermission" }
+    AdminPolicyEvaluation:
+      type: object
+      required: [role, permission, allowed, scope, explanation, simulationOnly]
+      properties:
+        role: { $ref: "#/components/schemas/AccessRole" }
+        permission: { $ref: "#/components/schemas/AdminPolicyPermission" }
+        allowed: { type: boolean }
+        scope: { type: string }
+        explanation: { type: string }
+        simulationOnly: { type: boolean, enum: [true] }
+    AdminScenarioVersionInput:
+      type: object
+      required: [operationId, validFrom, settings]
+      properties:
+        operationId: { type: string, format: uuid }
+        validFrom: { type: string, format: date }
+        settings: { $ref: "#/components/schemas/AdminScenarioSettings" }
+    AdminBackupExerciseInput:
+      type: object
+      required: [operationId, label]
+      properties:
+        operationId: { type: string, format: uuid }
+        label: { type: string, minLength: 5, maxLength: 120 }
+    AdminOperationInput:
+      type: object
+      required: [operationId]
+      properties:
+        operationId: { type: string, format: uuid }
+    AdminPrivilegeRequestInput:
+      type: object
+      required: [operationId, requestType]
+      properties:
+        operationId: { type: string, format: uuid }
+        requestType: { type: string, enum: [promote_user, invite_administrator, deactivate_administrator] }
+        targetUserId: { type: ["string", "null"] }
+        email: { type: ["string", "null"], format: email }
+        organizationId: { type: ["string", "null"] }
+    AdminPrivilegeRequestActionInput:
+      type: object
+      required: [operationId, action, note]
+      properties:
+        operationId: { type: string, format: uuid }
+        action: { type: string, enum: [approve, reject] }
+        note: { type: string, minLength: 5, maxLength: 300 }
+    AdminPrivilegeRequestActionResult:
+      type: object
+      required: [request, invitationToken]
+      properties:
+        request: { $ref: "#/components/schemas/AdminPrivilegeRequest" }
+        invitationToken: { type: ["string", "null"] }
     AuthStatus:
       type: object
       required: [setupRequired]
@@ -4948,7 +5621,7 @@ components:
         tenantId: { type: string, minLength: 1, maxLength: 100 }
     AuthIdentity:
       type: object
-      required: [id, email, displayName, tenantId, role]
+      required: [id, email, displayName, tenantId, role, mfaSetupRequired, mfaVerificationRequired]
       properties:
         id: { type: string }
         email: { type: string, format: email }
@@ -4958,6 +5631,30 @@ components:
         role:
           type: string
           enum: [student, team_manager, teacher, promoter, mentor, administrator]
+        mfaSetupRequired: { type: boolean }
+        mfaVerificationRequired: { type: boolean }
+    AuthMfaSetupResult:
+      type: object
+      required: [secret, otpauthUrl, expiresAt]
+      properties:
+        secret: { type: string, minLength: 24, maxLength: 64 }
+        otpauthUrl: { type: string, minLength: 1, maxLength: 500 }
+        expiresAt: { type: string, format: date-time }
+    AuthMfaCodeInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 6, maxLength: 32 }
+    AuthMfaConfirmationResponse:
+      type: object
+      required: [identity, recoveryCodes]
+      properties:
+        identity: { $ref: "#/components/schemas/AuthIdentity" }
+        recoveryCodes:
+          type: array
+          minItems: 8
+          maxItems: 12
+          items: { type: string, minLength: 12, maxLength: 24 }
     HealthStatus:
       type: object
       properties:
@@ -8320,4 +9017,299 @@ components:
             recommendationsImplemented: { type: integer }
             transferRate: { type: number }
         capabilities: { $ref: "#/components/schemas/MentorCapabilities" }
+    CoordinationCenter:
+      type: object
+      required: [id, name, island, companyCount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        island: { type: string }
+        companyCount: { type: integer }
+    CoordinationParticipant:
+      type: object
+      required: [centerId, centerName, island, role, status, decisionNote]
+      properties:
+        centerId: { type: string }
+        centerName: { type: string }
+        island: { type: string }
+        role: { type: string, enum: [lead, participant, recipient] }
+        status: { type: string, enum: [pending_approval, approved, rejected, withdrawn, invited] }
+        decisionNote: { type: string }
+    CoordinationCampaign:
+      type: object
+      required: [id, title, objective, ownerCenterId, ownerCenterName, ownerIsland, simulationCampaignId, startDate, endDate, status, resourcePlan, participants, createdAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        objective: { type: string }
+        ownerCenterId: { type: string }
+        ownerCenterName: { type: string }
+        ownerIsland: { type: string }
+        simulationCampaignId: { type: ["string", "null"] }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        status: { type: string, enum: [pending_approval, active, paused, closed] }
+        resourcePlan: { type: string }
+        participants:
+          type: array
+          items: { $ref: "#/components/schemas/CoordinationParticipant" }
+        createdAt: { type: string, format: date-time }
+    CoordinationCampaignCenterInput:
+      type: object
+      required: [centerId, role]
+      properties:
+        centerId: { type: string, minLength: 1 }
+        role: { type: string, enum: [participant, recipient] }
+    CoordinationCampaignInput:
+      type: object
+      required: [operationId, ownerCenterId, title, objective, startDate, endDate, resourcePlan, simulationCampaignId, centers]
+      properties:
+        operationId: { type: string, format: uuid }
+        ownerCenterId: { type: string, minLength: 1 }
+        title: { type: string, minLength: 4, maxLength: 140 }
+        objective: { type: string, minLength: 10, maxLength: 1200 }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        resourcePlan: { type: string, maxLength: 1200 }
+        simulationCampaignId: { type: ["string", "null"] }
+        centers:
+          type: array
+          maxItems: 30
+          items: { $ref: "#/components/schemas/CoordinationCampaignCenterInput" }
+    CoordinationCampaignAction:
+      type: object
+      required: [operationId, action, reason]
+      properties:
+        operationId: { type: string, format: uuid }
+        action: { type: string, enum: [activate, pause, close] }
+        reason: { type: string, minLength: 5, maxLength: 400 }
+    CoordinationParticipationAction:
+      type: object
+      required: [operationId, action, note]
+      properties:
+        operationId: { type: string, format: uuid }
+        action: { type: string, enum: [approve, reject, withdraw] }
+        note: { type: string, minLength: 3, maxLength: 400 }
+    CoordinationEvent:
+      type: object
+      required: [id, campaignId, centerIds, title, eventType, startDate, startTime, endTime, modality, summary, status, createdAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        centerIds: { type: array, items: { type: string } }
+        title: { type: string }
+        eventType: { type: string, enum: [meeting, deadline, test, local_break, mentoring, async_activity] }
+        startDate: { type: string, format: date }
+        startTime: { type: string }
+        endTime: { type: string }
+        modality: { type: string, enum: [in_person, remote, async] }
+        summary: { type: string }
+        status: { type: string, enum: [proposed, confirmed, rescheduled, completed, cancelled] }
+        createdAt: { type: string, format: date-time }
+    CoordinationEventInput:
+      type: object
+      required: [operationId, campaignId, centerIds, title, eventType, startDate, startTime, endTime, modality, summary]
+      properties:
+        operationId: { type: string, format: uuid }
+        campaignId: { type: string }
+        centerIds: { type: array, minItems: 1, maxItems: 30, items: { type: string } }
+        title: { type: string, minLength: 3, maxLength: 140 }
+        eventType: { type: string, enum: [meeting, deadline, test, local_break, mentoring, async_activity] }
+        startDate: { type: string, format: date }
+        startTime: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        endTime: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        modality: { type: string, enum: [in_person, remote, async] }
+        summary: { type: string, maxLength: 1000 }
+    CoordinationEventAction:
+      type: object
+      required: [operationId, action, reason, startDate, startTime, endTime]
+      properties:
+        operationId: { type: string, format: uuid }
+        action: { type: string, enum: [confirm, reschedule, complete, cancel] }
+        reason: { type: string, minLength: 3, maxLength: 400 }
+        startDate: { type: ["string", "null"], format: date }
+        startTime: { type: ["string", "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        endTime: { type: ["string", "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+    CoordinationTask:
+      type: object
+      required: [id, campaignId, centerId, centerName, title, description, department, responsibleRole, dueDate, status, evidenceSummary, documentId, documentReference, createdAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        centerId: { type: string }
+        centerName: { type: string }
+        title: { type: string }
+        description: { type: string }
+        department: { type: string }
+        responsibleRole: { type: string, enum: [student, team_manager, teacher] }
+        dueDate: { type: string, format: date }
+        status: { type: string, enum: [open, in_progress, blocked, completed, cancelled] }
+        evidenceSummary: { type: string }
+        documentId: { type: ["string", "null"] }
+        documentReference: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    CoordinationTaskInput:
+      type: object
+      required: [operationId, campaignId, centerId, title, description, department, responsibleRole, dueDate]
+      properties:
+        operationId: { type: string, format: uuid }
+        campaignId: { type: string }
+        centerId: { type: string }
+        title: { type: string, minLength: 3, maxLength: 140 }
+        description: { type: string, maxLength: 1200 }
+        department: { type: string, minLength: 2, maxLength: 100 }
+        responsibleRole: { type: string, enum: [student, team_manager, teacher] }
+        dueDate: { type: string, format: date }
+    CoordinationTaskAction:
+      type: object
+      required: [operationId, action, note, evidenceSummary, documentId, targetCenterId]
+      properties:
+        operationId: { type: string, format: uuid }
+        action: { type: string, enum: [start, block, complete, cancel, reassign, comment] }
+        note: { type: string, minLength: 3, maxLength: 800 }
+        evidenceSummary: { type: ["string", "null"], maxLength: 1200 }
+        documentId: { type: ["string", "null"] }
+        targetCenterId: { type: ["string", "null"] }
+    CoordinationIncident:
+      type: object
+      required: [id, campaignId, centerId, centerName, incidentType, severity, summary, status, assignedCenterId, assignedCenterName, resolution, createdAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        centerId: { type: string }
+        centerName: { type: string }
+        incidentType: { type: string, enum: [supplier_block, absence, schedule_conflict, permission_conflict, center_withdrawal, other] }
+        severity: { type: string, enum: [low, medium, high] }
+        summary: { type: string }
+        status: { type: string, enum: [open, escalated, mediation, resolved] }
+        assignedCenterId: { type: ["string", "null"] }
+        assignedCenterName: { type: ["string", "null"] }
+        resolution: { type: string }
+        createdAt: { type: string, format: date-time }
+    CoordinationIncidentInput:
+      type: object
+      required: [operationId, campaignId, centerId, incidentType, severity, summary]
+      properties:
+        operationId: { type: string, format: uuid }
+        campaignId: { type: string }
+        centerId: { type: string }
+        incidentType: { type: string, enum: [supplier_block, absence, schedule_conflict, permission_conflict, center_withdrawal, other] }
+        severity: { type: string, enum: [low, medium, high] }
+        summary: { type: string, minLength: 10, maxLength: 1600 }
+    CoordinationIncidentAction:
+      type: object
+      required: [operationId, action, note, targetCenterId]
+      properties:
+        operationId: { type: string, format: uuid }
+        action: { type: string, enum: [escalate, mediate, resolve, reassign] }
+        note: { type: string, minLength: 3, maxLength: 800 }
+        targetCenterId: { type: ["string", "null"] }
+    CoordinationTransfer:
+      type: object
+      required: [id, campaignId, centerId, centerName, status, adoptionSummary, createdAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        centerId: { type: string }
+        centerName: { type: string }
+        status: { type: string, enum: [proposed, interested, prepared, training, adopted, declined] }
+        adoptionSummary: { type: string }
+        createdAt: { type: string, format: date-time }
+    CoordinationTransferInput:
+      type: object
+      required: [operationId, campaignId, centerId, adoptionSummary]
+      properties:
+        operationId: { type: string, format: uuid }
+        campaignId: { type: string }
+        centerId: { type: string }
+        adoptionSummary: { type: string, maxLength: 800 }
+    CoordinationTransferUpdate:
+      type: object
+      required: [operationId, status, adoptionSummary]
+      properties:
+        operationId: { type: string, format: uuid }
+        status: { type: string, enum: [interested, prepared, training, adopted, declined] }
+        adoptionSummary: { type: string, minLength: 3, maxLength: 800 }
+    CoordinationAudit:
+      type: object
+      required: [id, campaignId, centerName, resourceType, resourceId, action, actorLabel, summary, createdAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        centerName: { type: ["string", "null"] }
+        resourceType: { type: string }
+        resourceId: { type: string }
+        action: { type: string }
+        actorLabel: { type: string }
+        summary: { type: string }
+        createdAt: { type: string, format: date-time }
+    CoordinationDocument:
+      type: object
+      required: [id, reference, title, organizationId]
+      properties:
+        id: { type: string }
+        reference: { type: string }
+        title: { type: string }
+        organizationId: { type: string }
+    CoordinationImpact:
+      type: object
+      required: [centersActive, recipients, eventsPlanned, tasksOpen, tasksCompleted, incidentsOpen, incidentsResolved, adoptions, mentorshipSessions]
+      properties:
+        centersActive: { type: integer }
+        recipients: { type: integer }
+        eventsPlanned: { type: integer }
+        tasksOpen: { type: integer }
+        tasksCompleted: { type: integer }
+        incidentsOpen: { type: integer }
+        incidentsResolved: { type: integer }
+        adoptions: { type: integer }
+        mentorshipSessions: { type: integer }
+    CoordinationCapabilities:
+      type: object
+      required: [isGlobalCoordinator, canCreateCampaign, canApproveCenter, canSchedule, canManageTasks, canUpdateTasks, canReportIncident, canMediate, canManageTransfer, canViewAudit]
+      properties:
+        isGlobalCoordinator: { type: boolean }
+        canCreateCampaign: { type: boolean }
+        canApproveCenter: { type: boolean }
+        canSchedule: { type: boolean }
+        canManageTasks: { type: boolean }
+        canUpdateTasks: { type: boolean }
+        canReportIncident: { type: boolean }
+        canMediate: { type: boolean }
+        canManageTransfer: { type: boolean }
+        canViewAudit: { type: boolean }
+    CoordinationOverview:
+      type: object
+      required: [currentCenterId, centers, availableCenters, campaigns, events, tasks, incidents, transfers, documents, audit, impact, capabilities]
+      properties:
+        currentCenterId: { type: ["string", "null"] }
+        centers:
+          type: array
+          items: { $ref: "#/components/schemas/CoordinationCenter" }
+        availableCenters:
+          type: array
+          items: { $ref: "#/components/schemas/CoordinationCenter" }
+        campaigns:
+          type: array
+          items: { $ref: "#/components/schemas/CoordinationCampaign" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/CoordinationEvent" }
+        tasks:
+          type: array
+          items: { $ref: "#/components/schemas/CoordinationTask" }
+        incidents:
+          type: array
+          items: { $ref: "#/components/schemas/CoordinationIncident" }
+        transfers:
+          type: array
+          items: { $ref: "#/components/schemas/CoordinationTransfer" }
+        documents:
+          type: array
+          items: { $ref: "#/components/schemas/CoordinationDocument" }
+        audit:
+          type: array
+          items: { $ref: "#/components/schemas/CoordinationAudit" }
+        impact: { $ref: "#/components/schemas/CoordinationImpact" }
+        capabilities: { $ref: "#/components/schemas/CoordinationCapabilities" }
 

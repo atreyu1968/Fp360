@@ -14,4 +14,6 @@ export interface AuthIdentity {
   tenantId: string;
   organizationId?: string;
   role: AuthIdentityRole;
+  mfaSetupRequired: boolean;
+  mfaVerificationRequired: boolean;
 }

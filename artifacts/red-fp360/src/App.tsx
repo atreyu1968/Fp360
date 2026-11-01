@@ -33,6 +33,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter';
 import { AuthExperience } from '@/components/auth-experience';
+import { AdminMfaExperience } from '@/components/mfa-experience';
 import { AdminAccessDenied, AdminPage } from '@/components/admin-page';
 import { AcceptInvitation } from '@/components/accept-invitation';
 import { CatalogPage } from '@/components/catalog-page';
@@ -51,6 +52,8 @@ import { CommunicationsPage } from '@/components/communications-page';
 import SimulationCampaignsPage from '@/components/simulation-campaigns-page';
 import PortfolioPage from '@/components/portfolio-page';
 import EvaluationPage from '@/components/evaluation-page';
+import MentorshipPage from '@/components/mentorship-page';
+import CoordinationPage from '@/components/coordination-page';
 import { PayrollPage } from '@/components/payroll-page';
 import { CustomerServicePage } from '@/components/customer-service-page';
 import { ProjectsServicesPage } from '@/components/projects-services-page';
@@ -99,7 +102,7 @@ const appModules = [
   'Portafolio profesional', 'Evaluación docente', 'Mentoría empresarial',
   'Coordinación intercentros', 'Administración del sistema',
 ];
-const implemented = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
+const implemented = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]);
 const navItems = [
   { href: '/', label: 'Inicio', icon: LayoutDashboard },
   { href: '/mercado', label: 'Mercado', icon: Globe2 },
@@ -118,6 +121,8 @@ const navItems = [
   { href: '/simulaciones', label: 'FP360 SIM', icon: Activity },
   { href: '/portafolio', label: 'Portafolio profesional', icon: GraduationCap },
   { href: '/evaluacion-docente', label: 'Evaluación docente', icon: GraduationCap },
+  { href: '/mentoria-empresarial', label: 'Mentoría empresarial', icon: GraduationCap },
+  { href: '/coordinacion-intercentros', label: 'Coordinación intercentros', icon: GraduationCap },
   { href: '/nominas', label: 'Nóminas', icon: FileCheck2 },
   { href: '/seguridad-social', label: 'Seguridad Social', icon: Users },
   { href: '/facturas', label: 'Facturas', icon: ReceiptText },
@@ -146,6 +151,8 @@ const titles: Record<string, { title: string; kicker: string; description: strin
   '/simulaciones': { title: 'FP360 SIM · Dirección inteligente', kicker: 'CAMPAÑAS FORMATIVAS · CANARIAS', description: 'Diseña campañas, revisa propuestas y publica eventos educativos sin modificar operaciones del ERP.' },
   '/portafolio': { title: 'Portafolio profesional', kicker: 'EVIDENCIAS · APRENDIZAJE · CANARIAS', description: 'Recoge evidencias verificables de las operaciones simuladas y documenta la contribución individual del alumnado.' },
   '/evaluacion-docente': { title: 'Evaluación docente', kicker: 'CRITERIOS · RÚBRICAS · TRAZABILIDAD', description: 'Configura criterios curriculares por centro, valora evidencias verificadas y conserva cada intento de evaluación.' },
+  '/mentoria-empresarial': { title: 'Mentoría empresarial', kicker: 'COLABORACIÓN · CASOS · TRANSFERENCIA', description: 'Gestiona colaboraciones aprobadas, retos anonimizados y evidencias de participación dentro de la simulación didáctica.' },
+  '/coordinacion-intercentros': { title: 'Coordinación intercentros', kicker: 'CENTROS · CAMPAÑAS · CONTINUIDAD', description: 'Coordina calendarios, acuerdos, tareas e incidencias de campañas formativas compartidas.' },
   '/nominas': { title: 'Nóminas FP360', kicker: 'RECIBOS EDUCATIVOS · IMPORTES DIDÁCTICOS', description: 'Calcula nóminas con parámetros configurables; no se envían pagos, retenciones ni cotizaciones reales.' },
   '/atencion-cliente': { title: 'Atención al cliente', kicker: 'CASOS, DEVOLUCIONES Y ACUERDOS EDUCATIVOS', description: 'Gestiona reclamaciones y su trazabilidad; las comunicaciones y los efectos comerciales permanecen simulados.' },
   '/proyectos-servicios': { title: 'Proyectos y servicios', kicker: 'ÓRDENES · ENTREGABLES · COSTES DIDÁCTICOS', description: 'Planifica servicios simulados, valida entregables y controla costes e hitos sin operar fuera del ERP educativo.' },
@@ -156,7 +163,7 @@ const titles: Record<string, { title: string; kicker: string; description: strin
   '/clientes': { title: 'Directorio de organizaciones', kicker: 'CRM · RED FP360', description: 'Empresas simuladas, centros participantes y relaciones de la red.' },
   '/crm': { title: 'CRM de prácticas', kicker: 'RELACIONES COMERCIALES · SIMULACIÓN', description: 'Empresas ficticias, oportunidades y seguimiento para aprender el ciclo comercial.' },
   '/aplicaciones': { title: 'Aplicaciones', kicker: 'PLATAFORMA · 26 MÓDULOS', description: 'Catálogo de capacidades previstas y módulos conectados en esta demostración.' },
-  '/administracion': { title: 'Usuarios y accesos', kicker: 'ADMINISTRACIÓN', description: 'Gestión de cuentas e invitaciones.' },
+  '/administracion': { title: 'Administración del sistema', kicker: 'ADMINISTRACIÓN', description: 'Centros, usuarios, permisos, configuración y seguridad de la red.' },
   '/documentacion': { title: 'Documentación', kicker: 'CENTRO DE RECURSOS', description: 'Especificación funcional, referencias visuales y materiales del proyecto.' },
 };
 
@@ -1229,6 +1236,8 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       case '/simulaciones': return <SimulationCampaignsPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
       case '/portafolio': return <PortfolioPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
       case '/evaluacion-docente': return <EvaluationPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
+      case '/mentoria-empresarial': return <MentorshipPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
+      case '/coordinacion-intercentros': return <CoordinationPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
       case '/nominas': return <PayrollPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/atencion-cliente': return <CustomerServicePage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/proyectos-servicios': return <ProjectsServicesPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
@@ -1253,7 +1262,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       </Link>
       <div className="sidebar-context"><span className="context-label">ENTORNO ACTIVO</span><button className="context-selector" type="button"><span className="context-avatar">CE</span><span><b>Empresa de prácticas</b><small>Centro educativo · Canarias</small></span><ChevronDown size={14} /></button></div>
       <div className="nav-caption">ESPACIO DE TRABAJO</div>
-      <nav className="main-nav" aria-label="Navegación principal">{[...navItems, ...(identity.role === 'administrator' ? [{ href: '/administracion', label: 'Usuarios y accesos', icon: ShieldCheck }] : [])].map(({ href, label, icon: Icon }) => <Link href={href} key={href} className={`nav-link ${location === href ? 'nav-active' : ''}`} onClick={() => setMobileNav(false)} aria-current={location === href ? 'page' : undefined}><Icon size={18} strokeWidth={1.8} /><span>{label}</span>{href === '/aplicaciones' && <span className="nav-count">26</span>}</Link>)}</nav>
+      <nav className="main-nav" aria-label="Navegación principal">{[...navItems, ...(identity.role === 'administrator' ? [{ href: '/administracion', label: 'Administración del sistema', icon: ShieldCheck }] : [])].map(({ href, label, icon: Icon }) => <Link href={href} key={href} className={`nav-link ${location === href ? 'nav-active' : ''}`} onClick={() => setMobileNav(false)} aria-current={location === href ? 'page' : undefined}><Icon size={18} strokeWidth={1.8} /><span>{label}</span>{href === '/aplicaciones' && <span className="nav-count">26</span>}</Link>)}</nav>
       <div className="sidebar-bottom"><div className="help-card"><div className="help-icon"><LifeBuoy size={17} /></div><b>¿Primera vez por aquí?</b><p>Consulta la guía de aprendizaje de la red.</p><Link href="/documentacion" onClick={() => setMobileNav(false)}>Abrir recursos <ArrowRight size={13} /></Link></div>
          <div className="profile-chip"><span className="profile-avatar">{identityInitials(identity)}</span><span><b>{identity.displayName}</b><small>{roleLabel(identity.role)}</small></span><button className="profile-logout" type="button" disabled={logout.isPending} onClick={() => logout.mutate(undefined, { onSuccess: () => { clearBusinessCache(); void queryClient.resetQueries({ queryKey: getGetCurrentIdentityQueryKey(), exact: true }); setLocation('/sign-in'); }, onError: () => setNotice('No se pudo cerrar la sesión. Comprueba la conexión e inténtalo de nuevo.') })} aria-label="Cerrar sesión" title="Cerrar sesión" data-testid="button-logout"><ArrowRight size={15} /></button></div>
       </div>
@@ -1280,6 +1289,8 @@ function Shell({ identity }: { identity: AuthIdentity }) {
         <Route path="/simulaciones">{page}</Route>
         <Route path="/portafolio">{page}</Route>
         <Route path="/evaluacion-docente">{page}</Route>
+        <Route path="/mentoria-empresarial">{page}</Route>
+        <Route path="/coordinacion-intercentros">{page}</Route>
         <Route path="/nominas">{page}</Route>
         <Route path="/atencion-cliente">{page}</Route>
         <Route path="/proyectos-servicios">{page}</Route>
@@ -1345,6 +1356,9 @@ function AuthRouter() {
 
   if (identityQuery.isLoading || (identity && !identityQuery.isError && validatedIdentity !== identityKey)) return <AuthLoading />;
   if (identity && !identityQuery.isError && validatedIdentity === identityKey) {
+    if (identity.mfaSetupRequired || identity.mfaVerificationRequired) {
+      return <AdminMfaExperience identity={identity} onAuthenticated={onAuthenticated} />;
+    }
     if (location === '/sign-in' || location === '/setup') {
       return <AuthRedirect target="/" />;
     }

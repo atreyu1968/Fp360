@@ -1171,6 +1171,7 @@ export interface ManagedUser {
   /** @nullable */
   organizationId?: string | null;
   isActive: boolean;
+  mfaEnabled: boolean;
   createdAt: string;
 }
 
@@ -1262,6 +1263,341 @@ export interface AccessAuditEvent {
   createdAt: string;
 }
 
+export type AdminHealthStatusApiStatus = typeof AdminHealthStatusApiStatus[keyof typeof AdminHealthStatusApiStatus];
+
+
+export const AdminHealthStatusApiStatus = {
+  ok: 'ok',
+} as const;
+
+export type AdminHealthStatusDatabaseStatus = typeof AdminHealthStatusDatabaseStatus[keyof typeof AdminHealthStatusDatabaseStatus];
+
+
+export const AdminHealthStatusDatabaseStatus = {
+  ok: 'ok',
+  unavailable: 'unavailable',
+} as const;
+
+export interface AdminHealthStatus {
+  apiStatus: AdminHealthStatusApiStatus;
+  databaseStatus: AdminHealthStatusDatabaseStatus;
+  checkedAt: string;
+  /** @minimum 0 */
+  uptimeSeconds: number;
+  /** @minimum 0 */
+  memoryRssBytes: number;
+  /** @minimum 0 */
+  heapUsedBytes: number;
+  /** @minimum 0 */
+  heapTotalBytes: number;
+}
+
+export interface AdminSystemCounts {
+  /** @minimum 0 */
+  organizations: number;
+  /** @minimum 0 */
+  activeOrganizations: number;
+  /** @minimum 0 */
+  users: number;
+  /** @minimum 0 */
+  activeUsers: number;
+  /** @minimum 0 */
+  auditEvents: number;
+  /** @minimum 0 */
+  scenarioVersions: number;
+  /** @minimum 0 */
+  backupExercises: number;
+}
+
+export type AdminOrganizationRole = typeof AdminOrganizationRole[keyof typeof AdminOrganizationRole];
+
+
+export const AdminOrganizationRole = {
+  buyer: 'buyer',
+  supplier: 'supplier',
+  both: 'both',
+} as const;
+
+export interface AdminOrganization {
+  id: string;
+  name: string;
+  center: string;
+  island: string;
+  role: AdminOrganizationRole;
+  isActive: boolean;
+}
+
+export interface AdminScenarioSettings {
+  /**
+     * @minLength 4
+     * @maxLength 30
+     */
+  academicPeriod: string;
+  simulatedDate: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  catalogVersion: string;
+  /**
+     * @minimum 30
+     * @maximum 3650
+     */
+  documentRetentionDays: number;
+}
+
+export interface AdminScenarioVersion {
+  id: string;
+  /** @minimum 1 */
+  version: number;
+  validFrom: string;
+  settings: AdminScenarioSettings;
+  createdByUserId: string;
+  createdAt: string;
+}
+
+export interface AdminBackupDatasetCounts {
+  /** @minimum 0 */
+  organizations: number;
+  /** @minimum 0 */
+  users: number;
+  /** @minimum 0 */
+  documents: number;
+  /** @minimum 0 */
+  simulationCampaigns: number;
+}
+
+export type AdminBackupExerciseStatus = typeof AdminBackupExerciseStatus[keyof typeof AdminBackupExerciseStatus];
+
+
+export const AdminBackupExerciseStatus = {
+  verified: 'verified',
+  attention: 'attention',
+} as const;
+
+export interface AdminBackupExercise {
+  id: string;
+  operationId: string;
+  label: string;
+  status: AdminBackupExerciseStatus;
+  datasetCounts: AdminBackupDatasetCounts;
+  actorUserId: string;
+  createdAt: string;
+}
+
+export type AdminPrivilegeRequestRequestType = typeof AdminPrivilegeRequestRequestType[keyof typeof AdminPrivilegeRequestRequestType];
+
+
+export const AdminPrivilegeRequestRequestType = {
+  promote_user: 'promote_user',
+  invite_administrator: 'invite_administrator',
+  deactivate_administrator: 'deactivate_administrator',
+} as const;
+
+export type AdminPrivilegeRequestStatus = typeof AdminPrivilegeRequestStatus[keyof typeof AdminPrivilegeRequestStatus];
+
+
+export const AdminPrivilegeRequestStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface AdminPrivilegeRequest {
+  id: string;
+  operationId: string;
+  requestType: AdminPrivilegeRequestRequestType;
+  /** @nullable */
+  targetUserId: string | null;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  organizationId: string | null;
+  status: AdminPrivilegeRequestStatus;
+  requestedByUserId: string;
+  /** @nullable */
+  approvedByUserId: string | null;
+  decisionNote: string;
+  createdAt: string;
+  /** @nullable */
+  decidedAt: string | null;
+}
+
+export type AdminIntegrationStatusStatus = typeof AdminIntegrationStatusStatus[keyof typeof AdminIntegrationStatusStatus];
+
+
+export const AdminIntegrationStatusStatus = {
+  not_configured: 'not_configured',
+  simulation_only: 'simulation_only',
+} as const;
+
+export interface AdminIntegrationStatus {
+  id: string;
+  name: string;
+  description: string;
+  status: AdminIntegrationStatusStatus;
+  /** @nullable */
+  checkedAt: string | null;
+  simulationOnly: boolean;
+}
+
+export type AdminPolicyPermission = typeof AdminPolicyPermission[keyof typeof AdminPolicyPermission];
+
+
+export const AdminPolicyPermission = {
+  system_admin: 'system_admin',
+  network_admin: 'network_admin',
+  manage_center_accounts: 'manage_center_accounts',
+  manage_scenario_settings: 'manage_scenario_settings',
+  run_backup_exercise: 'run_backup_exercise',
+  manage_intercenter_campaigns: 'manage_intercenter_campaigns',
+  manage_company_operations: 'manage_company_operations',
+  work_assigned_cases: 'work_assigned_cases',
+} as const;
+
+export interface AdminPolicyMatrixEntry {
+  role: AccessRole;
+  label: string;
+  permissions: AdminPolicyPermission[];
+}
+
+export interface AdminSystemOverview {
+  health: AdminHealthStatus;
+  counts: AdminSystemCounts;
+  organizations: AdminOrganization[];
+  scenarioVersions: AdminScenarioVersion[];
+  backupExercises: AdminBackupExercise[];
+  privilegeRequests: AdminPrivilegeRequest[];
+  integrations: AdminIntegrationStatus[];
+  policyMatrix: AdminPolicyMatrixEntry[];
+  simulationOnly: true;
+}
+
+export type AdminOrganizationInputRole = typeof AdminOrganizationInputRole[keyof typeof AdminOrganizationInputRole];
+
+
+export const AdminOrganizationInputRole = {
+  buyer: 'buyer',
+  supplier: 'supplier',
+  both: 'both',
+} as const;
+
+export interface AdminOrganizationInput {
+  operationId: string;
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  name: string;
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  center: string;
+  /**
+     * @minLength 2
+     * @maxLength 60
+     */
+  island: string;
+  role: AdminOrganizationInputRole;
+}
+
+export type AdminOrganizationActionInputAction = typeof AdminOrganizationActionInputAction[keyof typeof AdminOrganizationActionInputAction];
+
+
+export const AdminOrganizationActionInputAction = {
+  activate: 'activate',
+  suspend: 'suspend',
+  archive: 'archive',
+} as const;
+
+export interface AdminOrganizationActionInput {
+  operationId: string;
+  action: AdminOrganizationActionInputAction;
+  /**
+     * @minLength 5
+     * @maxLength 300
+     */
+  note: string;
+}
+
+export interface AdminPolicyEvaluationInput {
+  role: AccessRole;
+  permission: AdminPolicyPermission;
+}
+
+export interface AdminPolicyEvaluation {
+  role: AccessRole;
+  permission: AdminPolicyPermission;
+  allowed: boolean;
+  scope: string;
+  explanation: string;
+  simulationOnly: true;
+}
+
+export interface AdminScenarioVersionInput {
+  operationId: string;
+  validFrom: string;
+  settings: AdminScenarioSettings;
+}
+
+export interface AdminBackupExerciseInput {
+  operationId: string;
+  /**
+     * @minLength 5
+     * @maxLength 120
+     */
+  label: string;
+}
+
+export interface AdminOperationInput {
+  operationId: string;
+}
+
+export type AdminPrivilegeRequestInputRequestType = typeof AdminPrivilegeRequestInputRequestType[keyof typeof AdminPrivilegeRequestInputRequestType];
+
+
+export const AdminPrivilegeRequestInputRequestType = {
+  promote_user: 'promote_user',
+  invite_administrator: 'invite_administrator',
+  deactivate_administrator: 'deactivate_administrator',
+} as const;
+
+export interface AdminPrivilegeRequestInput {
+  operationId: string;
+  requestType: AdminPrivilegeRequestInputRequestType;
+  /** @nullable */
+  targetUserId?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  organizationId?: string | null;
+}
+
+export type AdminPrivilegeRequestActionInputAction = typeof AdminPrivilegeRequestActionInputAction[keyof typeof AdminPrivilegeRequestActionInputAction];
+
+
+export const AdminPrivilegeRequestActionInputAction = {
+  approve: 'approve',
+  reject: 'reject',
+} as const;
+
+export interface AdminPrivilegeRequestActionInput {
+  operationId: string;
+  action: AdminPrivilegeRequestActionInputAction;
+  /**
+     * @minLength 5
+     * @maxLength 300
+     */
+  note: string;
+}
+
+export interface AdminPrivilegeRequestActionResult {
+  request: AdminPrivilegeRequest;
+  /** @nullable */
+  invitationToken: string | null;
+}
+
 export interface AuthStatus {
   setupRequired: boolean;
 }
@@ -1320,6 +1656,41 @@ export interface AuthIdentity {
   tenantId: string;
   organizationId?: string;
   role: AuthIdentityRole;
+  mfaSetupRequired: boolean;
+  mfaVerificationRequired: boolean;
+}
+
+export interface AuthMfaSetupResult {
+  /**
+     * @minLength 24
+     * @maxLength 64
+     */
+  secret: string;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  otpauthUrl: string;
+  expiresAt: string;
+}
+
+export interface AuthMfaCodeInput {
+  /**
+     * @minLength 6
+     * @maxLength 32
+     */
+  code: string;
+}
+
+export interface AuthMfaConfirmationResponse {
+  identity: AuthIdentity;
+  /**
+     * @minItems 8
+     * @maxItems 12
+     * @items.minLength 12
+     * @items.maxLength 24
+     */
+  recoveryCodes: string[];
 }
 
 export interface HealthStatus {
@@ -7954,6 +8325,584 @@ export interface MentorshipOverview {
   capabilities: MentorCapabilities;
 }
 
+export interface CoordinationCenter {
+  id: string;
+  name: string;
+  island: string;
+  companyCount: number;
+}
+
+export type CoordinationParticipantRole = typeof CoordinationParticipantRole[keyof typeof CoordinationParticipantRole];
+
+
+export const CoordinationParticipantRole = {
+  lead: 'lead',
+  participant: 'participant',
+  recipient: 'recipient',
+} as const;
+
+export type CoordinationParticipantStatus = typeof CoordinationParticipantStatus[keyof typeof CoordinationParticipantStatus];
+
+
+export const CoordinationParticipantStatus = {
+  pending_approval: 'pending_approval',
+  approved: 'approved',
+  rejected: 'rejected',
+  withdrawn: 'withdrawn',
+  invited: 'invited',
+} as const;
+
+export interface CoordinationParticipant {
+  centerId: string;
+  centerName: string;
+  island: string;
+  role: CoordinationParticipantRole;
+  status: CoordinationParticipantStatus;
+  decisionNote: string;
+}
+
+export type CoordinationCampaignStatus = typeof CoordinationCampaignStatus[keyof typeof CoordinationCampaignStatus];
+
+
+export const CoordinationCampaignStatus = {
+  pending_approval: 'pending_approval',
+  active: 'active',
+  paused: 'paused',
+  closed: 'closed',
+} as const;
+
+export interface CoordinationCampaign {
+  id: string;
+  title: string;
+  objective: string;
+  ownerCenterId: string;
+  ownerCenterName: string;
+  ownerIsland: string;
+  /** @nullable */
+  simulationCampaignId: string | null;
+  startDate: string;
+  endDate: string;
+  status: CoordinationCampaignStatus;
+  resourcePlan: string;
+  participants: CoordinationParticipant[];
+  createdAt: string;
+}
+
+export type CoordinationCampaignCenterInputRole = typeof CoordinationCampaignCenterInputRole[keyof typeof CoordinationCampaignCenterInputRole];
+
+
+export const CoordinationCampaignCenterInputRole = {
+  participant: 'participant',
+  recipient: 'recipient',
+} as const;
+
+export interface CoordinationCampaignCenterInput {
+  /** @minLength 1 */
+  centerId: string;
+  role: CoordinationCampaignCenterInputRole;
+}
+
+export interface CoordinationCampaignInput {
+  operationId: string;
+  /** @minLength 1 */
+  ownerCenterId: string;
+  /**
+     * @minLength 4
+     * @maxLength 140
+     */
+  title: string;
+  /**
+     * @minLength 10
+     * @maxLength 1200
+     */
+  objective: string;
+  startDate: string;
+  endDate: string;
+  /** @maxLength 1200 */
+  resourcePlan: string;
+  /** @nullable */
+  simulationCampaignId: string | null;
+  /** @maxItems 30 */
+  centers: CoordinationCampaignCenterInput[];
+}
+
+export type CoordinationCampaignActionAction = typeof CoordinationCampaignActionAction[keyof typeof CoordinationCampaignActionAction];
+
+
+export const CoordinationCampaignActionAction = {
+  activate: 'activate',
+  pause: 'pause',
+  close: 'close',
+} as const;
+
+export interface CoordinationCampaignAction {
+  operationId: string;
+  action: CoordinationCampaignActionAction;
+  /**
+     * @minLength 5
+     * @maxLength 400
+     */
+  reason: string;
+}
+
+export type CoordinationParticipationActionAction = typeof CoordinationParticipationActionAction[keyof typeof CoordinationParticipationActionAction];
+
+
+export const CoordinationParticipationActionAction = {
+  approve: 'approve',
+  reject: 'reject',
+  withdraw: 'withdraw',
+} as const;
+
+export interface CoordinationParticipationAction {
+  operationId: string;
+  action: CoordinationParticipationActionAction;
+  /**
+     * @minLength 3
+     * @maxLength 400
+     */
+  note: string;
+}
+
+export type CoordinationEventEventType = typeof CoordinationEventEventType[keyof typeof CoordinationEventEventType];
+
+
+export const CoordinationEventEventType = {
+  meeting: 'meeting',
+  deadline: 'deadline',
+  test: 'test',
+  local_break: 'local_break',
+  mentoring: 'mentoring',
+  async_activity: 'async_activity',
+} as const;
+
+export type CoordinationEventModality = typeof CoordinationEventModality[keyof typeof CoordinationEventModality];
+
+
+export const CoordinationEventModality = {
+  in_person: 'in_person',
+  remote: 'remote',
+  async: 'async',
+} as const;
+
+export type CoordinationEventStatus = typeof CoordinationEventStatus[keyof typeof CoordinationEventStatus];
+
+
+export const CoordinationEventStatus = {
+  proposed: 'proposed',
+  confirmed: 'confirmed',
+  rescheduled: 'rescheduled',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface CoordinationEvent {
+  id: string;
+  campaignId: string;
+  centerIds: string[];
+  title: string;
+  eventType: CoordinationEventEventType;
+  startDate: string;
+  startTime: string;
+  endTime: string;
+  modality: CoordinationEventModality;
+  summary: string;
+  status: CoordinationEventStatus;
+  createdAt: string;
+}
+
+export type CoordinationEventInputEventType = typeof CoordinationEventInputEventType[keyof typeof CoordinationEventInputEventType];
+
+
+export const CoordinationEventInputEventType = {
+  meeting: 'meeting',
+  deadline: 'deadline',
+  test: 'test',
+  local_break: 'local_break',
+  mentoring: 'mentoring',
+  async_activity: 'async_activity',
+} as const;
+
+export type CoordinationEventInputModality = typeof CoordinationEventInputModality[keyof typeof CoordinationEventInputModality];
+
+
+export const CoordinationEventInputModality = {
+  in_person: 'in_person',
+  remote: 'remote',
+  async: 'async',
+} as const;
+
+export interface CoordinationEventInput {
+  operationId: string;
+  campaignId: string;
+  /**
+     * @minItems 1
+     * @maxItems 30
+     */
+  centerIds: string[];
+  /**
+     * @minLength 3
+     * @maxLength 140
+     */
+  title: string;
+  eventType: CoordinationEventInputEventType;
+  startDate: string;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  startTime: string;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  endTime: string;
+  modality: CoordinationEventInputModality;
+  /** @maxLength 1000 */
+  summary: string;
+}
+
+export type CoordinationEventActionAction = typeof CoordinationEventActionAction[keyof typeof CoordinationEventActionAction];
+
+
+export const CoordinationEventActionAction = {
+  confirm: 'confirm',
+  reschedule: 'reschedule',
+  complete: 'complete',
+  cancel: 'cancel',
+} as const;
+
+export interface CoordinationEventAction {
+  operationId: string;
+  action: CoordinationEventActionAction;
+  /**
+     * @minLength 3
+     * @maxLength 400
+     */
+  reason: string;
+  /** @nullable */
+  startDate: string | null;
+  /**
+     * @nullable
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  startTime: string | null;
+  /**
+     * @nullable
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  endTime: string | null;
+}
+
+export type CoordinationTaskResponsibleRole = typeof CoordinationTaskResponsibleRole[keyof typeof CoordinationTaskResponsibleRole];
+
+
+export const CoordinationTaskResponsibleRole = {
+  student: 'student',
+  team_manager: 'team_manager',
+  teacher: 'teacher',
+} as const;
+
+export type CoordinationTaskStatus = typeof CoordinationTaskStatus[keyof typeof CoordinationTaskStatus];
+
+
+export const CoordinationTaskStatus = {
+  open: 'open',
+  in_progress: 'in_progress',
+  blocked: 'blocked',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface CoordinationTask {
+  id: string;
+  campaignId: string;
+  centerId: string;
+  centerName: string;
+  title: string;
+  description: string;
+  department: string;
+  responsibleRole: CoordinationTaskResponsibleRole;
+  dueDate: string;
+  status: CoordinationTaskStatus;
+  evidenceSummary: string;
+  /** @nullable */
+  documentId: string | null;
+  /** @nullable */
+  documentReference: string | null;
+  createdAt: string;
+}
+
+export type CoordinationTaskInputResponsibleRole = typeof CoordinationTaskInputResponsibleRole[keyof typeof CoordinationTaskInputResponsibleRole];
+
+
+export const CoordinationTaskInputResponsibleRole = {
+  student: 'student',
+  team_manager: 'team_manager',
+  teacher: 'teacher',
+} as const;
+
+export interface CoordinationTaskInput {
+  operationId: string;
+  campaignId: string;
+  centerId: string;
+  /**
+     * @minLength 3
+     * @maxLength 140
+     */
+  title: string;
+  /** @maxLength 1200 */
+  description: string;
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  department: string;
+  responsibleRole: CoordinationTaskInputResponsibleRole;
+  dueDate: string;
+}
+
+export type CoordinationTaskActionAction = typeof CoordinationTaskActionAction[keyof typeof CoordinationTaskActionAction];
+
+
+export const CoordinationTaskActionAction = {
+  start: 'start',
+  block: 'block',
+  complete: 'complete',
+  cancel: 'cancel',
+  reassign: 'reassign',
+  comment: 'comment',
+} as const;
+
+export interface CoordinationTaskAction {
+  operationId: string;
+  action: CoordinationTaskActionAction;
+  /**
+     * @minLength 3
+     * @maxLength 800
+     */
+  note: string;
+  /**
+     * @maxLength 1200
+     * @nullable
+     */
+  evidenceSummary: string | null;
+  /** @nullable */
+  documentId: string | null;
+  /** @nullable */
+  targetCenterId: string | null;
+}
+
+export type CoordinationIncidentIncidentType = typeof CoordinationIncidentIncidentType[keyof typeof CoordinationIncidentIncidentType];
+
+
+export const CoordinationIncidentIncidentType = {
+  supplier_block: 'supplier_block',
+  absence: 'absence',
+  schedule_conflict: 'schedule_conflict',
+  permission_conflict: 'permission_conflict',
+  center_withdrawal: 'center_withdrawal',
+  other: 'other',
+} as const;
+
+export type CoordinationIncidentSeverity = typeof CoordinationIncidentSeverity[keyof typeof CoordinationIncidentSeverity];
+
+
+export const CoordinationIncidentSeverity = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export type CoordinationIncidentStatus = typeof CoordinationIncidentStatus[keyof typeof CoordinationIncidentStatus];
+
+
+export const CoordinationIncidentStatus = {
+  open: 'open',
+  escalated: 'escalated',
+  mediation: 'mediation',
+  resolved: 'resolved',
+} as const;
+
+export interface CoordinationIncident {
+  id: string;
+  campaignId: string;
+  centerId: string;
+  centerName: string;
+  incidentType: CoordinationIncidentIncidentType;
+  severity: CoordinationIncidentSeverity;
+  summary: string;
+  status: CoordinationIncidentStatus;
+  /** @nullable */
+  assignedCenterId: string | null;
+  /** @nullable */
+  assignedCenterName: string | null;
+  resolution: string;
+  createdAt: string;
+}
+
+export type CoordinationIncidentInputIncidentType = typeof CoordinationIncidentInputIncidentType[keyof typeof CoordinationIncidentInputIncidentType];
+
+
+export const CoordinationIncidentInputIncidentType = {
+  supplier_block: 'supplier_block',
+  absence: 'absence',
+  schedule_conflict: 'schedule_conflict',
+  permission_conflict: 'permission_conflict',
+  center_withdrawal: 'center_withdrawal',
+  other: 'other',
+} as const;
+
+export type CoordinationIncidentInputSeverity = typeof CoordinationIncidentInputSeverity[keyof typeof CoordinationIncidentInputSeverity];
+
+
+export const CoordinationIncidentInputSeverity = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface CoordinationIncidentInput {
+  operationId: string;
+  campaignId: string;
+  centerId: string;
+  incidentType: CoordinationIncidentInputIncidentType;
+  severity: CoordinationIncidentInputSeverity;
+  /**
+     * @minLength 10
+     * @maxLength 1600
+     */
+  summary: string;
+}
+
+export type CoordinationIncidentActionAction = typeof CoordinationIncidentActionAction[keyof typeof CoordinationIncidentActionAction];
+
+
+export const CoordinationIncidentActionAction = {
+  escalate: 'escalate',
+  mediate: 'mediate',
+  resolve: 'resolve',
+  reassign: 'reassign',
+} as const;
+
+export interface CoordinationIncidentAction {
+  operationId: string;
+  action: CoordinationIncidentActionAction;
+  /**
+     * @minLength 3
+     * @maxLength 800
+     */
+  note: string;
+  /** @nullable */
+  targetCenterId: string | null;
+}
+
+export type CoordinationTransferStatus = typeof CoordinationTransferStatus[keyof typeof CoordinationTransferStatus];
+
+
+export const CoordinationTransferStatus = {
+  proposed: 'proposed',
+  interested: 'interested',
+  prepared: 'prepared',
+  training: 'training',
+  adopted: 'adopted',
+  declined: 'declined',
+} as const;
+
+export interface CoordinationTransfer {
+  id: string;
+  campaignId: string;
+  centerId: string;
+  centerName: string;
+  status: CoordinationTransferStatus;
+  adoptionSummary: string;
+  createdAt: string;
+}
+
+export interface CoordinationTransferInput {
+  operationId: string;
+  campaignId: string;
+  centerId: string;
+  /** @maxLength 800 */
+  adoptionSummary: string;
+}
+
+export type CoordinationTransferUpdateStatus = typeof CoordinationTransferUpdateStatus[keyof typeof CoordinationTransferUpdateStatus];
+
+
+export const CoordinationTransferUpdateStatus = {
+  interested: 'interested',
+  prepared: 'prepared',
+  training: 'training',
+  adopted: 'adopted',
+  declined: 'declined',
+} as const;
+
+export interface CoordinationTransferUpdate {
+  operationId: string;
+  status: CoordinationTransferUpdateStatus;
+  /**
+     * @minLength 3
+     * @maxLength 800
+     */
+  adoptionSummary: string;
+}
+
+export interface CoordinationAudit {
+  id: string;
+  campaignId: string;
+  /** @nullable */
+  centerName: string | null;
+  resourceType: string;
+  resourceId: string;
+  action: string;
+  actorLabel: string;
+  summary: string;
+  createdAt: string;
+}
+
+export interface CoordinationDocument {
+  id: string;
+  reference: string;
+  title: string;
+  organizationId: string;
+}
+
+export interface CoordinationImpact {
+  centersActive: number;
+  recipients: number;
+  eventsPlanned: number;
+  tasksOpen: number;
+  tasksCompleted: number;
+  incidentsOpen: number;
+  incidentsResolved: number;
+  adoptions: number;
+  mentorshipSessions: number;
+}
+
+export interface CoordinationCapabilities {
+  isGlobalCoordinator: boolean;
+  canCreateCampaign: boolean;
+  canApproveCenter: boolean;
+  canSchedule: boolean;
+  canManageTasks: boolean;
+  canUpdateTasks: boolean;
+  canReportIncident: boolean;
+  canMediate: boolean;
+  canManageTransfer: boolean;
+  canViewAudit: boolean;
+}
+
+export interface CoordinationOverview {
+  /** @nullable */
+  currentCenterId: string | null;
+  centers: CoordinationCenter[];
+  availableCenters: CoordinationCenter[];
+  campaigns: CoordinationCampaign[];
+  events: CoordinationEvent[];
+  tasks: CoordinationTask[];
+  incidents: CoordinationIncident[];
+  transfers: CoordinationTransfer[];
+  documents: CoordinationDocument[];
+  audit: CoordinationAudit[];
+  impact: CoordinationImpact;
+  capabilities: CoordinationCapabilities;
+}
+
 export type GetPortfolioOverviewParams = {
 campaignId?: string;
 };
@@ -7963,6 +8912,10 @@ campaignId?: string;
 };
 
 export type GetMentorshipOverviewParams = {
+campaignId?: string;
+};
+
+export type GetCoordinationOverviewParams = {
 campaignId?: string;
 };
 

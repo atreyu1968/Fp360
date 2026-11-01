@@ -6,6 +6,7 @@ import {
   fpAuthMemberships,
   fpAuthSessions,
   fpAuthUsers,
+  fpOrganizations,
 } from "@workspace/db";
 
 export const SESSION_COOKIE_NAME = "redfp360_session";
@@ -24,12 +25,15 @@ export type AuthRole = (typeof AUTH_ROLES)[number];
 
 export interface AuthContext {
   userId: string;
+  sessionId?: string;
   membershipId: string;
   email: string;
   displayName: string;
   tenantId: string;
   organizationId: string | null;
   role: AuthRole;
+  mfaSetupRequired?: boolean;
+  mfaVerificationRequired?: boolean;
 }
 
 declare global {
@@ -132,6 +136,8 @@ export const requireAuth: RequestHandler = async (request, response, next) => {
     const now = new Date();
     const [identity] = await db
       .select({
+        sessionId: fpAuthSessions.id,
+        mfaVerifiedAt: fpAuthSessions.mfaVerifiedAt,
         userId: fpAuthUsers.id,
         membershipId: fpAuthMemberships.id,
         email: fpAuthUsers.email,
@@ -139,6 +145,7 @@ export const requireAuth: RequestHandler = async (request, response, next) => {
         tenantId: fpAuthMemberships.tenantId,
         organizationId: fpAuthMemberships.organizationId,
         role: fpAuthMemberships.role,
+        mfaEnabledAt: fpAuthUsers.mfaEnabledAt,
       })
       .from(fpAuthSessions)
       .innerJoin(fpAuthUsers, eq(fpAuthSessions.userId, fpAuthUsers.id))
@@ -166,9 +173,41 @@ export const requireAuth: RequestHandler = async (request, response, next) => {
       return;
     }
 
+    if (identity.organizationId) {
+      const [organization] = await db.select({ isActive: fpOrganizations.isActive })
+        .from(fpOrganizations)
+        .where(and(
+          eq(fpOrganizations.id, identity.organizationId),
+          eq(fpOrganizations.tenantId, identity.tenantId),
+        ))
+        .limit(1);
+      if (!organization?.isActive) {
+        clearAuthCookie(response);
+        response.status(401).json({ message: "La organización de esta cuenta está suspendida." });
+        return;
+      }
+    }
+
+    const mfaSetupRequired = identity.role === "administrator" && !identity.mfaEnabledAt;
+    const mfaVerificationRequired = identity.role === "administrator"
+      && Boolean(identity.mfaEnabledAt)
+      && !identity.mfaVerifiedAt;
+    const mfaPath = request.originalUrl.split("?")[0] ?? request.path;
+    const allowedDuringMfa = /\/auth\/(me|logout|mfa\/setup|mfa\/confirm|mfa\/verify)$/.test(mfaPath);
+    if ((mfaSetupRequired || mfaVerificationRequired) && !allowedDuringMfa) {
+      response.status(403).json({
+        message: mfaSetupRequired ? "Administrator MFA setup required" : "Administrator MFA verification required",
+        mfaSetupRequired,
+        mfaVerificationRequired,
+      });
+      return;
+    }
+
     request.auth = {
       ...identity,
       role: identity.role as AuthRole,
+      mfaSetupRequired,
+      mfaVerificationRequired,
     };
     next();
   } catch (error) {

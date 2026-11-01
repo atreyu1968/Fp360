@@ -26,10 +26,47 @@ import type {
 
 import type {
   AccessAuditEvent,
+  AdminBackupExercise,
+  AdminBackupExerciseInput,
+  AdminIntegrationStatus,
+  AdminOperationInput,
+  AdminOrganization,
+  AdminOrganizationActionInput,
+  AdminOrganizationInput,
+  AdminPolicyEvaluation,
+  AdminPolicyEvaluationInput,
+  AdminPrivilegeRequest,
+  AdminPrivilegeRequestActionInput,
+  AdminPrivilegeRequestActionResult,
+  AdminPrivilegeRequestInput,
+  AdminScenarioVersion,
+  AdminScenarioVersionInput,
+  AdminSystemOverview,
   AuthIdentity,
   AuthLoginInput,
+  AuthMfaCodeInput,
+  AuthMfaConfirmationResponse,
+  AuthMfaSetupResult,
   AuthSetupInput,
   AuthStatus,
+  CoordinationCampaign,
+  CoordinationCampaignAction,
+  CoordinationCampaignInput,
+  CoordinationEvent,
+  CoordinationEventAction,
+  CoordinationEventInput,
+  CoordinationIncident,
+  CoordinationIncidentAction,
+  CoordinationIncidentInput,
+  CoordinationOverview,
+  CoordinationParticipant,
+  CoordinationParticipationAction,
+  CoordinationTask,
+  CoordinationTaskAction,
+  CoordinationTaskInput,
+  CoordinationTransfer,
+  CoordinationTransferInput,
+  CoordinationTransferUpdate,
   CrmActivity,
   CrmActivityInput,
   CrmActivityUpdate,
@@ -227,6 +264,7 @@ import type {
   Fp360TaxRequirement,
   Fp360TaxRequirementActionInput,
   Fp360TaxRequirementInput,
+  GetCoordinationOverviewParams,
   GetEvaluationOverviewParams,
   GetFp360AccountingOverviewParams,
   GetFp360BankOverviewParams,
@@ -703,6 +741,256 @@ export const useLogin = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getLoginMutationOptions(options), queryClient);
+    }
+
+export const getBeginAdminMfaSetupUrl = () => {
+
+
+
+
+  return `/api/auth/mfa/setup`
+}
+
+/**
+ * @summary Begin local administrator authenticator enrollment
+ */
+export const beginAdminMfaSetup = async ( options?: Parameters<typeof customFetch>[1]): Promise<AuthMfaSetupResult> => {
+
+  return customFetch<AuthMfaSetupResult>(getBeginAdminMfaSetupUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getBeginAdminMfaSetupMutationKey = () => ['beginAdminMfaSetup'] as const;
+
+export const getBeginAdminMfaSetupMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginAdminMfaSetup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof beginAdminMfaSetup>>, TError,void, TContext> => {
+
+const mutationKey = getBeginAdminMfaSetupMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof beginAdminMfaSetup>>, void> = () => {
+
+
+          return  beginAdminMfaSetup(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BeginAdminMfaSetupMutationResult = NonNullable<Awaited<ReturnType<typeof beginAdminMfaSetup>>>
+
+    export type BeginAdminMfaSetupMutationError = ErrorType<void>
+
+
+    /**
+ * @summary Begin local administrator authenticator enrollment
+ */
+export const useBeginAdminMfaSetup = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginAdminMfaSetup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof beginAdminMfaSetup>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getBeginAdminMfaSetupMutationOptions(options), queryClient);
+    }
+
+export const getConfirmAdminMfaUrl = () => {
+
+
+
+
+  return `/api/auth/mfa/confirm`
+}
+
+/**
+ * @summary Confirm authenticator enrollment and issue recovery codes
+ */
+export const confirmAdminMfa = async (authMfaCodeInput: AuthMfaCodeInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthMfaConfirmationResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AuthMfaConfirmationResponse>(getConfirmAdminMfaUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(authMfaCodeInput)
+  }
+);}
+
+
+
+
+
+export const getConfirmAdminMfaMutationKey = () => ['confirmAdminMfa'] as const;
+
+export const getConfirmAdminMfaMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmAdminMfa>>, TError,ConfirmAdminMfaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmAdminMfa>>, TError,ConfirmAdminMfaMutationVariables, TContext> => {
+
+const mutationKey = getConfirmAdminMfaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmAdminMfa>>, ConfirmAdminMfaMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmAdminMfa(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmAdminMfaMutationResult = NonNullable<Awaited<ReturnType<typeof confirmAdminMfa>>>
+    export type ConfirmAdminMfaMutationBody = BodyType<AuthMfaCodeInput>
+    export type ConfirmAdminMfaMutationError = ErrorType<void>
+    export type ConfirmAdminMfaMutationVariables = {data: BodyType<AuthMfaCodeInput>}
+
+    /**
+ * @summary Confirm authenticator enrollment and issue recovery codes
+ */
+export const useConfirmAdminMfa = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmAdminMfa>>, TError,ConfirmAdminMfaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof confirmAdminMfa>>,
+        TError,
+        ConfirmAdminMfaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmAdminMfaMutationOptions(options), queryClient);
+    }
+
+export const getVerifyAdminMfaUrl = () => {
+
+
+
+
+  return `/api/auth/mfa/verify`
+}
+
+/**
+ * @summary Verify a time-based code or one-time recovery code
+ */
+export const verifyAdminMfa = async (authMfaCodeInput: AuthMfaCodeInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthIdentity> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AuthIdentity>(getVerifyAdminMfaUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(authMfaCodeInput)
+  }
+);}
+
+
+
+
+
+export const getVerifyAdminMfaMutationKey = () => ['verifyAdminMfa'] as const;
+
+export const getVerifyAdminMfaMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyAdminMfa>>, TError,VerifyAdminMfaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyAdminMfa>>, TError,VerifyAdminMfaMutationVariables, TContext> => {
+
+const mutationKey = getVerifyAdminMfaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyAdminMfa>>, VerifyAdminMfaMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyAdminMfa(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyAdminMfaMutationResult = NonNullable<Awaited<ReturnType<typeof verifyAdminMfa>>>
+    export type VerifyAdminMfaMutationBody = BodyType<AuthMfaCodeInput>
+    export type VerifyAdminMfaMutationError = ErrorType<void>
+    export type VerifyAdminMfaMutationVariables = {data: BodyType<AuthMfaCodeInput>}
+
+    /**
+ * @summary Verify a time-based code or one-time recovery code
+ */
+export const useVerifyAdminMfa = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyAdminMfa>>, TError,VerifyAdminMfaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof verifyAdminMfa>>,
+        TError,
+        VerifyAdminMfaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getVerifyAdminMfaMutationOptions(options), queryClient);
     }
 
 export const getGetCurrentIdentityUrl = () => {
@@ -1397,6 +1685,855 @@ export function useListAdminAudit<TData = Awaited<ReturnType<typeof listAdminAud
 
 
 
+
+export const getGetAdminSystemOverviewUrl = () => {
+
+
+
+
+  return `/api/admin/system/overview`
+}
+
+export const getAdminSystemOverview = async ( options?: Parameters<typeof customFetch>[1]): Promise<AdminSystemOverview> => {
+
+  return customFetch<AdminSystemOverview>(getGetAdminSystemOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminSystemOverviewQueryKey = () => {
+    return [
+    `/api/admin/system/overview`
+    ] as const;
+    }
+
+
+export const getGetAdminSystemOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getAdminSystemOverview>>, TError = ErrorType<void>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSystemOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminSystemOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminSystemOverview>>> = ({ signal }) => getAdminSystemOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminSystemOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetAdminSystemOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminSystemOverview>>>
+export type GetAdminSystemOverviewQueryError = ErrorType<void>
+
+
+export function useGetAdminSystemOverview<TData = Awaited<ReturnType<typeof getAdminSystemOverview>>, TError = ErrorType<void>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSystemOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminSystemOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminSystemOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminSystemOverview<TData = Awaited<ReturnType<typeof getAdminSystemOverview>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSystemOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminSystemOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminSystemOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminSystemOverview<TData = Awaited<ReturnType<typeof getAdminSystemOverview>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSystemOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetAdminSystemOverview<TData = Awaited<ReturnType<typeof getAdminSystemOverview>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSystemOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAdminSystemOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAdminOrganizationUrl = () => {
+
+
+
+
+  return `/api/admin/organizations`
+}
+
+export const createAdminOrganization = async (adminOrganizationInput: AdminOrganizationInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminOrganization> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminOrganization>(getCreateAdminOrganizationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminOrganizationInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAdminOrganizationMutationKey = () => ['createAdminOrganization'] as const;
+
+export const getCreateAdminOrganizationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminOrganization>>, TError,CreateAdminOrganizationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminOrganization>>, TError,CreateAdminOrganizationMutationVariables, TContext> => {
+
+const mutationKey = getCreateAdminOrganizationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminOrganization>>, CreateAdminOrganizationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdminOrganization(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminOrganizationMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminOrganization>>>
+    export type CreateAdminOrganizationMutationBody = BodyType<AdminOrganizationInput>
+    export type CreateAdminOrganizationMutationError = ErrorType<void>
+    export type CreateAdminOrganizationMutationVariables = {data: BodyType<AdminOrganizationInput>}
+
+    export const useCreateAdminOrganization = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminOrganization>>, TError,CreateAdminOrganizationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminOrganization>>,
+        TError,
+        CreateAdminOrganizationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAdminOrganizationMutationOptions(options), queryClient);
+    }
+
+export const getActOnAdminOrganizationUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/organizations/${id}/action`
+}
+
+export const actOnAdminOrganization = async (id: string,
+    adminOrganizationActionInput: AdminOrganizationActionInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminOrganization> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminOrganization>(getActOnAdminOrganizationUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminOrganizationActionInput)
+  }
+);}
+
+
+
+
+
+export const getActOnAdminOrganizationMutationKey = () => ['actOnAdminOrganization'] as const;
+
+export const getActOnAdminOrganizationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnAdminOrganization>>, TError,ActOnAdminOrganizationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnAdminOrganization>>, TError,ActOnAdminOrganizationMutationVariables, TContext> => {
+
+const mutationKey = getActOnAdminOrganizationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnAdminOrganization>>, ActOnAdminOrganizationMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actOnAdminOrganization(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnAdminOrganizationMutationResult = NonNullable<Awaited<ReturnType<typeof actOnAdminOrganization>>>
+    export type ActOnAdminOrganizationMutationBody = BodyType<AdminOrganizationActionInput>
+    export type ActOnAdminOrganizationMutationError = ErrorType<void>
+    export type ActOnAdminOrganizationMutationVariables = {id: string;data: BodyType<AdminOrganizationActionInput>}
+
+    export const useActOnAdminOrganization = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnAdminOrganization>>, TError,ActOnAdminOrganizationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnAdminOrganization>>,
+        TError,
+        ActOnAdminOrganizationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnAdminOrganizationMutationOptions(options), queryClient);
+    }
+
+export const getEvaluateAdminPolicyUrl = () => {
+
+
+
+
+  return `/api/admin/policies/evaluate`
+}
+
+export const evaluateAdminPolicy = async (adminPolicyEvaluationInput: AdminPolicyEvaluationInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminPolicyEvaluation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminPolicyEvaluation>(getEvaluateAdminPolicyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminPolicyEvaluationInput)
+  }
+);}
+
+
+
+
+
+export const getEvaluateAdminPolicyMutationKey = () => ['evaluateAdminPolicy'] as const;
+
+export const getEvaluateAdminPolicyMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof evaluateAdminPolicy>>, TError,EvaluateAdminPolicyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof evaluateAdminPolicy>>, TError,EvaluateAdminPolicyMutationVariables, TContext> => {
+
+const mutationKey = getEvaluateAdminPolicyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof evaluateAdminPolicy>>, EvaluateAdminPolicyMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  evaluateAdminPolicy(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EvaluateAdminPolicyMutationResult = NonNullable<Awaited<ReturnType<typeof evaluateAdminPolicy>>>
+    export type EvaluateAdminPolicyMutationBody = BodyType<AdminPolicyEvaluationInput>
+    export type EvaluateAdminPolicyMutationError = ErrorType<void>
+    export type EvaluateAdminPolicyMutationVariables = {data: BodyType<AdminPolicyEvaluationInput>}
+
+    export const useEvaluateAdminPolicy = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof evaluateAdminPolicy>>, TError,EvaluateAdminPolicyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof evaluateAdminPolicy>>,
+        TError,
+        EvaluateAdminPolicyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getEvaluateAdminPolicyMutationOptions(options), queryClient);
+    }
+
+export const getCreateAdminScenarioVersionUrl = () => {
+
+
+
+
+  return `/api/admin/scenario-versions`
+}
+
+export const createAdminScenarioVersion = async (adminScenarioVersionInput: AdminScenarioVersionInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminScenarioVersion> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminScenarioVersion>(getCreateAdminScenarioVersionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminScenarioVersionInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAdminScenarioVersionMutationKey = () => ['createAdminScenarioVersion'] as const;
+
+export const getCreateAdminScenarioVersionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminScenarioVersion>>, TError,CreateAdminScenarioVersionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminScenarioVersion>>, TError,CreateAdminScenarioVersionMutationVariables, TContext> => {
+
+const mutationKey = getCreateAdminScenarioVersionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminScenarioVersion>>, CreateAdminScenarioVersionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdminScenarioVersion(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminScenarioVersionMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminScenarioVersion>>>
+    export type CreateAdminScenarioVersionMutationBody = BodyType<AdminScenarioVersionInput>
+    export type CreateAdminScenarioVersionMutationError = ErrorType<void>
+    export type CreateAdminScenarioVersionMutationVariables = {data: BodyType<AdminScenarioVersionInput>}
+
+    export const useCreateAdminScenarioVersion = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminScenarioVersion>>, TError,CreateAdminScenarioVersionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminScenarioVersion>>,
+        TError,
+        CreateAdminScenarioVersionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAdminScenarioVersionMutationOptions(options), queryClient);
+    }
+
+export const getCreateAdminBackupExerciseUrl = () => {
+
+
+
+
+  return `/api/admin/backup-exercises`
+}
+
+export const createAdminBackupExercise = async (adminBackupExerciseInput: AdminBackupExerciseInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminBackupExercise> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminBackupExercise>(getCreateAdminBackupExerciseUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminBackupExerciseInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAdminBackupExerciseMutationKey = () => ['createAdminBackupExercise'] as const;
+
+export const getCreateAdminBackupExerciseMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminBackupExercise>>, TError,CreateAdminBackupExerciseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminBackupExercise>>, TError,CreateAdminBackupExerciseMutationVariables, TContext> => {
+
+const mutationKey = getCreateAdminBackupExerciseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminBackupExercise>>, CreateAdminBackupExerciseMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdminBackupExercise(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminBackupExerciseMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminBackupExercise>>>
+    export type CreateAdminBackupExerciseMutationBody = BodyType<AdminBackupExerciseInput>
+    export type CreateAdminBackupExerciseMutationError = ErrorType<void>
+    export type CreateAdminBackupExerciseMutationVariables = {data: BodyType<AdminBackupExerciseInput>}
+
+    export const useCreateAdminBackupExercise = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminBackupExercise>>, TError,CreateAdminBackupExerciseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminBackupExercise>>,
+        TError,
+        CreateAdminBackupExerciseMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAdminBackupExerciseMutationOptions(options), queryClient);
+    }
+
+export const getCheckAdminIntegrationUrl = (integrationId: string,) => {
+
+
+
+
+  return `/api/admin/integrations/${integrationId}/check`
+}
+
+export const checkAdminIntegration = async (integrationId: string,
+    adminOperationInput: AdminOperationInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminIntegrationStatus> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminIntegrationStatus>(getCheckAdminIntegrationUrl(integrationId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminOperationInput)
+  }
+);}
+
+
+
+
+
+export const getCheckAdminIntegrationMutationKey = () => ['checkAdminIntegration'] as const;
+
+export const getCheckAdminIntegrationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkAdminIntegration>>, TError,CheckAdminIntegrationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkAdminIntegration>>, TError,CheckAdminIntegrationMutationVariables, TContext> => {
+
+const mutationKey = getCheckAdminIntegrationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkAdminIntegration>>, CheckAdminIntegrationMutationVariables> = (props) => {
+          const {integrationId,data} = props ?? {};
+
+          return  checkAdminIntegration(integrationId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckAdminIntegrationMutationResult = NonNullable<Awaited<ReturnType<typeof checkAdminIntegration>>>
+    export type CheckAdminIntegrationMutationBody = BodyType<AdminOperationInput>
+    export type CheckAdminIntegrationMutationError = ErrorType<void>
+    export type CheckAdminIntegrationMutationVariables = {integrationId: string;data: BodyType<AdminOperationInput>}
+
+    export const useCheckAdminIntegration = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkAdminIntegration>>, TError,CheckAdminIntegrationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof checkAdminIntegration>>,
+        TError,
+        CheckAdminIntegrationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCheckAdminIntegrationMutationOptions(options), queryClient);
+    }
+
+export const getListAdminPrivilegeRequestsUrl = () => {
+
+
+
+
+  return `/api/admin/privilege-requests`
+}
+
+export const listAdminPrivilegeRequests = async ( options?: Parameters<typeof customFetch>[1]): Promise<AdminPrivilegeRequest[]> => {
+
+  return customFetch<AdminPrivilegeRequest[]>(getListAdminPrivilegeRequestsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminPrivilegeRequestsQueryKey = () => {
+    return [
+    `/api/admin/privilege-requests`
+    ] as const;
+    }
+
+
+export const getListAdminPrivilegeRequestsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminPrivilegeRequests>>, TError = ErrorType<void>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminPrivilegeRequests>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminPrivilegeRequestsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminPrivilegeRequests>>> = ({ signal }) => listAdminPrivilegeRequests({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminPrivilegeRequests>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListAdminPrivilegeRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminPrivilegeRequests>>>
+export type ListAdminPrivilegeRequestsQueryError = ErrorType<void>
+
+
+export function useListAdminPrivilegeRequests<TData = Awaited<ReturnType<typeof listAdminPrivilegeRequests>>, TError = ErrorType<void>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminPrivilegeRequests>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAdminPrivilegeRequests>>,
+          TError,
+          Awaited<ReturnType<typeof listAdminPrivilegeRequests>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAdminPrivilegeRequests<TData = Awaited<ReturnType<typeof listAdminPrivilegeRequests>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminPrivilegeRequests>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAdminPrivilegeRequests>>,
+          TError,
+          Awaited<ReturnType<typeof listAdminPrivilegeRequests>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAdminPrivilegeRequests<TData = Awaited<ReturnType<typeof listAdminPrivilegeRequests>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminPrivilegeRequests>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListAdminPrivilegeRequests<TData = Awaited<ReturnType<typeof listAdminPrivilegeRequests>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminPrivilegeRequests>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListAdminPrivilegeRequestsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAdminPrivilegeRequestUrl = () => {
+
+
+
+
+  return `/api/admin/privilege-requests`
+}
+
+export const createAdminPrivilegeRequest = async (adminPrivilegeRequestInput: AdminPrivilegeRequestInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminPrivilegeRequest> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminPrivilegeRequest>(getCreateAdminPrivilegeRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminPrivilegeRequestInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAdminPrivilegeRequestMutationKey = () => ['createAdminPrivilegeRequest'] as const;
+
+export const getCreateAdminPrivilegeRequestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminPrivilegeRequest>>, TError,CreateAdminPrivilegeRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminPrivilegeRequest>>, TError,CreateAdminPrivilegeRequestMutationVariables, TContext> => {
+
+const mutationKey = getCreateAdminPrivilegeRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminPrivilegeRequest>>, CreateAdminPrivilegeRequestMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdminPrivilegeRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminPrivilegeRequestMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminPrivilegeRequest>>>
+    export type CreateAdminPrivilegeRequestMutationBody = BodyType<AdminPrivilegeRequestInput>
+    export type CreateAdminPrivilegeRequestMutationError = ErrorType<void>
+    export type CreateAdminPrivilegeRequestMutationVariables = {data: BodyType<AdminPrivilegeRequestInput>}
+
+    export const useCreateAdminPrivilegeRequest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminPrivilegeRequest>>, TError,CreateAdminPrivilegeRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminPrivilegeRequest>>,
+        TError,
+        CreateAdminPrivilegeRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAdminPrivilegeRequestMutationOptions(options), queryClient);
+    }
+
+export const getActOnAdminPrivilegeRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/privilege-requests/${id}/action`
+}
+
+export const actOnAdminPrivilegeRequest = async (id: string,
+    adminPrivilegeRequestActionInput: AdminPrivilegeRequestActionInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminPrivilegeRequestActionResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminPrivilegeRequestActionResult>(getActOnAdminPrivilegeRequestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminPrivilegeRequestActionInput)
+  }
+);}
+
+
+
+
+
+export const getActOnAdminPrivilegeRequestMutationKey = () => ['actOnAdminPrivilegeRequest'] as const;
+
+export const getActOnAdminPrivilegeRequestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnAdminPrivilegeRequest>>, TError,ActOnAdminPrivilegeRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnAdminPrivilegeRequest>>, TError,ActOnAdminPrivilegeRequestMutationVariables, TContext> => {
+
+const mutationKey = getActOnAdminPrivilegeRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnAdminPrivilegeRequest>>, ActOnAdminPrivilegeRequestMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actOnAdminPrivilegeRequest(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnAdminPrivilegeRequestMutationResult = NonNullable<Awaited<ReturnType<typeof actOnAdminPrivilegeRequest>>>
+    export type ActOnAdminPrivilegeRequestMutationBody = BodyType<AdminPrivilegeRequestActionInput>
+    export type ActOnAdminPrivilegeRequestMutationError = ErrorType<void>
+    export type ActOnAdminPrivilegeRequestMutationVariables = {id: string;data: BodyType<AdminPrivilegeRequestActionInput>}
+
+    export const useActOnAdminPrivilegeRequest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnAdminPrivilegeRequest>>, TError,ActOnAdminPrivilegeRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnAdminPrivilegeRequest>>,
+        TError,
+        ActOnAdminPrivilegeRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnAdminPrivilegeRequestMutationOptions(options), queryClient);
+    }
 
 export const getInspectInvitationUrl = () => {
 
@@ -4811,6 +5948,1090 @@ export const useUpdateMentorRecommendation = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateMentorRecommendationMutationOptions(options), queryClient);
+    }
+
+export const getGetCoordinationOverviewUrl = (params?: GetCoordinationOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/intercenter/overview?${stringifiedParams}` : `/api/redfp360/intercenter/overview`
+}
+
+/**
+ * @summary Read the authenticated user's intercenter coordination workspace
+ */
+export const getCoordinationOverview = async (params?: GetCoordinationOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<CoordinationOverview> => {
+
+  return customFetch<CoordinationOverview>(getGetCoordinationOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCoordinationOverviewQueryKey = (params?: GetCoordinationOverviewParams,) => {
+    return [
+    `/api/redfp360/intercenter/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCoordinationOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getCoordinationOverview>>, TError = ErrorType<void>>(params?: GetCoordinationOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCoordinationOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCoordinationOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCoordinationOverview>>> = ({ signal }) => getCoordinationOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCoordinationOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCoordinationOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getCoordinationOverview>>>
+export type GetCoordinationOverviewQueryError = ErrorType<void>
+
+
+export function useGetCoordinationOverview<TData = Awaited<ReturnType<typeof getCoordinationOverview>>, TError = ErrorType<void>>(
+ params: undefined |  GetCoordinationOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCoordinationOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCoordinationOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getCoordinationOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCoordinationOverview<TData = Awaited<ReturnType<typeof getCoordinationOverview>>, TError = ErrorType<void>>(
+ params?: GetCoordinationOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCoordinationOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCoordinationOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getCoordinationOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCoordinationOverview<TData = Awaited<ReturnType<typeof getCoordinationOverview>>, TError = ErrorType<void>>(
+ params?: GetCoordinationOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCoordinationOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Read the authenticated user's intercenter coordination workspace
+ */
+
+export function useGetCoordinationOverview<TData = Awaited<ReturnType<typeof getCoordinationOverview>>, TError = ErrorType<void>>(
+ params?: GetCoordinationOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCoordinationOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCoordinationOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCoordinationCampaignUrl = () => {
+
+
+
+
+  return `/api/redfp360/intercenter/campaigns`
+}
+
+/**
+ * @summary Propose an intercenter campaign with explicit center commitments
+ */
+export const createCoordinationCampaign = async (coordinationCampaignInput: CoordinationCampaignInput, options?: Parameters<typeof customFetch>[1]): Promise<CoordinationCampaign> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CoordinationCampaign>(getCreateCoordinationCampaignUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(coordinationCampaignInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCoordinationCampaignMutationKey = () => ['createCoordinationCampaign'] as const;
+
+export const getCreateCoordinationCampaignMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCoordinationCampaign>>, TError,CreateCoordinationCampaignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCoordinationCampaign>>, TError,CreateCoordinationCampaignMutationVariables, TContext> => {
+
+const mutationKey = getCreateCoordinationCampaignMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCoordinationCampaign>>, CreateCoordinationCampaignMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCoordinationCampaign(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCoordinationCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof createCoordinationCampaign>>>
+    export type CreateCoordinationCampaignMutationBody = BodyType<CoordinationCampaignInput>
+    export type CreateCoordinationCampaignMutationError = ErrorType<void>
+    export type CreateCoordinationCampaignMutationVariables = {data: BodyType<CoordinationCampaignInput>}
+
+    /**
+ * @summary Propose an intercenter campaign with explicit center commitments
+ */
+export const useCreateCoordinationCampaign = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCoordinationCampaign>>, TError,CreateCoordinationCampaignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createCoordinationCampaign>>,
+        TError,
+        CreateCoordinationCampaignMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCoordinationCampaignMutationOptions(options), queryClient);
+    }
+
+export const getActOnCoordinationCampaignUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/intercenter/campaigns/${id}/action`
+}
+
+/**
+ * @summary Activate, pause, or close a campaign after checking approvals
+ */
+export const actOnCoordinationCampaign = async (id: string,
+    coordinationCampaignAction: CoordinationCampaignAction, options?: Parameters<typeof customFetch>[1]): Promise<CoordinationCampaign> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CoordinationCampaign>(getActOnCoordinationCampaignUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(coordinationCampaignAction)
+  }
+);}
+
+
+
+
+
+export const getActOnCoordinationCampaignMutationKey = () => ['actOnCoordinationCampaign'] as const;
+
+export const getActOnCoordinationCampaignMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationCampaign>>, TError,ActOnCoordinationCampaignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationCampaign>>, TError,ActOnCoordinationCampaignMutationVariables, TContext> => {
+
+const mutationKey = getActOnCoordinationCampaignMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnCoordinationCampaign>>, ActOnCoordinationCampaignMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actOnCoordinationCampaign(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnCoordinationCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof actOnCoordinationCampaign>>>
+    export type ActOnCoordinationCampaignMutationBody = BodyType<CoordinationCampaignAction>
+    export type ActOnCoordinationCampaignMutationError = ErrorType<void>
+    export type ActOnCoordinationCampaignMutationVariables = {id: string;data: BodyType<CoordinationCampaignAction>}
+
+    /**
+ * @summary Activate, pause, or close a campaign after checking approvals
+ */
+export const useActOnCoordinationCampaign = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationCampaign>>, TError,ActOnCoordinationCampaignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnCoordinationCampaign>>,
+        TError,
+        ActOnCoordinationCampaignMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnCoordinationCampaignMutationOptions(options), queryClient);
+    }
+
+export const getActOnCoordinationParticipationUrl = (id: string,
+    centerId: string,) => {
+
+
+
+
+  return `/api/redfp360/intercenter/campaigns/${id}/centers/${centerId}/action`
+}
+
+/**
+ * @summary Approve, reject, or withdraw a center's participation
+ */
+export const actOnCoordinationParticipation = async (id: string,
+    centerId: string,
+    coordinationParticipationAction: CoordinationParticipationAction, options?: Parameters<typeof customFetch>[1]): Promise<CoordinationParticipant> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CoordinationParticipant>(getActOnCoordinationParticipationUrl(id,centerId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(coordinationParticipationAction)
+  }
+);}
+
+
+
+
+
+export const getActOnCoordinationParticipationMutationKey = () => ['actOnCoordinationParticipation'] as const;
+
+export const getActOnCoordinationParticipationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationParticipation>>, TError,ActOnCoordinationParticipationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationParticipation>>, TError,ActOnCoordinationParticipationMutationVariables, TContext> => {
+
+const mutationKey = getActOnCoordinationParticipationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnCoordinationParticipation>>, ActOnCoordinationParticipationMutationVariables> = (props) => {
+          const {id,centerId,data} = props ?? {};
+
+          return  actOnCoordinationParticipation(id,centerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnCoordinationParticipationMutationResult = NonNullable<Awaited<ReturnType<typeof actOnCoordinationParticipation>>>
+    export type ActOnCoordinationParticipationMutationBody = BodyType<CoordinationParticipationAction>
+    export type ActOnCoordinationParticipationMutationError = ErrorType<void>
+    export type ActOnCoordinationParticipationMutationVariables = {id: string;centerId: string;data: BodyType<CoordinationParticipationAction>}
+
+    /**
+ * @summary Approve, reject, or withdraw a center's participation
+ */
+export const useActOnCoordinationParticipation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationParticipation>>, TError,ActOnCoordinationParticipationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnCoordinationParticipation>>,
+        TError,
+        ActOnCoordinationParticipationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnCoordinationParticipationMutationOptions(options), queryClient);
+    }
+
+export const getCreateCoordinationEventUrl = () => {
+
+
+
+
+  return `/api/redfp360/intercenter/events`
+}
+
+/**
+ * @summary Schedule a simulated intercenter meeting, deadline, or activity
+ */
+export const createCoordinationEvent = async (coordinationEventInput: CoordinationEventInput, options?: Parameters<typeof customFetch>[1]): Promise<CoordinationEvent> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CoordinationEvent>(getCreateCoordinationEventUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(coordinationEventInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCoordinationEventMutationKey = () => ['createCoordinationEvent'] as const;
+
+export const getCreateCoordinationEventMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCoordinationEvent>>, TError,CreateCoordinationEventMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCoordinationEvent>>, TError,CreateCoordinationEventMutationVariables, TContext> => {
+
+const mutationKey = getCreateCoordinationEventMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCoordinationEvent>>, CreateCoordinationEventMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCoordinationEvent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCoordinationEventMutationResult = NonNullable<Awaited<ReturnType<typeof createCoordinationEvent>>>
+    export type CreateCoordinationEventMutationBody = BodyType<CoordinationEventInput>
+    export type CreateCoordinationEventMutationError = ErrorType<void>
+    export type CreateCoordinationEventMutationVariables = {data: BodyType<CoordinationEventInput>}
+
+    /**
+ * @summary Schedule a simulated intercenter meeting, deadline, or activity
+ */
+export const useCreateCoordinationEvent = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCoordinationEvent>>, TError,CreateCoordinationEventMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createCoordinationEvent>>,
+        TError,
+        CreateCoordinationEventMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCoordinationEventMutationOptions(options), queryClient);
+    }
+
+export const getActOnCoordinationEventUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/intercenter/events/${id}/action`
+}
+
+/**
+ * @summary Confirm, reschedule, complete, or cancel a shared event
+ */
+export const actOnCoordinationEvent = async (id: string,
+    coordinationEventAction: CoordinationEventAction, options?: Parameters<typeof customFetch>[1]): Promise<CoordinationEvent> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CoordinationEvent>(getActOnCoordinationEventUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(coordinationEventAction)
+  }
+);}
+
+
+
+
+
+export const getActOnCoordinationEventMutationKey = () => ['actOnCoordinationEvent'] as const;
+
+export const getActOnCoordinationEventMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationEvent>>, TError,ActOnCoordinationEventMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationEvent>>, TError,ActOnCoordinationEventMutationVariables, TContext> => {
+
+const mutationKey = getActOnCoordinationEventMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnCoordinationEvent>>, ActOnCoordinationEventMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actOnCoordinationEvent(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnCoordinationEventMutationResult = NonNullable<Awaited<ReturnType<typeof actOnCoordinationEvent>>>
+    export type ActOnCoordinationEventMutationBody = BodyType<CoordinationEventAction>
+    export type ActOnCoordinationEventMutationError = ErrorType<void>
+    export type ActOnCoordinationEventMutationVariables = {id: string;data: BodyType<CoordinationEventAction>}
+
+    /**
+ * @summary Confirm, reschedule, complete, or cancel a shared event
+ */
+export const useActOnCoordinationEvent = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationEvent>>, TError,ActOnCoordinationEventMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnCoordinationEvent>>,
+        TError,
+        ActOnCoordinationEventMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnCoordinationEventMutationOptions(options), queryClient);
+    }
+
+export const getCreateCoordinationTaskUrl = () => {
+
+
+
+
+  return `/api/redfp360/intercenter/tasks`
+}
+
+/**
+ * @summary Assign a task to an approved participating center
+ */
+export const createCoordinationTask = async (coordinationTaskInput: CoordinationTaskInput, options?: Parameters<typeof customFetch>[1]): Promise<CoordinationTask> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CoordinationTask>(getCreateCoordinationTaskUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(coordinationTaskInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCoordinationTaskMutationKey = () => ['createCoordinationTask'] as const;
+
+export const getCreateCoordinationTaskMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCoordinationTask>>, TError,CreateCoordinationTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCoordinationTask>>, TError,CreateCoordinationTaskMutationVariables, TContext> => {
+
+const mutationKey = getCreateCoordinationTaskMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCoordinationTask>>, CreateCoordinationTaskMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCoordinationTask(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCoordinationTaskMutationResult = NonNullable<Awaited<ReturnType<typeof createCoordinationTask>>>
+    export type CreateCoordinationTaskMutationBody = BodyType<CoordinationTaskInput>
+    export type CreateCoordinationTaskMutationError = ErrorType<void>
+    export type CreateCoordinationTaskMutationVariables = {data: BodyType<CoordinationTaskInput>}
+
+    /**
+ * @summary Assign a task to an approved participating center
+ */
+export const useCreateCoordinationTask = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCoordinationTask>>, TError,CreateCoordinationTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createCoordinationTask>>,
+        TError,
+        CreateCoordinationTaskMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCoordinationTaskMutationOptions(options), queryClient);
+    }
+
+export const getActOnCoordinationTaskUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/intercenter/tasks/${id}/action`
+}
+
+/**
+ * @summary Progress, comment on, reassign, or close a task with evidence
+ */
+export const actOnCoordinationTask = async (id: string,
+    coordinationTaskAction: CoordinationTaskAction, options?: Parameters<typeof customFetch>[1]): Promise<CoordinationTask> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CoordinationTask>(getActOnCoordinationTaskUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(coordinationTaskAction)
+  }
+);}
+
+
+
+
+
+export const getActOnCoordinationTaskMutationKey = () => ['actOnCoordinationTask'] as const;
+
+export const getActOnCoordinationTaskMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationTask>>, TError,ActOnCoordinationTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationTask>>, TError,ActOnCoordinationTaskMutationVariables, TContext> => {
+
+const mutationKey = getActOnCoordinationTaskMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnCoordinationTask>>, ActOnCoordinationTaskMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actOnCoordinationTask(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnCoordinationTaskMutationResult = NonNullable<Awaited<ReturnType<typeof actOnCoordinationTask>>>
+    export type ActOnCoordinationTaskMutationBody = BodyType<CoordinationTaskAction>
+    export type ActOnCoordinationTaskMutationError = ErrorType<void>
+    export type ActOnCoordinationTaskMutationVariables = {id: string;data: BodyType<CoordinationTaskAction>}
+
+    /**
+ * @summary Progress, comment on, reassign, or close a task with evidence
+ */
+export const useActOnCoordinationTask = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationTask>>, TError,ActOnCoordinationTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnCoordinationTask>>,
+        TError,
+        ActOnCoordinationTaskMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnCoordinationTaskMutationOptions(options), queryClient);
+    }
+
+export const getCreateCoordinationIncidentUrl = () => {
+
+
+
+
+  return `/api/redfp360/intercenter/incidents`
+}
+
+/**
+ * @summary Report a simulated coordination block or center change
+ */
+export const createCoordinationIncident = async (coordinationIncidentInput: CoordinationIncidentInput, options?: Parameters<typeof customFetch>[1]): Promise<CoordinationIncident> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CoordinationIncident>(getCreateCoordinationIncidentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(coordinationIncidentInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCoordinationIncidentMutationKey = () => ['createCoordinationIncident'] as const;
+
+export const getCreateCoordinationIncidentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCoordinationIncident>>, TError,CreateCoordinationIncidentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCoordinationIncident>>, TError,CreateCoordinationIncidentMutationVariables, TContext> => {
+
+const mutationKey = getCreateCoordinationIncidentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCoordinationIncident>>, CreateCoordinationIncidentMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCoordinationIncident(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCoordinationIncidentMutationResult = NonNullable<Awaited<ReturnType<typeof createCoordinationIncident>>>
+    export type CreateCoordinationIncidentMutationBody = BodyType<CoordinationIncidentInput>
+    export type CreateCoordinationIncidentMutationError = ErrorType<void>
+    export type CreateCoordinationIncidentMutationVariables = {data: BodyType<CoordinationIncidentInput>}
+
+    /**
+ * @summary Report a simulated coordination block or center change
+ */
+export const useCreateCoordinationIncident = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCoordinationIncident>>, TError,CreateCoordinationIncidentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createCoordinationIncident>>,
+        TError,
+        CreateCoordinationIncidentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCoordinationIncidentMutationOptions(options), queryClient);
+    }
+
+export const getActOnCoordinationIncidentUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/intercenter/incidents/${id}/action`
+}
+
+/**
+ * @summary Escalate, mediate, resolve, or reassign an incident
+ */
+export const actOnCoordinationIncident = async (id: string,
+    coordinationIncidentAction: CoordinationIncidentAction, options?: Parameters<typeof customFetch>[1]): Promise<CoordinationIncident> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CoordinationIncident>(getActOnCoordinationIncidentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(coordinationIncidentAction)
+  }
+);}
+
+
+
+
+
+export const getActOnCoordinationIncidentMutationKey = () => ['actOnCoordinationIncident'] as const;
+
+export const getActOnCoordinationIncidentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationIncident>>, TError,ActOnCoordinationIncidentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationIncident>>, TError,ActOnCoordinationIncidentMutationVariables, TContext> => {
+
+const mutationKey = getActOnCoordinationIncidentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnCoordinationIncident>>, ActOnCoordinationIncidentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actOnCoordinationIncident(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnCoordinationIncidentMutationResult = NonNullable<Awaited<ReturnType<typeof actOnCoordinationIncident>>>
+    export type ActOnCoordinationIncidentMutationBody = BodyType<CoordinationIncidentAction>
+    export type ActOnCoordinationIncidentMutationError = ErrorType<void>
+    export type ActOnCoordinationIncidentMutationVariables = {id: string;data: BodyType<CoordinationIncidentAction>}
+
+    /**
+ * @summary Escalate, mediate, resolve, or reassign an incident
+ */
+export const useActOnCoordinationIncident = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnCoordinationIncident>>, TError,ActOnCoordinationIncidentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnCoordinationIncident>>,
+        TError,
+        ActOnCoordinationIncidentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnCoordinationIncidentMutationOptions(options), queryClient);
+    }
+
+export const getCreateCoordinationTransferUrl = () => {
+
+
+
+
+  return `/api/redfp360/intercenter/transfers`
+}
+
+/**
+ * @summary Register a recipient center's transfer or adoption record
+ */
+export const createCoordinationTransfer = async (coordinationTransferInput: CoordinationTransferInput, options?: Parameters<typeof customFetch>[1]): Promise<CoordinationTransfer> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CoordinationTransfer>(getCreateCoordinationTransferUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(coordinationTransferInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCoordinationTransferMutationKey = () => ['createCoordinationTransfer'] as const;
+
+export const getCreateCoordinationTransferMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCoordinationTransfer>>, TError,CreateCoordinationTransferMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCoordinationTransfer>>, TError,CreateCoordinationTransferMutationVariables, TContext> => {
+
+const mutationKey = getCreateCoordinationTransferMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCoordinationTransfer>>, CreateCoordinationTransferMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCoordinationTransfer(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCoordinationTransferMutationResult = NonNullable<Awaited<ReturnType<typeof createCoordinationTransfer>>>
+    export type CreateCoordinationTransferMutationBody = BodyType<CoordinationTransferInput>
+    export type CreateCoordinationTransferMutationError = ErrorType<void>
+    export type CreateCoordinationTransferMutationVariables = {data: BodyType<CoordinationTransferInput>}
+
+    /**
+ * @summary Register a recipient center's transfer or adoption record
+ */
+export const useCreateCoordinationTransfer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCoordinationTransfer>>, TError,CreateCoordinationTransferMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createCoordinationTransfer>>,
+        TError,
+        CreateCoordinationTransferMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCoordinationTransferMutationOptions(options), queryClient);
+    }
+
+export const getUpdateCoordinationTransferUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/intercenter/transfers/${id}`
+}
+
+/**
+ * @summary Record recipient interest, preparation, training, adoption, or decline
+ */
+export const updateCoordinationTransfer = async (id: string,
+    coordinationTransferUpdate: CoordinationTransferUpdate, options?: Parameters<typeof customFetch>[1]): Promise<CoordinationTransfer> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CoordinationTransfer>(getUpdateCoordinationTransferUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(coordinationTransferUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCoordinationTransferMutationKey = () => ['updateCoordinationTransfer'] as const;
+
+export const getUpdateCoordinationTransferMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCoordinationTransfer>>, TError,UpdateCoordinationTransferMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCoordinationTransfer>>, TError,UpdateCoordinationTransferMutationVariables, TContext> => {
+
+const mutationKey = getUpdateCoordinationTransferMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCoordinationTransfer>>, UpdateCoordinationTransferMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCoordinationTransfer(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCoordinationTransferMutationResult = NonNullable<Awaited<ReturnType<typeof updateCoordinationTransfer>>>
+    export type UpdateCoordinationTransferMutationBody = BodyType<CoordinationTransferUpdate>
+    export type UpdateCoordinationTransferMutationError = ErrorType<void>
+    export type UpdateCoordinationTransferMutationVariables = {id: string;data: BodyType<CoordinationTransferUpdate>}
+
+    /**
+ * @summary Record recipient interest, preparation, training, adoption, or decline
+ */
+export const useUpdateCoordinationTransfer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCoordinationTransfer>>, TError,UpdateCoordinationTransferMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateCoordinationTransfer>>,
+        TError,
+        UpdateCoordinationTransferMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateCoordinationTransferMutationOptions(options), queryClient);
     }
 
 export const getGetFp360DirectionOverviewUrl = (params?: GetFp360DirectionOverviewParams,) => {
