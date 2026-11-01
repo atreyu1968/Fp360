@@ -1446,13 +1446,23 @@ export interface AdminIntegrationStatus {
   simulationOnly: boolean;
 }
 
+export type AdminAiCoordinatorSettingsProvider = typeof AdminAiCoordinatorSettingsProvider[keyof typeof AdminAiCoordinatorSettingsProvider];
+
+
+export const AdminAiCoordinatorSettingsProvider = {
+  local: 'local',
+  mistral: 'mistral',
+} as const;
+
 export interface AdminAiCoordinatorSettings {
   configured: boolean;
   enabled: boolean;
+  provider: AdminAiCoordinatorSettingsProvider;
   /** @maxLength 512 */
   baseUrl: string;
   /** @maxLength 120 */
   model: string;
+  mistralApiKeyConfigured: boolean;
   /** @nullable */
   updatedAt: string | null;
 }
@@ -1558,6 +1568,14 @@ export interface AdminScenarioVersionInput {
   settings: AdminScenarioSettings;
 }
 
+export type AdminAiCoordinatorSettingsInputProvider = typeof AdminAiCoordinatorSettingsInputProvider[keyof typeof AdminAiCoordinatorSettingsInputProvider];
+
+
+export const AdminAiCoordinatorSettingsInputProvider = {
+  local: 'local',
+  mistral: 'mistral',
+} as const;
+
 export interface AdminAiCoordinatorSettingsInput {
   /**
      * @minLength 8
@@ -1565,10 +1583,13 @@ export interface AdminAiCoordinatorSettingsInput {
      */
   operationId: string;
   enabled: boolean;
+  provider: AdminAiCoordinatorSettingsInputProvider;
   /** @maxLength 512 */
   baseUrl: string;
   /** @maxLength 120 */
   model: string;
+  /** Required to enable Mistral because network-level simulated economic context is sent to the external provider. */
+  externalDataTransferAcknowledged: boolean;
 }
 
 export interface AdminAiCoordinatorConnectionTestInput {

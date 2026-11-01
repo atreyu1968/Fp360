@@ -305,7 +305,7 @@ paths:
             schema: { $ref: "#/components/schemas/AdminAiCoordinatorSettingsInput" }
       responses:
         "200":
-          description: Local AI endpoint configuration without credentials
+              description: AI provider configuration without credentials
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminAiCoordinatorSettings" }
@@ -322,13 +322,13 @@ paths:
             schema: { $ref: "#/components/schemas/AdminAiCoordinatorConnectionTestInput" }
       responses:
         "200":
-          description: Local model endpoint responded
+          description: Configured AI provider responded
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminAiCoordinatorConnectionTestResult" }
         "403": { description: Administrator required }
         "409": { description: AI provider is not configured }
-        "502": { description: Local model endpoint unavailable }
+        "502": { description: Configured AI provider unavailable }
   /admin/organizations:
     post:
       operationId: createAdminOrganization
@@ -613,8 +613,8 @@ paths:
         "400": { description: Invalid proposal request }
         "403": { description: Network-wide review role required }
         "409": { description: Operation identifier already used }
-        "502": { description: Local AI endpoint returned an invalid proposal }
-        "503": { description: Local AI endpoint is not configured }
+        "502": { description: AI provider returned an invalid proposal }
+        "503": { description: AI provider is not configured }
   /redfp360/simulations/campaigns:
     post:
       operationId: createFp360SimulationCampaign
@@ -5698,12 +5698,14 @@ components:
         simulationOnly: { type: boolean }
     AdminAiCoordinatorSettings:
       type: object
-      required: [configured, enabled, baseUrl, model, updatedAt]
+      required: [configured, enabled, provider, baseUrl, model, mistralApiKeyConfigured, updatedAt]
       properties:
         configured: { type: boolean }
         enabled: { type: boolean }
+        provider: { type: string, enum: [local, mistral] }
         baseUrl: { type: string, maxLength: 512 }
         model: { type: string, maxLength: 120 }
+        mistralApiKeyConfigured: { type: boolean }
         updatedAt: { type: ["string", "null"], format: date-time }
     AdminPolicyPermission:
       type: string
@@ -5784,12 +5786,16 @@ components:
         settings: { $ref: "#/components/schemas/AdminScenarioSettings" }
     AdminAiCoordinatorSettingsInput:
       type: object
-      required: [operationId, enabled, baseUrl, model]
+      required: [operationId, enabled, provider, baseUrl, model, externalDataTransferAcknowledged]
       properties:
         operationId: { type: string, minLength: 8, maxLength: 100 }
         enabled: { type: boolean }
+        provider: { type: string, enum: [local, mistral] }
         baseUrl: { type: string, maxLength: 512 }
         model: { type: string, maxLength: 120 }
+        externalDataTransferAcknowledged:
+          type: boolean
+          description: Required to enable Mistral because network-level simulated economic context is sent to the external provider.
     AdminAiCoordinatorConnectionTestInput:
       type: object
       required: [operationId]

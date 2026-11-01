@@ -12,6 +12,8 @@ export * from './adminAiCoordinatorConnectionTestInput';
 export * from './adminAiCoordinatorConnectionTestResult';
 export * from './adminAiCoordinatorSettings';
 export * from './adminAiCoordinatorSettingsInput';
+export * from './adminAiCoordinatorSettingsInputProvider';
+export * from './adminAiCoordinatorSettingsProvider';
 export * from './adminBackupDatasetCounts';
 export * from './adminBackupExercise';
 export * from './adminBackupExerciseInput';

@@ -293,6 +293,9 @@ function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t:
   const saveAi = useUpdateAdminAiCoordinatorSettings();
   const testAi = useTestAdminAiCoordinatorConnection();
   const [aiEnabled, setAiEnabled] = useState(data.aiCoordinator.enabled);
+  const [aiProvider, setAiProvider] = useState(data.aiCoordinator.provider);
+  const [aiModel, setAiModel] = useState(data.aiCoordinator.model);
+  const [mistralDataAcknowledged, setMistralDataAcknowledged] = useState(false);
   const saveCoordinator = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -300,50 +303,84 @@ function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t:
       data: {
         operationId: newOperationId(),
         enabled: aiEnabled,
-        baseUrl: String(form.get('localAiBaseUrl') ?? ''),
-        model: String(form.get('localAiModel') ?? ''),
+        provider: aiProvider,
+        baseUrl: aiProvider === 'local'
+          ? String(form.get('localAiBaseUrl') ?? '')
+          : data.aiCoordinator.baseUrl,
+        model: aiModel,
+        externalDataTransferAcknowledged: mistralDataAcknowledged,
       },
     }, {
       onSuccess: () => {
         void qc.invalidateQueries({ queryKey: getGetAdminSystemOverviewQueryKey() });
-        done('Configuración del coordinador local guardada.', 'success');
+        done('Configuración del coordinador guardada.', 'success');
       },
-      onError: (error) => done(explainMutation(error, 'No se pudo guardar la configuración local.'), 'error'),
+      onError: (error) => done(explainMutation(error, 'No se pudo guardar la configuración del proveedor.'), 'error'),
     });
   };
   return <div className="ac-stack">
     <Panel title="Coordinador económico con IA" note="La IA analiza la red antes de proponer campañas; no ejecuta operaciones.">
       <form className="ac-ai-config" onSubmit={saveCoordinator}>
         <div className="ac-ai-config-grid">
-          <label>URL base local
+          <label>Proveedor de IA
+            <select value={aiProvider} onChange={event => {
+              const provider: 'local' | 'mistral' = event.target.value === 'mistral' ? 'mistral' : 'local';
+              setAiProvider(provider);
+              setAiModel(provider === 'mistral' ? 'mistral-small-latest' : '');
+              setMistralDataAcknowledged(false);
+            }}>
+              <option value="local">Endpoint local o privado</option>
+              <option value="mistral">Mistral API</option>
+            </select>
+          </label>
+          {aiProvider === 'local' && <label>URL base local
             <input name="localAiBaseUrl" type="url" required={aiEnabled} maxLength={512}
               defaultValue={data.aiCoordinator.baseUrl} placeholder="http://127.0.0.1:11434/v1" />
-          </label>
-          <label>Modelo local
+          </label>}
+          <label>{aiProvider === 'mistral' ? 'Modelo de Mistral' : 'Modelo local'}
             <input name="localAiModel" required={aiEnabled} maxLength={120}
-              defaultValue={data.aiCoordinator.model} placeholder="Nombre exacto del modelo" />
+              value={aiModel}
+              onChange={event => setAiModel(event.target.value)}
+              placeholder={aiProvider === 'mistral' ? 'mistral-small-latest' : 'Nombre exacto del modelo'} />
           </label>
         </div>
         <label className="ac-ai-toggle"><input type="checkbox" checked={aiEnabled} onChange={event => setAiEnabled(event.target.checked)} />
           Activar generación supervisada de propuestas</label>
+        {aiProvider === 'mistral' && <>
+          <p className="ac-ai-note">
+            Endpoint oficial: https://api.mistral.ai/v1.
+          </p>
+          <p className="ac-ai-note">
+            Clave MISTRAL_API_KEY: {data.aiCoordinator.mistralApiKeyConfigured ? 'configurada en el servidor' : 'no configurada en Secretos'}.
+            No se guarda en la base de datos ni se muestra en esta consola.
+          </p>
+          {aiEnabled && <label className="ac-ai-toggle">
+            <input type="checkbox" checked={mistralDataAcknowledged}
+              onChange={event => setMistralDataAcknowledged(event.target.checked)} />
+            Confirmo que Mistral recibirá el objetivo, el resumen económico simulado y el historial de operaciones de la red. No incluiré datos personales en el objetivo.
+          </label>}
+        </>}
         <div className="ac-ai-config-actions">
-          <button className="ac-button ac-primary" type="submit" disabled={saveAi.isPending}>
+          <button className="ac-button ac-primary" type="submit" disabled={saveAi.isPending ||
+            (aiProvider === 'mistral' && aiEnabled && (!data.aiCoordinator.mistralApiKeyConfigured || !mistralDataAcknowledged))}>
             {saveAi.isPending ? 'Guardando…' : 'Guardar configuración'}
           </button>
           <button className="ac-button" type="button" disabled={testAi.isPending || !data.aiCoordinator.enabled}
             onClick={() => testAi.mutate({ data: { operationId: newOperationId() } }, {
               onSuccess: result => done(`${result.message} Modelo: ${result.model}.`, 'success'),
-              onError: error => done(explainMutation(error, 'No se pudo conectar con la IA local.'), 'error'),
+              onError: error => done(explainMutation(error, 'No se pudo conectar con el proveedor de IA.'), 'error'),
             })}>
             <RefreshCw size={14} /> {testAi.isPending ? 'Comprobando…' : 'Probar conexión guardada'}
           </button>
           <Badge tone={data.aiCoordinator.enabled ? 'good' : 'neutral'}>{data.aiCoordinator.enabled ? 'Activada' : 'Desactivada'}</Badge>
         </div>
-        <p className="ac-ai-note">Compatible con endpoints locales OpenAI, como Ollama o LM Studio. El servidor de RED FP360 debe poder acceder a esa URL. No se guarda ni se envía ninguna clave; los datos económicos se envían solo al endpoint local configurado.</p>
+        <p className="ac-ai-note">
+          Compatible con endpoints locales OpenAI, como Ollama o LM Studio. Mistral recibe el objetivo y el contexto económico simulado con nombres de empresas y centros sustituidos por etiquetas; no se envían contactos ni descripciones libres del historial.
+        </p>
       </form>
     </Panel>
-    <div className="ac-simulation"><Network size={16} /><span><b>Comprobaciones de catálogo simuladas.</b> No se contacta con proveedores externos ni se solicitan credenciales.</span><span className="ac-sim-tag">SIN PROVEEDORES</span></div>
+    <div className="ac-simulation"><Network size={16} /><span><b>Integraciones empresariales simuladas.</b> Mistral solo se contacta cuando el administrador lo selecciona y activa expresamente.</span><span className="ac-sim-tag">IA OPTATIVA</span></div>
     <Panel title="Integraciones previstas" note="Las comprobaciones solo actualizan el estado de demostración."><div className="ac-integrations">{data.integrations.map(item => <article key={item.id} className="ac-integration-card"><div className="ac-integration-top"><span className="ac-service-icon"><Network size={17} /></span><Badge tone={item.status === 'simulation_only' ? 'blue' : 'neutral'}>{readable(item.status)}</Badge></div><h3>{item.name}</h3><p>{item.description}</p><div className="ac-integration-meta"><span>{item.simulationOnly ? 'Sin llamadas externas' : 'Estado de catálogo'}</span><small>{item.checkedAt ? `Última comprobación: ${dateTime(item.checkedAt)}` : 'Sin comprobación registrada'}</small></div><button className="ac-button" disabled={check.isPending || !item.simulationOnly} onClick={() => check.mutate({ integrationId: item.id, data: { operationId: newOperationId() } }, { onSuccess: () => { void qc.invalidateQueries({ queryKey: getGetAdminSystemOverviewQueryKey() }); done(`Comprobación simulada registrada para ${item.name}.`, 'success'); }, onError: e => done(explainMutation(e, 'No se pudo registrar la comprobación.'), 'error') })}><RefreshCw size={14} /> Comprobar estado simulado</button></article>)}{!data.integrations.length && <div className="ac-empty"><b>No hay integraciones en catálogo</b><p>Las capacidades incorporadas aparecerán aquí.</p></div>}</div></Panel>
-    <Panel title="Preparación de despliegue" note="La consola no gestiona infraestructura, despliegues ni secretos."><div className="ac-deploy-row"><span className="ac-service-icon"><Server size={17} /></span><div><b>Modo de operación</b><small>Desarrollo funcional · datos y procesos de formación</small></div><Badge tone="blue">Solo entorno educativo</Badge></div><div className="ac-callout"><Lock size={15} /><p>No se configuran claves ni proveedores externos. El coordinador solo admite endpoints locales o de red privada.</p></div></Panel>
+     <Panel title="Preparación de despliegue" note="La consola no gestiona infraestructura ni despliegues."><div className="ac-deploy-row"><span className="ac-service-icon"><Server size={17} /></span><div><b>Modo de operación</b><small>Desarrollo funcional · datos y procesos de formación</small></div><Badge tone="blue">Solo entorno educativo</Badge></div><div className="ac-callout"><Lock size={15} /><p>Las claves API se guardan en Secretos del proyecto, nunca en esta consola ni en la base de datos.</p></div></Panel>
   </div>;
 }

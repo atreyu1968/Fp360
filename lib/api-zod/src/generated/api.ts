@@ -408,8 +408,10 @@ export const GetAdminSystemOverviewResponse = zod.object({
   "aiCoordinator": zod.object({
   "configured": zod.boolean(),
   "enabled": zod.boolean(),
+  "provider": zod.enum(['local', 'mistral']),
   "baseUrl": zod.string().max(getAdminSystemOverviewResponseAiCoordinatorBaseUrlMax),
   "model": zod.string().max(getAdminSystemOverviewResponseAiCoordinatorModelMax),
+  "mistralApiKeyConfigured": zod.boolean(),
   "updatedAt": zod.iso.datetime({"offset":true}).nullable()
 }),
   "policyMatrix": zod.array(zod.object({
@@ -433,8 +435,10 @@ export const updateAdminAiCoordinatorSettingsBodyModelMax = 120;
 export const UpdateAdminAiCoordinatorSettingsBody = zod.object({
   "operationId": zod.string().min(updateAdminAiCoordinatorSettingsBodyOperationIdMin).max(updateAdminAiCoordinatorSettingsBodyOperationIdMax),
   "enabled": zod.boolean(),
+  "provider": zod.enum(['local', 'mistral']),
   "baseUrl": zod.string().max(updateAdminAiCoordinatorSettingsBodyBaseUrlMax),
-  "model": zod.string().max(updateAdminAiCoordinatorSettingsBodyModelMax)
+  "model": zod.string().max(updateAdminAiCoordinatorSettingsBodyModelMax),
+  "externalDataTransferAcknowledged": zod.boolean().describe('Required to enable Mistral because network-level simulated economic context is sent to the external provider.')
 })
 
 export const updateAdminAiCoordinatorSettingsResponseBaseUrlMax = 512;
@@ -446,8 +450,10 @@ export const updateAdminAiCoordinatorSettingsResponseModelMax = 120;
 export const UpdateAdminAiCoordinatorSettingsResponse = zod.object({
   "configured": zod.boolean(),
   "enabled": zod.boolean(),
+  "provider": zod.enum(['local', 'mistral']),
   "baseUrl": zod.string().max(updateAdminAiCoordinatorSettingsResponseBaseUrlMax),
   "model": zod.string().max(updateAdminAiCoordinatorSettingsResponseModelMax),
+  "mistralApiKeyConfigured": zod.boolean(),
   "updatedAt": zod.iso.datetime({"offset":true}).nullable()
 })
 

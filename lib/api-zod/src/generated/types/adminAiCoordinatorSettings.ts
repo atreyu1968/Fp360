@@ -5,14 +5,17 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminAiCoordinatorSettingsProvider } from './adminAiCoordinatorSettingsProvider';
 
 export interface AdminAiCoordinatorSettings {
   configured: boolean;
   enabled: boolean;
+  provider: AdminAiCoordinatorSettingsProvider;
   /** @maxLength 512 */
   baseUrl: string;
   /** @maxLength 120 */
   model: string;
+  mistralApiKeyConfigured: boolean;
   /** @nullable */
   updatedAt: string | null;
 }

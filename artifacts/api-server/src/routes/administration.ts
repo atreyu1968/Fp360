@@ -28,6 +28,7 @@ import {
 } from "@workspace/db";
 import { hashPassword } from "../lib/passwords";
 import { checkLocalAiEndpoint, normalizeLocalAiBaseUrl } from "../lib/local-ai";
+import { checkMistralAiEndpoint } from "../lib/mistral-ai";
 import { hashSessionToken, issueAuthSession, requireAuth, requireSameOrigin, type AuthContext } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -517,10 +518,12 @@ router.get("/admin/system/overview", async (req, res): Promise<void> => {
     privilegeRequests: requestRows.map(privilegeRequestView),
     integrations,
     aiCoordinator: {
-      configured: Boolean(aiSettings[0]?.baseUrl && aiSettings[0]?.model),
+      configured: Boolean(aiSettings[0]?.model && (aiSettings[0]?.provider === "mistral" || aiSettings[0]?.baseUrl)),
       enabled: aiSettings[0]?.enabled ?? false,
+      provider: aiSettings[0]?.provider ?? "local",
       baseUrl: aiSettings[0]?.baseUrl ?? "",
       model: aiSettings[0]?.model ?? "",
+      mistralApiKeyConfigured: Boolean(process.env.MISTRAL_API_KEY),
       updatedAt: aiSettings[0]?.updatedAt.toISOString() ?? null,
     },
     policyMatrix,
@@ -529,27 +532,48 @@ router.get("/admin/system/overview", async (req, res): Promise<void> => {
 
 router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => {
   const body = UpdateAdminAiCoordinatorSettingsBody.safeParse(req.body);
-  if (!body.success) fail(400, "Revisa la URL, el modelo y el estado del coordinador.");
+  if (!body.success) fail(400, "Revisa el proveedor, la URL, el modelo y el estado del coordinador.");
   const actor = req.auth!;
+  const provider = body.data.provider;
   let baseUrl = body.data.baseUrl.trim();
   const model = body.data.model.trim();
-  if (body.data.enabled && (!baseUrl || !model)) fail(400, "Indica una URL local y un modelo antes de activar el coordinador.");
-  if (baseUrl) {
+  if (body.data.enabled && !model) fail(400, "Indica un modelo antes de activar el coordinador.");
+  if (provider === "mistral" && body.data.enabled && !body.data.externalDataTransferAcknowledged) {
+    fail(400, "Confirma que el contexto económico simulado se enviará a Mistral antes de activarlo.");
+  }
+  if (provider === "mistral" && body.data.enabled && !process.env.MISTRAL_API_KEY) {
+    fail(503, "Falta configurar MISTRAL_API_KEY en los Secretos del proyecto.");
+  }
+  if (provider === "local" && body.data.enabled && !baseUrl) {
+    fail(400, "Indica una URL local antes de activar el coordinador.");
+  }
+  if (provider === "local" && baseUrl) {
     try {
       baseUrl = normalizeLocalAiBaseUrl(baseUrl);
     } catch (error) {
       fail(400, error instanceof Error ? error.message : "La URL local no es válida.");
     }
   }
-  if (body.data.enabled && model.length < 1) fail(400, "Indica el nombre del modelo local.");
+  if (provider === "mistral") {
+    const [existing] = await db.select({ baseUrl: fpAdminAiCoordinatorSettings.baseUrl })
+      .from(fpAdminAiCoordinatorSettings).where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
+    baseUrl = existing?.baseUrl ?? "";
+  }
   const action = "ai.coordinator.settings.updated";
-  const fingerprint = requestFingerprint({ enabled: body.data.enabled, baseUrl, model });
+  const fingerprint = requestFingerprint({
+    enabled: body.data.enabled,
+    provider,
+    baseUrl,
+    model,
+    externalDataTransferAcknowledged: provider === "mistral" && body.data.externalDataTransferAcknowledged,
+  });
   await db.transaction(async (tx) => {
     await lockAdministration(tx, actor);
     if (await priorAdminOperation(tx, actor, body.data.operationId, action, fingerprint)) return;
     await tx.insert(fpAdminAiCoordinatorSettings).values({
       id: randomUUID(),
       tenantId: actor.tenantId,
+      provider,
       baseUrl,
       model,
       enabled: body.data.enabled,
@@ -558,6 +582,7 @@ router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => 
     }).onConflictDoUpdate({
       target: fpAdminAiCoordinatorSettings.tenantId,
       set: {
+        provider,
         baseUrl,
         model,
         enabled: body.data.enabled,
@@ -570,10 +595,12 @@ router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => 
   const [saved] = await db.select().from(fpAdminAiCoordinatorSettings)
     .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
   res.json(UpdateAdminAiCoordinatorSettingsResponse.parse({
-    configured: Boolean(saved?.baseUrl && saved?.model),
+    configured: Boolean(saved?.model && (saved?.provider === "mistral" || saved?.baseUrl)),
     enabled: saved?.enabled ?? false,
+    provider: saved?.provider ?? "local",
     baseUrl: saved?.baseUrl ?? "",
     model: saved?.model ?? "",
+    mistralApiKeyConfigured: Boolean(process.env.MISTRAL_API_KEY),
     updatedAt: saved?.updatedAt.toISOString() ?? null,
   }));
 });
@@ -584,11 +611,11 @@ router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
   const actor = req.auth!;
   const [settings] = await db.select().from(fpAdminAiCoordinatorSettings)
     .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
-  if (!settings?.enabled || !settings.baseUrl || !settings.model) {
-    fail(409, "Configura y activa primero un endpoint local de IA.");
+  if (!settings?.enabled || !settings.model || (settings.provider === "local" && !settings.baseUrl)) {
+    fail(409, "Configura y activa primero un proveedor de IA.");
   }
   const action = "ai.coordinator.connection.tested";
-  const fingerprint = requestFingerprint({ model: settings.model });
+  const fingerprint = requestFingerprint({ provider: settings.provider, model: settings.model });
   const [priorTest] = await db.select().from(fpAuthAudit).where(and(
     eq(fpAuthAudit.tenantId, actor.tenantId),
     eq(fpAuthAudit.operationId, body.data.operationId),
@@ -606,10 +633,17 @@ router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
     return;
   }
   try {
-    await checkLocalAiEndpoint({ baseUrl: settings.baseUrl, model: settings.model });
-  } catch {
-    req.log.warn({ tenantId: actor.tenantId }, "Local AI endpoint check failed");
-    fail(502, "No se pudo conectar con el endpoint local. Comprueba su disponibilidad y la ruta /models.");
+    if (settings.provider === "mistral") {
+      const apiKey = process.env.MISTRAL_API_KEY;
+      if (!apiKey) fail(503, "Falta configurar MISTRAL_API_KEY en los Secretos del proyecto.");
+      await checkMistralAiEndpoint({ model: settings.model, apiKey });
+    } else await checkLocalAiEndpoint({ baseUrl: settings.baseUrl, model: settings.model });
+  } catch (error) {
+    if (error instanceof AccessError) throw error;
+    req.log.warn({ tenantId: actor.tenantId, provider: settings.provider, model: settings.model }, "AI provider connection check failed");
+    fail(502, settings.provider === "mistral"
+      ? "No se pudo conectar con Mistral. Revisa la clave, el modelo y el acceso a la API."
+      : "No se pudo conectar con el endpoint local. Comprueba su disponibilidad y la ruta /models.");
   }
   const checkedAt = new Date().toISOString();
   await db.transaction(async (tx) => {
@@ -624,7 +658,7 @@ router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
     connected: true,
     model: settings.model,
     checkedAt,
-    message: "La API local respondió correctamente.",
+    message: settings.provider === "mistral" ? "La API de Mistral respondió correctamente." : "La API local respondió correctamente.",
   }));
 });
 });

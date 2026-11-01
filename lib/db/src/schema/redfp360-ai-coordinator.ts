@@ -7,6 +7,7 @@ export const fpAdminAiCoordinatorSettings = pgTable(
   {
     id: text("id").primaryKey(),
     tenantId: text("tenant_id").notNull(),
+    provider: text("provider").notNull().default("local"),
     baseUrl: text("base_url").notNull(),
     model: text("model").notNull(),
     enabled: boolean("enabled").notNull().default(false),

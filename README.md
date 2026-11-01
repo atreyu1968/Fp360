@@ -198,25 +198,28 @@ El endpoint de configuración inicial falla de forma cerrada si `RED_FP360_SETUP
 - Edita primero el contrato OpenAPI cuando cambie la forma pública de una petición o respuesta. No edites manualmente los archivos generados: vuelve a ejecutar `codegen` y valida los paquetes.
 - Las operaciones financieras y fiscales tienen alcance de simulación. Las API no son una pasarela para presentar declaraciones o enviar operaciones reales.
 
-## Coordinador económico con IA local
+## Coordinador económico con IA local o Mistral
 
 El coordinador crea propuestas didácticas de campañas y eventos para conectar el trabajo de varias empresas simuladas. No ejecuta pedidos, pagos, cambios de stock, asientos, declaraciones ni otras operaciones del ERP.
 
 ### Configuración
 
 1. Entra con una cuenta administradora y abre **Integraciones → Coordinador económico con IA**.
-2. Introduce la URL base de un endpoint local compatible con la API OpenAI, por ejemplo:
+2. Elige **Endpoint local o privado** o **Mistral API** desde el panel:
+   - Para un endpoint local compatible con OpenAI, introduce su URL base, por ejemplo:
    - Ollama: `http://127.0.0.1:11434/v1`
    - LM Studio: `http://127.0.0.1:1234/v1`
-3. Escribe el nombre exacto del modelo, activa el coordinador y guarda.
-4. Usa **Probar conexión guardada**. El servicio debe responder a `GET /models`.
+   - Para Mistral, el endpoint oficial es fijo (`https://api.mistral.ai/v1`); indica el identificador del modelo, por ejemplo `mistral-small-latest`.
+3. Para activar Mistral, configura `MISTRAL_API_KEY` en **Tools → Secrets** y confirma en el panel que el contexto económico simulado se enviará a ese proveedor. La clave no se guarda en PostgreSQL ni se devuelve al navegador.
+4. Activa la generación supervisada, guarda y usa **Probar conexión guardada**. El endpoint local responde a `GET /models`; Mistral se verifica con `GET /v1/models`.
 
-El servidor llama a `POST /chat/completions` para generar propuestas. La configuración no guarda claves API: solo admite hosts locales o de red privada, y rechaza credenciales incrustadas, parámetros de URL y redirecciones. La dirección debe ser accesible desde el proceso del API; `127.0.0.1` se refiere al servidor/contenedor del API, no al navegador del usuario. Si el modelo se ejecuta en otro equipo, usa un nombre de host o una dirección privada accesible desde ese proceso.
+El servidor llama a `POST /chat/completions` para modelos locales y a `POST https://api.mistral.ai/v1/chat/completions` para Mistral, solicitando una respuesta JSON. Las URL locales solo admiten hosts locales o privados y rechazan credenciales incrustadas, parámetros de URL y redirecciones. La dirección debe ser accesible desde el proceso del API; `127.0.0.1` se refiere al servidor/contenedor del API, no al navegador del usuario. Si el modelo se ejecuta en otro equipo, usa un nombre de host o una dirección privada accesible desde ese proceso.
 
 ### Contexto, acceso y aprobación
 
 - Antes de cada generación, el servidor reúne empresas de todo el tenant, indicadores actuales de pedidos, compras, facturas, cobros, inventario, contabilidad y declaraciones, junto con el historial económico y los eventos de auditoría disponibles.
-- El historial se filtra en el servidor: no se envían nombres personales, datos de contacto, credenciales ni descripciones libres de expedientes. El contexto se entrega al endpoint local configurado; no se envía a un proveedor alojado por RED FP360.
+- El historial se filtra en el servidor: no se envían nombres personales, datos de contacto, credenciales ni descripciones libres de expedientes. Para Mistral, los nombres de empresas y centros se sustituyen por etiquetas; se envían el objetivo introducido por el docente, el resumen económico simulado y el historial estructurado. El servidor rechaza objetivos con teléfonos o correos, y el administrador confirma que no añadirá datos personales.
+- Con el endpoint local, el contexto se queda en el endpoint configurado. Con Mistral, la información simulada se envía al proveedor únicamente cuando el administrador lo selecciona, lo activa y confirma la advertencia.
 - Solo perfiles docentes y administradores pueden solicitar esta vista completa de la red. Los eventos propuestos se limitan a las empresas participantes y cada empresa seleccionada recibe al menos uno.
 - La IA crea una campaña en estado **Borrador** y eventos **Pendientes**. Una persona debe enviar la campaña a revisión y aprobarla; los eventos también requieren aprobación antes de publicarse al alumnado.
 - La respuesta registra la fecha del contexto y el número de empresas conocidas por el coordinador. Si el endpoint o el modelo no están disponibles, la generación falla explícitamente y no crea una campaña parcial.
@@ -253,11 +256,11 @@ El flujo de GitHub Actions `.github/workflows/quality.yml` crea una base Postgre
 Antes de publicar una versión para uso formativo:
 
 1. Exige que GitHub Actions termine correctamente; no publiques si falla el chequeo de tipos, la compilación o una prueba.
-2. Configura una base de datos de producción separada de desarrollo y pruebas. Revisa el esquema antes de aplicarlo; este repositorio todavía no contiene migraciones versionadas. No ejecutes `push-force` en producción.
-3. Configura `DATABASE_URL`, `SESSION_SECRET` y las variables de App Storage en los secretos del entorno de producción. Verifica que los documentos privados no tengan rutas públicas.
+2. Si se usa PostgreSQL administrado por Replit, revisa el diff de esquema que presenta **Publish** y confirma cualquier renombre conscientemente; Replit aplica ese diff a producción. No ejecutes `push` ni `push-force` contra producción. Para una base externa, define y ensaya su proceso de migración aparte: Publish no cambia su esquema.
+3. Comprueba que producción usa su conexión `DATABASE_URL` correcta, un `SESSION_SECRET` propio del entorno y las variables de App Storage necesarias. No copies la conexión de desarrollo a producción. Verifica que los documentos privados no tengan rutas públicas.
 4. Completa la configuración inicial con `RED_FP360_SETUP_TOKEN`, comprueba el acceso del administrador y MFA, y retira ese token de producción después del alta inicial.
 5. Confirma que `/api/healthz` responde correctamente: comprueba tanto el servidor como la conexión a PostgreSQL.
-6. Si se habilita el coordinador de IA, usa un endpoint privado accesible desde el servidor publicado; verifica el contexto de red y operaciones antes de activarlo. La IA solo debe modificar datos del simulador.
+6. Si se habilita el coordinador de IA, prueba el proveedor desde el panel. Con Mistral, configura `MISTRAL_API_KEY` en los secretos del entorno publicado y confirma el aviso de transferencia del contexto simulado antes de activar. La IA solo debe modificar datos del simulador.
 7. Prueba autenticación, selección de empresa, invitaciones, permisos, documentos y los flujos económicos con cuentas de cada rol y datos ficticios antes de abrir el acceso al alumnado.
 
 La IA genera actualmente propuestas supervisadas. La autonomía simulada por empresa que active un administrador está definida como requisito de producto, pero aún requiere una implementación específica y pruebas de límites antes de habilitarla para usuarios.
@@ -271,9 +274,9 @@ El paquete `@workspace/db` expone estos comandos:
 pnpm --filter @workspace/db run push
 ```
 
-`push` aplica cambios a la base indicada por `DATABASE_URL`; úsalo únicamente en desarrollo tras revisar el diff y confirmar el destino. Existe `push-force`, pero puede eliminar o alterar datos: **no lo ejecutes en producción ni como solución automática**. Antes de cambios destructivos, conserva una copia recuperable y obtén autorización explícita.
+`push` sincroniza la base indicada por `DATABASE_URL`; úsalo solo para desarrollo o para una base de prueba desechable. `push-force` puede eliminar o alterar datos: **no lo ejecutes en producción ni como solución automática**.
 
-La configuración actual define el esquema Drizzle como fuente de verdad y no incluye una carpeta de migraciones versionadas en este paquete.
+Con PostgreSQL administrado por Replit, Publish compara el esquema de desarrollo con el de producción, muestra los cambios y solicita confirmación para renombres. No añadas DDL al arranque ni un hook de despliegue que ejecute `push`. Si la aplicación se configura para usar PostgreSQL externo, el equipo debe mantener un proceso de migración específico para ese proveedor antes de publicar código que dependa del cambio.
 
 ## Archivos y almacenamiento de objetos
 

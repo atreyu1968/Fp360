@@ -34,6 +34,7 @@ import {
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 import { normalizeLocalAiBaseUrl, requestLocalAiJson } from "../lib/local-ai";
+import { requestMistralAiJson } from "../lib/mistral-ai";
 
 const router: Router = Router();
 const SIMULATION_START = "2027-01-01";
@@ -332,7 +333,7 @@ function safeScenarioText(...values: Array<string | null | undefined>): void {
 
 function safeAiScenarioText(...values: Array<string | null | undefined>): void {
   if (values.some((value) => value && personalChannel.test(value))) {
-    fail(502, "La IA local devolvió datos de contacto; la propuesta no se guardó.");
+    fail(502, "El proveedor de IA devolvió datos de contacto; la propuesta no se guardó.");
   }
 }
 
@@ -552,22 +553,48 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
 
   const [settings] = await db.select().from(fpAdminAiCoordinatorSettings)
     .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
-  if (!settings?.enabled || !settings.baseUrl || !settings.model) {
-    fail(503, "El administrador debe configurar y activar una IA local antes de generar propuestas.");
+  if (!settings?.enabled || !settings.model || (settings.provider === "local" && !settings.baseUrl)) {
+    fail(503, "El administrador debe configurar y activar un proveedor de IA antes de generar propuestas.");
   }
-  let baseUrl: string;
-  try {
-    baseUrl = normalizeLocalAiBaseUrl(settings.baseUrl);
-  } catch {
-    fail(503, "La configuración del endpoint local de IA no es válida.");
+  let baseUrl = "";
+  const mistralApiKey = settings.provider === "mistral" ? process.env.MISTRAL_API_KEY : undefined;
+  if (settings.provider === "mistral" && !mistralApiKey) {
+    fail(503, "Falta configurar MISTRAL_API_KEY en los Secretos del proyecto.");
+  }
+  if (settings.provider === "local") {
+    try {
+      baseUrl = normalizeLocalAiBaseUrl(settings.baseUrl);
+    } catch {
+      fail(503, "La configuración del endpoint local de IA no es válida.");
+    }
   }
   const network = await networkSituationSnapshot(actor.tenantId);
   if (!network.companyCount) fail(400, "No hay empresas registradas en la red.");
   const participantSet = new Set(data.participantOrganizationIds);
+  const companyAliases = new Map(network.companies.map((company, index) => [
+    company.id,
+    `Empresa ${String(index + 1).padStart(2, "0")}`,
+  ]));
   const participantNames = network.companies
     .filter((company) => participantSet.has(company.id))
-    .map((company) => ({ id: company.id, name: company.name }));
+    .map((company) => ({
+      id: company.id,
+      name: settings.provider === "mistral"
+        ? companyAliases.get(company.id) ?? "Empresa simulada"
+        : company.name,
+    }));
   if (participantNames.length !== participantSet.size) fail(400, "No se pudieron resolver todas las empresas participantes.");
+  const networkForProvider = settings.provider === "mistral"
+    ? {
+      ...network,
+      companies: network.companies.map((company, index) => ({
+        ...Object.fromEntries(
+          Object.entries(company).filter(([key]) => !["name", "center", "island"].includes(key)),
+        ),
+        label: companyAliases.get(company.id) ?? `Empresa ${index + 1}`,
+      })),
+    }
+    : network;
 
   const systemPrompt = [
     "Eres el coordinador didáctico de RED FP360, un ERP educativo con una red de empresas simuladas.",
@@ -577,6 +604,7 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
     "Usa solo los IDs de empresa participante indicados y asigna al menos un evento a cada una.",
     "Ordena los eventos cronológicamente; expresa dependencias entre empresas en preconditions.",
     "No incluyas datos personales, correos, teléfonos, credenciales ni texto de expedientes.",
+    ...(settings.provider === "mistral" ? ["Las empresas externas se identifican con etiquetas anónimas; no intentes deducir nombres reales."] : []),
     "Devuelve exclusivamente un objeto JSON: {title, description, events:[{organizationId,title,eventType,description,preconditions,requiredDocumentType,simulatedDate}]}",
     "eventType solo puede ser offer, late_payment, stock_break, claim, financing, service_incident u other.",
     "requiredDocumentType debe ser una cadena breve o null; preconditions debe ser una lista de textos breves.",
@@ -593,21 +621,23 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
       exactEventCount: data.eventCount,
       simulatedToday: SIMULATION_TODAY,
     },
-    networkSnapshotAndCompleteOperationHistory: network,
+    networkSnapshotAndCompleteOperationHistory: networkForProvider,
   });
   let rawPlan: unknown;
   try {
-    rawPlan = await requestLocalAiJson({ baseUrl, model: settings.model }, systemPrompt, userPrompt);
+    rawPlan = settings.provider === "mistral"
+      ? await requestMistralAiJson({ model: settings.model, apiKey: mistralApiKey! }, systemPrompt, userPrompt)
+      : await requestLocalAiJson({ baseUrl, model: settings.model }, systemPrompt, userPrompt);
   } catch (error) {
-    req.log.warn({ tenantId: actor.tenantId, model: settings.model, error }, "Local AI proposal generation failed");
-    fail(502, "La IA local no pudo generar una propuesta válida. Comprueba el servicio y el tamaño de contexto disponible.");
+    req.log.warn({ tenantId: actor.tenantId, provider: settings.provider, model: settings.model }, "AI proposal generation failed");
+    fail(502, "El proveedor de IA no pudo generar una propuesta válida. Comprueba su disponibilidad y el tamaño de contexto.");
   }
-  if (!rawPlan || typeof rawPlan !== "object") fail(502, "La IA local devolvió una propuesta no válida.");
+  if (!rawPlan || typeof rawPlan !== "object") fail(502, "El proveedor de IA devolvió una propuesta no válida.");
   const plan = rawPlan as Record<string, unknown>;
   if (typeof plan.title !== "string" || typeof plan.description !== "string" || !Array.isArray(plan.events)) {
-    fail(502, "La IA local no devolvió todos los campos requeridos.");
+    fail(502, "El proveedor de IA no devolvió todos los campos requeridos.");
   }
-  if (plan.events.length !== data.eventCount) fail(502, "La IA local no generó el número de eventos solicitado.");
+  if (plan.events.length !== data.eventCount) fail(502, "El proveedor de IA no generó el número de eventos solicitado.");
   safeAiScenarioText(plan.title, plan.description);
   const parsedCampaign = api.CreateFp360SimulationCampaignBody.safeParse({
     operationId: data.operationId,
