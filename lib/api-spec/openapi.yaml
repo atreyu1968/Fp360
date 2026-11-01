@@ -423,7 +423,7 @@ paths:
       tags: [administration]
       responses:
         "200":
-          description: Two-person global privilege change requests
+          description: Pending and decided privilege requests in the authenticated administrator's network only
           content:
             application/json:
               schema:
@@ -440,13 +440,13 @@ paths:
             schema: { $ref: "#/components/schemas/AdminPrivilegeRequestInput" }
       responses:
         "201":
-          description: Request awaiting review by another administrator
+          description: Valid privilege change request awaiting review by a different administrator in the same network
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminPrivilegeRequest" }
         "400": { description: Invalid request }
         "403": { description: Administrator required }
-        "409": { description: Duplicate account or request }
+        "409": { description: Duplicate or ineligible target account, or an existing pending request }
   /admin/privilege-requests/{id}/action:
     post:
       operationId: actOnAdminPrivilegeRequest
@@ -460,13 +460,13 @@ paths:
             schema: { $ref: "#/components/schemas/AdminPrivilegeRequestActionInput" }
       responses:
         "200":
-          description: Reviewed request; administrator invitation token is disclosed only once
+          description: Reviewed request; approval is restricted to another administrator in the same network, and any invitation token is disclosed only once
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminPrivilegeRequestActionResult" }
         "403": { description: Administrator required }
-        "404": { description: Request not found }
-        "409": { description: A different administrator must review a pending request }
+        "404": { description: Request not found in the authenticated administrator's network }
+        "409": { description: Requester cannot approve their own request, request is no longer pending, or approval would remove the last active administrator }
   /auth/invitations/inspect:
     post:
       security: []
