@@ -11,6 +11,7 @@ import directionRouter from "./direction";
 import logisticsRouter from "./logistics";
 import accountingRouter from "./accounting";
 import bankRouter from "./bank";
+import taxRouter from "./tax";
 
 const router: IRouter = Router();
 
@@ -25,6 +26,7 @@ router.use(directionRouter);
 router.use(logisticsRouter);
 router.use(accountingRouter);
 router.use(bankRouter);
+router.use(taxRouter);
 router.use(redfp360Router);
 
 export default router;

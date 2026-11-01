@@ -19,4 +19,5 @@
 
 export * from "./redfp360";
 export * from "./redfp360-bank";
+export * from "./redfp360-tax";
 export * from "./auth";

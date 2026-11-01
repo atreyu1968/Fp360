@@ -4457,3 +4457,318 @@ export const ListFp360ActivityResponseItem = zod.object({
 export const ListFp360ActivityResponse = zod.array(ListFp360ActivityResponseItem)
 
 
+/**
+ * @summary Get simulated fiscal obligations and declarations for one organization
+ */
+
+
+
+export const GetFp360TaxOverviewQueryParams = zod.object({
+  "organizationId": zod.coerce.string().min(1)
+})
+
+export const getFp360TaxOverviewResponseSummaryPendingCountMin = 0;
+
+export const getFp360TaxOverviewResponseSummaryPresentedCountMin = 0;
+
+export const getFp360TaxOverviewResponseSummaryOpenRequirementCountMin = 0;
+
+
+export const getFp360TaxOverviewResponseDeclarationsItemTaxableBaseCentsMin = 0;
+
+export const getFp360TaxOverviewResponseDeclarationsItemOutputIgicCentsMin = 0;
+
+export const getFp360TaxOverviewResponseDeclarationsItemInputIgicCentsMin = 0;
+
+export const getFp360TaxOverviewResponseDeclarationsItemWithholdingBaseCentsMin = 0;
+
+export const getFp360TaxOverviewResponseDeclarationsItemWithholdingCentsMin = 0;
+
+export const getFp360TaxOverviewResponseSourceDocumentsItemBaseCentsMin = 0;
+
+export const getFp360TaxOverviewResponseSourceDocumentsItemTaxCentsMin = 0;
+
+
+
+export const GetFp360TaxOverviewResponse = zod.object({
+  "organizationId": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "summary": zod.object({
+  "pendingCount": zod.number().int().min(getFp360TaxOverviewResponseSummaryPendingCountMin),
+  "presentedCount": zod.number().int().min(getFp360TaxOverviewResponseSummaryPresentedCountMin),
+  "openRequirementCount": zod.number().int().min(getFp360TaxOverviewResponseSummaryOpenRequirementCountMin),
+  "outputIgicCents": zod.number().int(),
+  "inputIgicCents": zod.number().int(),
+  "resultCents": zod.number().int()
+}),
+  "obligations": zod.array(zod.object({
+  "id": zod.string(),
+  "taxType": zod.enum(['igic', 'withholding']),
+  "modelCode": zod.string(),
+  "periodKey": zod.string(),
+  "simulatedDueDate": zod.string().date(),
+  "status": zod.enum(['scheduled', 'draft', 'pending_review', 'validated', 'presented', 'payment_pending', 'paid', 'refund_pending', 'closed', 'observed', 'rectified', 'overdue']),
+  "declarationId": zod.string().nullable()
+})),
+  "declarations": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "taxType": zod.enum(['igic', 'withholding']),
+  "modelCode": zod.string(),
+  "periodKey": zod.string(),
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "simulatedDueDate": zod.string().date().nullable(),
+  "version": zod.number().int().min(1),
+  "status": zod.enum(['draft', 'validated', 'presented', 'payment_pending', 'refund_pending', 'closed', 'observed', 'rectified']),
+  "paymentStatus": zod.enum(['not_due', 'pending', 'paid', 'refund_pending', 'refund_requested']),
+  "sourceInvoiceIds": zod.array(zod.string()),
+  "sourcePurchaseInvoiceIds": zod.array(zod.string()),
+  "taxableBaseCents": zod.number().int().min(getFp360TaxOverviewResponseDeclarationsItemTaxableBaseCentsMin),
+  "outputIgicCents": zod.number().int().min(getFp360TaxOverviewResponseDeclarationsItemOutputIgicCentsMin),
+  "inputIgicCents": zod.number().int().min(getFp360TaxOverviewResponseDeclarationsItemInputIgicCentsMin),
+  "withholdingBaseCents": zod.number().int().min(getFp360TaxOverviewResponseDeclarationsItemWithholdingBaseCentsMin),
+  "withholdingCents": zod.number().int().min(getFp360TaxOverviewResponseDeclarationsItemWithholdingCentsMin),
+  "resultCents": zod.number().int(),
+  "receiptReference": zod.string().nullable(),
+  "supersedesId": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})),
+  "sourceDocuments": zod.array(zod.object({
+  "id": zod.string(),
+  "sourceType": zod.enum(['sales_invoice', 'purchase_invoice']),
+  "reference": zod.string(),
+  "date": zod.string().date(),
+  "counterparty": zod.string(),
+  "baseCents": zod.number().int().min(getFp360TaxOverviewResponseSourceDocumentsItemBaseCentsMin),
+  "taxCents": zod.number().int().min(getFp360TaxOverviewResponseSourceDocumentsItemTaxCentsMin),
+  "status": zod.string()
+})),
+  "requirements": zod.array(zod.object({
+  "id": zod.string(),
+  "declarationId": zod.string(),
+  "reference": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "status": zod.enum(['open', 'answered', 'resolved']),
+  "response": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "respondedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "declarationId": zod.string().nullable(),
+  "requirementId": zod.string().nullable(),
+  "eventType": zod.string(),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "createdAt": zod.string().datetime({"offset":true})
+}))
+})
+
+
+/**
+ * @summary Create a simulated tax declaration draft from company source records
+ */
+
+export const createFp360TaxDeclarationBodyPeriodKeyRegExp = new RegExp('^\\d{4}(-Q[1-4])?$');
+export const createFp360TaxDeclarationBodyWithholdingBaseCentsMin = 0;
+export const createFp360TaxDeclarationBodyWithholdingBaseCentsMax = 1000000000;
+
+export const createFp360TaxDeclarationBodyWithholdingCentsMin = 0;
+export const createFp360TaxDeclarationBodyWithholdingCentsMax = 1000000000;
+
+export const createFp360TaxDeclarationBodyOperationIdMin = 8;
+export const createFp360TaxDeclarationBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360TaxDeclarationBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "taxType": zod.enum(['igic', 'withholding']),
+  "modelCode": zod.enum(['420', '425', '111', '190', '115']),
+  "periodKey": zod.string().regex(createFp360TaxDeclarationBodyPeriodKeyRegExp),
+  "simulatedDueDate": zod.string().date().optional(),
+  "withholdingBaseCents": zod.number().int().min(createFp360TaxDeclarationBodyWithholdingBaseCentsMin).max(createFp360TaxDeclarationBodyWithholdingBaseCentsMax).optional(),
+  "withholdingCents": zod.number().int().min(createFp360TaxDeclarationBodyWithholdingCentsMin).max(createFp360TaxDeclarationBodyWithholdingCentsMax).optional(),
+  "operationId": zod.string().min(createFp360TaxDeclarationBodyOperationIdMin).max(createFp360TaxDeclarationBodyOperationIdMax)
+})
+
+
+export const createFp360TaxDeclarationResponseTaxableBaseCentsMin = 0;
+
+export const createFp360TaxDeclarationResponseOutputIgicCentsMin = 0;
+
+export const createFp360TaxDeclarationResponseInputIgicCentsMin = 0;
+
+export const createFp360TaxDeclarationResponseWithholdingBaseCentsMin = 0;
+
+export const createFp360TaxDeclarationResponseWithholdingCentsMin = 0;
+
+
+
+export const CreateFp360TaxDeclarationResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "taxType": zod.enum(['igic', 'withholding']),
+  "modelCode": zod.string(),
+  "periodKey": zod.string(),
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "simulatedDueDate": zod.string().date().nullable(),
+  "version": zod.number().int().min(1),
+  "status": zod.enum(['draft', 'validated', 'presented', 'payment_pending', 'refund_pending', 'closed', 'observed', 'rectified']),
+  "paymentStatus": zod.enum(['not_due', 'pending', 'paid', 'refund_pending', 'refund_requested']),
+  "sourceInvoiceIds": zod.array(zod.string()),
+  "sourcePurchaseInvoiceIds": zod.array(zod.string()),
+  "taxableBaseCents": zod.number().int().min(createFp360TaxDeclarationResponseTaxableBaseCentsMin),
+  "outputIgicCents": zod.number().int().min(createFp360TaxDeclarationResponseOutputIgicCentsMin),
+  "inputIgicCents": zod.number().int().min(createFp360TaxDeclarationResponseInputIgicCentsMin),
+  "withholdingBaseCents": zod.number().int().min(createFp360TaxDeclarationResponseWithholdingBaseCentsMin),
+  "withholdingCents": zod.number().int().min(createFp360TaxDeclarationResponseWithholdingCentsMin),
+  "resultCents": zod.number().int(),
+  "receiptReference": zod.string().nullable(),
+  "supersedesId": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Recalculate, validate, present, rectify, or close a simulated declaration
+ */
+export const ActOnFp360TaxDeclarationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const actOnFp360TaxDeclarationBodyOperationIdMin = 8;
+export const actOnFp360TaxDeclarationBodyOperationIdMax = 120;
+
+export const actOnFp360TaxDeclarationBodyReasonMax = 500;
+
+
+
+export const ActOnFp360TaxDeclarationBody = zod.object({
+  "action": zod.enum(['recalculate', 'validate', 'present', 'request_payment', 'rectify', 'close', 'observe']),
+  "operationId": zod.string().min(actOnFp360TaxDeclarationBodyOperationIdMin).max(actOnFp360TaxDeclarationBodyOperationIdMax),
+  "reason": zod.string().max(actOnFp360TaxDeclarationBodyReasonMax).optional()
+})
+
+
+export const actOnFp360TaxDeclarationResponseTaxableBaseCentsMin = 0;
+
+export const actOnFp360TaxDeclarationResponseOutputIgicCentsMin = 0;
+
+export const actOnFp360TaxDeclarationResponseInputIgicCentsMin = 0;
+
+export const actOnFp360TaxDeclarationResponseWithholdingBaseCentsMin = 0;
+
+export const actOnFp360TaxDeclarationResponseWithholdingCentsMin = 0;
+
+
+
+export const ActOnFp360TaxDeclarationResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "taxType": zod.enum(['igic', 'withholding']),
+  "modelCode": zod.string(),
+  "periodKey": zod.string(),
+  "periodStart": zod.string().date(),
+  "periodEnd": zod.string().date(),
+  "simulatedDueDate": zod.string().date().nullable(),
+  "version": zod.number().int().min(1),
+  "status": zod.enum(['draft', 'validated', 'presented', 'payment_pending', 'refund_pending', 'closed', 'observed', 'rectified']),
+  "paymentStatus": zod.enum(['not_due', 'pending', 'paid', 'refund_pending', 'refund_requested']),
+  "sourceInvoiceIds": zod.array(zod.string()),
+  "sourcePurchaseInvoiceIds": zod.array(zod.string()),
+  "taxableBaseCents": zod.number().int().min(actOnFp360TaxDeclarationResponseTaxableBaseCentsMin),
+  "outputIgicCents": zod.number().int().min(actOnFp360TaxDeclarationResponseOutputIgicCentsMin),
+  "inputIgicCents": zod.number().int().min(actOnFp360TaxDeclarationResponseInputIgicCentsMin),
+  "withholdingBaseCents": zod.number().int().min(actOnFp360TaxDeclarationResponseWithholdingBaseCentsMin),
+  "withholdingCents": zod.number().int().min(actOnFp360TaxDeclarationResponseWithholdingCentsMin),
+  "resultCents": zod.number().int(),
+  "receiptReference": zod.string().nullable(),
+  "supersedesId": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Create an educational fiscal information request
+ */
+export const createFp360TaxRequirementBodyTitleMin = 3;
+export const createFp360TaxRequirementBodyTitleMax = 160;
+
+export const createFp360TaxRequirementBodyDetailMin = 5;
+export const createFp360TaxRequirementBodyDetailMax = 1000;
+
+export const createFp360TaxRequirementBodyOperationIdMin = 8;
+export const createFp360TaxRequirementBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360TaxRequirementBody = zod.object({
+  "declarationId": zod.string(),
+  "title": zod.string().min(createFp360TaxRequirementBodyTitleMin).max(createFp360TaxRequirementBodyTitleMax),
+  "detail": zod.string().min(createFp360TaxRequirementBodyDetailMin).max(createFp360TaxRequirementBodyDetailMax),
+  "operationId": zod.string().min(createFp360TaxRequirementBodyOperationIdMin).max(createFp360TaxRequirementBodyOperationIdMax)
+})
+
+export const CreateFp360TaxRequirementResponse = zod.object({
+  "id": zod.string(),
+  "declarationId": zod.string(),
+  "reference": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "status": zod.enum(['open', 'answered', 'resolved']),
+  "response": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "respondedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Respond to or resolve an educational fiscal information request
+ */
+export const ActOnFp360TaxRequirementParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const actOnFp360TaxRequirementBodyResponseMax = 2000;
+
+export const actOnFp360TaxRequirementBodyOperationIdMin = 8;
+export const actOnFp360TaxRequirementBodyOperationIdMax = 120;
+
+
+
+export const ActOnFp360TaxRequirementBody = zod.object({
+  "action": zod.enum(['respond', 'resolve']),
+  "response": zod.string().max(actOnFp360TaxRequirementBodyResponseMax).optional(),
+  "operationId": zod.string().min(actOnFp360TaxRequirementBodyOperationIdMin).max(actOnFp360TaxRequirementBodyOperationIdMax)
+})
+
+export const ActOnFp360TaxRequirementResponse = zod.object({
+  "id": zod.string(),
+  "declarationId": zod.string(),
+  "reference": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "status": zod.enum(['open', 'answered', 'resolved']),
+  "response": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "respondedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+

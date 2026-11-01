@@ -1961,6 +1961,118 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Fp360Activity"
+  /redfp360/tax/overview:
+    get:
+      operationId: getFp360TaxOverview
+      tags: [redfp360]
+      summary: Get simulated fiscal obligations and declarations for one organization
+      parameters:
+        - in: query
+          name: organizationId
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Educational tax calendar, source documents, declarations, and audit history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360TaxOverview" }
+        "401":
+          description: Authentication required
+  /redfp360/tax/declarations:
+    post:
+      operationId: createFp360TaxDeclaration
+      tags: [redfp360]
+      summary: Create a simulated tax declaration draft from company source records
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360TaxDeclarationInput" }
+      responses:
+        "200":
+          description: Existing draft returned after an idempotent retry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360TaxDeclaration" }
+        "201":
+          description: Educational declaration draft created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360TaxDeclaration" }
+        "400":
+          description: Invalid period, model, or source data
+        "409":
+          description: Idempotency key reused with different data
+  /redfp360/tax/declarations/{id}/action:
+    post:
+      operationId: actOnFp360TaxDeclaration
+      tags: [redfp360]
+      summary: Recalculate, validate, present, rectify, or close a simulated declaration
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360TaxDeclarationActionInput" }
+      responses:
+        "200":
+          description: Declaration transition recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360TaxDeclaration" }
+        "400":
+          description: Invalid declaration transition
+        "404":
+          description: Declaration not found
+  /redfp360/tax/requirements:
+    post:
+      operationId: createFp360TaxRequirement
+      tags: [redfp360]
+      summary: Create an educational fiscal information request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360TaxRequirementInput" }
+      responses:
+        "200":
+          description: Existing request returned after an idempotent retry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360TaxRequirement" }
+        "201":
+          description: Simulated request created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360TaxRequirement" }
+  /redfp360/tax/requirements/{id}/action:
+    post:
+      operationId: actOnFp360TaxRequirement
+      tags: [redfp360]
+      summary: Respond to or resolve an educational fiscal information request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360TaxRequirementActionInput" }
+      responses:
+        "200":
+          description: Request response recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360TaxRequirement" }
+        "404":
+          description: Request not found
 components:
   securitySchemes:
     sessionCookie:
@@ -3072,6 +3184,152 @@ components:
         organizationId: { type: string, minLength: 1 }
         operationId: { type: string, minLength: 1, maxLength: 100 }
         reason: { type: string, minLength: 5, maxLength: 500 }
+    Fp360TaxOverview:
+      type: object
+      required: [organizationId, simulatedDate, summary, obligations, declarations, sourceDocuments, requirements, events]
+      properties:
+        organizationId: { type: string }
+        simulatedDate: { type: string, format: date }
+        summary:
+          type: object
+          required: [pendingCount, presentedCount, openRequirementCount, outputIgicCents, inputIgicCents, resultCents]
+          properties:
+            pendingCount: { type: integer, minimum: 0 }
+            presentedCount: { type: integer, minimum: 0 }
+            openRequirementCount: { type: integer, minimum: 0 }
+            outputIgicCents: { type: integer }
+            inputIgicCents: { type: integer }
+            resultCents: { type: integer }
+        obligations:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360TaxObligation" }
+        declarations:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360TaxDeclaration" }
+        sourceDocuments:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360TaxSourceDocument" }
+        requirements:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360TaxRequirement" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360TaxEvent" }
+    Fp360TaxObligation:
+      type: object
+      required: [id, taxType, modelCode, periodKey, simulatedDueDate, status, declarationId]
+      properties:
+        id: { type: string }
+        taxType: { type: string, enum: [igic, withholding] }
+        modelCode: { type: string }
+        periodKey: { type: string }
+        simulatedDueDate: { type: string, format: date }
+        status: { type: string, enum: [scheduled, draft, pending_review, validated, presented, payment_pending, paid, refund_pending, closed, observed, rectified, overdue] }
+        declarationId: { type: string, nullable: true }
+    Fp360TaxSourceDocument:
+      type: object
+      required: [id, sourceType, reference, date, counterparty, baseCents, taxCents, status]
+      properties:
+        id: { type: string }
+        sourceType: { type: string, enum: [sales_invoice, purchase_invoice] }
+        reference: { type: string }
+        date: { type: string, format: date }
+        counterparty: { type: string }
+        baseCents: { type: integer, minimum: 0 }
+        taxCents: { type: integer, minimum: 0 }
+        status: { type: string }
+    Fp360TaxDeclarationStatus:
+      type: string
+      enum: [draft, validated, presented, payment_pending, refund_pending, closed, observed, rectified]
+    Fp360TaxDeclaration:
+      type: object
+      required: [id, organizationId, taxType, modelCode, periodKey, periodStart, periodEnd, simulatedDueDate, version, status, paymentStatus, sourceInvoiceIds, sourcePurchaseInvoiceIds, taxableBaseCents, outputIgicCents, inputIgicCents, withholdingBaseCents, withholdingCents, resultCents, receiptReference, supersedesId, createdByName, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        taxType: { type: string, enum: [igic, withholding] }
+        modelCode: { type: string }
+        periodKey: { type: string }
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
+        simulatedDueDate: { type: string, format: date, nullable: true }
+        version: { type: integer, minimum: 1 }
+        status: { $ref: "#/components/schemas/Fp360TaxDeclarationStatus" }
+        paymentStatus: { type: string, enum: [not_due, pending, paid, refund_pending, refund_requested] }
+        sourceInvoiceIds: { type: array, items: { type: string } }
+        sourcePurchaseInvoiceIds: { type: array, items: { type: string } }
+        taxableBaseCents: { type: integer, minimum: 0 }
+        outputIgicCents: { type: integer, minimum: 0 }
+        inputIgicCents: { type: integer, minimum: 0 }
+        withholdingBaseCents: { type: integer, minimum: 0 }
+        withholdingCents: { type: integer, minimum: 0 }
+        resultCents: { type: integer }
+        receiptReference: { type: string, nullable: true }
+        supersedesId: { type: string, nullable: true }
+        createdByName: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Fp360TaxRequirement:
+      type: object
+      required: [id, declarationId, reference, title, detail, status, response, createdByName, respondedByName, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        declarationId: { type: string }
+        reference: { type: string }
+        title: { type: string }
+        detail: { type: string }
+        status: { type: string, enum: [open, answered, resolved] }
+        response: { type: string, nullable: true }
+        createdByName: { type: string }
+        respondedByName: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Fp360TaxEvent:
+      type: object
+      required: [id, declarationId, requirementId, eventType, description, actorName, simulatedDate, createdAt]
+      properties:
+        id: { type: string }
+        declarationId: { type: string, nullable: true }
+        requirementId: { type: string, nullable: true }
+        eventType: { type: string }
+        description: { type: string }
+        actorName: { type: string }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    Fp360TaxDeclarationInput:
+      type: object
+      required: [organizationId, taxType, modelCode, periodKey, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        taxType: { type: string, enum: [igic, withholding] }
+        modelCode: { type: string, enum: ["420", "425", "111", "190", "115"] }
+        periodKey: { type: string, pattern: '^\d{4}(-Q[1-4])?$' }
+        simulatedDueDate: { type: string, format: date }
+        withholdingBaseCents: { type: integer, minimum: 0, maximum: 1000000000 }
+        withholdingCents: { type: integer, minimum: 0, maximum: 1000000000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360TaxDeclarationActionInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [recalculate, validate, present, request_payment, rectify, close, observe] }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+        reason: { type: string, maxLength: 500 }
+    Fp360TaxRequirementInput:
+      type: object
+      required: [declarationId, title, detail, operationId]
+      properties:
+        declarationId: { type: string }
+        title: { type: string, minLength: 3, maxLength: 160 }
+        detail: { type: string, minLength: 5, maxLength: 1000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360TaxRequirementActionInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [respond, resolve] }
+        response: { type: string, maxLength: 2000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
     Fp360BankOverview:
       type: object
       required: [organizationId, accounts, beneficiaries, transfers, movements, effects, financing, installments, events, summary]

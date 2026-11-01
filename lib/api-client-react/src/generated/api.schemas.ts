@@ -2007,6 +2007,300 @@ export interface Fp360AccountingPeriodActionInput {
   reason: string;
 }
 
+export type Fp360TaxOverviewSummary = {
+  /** @minimum 0 */
+  pendingCount: number;
+  /** @minimum 0 */
+  presentedCount: number;
+  /** @minimum 0 */
+  openRequirementCount: number;
+  outputIgicCents: number;
+  inputIgicCents: number;
+  resultCents: number;
+};
+
+export type Fp360TaxObligationTaxType = typeof Fp360TaxObligationTaxType[keyof typeof Fp360TaxObligationTaxType];
+
+
+export const Fp360TaxObligationTaxType = {
+  igic: 'igic',
+  withholding: 'withholding',
+} as const;
+
+export type Fp360TaxObligationStatus = typeof Fp360TaxObligationStatus[keyof typeof Fp360TaxObligationStatus];
+
+
+export const Fp360TaxObligationStatus = {
+  scheduled: 'scheduled',
+  draft: 'draft',
+  pending_review: 'pending_review',
+  validated: 'validated',
+  presented: 'presented',
+  payment_pending: 'payment_pending',
+  paid: 'paid',
+  refund_pending: 'refund_pending',
+  closed: 'closed',
+  observed: 'observed',
+  rectified: 'rectified',
+  overdue: 'overdue',
+} as const;
+
+export interface Fp360TaxObligation {
+  id: string;
+  taxType: Fp360TaxObligationTaxType;
+  modelCode: string;
+  periodKey: string;
+  simulatedDueDate: string;
+  status: Fp360TaxObligationStatus;
+  /** @nullable */
+  declarationId: string | null;
+}
+
+export type Fp360TaxDeclarationTaxType = typeof Fp360TaxDeclarationTaxType[keyof typeof Fp360TaxDeclarationTaxType];
+
+
+export const Fp360TaxDeclarationTaxType = {
+  igic: 'igic',
+  withholding: 'withholding',
+} as const;
+
+export type Fp360TaxDeclarationStatus = typeof Fp360TaxDeclarationStatus[keyof typeof Fp360TaxDeclarationStatus];
+
+
+export const Fp360TaxDeclarationStatus = {
+  draft: 'draft',
+  validated: 'validated',
+  presented: 'presented',
+  payment_pending: 'payment_pending',
+  refund_pending: 'refund_pending',
+  closed: 'closed',
+  observed: 'observed',
+  rectified: 'rectified',
+} as const;
+
+export type Fp360TaxDeclarationPaymentStatus = typeof Fp360TaxDeclarationPaymentStatus[keyof typeof Fp360TaxDeclarationPaymentStatus];
+
+
+export const Fp360TaxDeclarationPaymentStatus = {
+  not_due: 'not_due',
+  pending: 'pending',
+  paid: 'paid',
+  refund_pending: 'refund_pending',
+  refund_requested: 'refund_requested',
+} as const;
+
+export interface Fp360TaxDeclaration {
+  id: string;
+  organizationId: string;
+  taxType: Fp360TaxDeclarationTaxType;
+  modelCode: string;
+  periodKey: string;
+  periodStart: string;
+  periodEnd: string;
+  /** @nullable */
+  simulatedDueDate: string | null;
+  /** @minimum 1 */
+  version: number;
+  status: Fp360TaxDeclarationStatus;
+  paymentStatus: Fp360TaxDeclarationPaymentStatus;
+  sourceInvoiceIds: string[];
+  sourcePurchaseInvoiceIds: string[];
+  /** @minimum 0 */
+  taxableBaseCents: number;
+  /** @minimum 0 */
+  outputIgicCents: number;
+  /** @minimum 0 */
+  inputIgicCents: number;
+  /** @minimum 0 */
+  withholdingBaseCents: number;
+  /** @minimum 0 */
+  withholdingCents: number;
+  resultCents: number;
+  /** @nullable */
+  receiptReference: string | null;
+  /** @nullable */
+  supersedesId: string | null;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type Fp360TaxSourceDocumentSourceType = typeof Fp360TaxSourceDocumentSourceType[keyof typeof Fp360TaxSourceDocumentSourceType];
+
+
+export const Fp360TaxSourceDocumentSourceType = {
+  sales_invoice: 'sales_invoice',
+  purchase_invoice: 'purchase_invoice',
+} as const;
+
+export interface Fp360TaxSourceDocument {
+  id: string;
+  sourceType: Fp360TaxSourceDocumentSourceType;
+  reference: string;
+  date: string;
+  counterparty: string;
+  /** @minimum 0 */
+  baseCents: number;
+  /** @minimum 0 */
+  taxCents: number;
+  status: string;
+}
+
+export type Fp360TaxRequirementStatus = typeof Fp360TaxRequirementStatus[keyof typeof Fp360TaxRequirementStatus];
+
+
+export const Fp360TaxRequirementStatus = {
+  open: 'open',
+  answered: 'answered',
+  resolved: 'resolved',
+} as const;
+
+export interface Fp360TaxRequirement {
+  id: string;
+  declarationId: string;
+  reference: string;
+  title: string;
+  detail: string;
+  status: Fp360TaxRequirementStatus;
+  /** @nullable */
+  response: string | null;
+  createdByName: string;
+  /** @nullable */
+  respondedByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Fp360TaxEvent {
+  id: string;
+  /** @nullable */
+  declarationId: string | null;
+  /** @nullable */
+  requirementId: string | null;
+  eventType: string;
+  description: string;
+  actorName: string;
+  simulatedDate: string;
+  createdAt: string;
+}
+
+export interface Fp360TaxOverview {
+  organizationId: string;
+  simulatedDate: string;
+  summary: Fp360TaxOverviewSummary;
+  obligations: Fp360TaxObligation[];
+  declarations: Fp360TaxDeclaration[];
+  sourceDocuments: Fp360TaxSourceDocument[];
+  requirements: Fp360TaxRequirement[];
+  events: Fp360TaxEvent[];
+}
+
+export type Fp360TaxDeclarationInputTaxType = typeof Fp360TaxDeclarationInputTaxType[keyof typeof Fp360TaxDeclarationInputTaxType];
+
+
+export const Fp360TaxDeclarationInputTaxType = {
+  igic: 'igic',
+  withholding: 'withholding',
+} as const;
+
+export type Fp360TaxDeclarationInputModelCode = typeof Fp360TaxDeclarationInputModelCode[keyof typeof Fp360TaxDeclarationInputModelCode];
+
+
+export const Fp360TaxDeclarationInputModelCode = {
+  NUMBER_420: '420',
+  NUMBER_425: '425',
+  NUMBER_111: '111',
+  NUMBER_190: '190',
+  NUMBER_115: '115',
+} as const;
+
+export interface Fp360TaxDeclarationInput {
+  /** @minLength 1 */
+  organizationId: string;
+  taxType: Fp360TaxDeclarationInputTaxType;
+  modelCode: Fp360TaxDeclarationInputModelCode;
+  /** @pattern ^\d{4}(-Q[1-4])?$ */
+  periodKey: string;
+  simulatedDueDate?: string;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  withholdingBaseCents?: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  withholdingCents?: number;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360TaxDeclarationActionInputAction = typeof Fp360TaxDeclarationActionInputAction[keyof typeof Fp360TaxDeclarationActionInputAction];
+
+
+export const Fp360TaxDeclarationActionInputAction = {
+  recalculate: 'recalculate',
+  validate: 'validate',
+  present: 'present',
+  request_payment: 'request_payment',
+  rectify: 'rectify',
+  close: 'close',
+  observe: 'observe',
+} as const;
+
+export interface Fp360TaxDeclarationActionInput {
+  action: Fp360TaxDeclarationActionInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+  /** @maxLength 500 */
+  reason?: string;
+}
+
+export interface Fp360TaxRequirementInput {
+  declarationId: string;
+  /**
+     * @minLength 3
+     * @maxLength 160
+     */
+  title: string;
+  /**
+     * @minLength 5
+     * @maxLength 1000
+     */
+  detail: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360TaxRequirementActionInputAction = typeof Fp360TaxRequirementActionInputAction[keyof typeof Fp360TaxRequirementActionInputAction];
+
+
+export const Fp360TaxRequirementActionInputAction = {
+  respond: 'respond',
+  resolve: 'resolve',
+} as const;
+
+export interface Fp360TaxRequirementActionInput {
+  action: Fp360TaxRequirementActionInputAction;
+  /** @maxLength 2000 */
+  response?: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
 export type Fp360BankOverviewSummaryRiskLevel = typeof Fp360BankOverviewSummaryRiskLevel[keyof typeof Fp360BankOverviewSummaryRiskLevel];
 
 
@@ -3028,6 +3322,13 @@ organizationId: string;
 };
 
 export type GetFp360BankOverviewParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+};
+
+export type GetFp360TaxOverviewParams = {
 /**
  * @minLength 1
  */

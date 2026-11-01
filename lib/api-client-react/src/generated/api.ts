@@ -104,9 +104,17 @@ import type {
   Fp360ProductUpdate,
   Fp360StockAdjustment,
   Fp360StockAdjustmentInput,
+  Fp360TaxDeclaration,
+  Fp360TaxDeclarationActionInput,
+  Fp360TaxDeclarationInput,
+  Fp360TaxOverview,
+  Fp360TaxRequirement,
+  Fp360TaxRequirementActionInput,
+  Fp360TaxRequirementInput,
   GetFp360AccountingOverviewParams,
   GetFp360BankOverviewParams,
   GetFp360DirectionOverviewParams,
+  GetFp360TaxOverviewParams,
   HealthStatus,
   InvitationAcceptanceInput,
   InvitationPreview,
@@ -9671,4 +9679,466 @@ export function useListFp360Activity<TData = Awaited<ReturnType<typeof listFp360
 
 
 
+
+export const getGetFp360TaxOverviewUrl = (params: GetFp360TaxOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/tax/overview?${stringifiedParams}` : `/api/redfp360/tax/overview`
+}
+
+/**
+ * @summary Get simulated fiscal obligations and declarations for one organization
+ */
+export const getFp360TaxOverview = async (params: GetFp360TaxOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<Fp360TaxOverview> => {
+
+  return customFetch<Fp360TaxOverview>(getGetFp360TaxOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360TaxOverviewQueryKey = (params?: GetFp360TaxOverviewParams,) => {
+    return [
+    `/api/redfp360/tax/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360TaxOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getFp360TaxOverview>>, TError = ErrorType<void>>(params: GetFp360TaxOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360TaxOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360TaxOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360TaxOverview>>> = ({ signal }) => getFp360TaxOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360TaxOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360TaxOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360TaxOverview>>>
+export type GetFp360TaxOverviewQueryError = ErrorType<void>
+
+
+export function useGetFp360TaxOverview<TData = Awaited<ReturnType<typeof getFp360TaxOverview>>, TError = ErrorType<void>>(
+ params: GetFp360TaxOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360TaxOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360TaxOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360TaxOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360TaxOverview<TData = Awaited<ReturnType<typeof getFp360TaxOverview>>, TError = ErrorType<void>>(
+ params: GetFp360TaxOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360TaxOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360TaxOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360TaxOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360TaxOverview<TData = Awaited<ReturnType<typeof getFp360TaxOverview>>, TError = ErrorType<void>>(
+ params: GetFp360TaxOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360TaxOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get simulated fiscal obligations and declarations for one organization
+ */
+
+export function useGetFp360TaxOverview<TData = Awaited<ReturnType<typeof getFp360TaxOverview>>, TError = ErrorType<void>>(
+ params: GetFp360TaxOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360TaxOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360TaxOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360TaxDeclarationUrl = () => {
+
+
+
+
+  return `/api/redfp360/tax/declarations`
+}
+
+/**
+ * @summary Create a simulated tax declaration draft from company source records
+ */
+export const createFp360TaxDeclaration = async (fp360TaxDeclarationInput: Fp360TaxDeclarationInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360TaxDeclaration> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360TaxDeclaration>(getCreateFp360TaxDeclarationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360TaxDeclarationInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360TaxDeclarationMutationKey = () => ['createFp360TaxDeclaration'] as const;
+
+export const getCreateFp360TaxDeclarationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360TaxDeclaration>>, TError,CreateFp360TaxDeclarationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360TaxDeclaration>>, TError,CreateFp360TaxDeclarationMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360TaxDeclarationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360TaxDeclaration>>, CreateFp360TaxDeclarationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360TaxDeclaration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360TaxDeclarationMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360TaxDeclaration>>>
+    export type CreateFp360TaxDeclarationMutationBody = BodyType<Fp360TaxDeclarationInput>
+    export type CreateFp360TaxDeclarationMutationError = ErrorType<void>
+    export type CreateFp360TaxDeclarationMutationVariables = {data: BodyType<Fp360TaxDeclarationInput>}
+
+    /**
+ * @summary Create a simulated tax declaration draft from company source records
+ */
+export const useCreateFp360TaxDeclaration = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360TaxDeclaration>>, TError,CreateFp360TaxDeclarationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360TaxDeclaration>>,
+        TError,
+        CreateFp360TaxDeclarationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360TaxDeclarationMutationOptions(options), queryClient);
+    }
+
+export const getActOnFp360TaxDeclarationUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/tax/declarations/${id}/action`
+}
+
+/**
+ * @summary Recalculate, validate, present, rectify, or close a simulated declaration
+ */
+export const actOnFp360TaxDeclaration = async (id: string,
+    fp360TaxDeclarationActionInput: Fp360TaxDeclarationActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360TaxDeclaration> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360TaxDeclaration>(getActOnFp360TaxDeclarationUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360TaxDeclarationActionInput)
+  }
+);}
+
+
+
+
+
+export const getActOnFp360TaxDeclarationMutationKey = () => ['actOnFp360TaxDeclaration'] as const;
+
+export const getActOnFp360TaxDeclarationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360TaxDeclaration>>, TError,ActOnFp360TaxDeclarationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnFp360TaxDeclaration>>, TError,ActOnFp360TaxDeclarationMutationVariables, TContext> => {
+
+const mutationKey = getActOnFp360TaxDeclarationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnFp360TaxDeclaration>>, ActOnFp360TaxDeclarationMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actOnFp360TaxDeclaration(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnFp360TaxDeclarationMutationResult = NonNullable<Awaited<ReturnType<typeof actOnFp360TaxDeclaration>>>
+    export type ActOnFp360TaxDeclarationMutationBody = BodyType<Fp360TaxDeclarationActionInput>
+    export type ActOnFp360TaxDeclarationMutationError = ErrorType<void>
+    export type ActOnFp360TaxDeclarationMutationVariables = {id: string;data: BodyType<Fp360TaxDeclarationActionInput>}
+
+    /**
+ * @summary Recalculate, validate, present, rectify, or close a simulated declaration
+ */
+export const useActOnFp360TaxDeclaration = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360TaxDeclaration>>, TError,ActOnFp360TaxDeclarationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnFp360TaxDeclaration>>,
+        TError,
+        ActOnFp360TaxDeclarationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnFp360TaxDeclarationMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360TaxRequirementUrl = () => {
+
+
+
+
+  return `/api/redfp360/tax/requirements`
+}
+
+/**
+ * @summary Create an educational fiscal information request
+ */
+export const createFp360TaxRequirement = async (fp360TaxRequirementInput: Fp360TaxRequirementInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360TaxRequirement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360TaxRequirement>(getCreateFp360TaxRequirementUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360TaxRequirementInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360TaxRequirementMutationKey = () => ['createFp360TaxRequirement'] as const;
+
+export const getCreateFp360TaxRequirementMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360TaxRequirement>>, TError,CreateFp360TaxRequirementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360TaxRequirement>>, TError,CreateFp360TaxRequirementMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360TaxRequirementMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360TaxRequirement>>, CreateFp360TaxRequirementMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360TaxRequirement(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360TaxRequirementMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360TaxRequirement>>>
+    export type CreateFp360TaxRequirementMutationBody = BodyType<Fp360TaxRequirementInput>
+    export type CreateFp360TaxRequirementMutationError = ErrorType<unknown>
+    export type CreateFp360TaxRequirementMutationVariables = {data: BodyType<Fp360TaxRequirementInput>}
+
+    /**
+ * @summary Create an educational fiscal information request
+ */
+export const useCreateFp360TaxRequirement = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360TaxRequirement>>, TError,CreateFp360TaxRequirementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360TaxRequirement>>,
+        TError,
+        CreateFp360TaxRequirementMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360TaxRequirementMutationOptions(options), queryClient);
+    }
+
+export const getActOnFp360TaxRequirementUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/tax/requirements/${id}/action`
+}
+
+/**
+ * @summary Respond to or resolve an educational fiscal information request
+ */
+export const actOnFp360TaxRequirement = async (id: string,
+    fp360TaxRequirementActionInput: Fp360TaxRequirementActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360TaxRequirement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360TaxRequirement>(getActOnFp360TaxRequirementUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360TaxRequirementActionInput)
+  }
+);}
+
+
+
+
+
+export const getActOnFp360TaxRequirementMutationKey = () => ['actOnFp360TaxRequirement'] as const;
+
+export const getActOnFp360TaxRequirementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360TaxRequirement>>, TError,ActOnFp360TaxRequirementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnFp360TaxRequirement>>, TError,ActOnFp360TaxRequirementMutationVariables, TContext> => {
+
+const mutationKey = getActOnFp360TaxRequirementMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnFp360TaxRequirement>>, ActOnFp360TaxRequirementMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actOnFp360TaxRequirement(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnFp360TaxRequirementMutationResult = NonNullable<Awaited<ReturnType<typeof actOnFp360TaxRequirement>>>
+    export type ActOnFp360TaxRequirementMutationBody = BodyType<Fp360TaxRequirementActionInput>
+    export type ActOnFp360TaxRequirementMutationError = ErrorType<void>
+    export type ActOnFp360TaxRequirementMutationVariables = {id: string;data: BodyType<Fp360TaxRequirementActionInput>}
+
+    /**
+ * @summary Respond to or resolve an educational fiscal information request
+ */
+export const useActOnFp360TaxRequirement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360TaxRequirement>>, TError,ActOnFp360TaxRequirementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnFp360TaxRequirement>>,
+        TError,
+        ActOnFp360TaxRequirementMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnFp360TaxRequirementMutationOptions(options), queryClient);
+    }
 

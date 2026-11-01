@@ -43,6 +43,7 @@ import DirectionPage from '@/components/direction/DirectionPage';
 import { AccountingPage } from '@/components/accounting-page';
 import { TreasuryPage } from '@/components/treasury-page';
 import { BankPage } from '@/components/bank-page';
+import { HaciendaPage } from '@/components/hacienda-page';
 import '@/components/treasury-page.css';
 
 const queryClient = new QueryClient();
@@ -87,7 +88,7 @@ const appModules = [
   'Portafolio profesional', 'Evaluación docente', 'Mentoría empresarial',
   'Coordinación intercentros', 'Administración del sistema',
 ];
-const implemented = new Set([1, 2, 3, 5, 6, 7, 8, 9, 15, 16]);
+const implemented = new Set([1, 2, 3, 5, 6, 7, 8, 9, 15, 16, 17]);
 const navItems = [
   { href: '/', label: 'Inicio', icon: LayoutDashboard },
   { href: '/mercado', label: 'Mercado', icon: Globe2 },
@@ -99,6 +100,7 @@ const navItems = [
   { href: '/contabilidad', label: 'Contabilidad', icon: BookOpen },
   { href: '/tesoreria', label: 'Tesorería', icon: Banknote },
   { href: '/banco', label: 'Banco FP360', icon: Landmark },
+  { href: '/hacienda', label: 'Hacienda FP360', icon: FileCheck2 },
   { href: '/facturas', label: 'Facturas', icon: ReceiptText },
   { href: '/clientes', label: 'Clientes', icon: Users },
   { href: '/crm', label: 'CRM', icon: BriefcaseBusiness },
@@ -115,6 +117,7 @@ const titles: Record<string, { title: string; kicker: string; description: strin
   '/contabilidad': { title: 'Contabilidad', kicker: 'CICLO ECONÓMICO · LIBROS', description: 'Registra asientos didácticos, consulta el mayor y prepara los cierres.' },
   '/tesoreria': { title: 'Tesorería', kicker: 'TESORERÍA · LIQUIDEZ', description: 'Conecta vencimientos, cobros y saldo contabilizado. Cada decisión se practica, no se liquida.' },
   '/banco': { title: 'Banco FP360', kicker: 'BANCO SIMULADO · OPERACIONES', description: 'Gestiona la liquidez y practica transferencias, financiación y efectos sin operar con bancos reales.' },
+  '/hacienda': { title: 'Hacienda FP360', kicker: 'FISCALIDAD SIMULADA · SIN VALIDEZ OFICIAL', description: 'Prepara y revisa expedientes fiscales educativos; no se presentan declaraciones reales.' },
   '/facturas': { title: 'Facturación', kicker: 'DOCUMENTOS · COBROS', description: 'Emite facturas y registra pagos en el circuito de prácticas.' },
   '/productos': { title: 'Catálogo de productos', kicker: 'CATÁLOGO · INVENTARIO', description: 'Productos inventariables, publicación y ajustes manuales.' },
   '/clientes': { title: 'Directorio de organizaciones', kicker: 'CRM · RED FP360', description: 'Empresas simuladas, centros participantes y relaciones de la red.' },
@@ -1186,6 +1189,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       case '/contabilidad': return <AccountingPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/tesoreria': return <TreasuryPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/banco': return <BankPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/hacienda': return <HaciendaPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/facturas': return <InvoicesPage invoices={invoicesQuery.data} orders={ordersQuery.data} stateInvoices={states.invoices} stateOrders={states.orders} onRefresh={() => { void queryClient.invalidateQueries({ queryKey: getGetFp360DashboardQueryKey() }); void queryClient.invalidateQueries(); }} onNotice={setNotice} />;
       case '/clientes': return <OrganizationsDirectory onNotice={setNotice} />;
       case '/crm': return <CrmPage onNotice={setNotice} />;
@@ -1225,6 +1229,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
         <Route path="/contabilidad">{page}</Route>
         <Route path="/tesoreria">{page}</Route>
         <Route path="/banco">{page}</Route>
+        <Route path="/hacienda">{page}</Route>
         <Route path="/facturas">{page}</Route>
         <Route path="/clientes">{page}</Route>
         <Route path="/crm">{page}</Route>
