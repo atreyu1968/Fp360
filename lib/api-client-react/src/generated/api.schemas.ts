@@ -2396,6 +2396,1148 @@ export interface Fp360TaxDeclarationInput {
   operationId: string;
 }
 
+export type Fp360PayrollPolicyStatus = typeof Fp360PayrollPolicyStatus[keyof typeof Fp360PayrollPolicyStatus];
+
+
+export const Fp360PayrollPolicyStatus = {
+  draft: 'draft',
+  active: 'active',
+  archived: 'archived',
+} as const;
+
+export interface Fp360PayrollPolicy {
+  id: string;
+  organizationId: string;
+  /** @minimum 1 */
+  version: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  workerSocialSecurityBps: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  employerSocialSecurityBps: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  incomeWithholdingBps: number;
+  status: Fp360PayrollPolicyStatus;
+  createdByName: string;
+  /** @nullable */
+  activatedByName: string | null;
+  createdAt: string;
+  /** @nullable */
+  activatedAt: string | null;
+}
+
+export interface Fp360PayrollPolicyInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  workerSocialSecurityBps: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  employerSocialSecurityBps: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  incomeWithholdingBps: number;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360PayrollPolicyActivationInput {
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360PayrollReceiptLine {
+  employeeId: string;
+  workerRef: string;
+  /** @minimum 0 */
+  absenceDays: number;
+  /** @minimum 0 */
+  monthlyBaseCents: number;
+  /** @minimum 0 */
+  complementCents: number;
+  absenceAdjustmentCents: number;
+  /** @minimum 0 */
+  grossCents: number;
+  /** @minimum 0 */
+  contributionBaseCents: number;
+  /** @minimum 0 */
+  workerContributionCents: number;
+  /** @minimum 0 */
+  employerContributionCents: number;
+  /** @minimum 0 */
+  withholdingCents: number;
+  /** @minimum 0 */
+  advancesCents: number;
+  /** @minimum 0 */
+  otherDeductionsCents: number;
+  /** @minimum 0 */
+  netCents: number;
+  /** @minimum 0 */
+  employerCostCents: number;
+  receiptRef: string;
+}
+
+export interface Fp360PayrollEmployeeInput {
+  /** @minLength 1 */
+  employeeId: string;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  complementCents: number;
+  /**
+     * @minimum -1000000000
+     * @maximum 1000000000
+     */
+  absenceAdjustmentCents: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  advancesCents: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  otherDeductionsCents: number;
+}
+
+export type Fp360PayrollRunStatus = typeof Fp360PayrollRunStatus[keyof typeof Fp360PayrollRunStatus];
+
+
+export const Fp360PayrollRunStatus = {
+  draft: 'draft',
+  reviewed: 'reviewed',
+  closed: 'closed',
+  issued: 'issued',
+  payment_prepared: 'payment_prepared',
+  paid_simulated: 'paid_simulated',
+} as const;
+
+export interface Fp360PayrollRun {
+  id: string;
+  organizationId: string;
+  /** @pattern ^2027-(0[1-9]|1[0-2])$ */
+  periodKey: string;
+  /** @minimum 1 */
+  version: number;
+  policyId: string;
+  receiptLines: Fp360PayrollReceiptLine[];
+  /** @minimum 0 */
+  employeeCount: number;
+  /** @minimum 0 */
+  grossTotalCents: number;
+  /** @minimum 0 */
+  netTotalCents: number;
+  /** @minimum 0 */
+  employerCostTotalCents: number;
+  status: Fp360PayrollRunStatus;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Fp360PayrollRunInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /** @pattern ^2027-(0[1-9]|1[0-2])$ */
+  periodKey: string;
+  /** @minLength 1 */
+  policyId: string;
+  /**
+     * @minItems 1
+     * @maxItems 200
+     */
+  employeeInputs: Fp360PayrollEmployeeInput[];
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360PayrollRunActionInputAction = typeof Fp360PayrollRunActionInputAction[keyof typeof Fp360PayrollRunActionInputAction];
+
+
+export const Fp360PayrollRunActionInputAction = {
+  review: 'review',
+  close: 'close',
+  issue: 'issue',
+  prepare_payment: 'prepare_payment',
+  mark_paid_simulated: 'mark_paid_simulated',
+} as const;
+
+export interface Fp360PayrollRunActionInput {
+  action: Fp360PayrollRunActionInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360PayrollEvent {
+  id: string;
+  organizationId: string;
+  eventType: string;
+  description: string;
+  actorName: string;
+  createdAt: string;
+}
+
+export type Fp360PayrollEmployeeSummaryStatus = typeof Fp360PayrollEmployeeSummaryStatus[keyof typeof Fp360PayrollEmployeeSummaryStatus];
+
+
+export const Fp360PayrollEmployeeSummaryStatus = {
+  pending: 'pending',
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface Fp360PayrollEmployeeSummary {
+  id: string;
+  workerRef: string;
+  jobTitle: string;
+  department: string;
+  startDate: string;
+  /** @nullable */
+  endDate: string | null;
+  /** @minimum 0 */
+  annualSalaryCents: number;
+  status: Fp360PayrollEmployeeSummaryStatus;
+}
+
+export type Fp360PayrollOverviewSummary = {
+  /** @minimum 0 */
+  activeEmployees: number;
+  /** @minimum 0 */
+  latestRunCount: number;
+  /** @minimum 0 */
+  latestGrossCents: number;
+  /** @minimum 0 */
+  latestNetCents: number;
+  /** @minimum 0 */
+  pendingApprovals: number;
+};
+
+export interface Fp360PayrollOverview {
+  organizationId: string;
+  simulatedDate: string;
+  policies: Fp360PayrollPolicy[];
+  runs: Fp360PayrollRun[];
+  employees: Fp360PayrollEmployeeSummary[];
+  events: Fp360PayrollEvent[];
+  summary: Fp360PayrollOverviewSummary;
+}
+
+export type Fp360HrVacancyContractType = typeof Fp360HrVacancyContractType[keyof typeof Fp360HrVacancyContractType];
+
+
+export const Fp360HrVacancyContractType = {
+  indefinite: 'indefinite',
+  temporary: 'temporary',
+  part_time: 'part_time',
+  training: 'training',
+} as const;
+
+export type Fp360HrVacancyStatus = typeof Fp360HrVacancyStatus[keyof typeof Fp360HrVacancyStatus];
+
+
+export const Fp360HrVacancyStatus = {
+  open: 'open',
+  filled: 'filled',
+  closed: 'closed',
+} as const;
+
+export interface Fp360HrVacancy {
+  id: string;
+  organizationId: string;
+  jobTitle: string;
+  department: string;
+  contractType: Fp360HrVacancyContractType;
+  description: string;
+  status: Fp360HrVacancyStatus;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type Fp360HrVacancyInputContractType = typeof Fp360HrVacancyInputContractType[keyof typeof Fp360HrVacancyInputContractType];
+
+
+export const Fp360HrVacancyInputContractType = {
+  indefinite: 'indefinite',
+  temporary: 'temporary',
+  part_time: 'part_time',
+  training: 'training',
+} as const;
+
+export interface Fp360HrVacancyInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  jobTitle: string;
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  department: string;
+  contractType: Fp360HrVacancyInputContractType;
+  /**
+     * @minLength 8
+     * @maxLength 600
+     */
+  description: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360HrCandidateStatus = typeof Fp360HrCandidateStatus[keyof typeof Fp360HrCandidateStatus];
+
+
+export const Fp360HrCandidateStatus = {
+  received: 'received',
+  selected: 'selected',
+  rejected: 'rejected',
+} as const;
+
+export interface Fp360HrCandidate {
+  id: string;
+  organizationId: string;
+  vacancyId: string;
+  candidateRef: string;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  trainingScore: number;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  skillsScore: number;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  availabilityScore: number;
+  status: Fp360HrCandidateStatus;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  createdAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
+}
+
+export interface Fp360HrCandidateInput {
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  trainingScore: number;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  skillsScore: number;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  availabilityScore: number;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360HrCandidateDecisionInputAction = typeof Fp360HrCandidateDecisionInputAction[keyof typeof Fp360HrCandidateDecisionInputAction];
+
+
+export const Fp360HrCandidateDecisionInputAction = {
+  select: 'select',
+  reject: 'reject',
+} as const;
+
+export interface Fp360HrCandidateDecisionInput {
+  action: Fp360HrCandidateDecisionInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360HrEmployeeContractType = typeof Fp360HrEmployeeContractType[keyof typeof Fp360HrEmployeeContractType];
+
+
+export const Fp360HrEmployeeContractType = {
+  indefinite: 'indefinite',
+  temporary: 'temporary',
+  part_time: 'part_time',
+  training: 'training',
+} as const;
+
+export type Fp360HrEmployeeStatus = typeof Fp360HrEmployeeStatus[keyof typeof Fp360HrEmployeeStatus];
+
+
+export const Fp360HrEmployeeStatus = {
+  pending: 'pending',
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface Fp360HrEmployee {
+  id: string;
+  organizationId: string;
+  candidateId: string;
+  workerRef: string;
+  jobTitle: string;
+  department: string;
+  contractType: Fp360HrEmployeeContractType;
+  /**
+     * @minimum 1
+     * @maximum 40
+     */
+  weeklyHours: number;
+  /**
+     * @minimum 1
+     * @maximum 11
+     */
+  contributionGroup: number;
+  /** @minimum 0 */
+  annualSalaryCents: number;
+  conventionName: string;
+  virtualBankRef: string;
+  startDate: string;
+  /** @nullable */
+  endDate: string | null;
+  status: Fp360HrEmployeeStatus;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Fp360HrEmployeeInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /** @minLength 1 */
+  candidateId: string;
+  /**
+     * @minimum 1
+     * @maximum 40
+     */
+  weeklyHours: number;
+  /**
+     * @minimum 1
+     * @maximum 11
+     */
+  contributionGroup: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  annualSalaryCents: number;
+  /**
+     * @minLength 3
+     * @maxLength 120
+     */
+  conventionName: string;
+  startDate: string;
+  /** @nullable */
+  endDate?: string | null;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360HrContractDocumentType = typeof Fp360HrContractDocumentType[keyof typeof Fp360HrContractDocumentType];
+
+
+export const Fp360HrContractDocumentType = {
+  initial: 'initial',
+  amendment: 'amendment',
+} as const;
+
+export type Fp360HrContractContractType = typeof Fp360HrContractContractType[keyof typeof Fp360HrContractContractType];
+
+
+export const Fp360HrContractContractType = {
+  indefinite: 'indefinite',
+  temporary: 'temporary',
+  part_time: 'part_time',
+  training: 'training',
+} as const;
+
+export type Fp360HrContractStatus = typeof Fp360HrContractStatus[keyof typeof Fp360HrContractStatus];
+
+
+export const Fp360HrContractStatus = {
+  pending_review: 'pending_review',
+  confirmed: 'confirmed',
+  observed: 'observed',
+} as const;
+
+/**
+ * @nullable
+ */
+export type Fp360HrContractReviewAction = typeof Fp360HrContractReviewAction[keyof typeof Fp360HrContractReviewAction] | null;
+
+
+export const Fp360HrContractReviewAction = {
+  confirm: 'confirm',
+  observe: 'observe',
+} as const;
+
+export interface Fp360HrContract {
+  id: string;
+  organizationId: string;
+  employeeId: string;
+  /** @minimum 1 */
+  version: number;
+  documentType: Fp360HrContractDocumentType;
+  effectiveDate: string;
+  /** @nullable */
+  endDate: string | null;
+  contractType: Fp360HrContractContractType;
+  /**
+     * @minimum 1
+     * @maximum 40
+     */
+  weeklyHours: number;
+  /** @minimum 0 */
+  annualSalaryCents: number;
+  /**
+     * @minimum 1
+     * @maximum 11
+     */
+  contributionGroup: number;
+  conventionName: string;
+  status: Fp360HrContractStatus;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  /** @nullable */
+  reviewAction: Fp360HrContractReviewAction;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
+}
+
+export type Fp360HrContractInputContractType = typeof Fp360HrContractInputContractType[keyof typeof Fp360HrContractInputContractType];
+
+
+export const Fp360HrContractInputContractType = {
+  indefinite: 'indefinite',
+  temporary: 'temporary',
+  part_time: 'part_time',
+  training: 'training',
+} as const;
+
+export interface Fp360HrContractInput {
+  effectiveDate: string;
+  /** @nullable */
+  endDate?: string | null;
+  contractType: Fp360HrContractInputContractType;
+  /**
+     * @minimum 1
+     * @maximum 40
+     */
+  weeklyHours: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  annualSalaryCents: number;
+  /**
+     * @minimum 1
+     * @maximum 11
+     */
+  contributionGroup: number;
+  /**
+     * @minLength 3
+     * @maxLength 120
+     */
+  conventionName: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360HrContractReviewInputAction = typeof Fp360HrContractReviewInputAction[keyof typeof Fp360HrContractReviewInputAction];
+
+
+export const Fp360HrContractReviewInputAction = {
+  confirm: 'confirm',
+  observe: 'observe',
+} as const;
+
+export interface Fp360HrContractReviewInput {
+  action: Fp360HrContractReviewInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360HrAbsenceAbsenceType = typeof Fp360HrAbsenceAbsenceType[keyof typeof Fp360HrAbsenceAbsenceType];
+
+
+export const Fp360HrAbsenceAbsenceType = {
+  vacation: 'vacation',
+  permission: 'permission',
+  other: 'other',
+} as const;
+
+export type Fp360HrAbsenceStatus = typeof Fp360HrAbsenceStatus[keyof typeof Fp360HrAbsenceStatus];
+
+
+export const Fp360HrAbsenceStatus = {
+  pending_review: 'pending_review',
+  approved: 'approved',
+  observed: 'observed',
+} as const;
+
+/**
+ * @nullable
+ */
+export type Fp360HrAbsenceReviewAction = typeof Fp360HrAbsenceReviewAction[keyof typeof Fp360HrAbsenceReviewAction] | null;
+
+
+export const Fp360HrAbsenceReviewAction = {
+  approve: 'approve',
+  observe: 'observe',
+} as const;
+
+export interface Fp360HrAbsence {
+  id: string;
+  organizationId: string;
+  employeeId: string;
+  workerRef: string;
+  absenceType: Fp360HrAbsenceAbsenceType;
+  startDate: string;
+  endDate: string;
+  status: Fp360HrAbsenceStatus;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  /** @nullable */
+  reviewAction: Fp360HrAbsenceReviewAction;
+  createdAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
+}
+
+export type Fp360HrAbsenceInputAbsenceType = typeof Fp360HrAbsenceInputAbsenceType[keyof typeof Fp360HrAbsenceInputAbsenceType];
+
+
+export const Fp360HrAbsenceInputAbsenceType = {
+  vacation: 'vacation',
+  permission: 'permission',
+  other: 'other',
+} as const;
+
+export interface Fp360HrAbsenceInput {
+  absenceType: Fp360HrAbsenceInputAbsenceType;
+  startDate: string;
+  endDate: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360HrAbsenceReviewInputAction = typeof Fp360HrAbsenceReviewInputAction[keyof typeof Fp360HrAbsenceReviewInputAction];
+
+
+export const Fp360HrAbsenceReviewInputAction = {
+  approve: 'approve',
+  observe: 'observe',
+} as const;
+
+export interface Fp360HrAbsenceReviewInput {
+  action: Fp360HrAbsenceReviewInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360HrLifecycleChangeChangeType = typeof Fp360HrLifecycleChangeChangeType[keyof typeof Fp360HrLifecycleChangeChangeType];
+
+
+export const Fp360HrLifecycleChangeChangeType = {
+  termination: 'termination',
+} as const;
+
+export type Fp360HrLifecycleChangeStatus = typeof Fp360HrLifecycleChangeStatus[keyof typeof Fp360HrLifecycleChangeStatus];
+
+
+export const Fp360HrLifecycleChangeStatus = {
+  pending_review: 'pending_review',
+  approved: 'approved',
+  observed: 'observed',
+} as const;
+
+/**
+ * @nullable
+ */
+export type Fp360HrLifecycleChangeReviewAction = typeof Fp360HrLifecycleChangeReviewAction[keyof typeof Fp360HrLifecycleChangeReviewAction] | null;
+
+
+export const Fp360HrLifecycleChangeReviewAction = {
+  approve: 'approve',
+  observe: 'observe',
+} as const;
+
+export interface Fp360HrLifecycleChange {
+  id: string;
+  organizationId: string;
+  employeeId: string;
+  workerRef: string;
+  changeType: Fp360HrLifecycleChangeChangeType;
+  effectiveDate: string;
+  status: Fp360HrLifecycleChangeStatus;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  /** @nullable */
+  reviewAction: Fp360HrLifecycleChangeReviewAction;
+  createdAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
+}
+
+export interface Fp360HrTerminationInput {
+  effectiveDate: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360HrTerminationReviewInputAction = typeof Fp360HrTerminationReviewInputAction[keyof typeof Fp360HrTerminationReviewInputAction];
+
+
+export const Fp360HrTerminationReviewInputAction = {
+  approve: 'approve',
+  observe: 'observe',
+} as const;
+
+export interface Fp360HrTerminationReviewInput {
+  action: Fp360HrTerminationReviewInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360HrEvent {
+  id: string;
+  organizationId: string;
+  eventType: string;
+  description: string;
+  actorName: string;
+  createdAt: string;
+}
+
+export type Fp360HrOverviewSummary = {
+  /** @minimum 0 */
+  activeEmployees: number;
+  /** @minimum 0 */
+  openVacancies: number;
+  /** @minimum 0 */
+  pendingContracts: number;
+  /** @minimum 0 */
+  pendingAbsences: number;
+  /** @minimum 0 */
+  contractsExpiringSoon: number;
+};
+
+export interface Fp360HrOverview {
+  organizationId: string;
+  simulatedDate: string;
+  vacancies: Fp360HrVacancy[];
+  candidates: Fp360HrCandidate[];
+  employees: Fp360HrEmployee[];
+  contracts: Fp360HrContract[];
+  absences: Fp360HrAbsence[];
+  lifecycleChanges: Fp360HrLifecycleChange[];
+  events: Fp360HrEvent[];
+  summary: Fp360HrOverviewSummary;
+}
+
+export type Fp360SocialSecurityWorkerContractType = typeof Fp360SocialSecurityWorkerContractType[keyof typeof Fp360SocialSecurityWorkerContractType];
+
+
+export const Fp360SocialSecurityWorkerContractType = {
+  indefinite: 'indefinite',
+  temporary: 'temporary',
+  part_time: 'part_time',
+  training: 'training',
+} as const;
+
+export type Fp360SocialSecurityWorkerStatus = typeof Fp360SocialSecurityWorkerStatus[keyof typeof Fp360SocialSecurityWorkerStatus];
+
+
+export const Fp360SocialSecurityWorkerStatus = {
+  pending: 'pending',
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface Fp360SocialSecurityWorker {
+  id: string;
+  organizationId: string;
+  workerRef: string;
+  /**
+     * @minimum 1
+     * @maximum 11
+     */
+  contributionGroup: number;
+  contractType: Fp360SocialSecurityWorkerContractType;
+  startDate: string;
+  /** @nullable */
+  endDate: string | null;
+  /** @minimum 0 */
+  monthlyContributionBaseCents: number;
+  /** @minimum 0 */
+  employerContributionCents: number;
+  /** @minimum 0 */
+  workerContributionCents: number;
+  status: Fp360SocialSecurityWorkerStatus;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type Fp360SocialSecurityWorkerInputContractType = typeof Fp360SocialSecurityWorkerInputContractType[keyof typeof Fp360SocialSecurityWorkerInputContractType];
+
+
+export const Fp360SocialSecurityWorkerInputContractType = {
+  indefinite: 'indefinite',
+  temporary: 'temporary',
+  part_time: 'part_time',
+  training: 'training',
+} as const;
+
+export interface Fp360SocialSecurityWorkerInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+     * @minimum 1
+     * @maximum 11
+     */
+  contributionGroup: number;
+  contractType: Fp360SocialSecurityWorkerInputContractType;
+  startDate: string;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  monthlyContributionBaseCents: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  employerContributionCents: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  workerContributionCents: number;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360SocialSecurityMovementOperationType = typeof Fp360SocialSecurityMovementOperationType[keyof typeof Fp360SocialSecurityMovementOperationType];
+
+
+export const Fp360SocialSecurityMovementOperationType = {
+  alta: 'alta',
+  variacion: 'variacion',
+  baja: 'baja',
+} as const;
+
+/**
+ * @nullable
+ */
+export type Fp360SocialSecurityMovementContractType = typeof Fp360SocialSecurityMovementContractType[keyof typeof Fp360SocialSecurityMovementContractType] | null;
+
+
+export const Fp360SocialSecurityMovementContractType = {
+  indefinite: 'indefinite',
+  temporary: 'temporary',
+  part_time: 'part_time',
+  training: 'training',
+} as const;
+
+export type Fp360SocialSecurityMovementStatus = typeof Fp360SocialSecurityMovementStatus[keyof typeof Fp360SocialSecurityMovementStatus];
+
+
+export const Fp360SocialSecurityMovementStatus = {
+  pending_review: 'pending_review',
+  approved: 'approved',
+  observed: 'observed',
+} as const;
+
+/**
+ * @nullable
+ */
+export type Fp360SocialSecurityMovementReviewAction = typeof Fp360SocialSecurityMovementReviewAction[keyof typeof Fp360SocialSecurityMovementReviewAction] | null;
+
+
+export const Fp360SocialSecurityMovementReviewAction = {
+  approve: 'approve',
+  observe: 'observe',
+} as const;
+
+export interface Fp360SocialSecurityMovement {
+  id: string;
+  organizationId: string;
+  workerId: string;
+  workerRef: string;
+  operationType: Fp360SocialSecurityMovementOperationType;
+  effectiveDate: string;
+  /**
+     * @minimum 1
+     * @maximum 11
+     * @nullable
+     */
+  contributionGroup: number | null;
+  /** @nullable */
+  contractType: Fp360SocialSecurityMovementContractType;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  monthlyContributionBaseCents: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  employerContributionCents: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  workerContributionCents: number | null;
+  status: Fp360SocialSecurityMovementStatus;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  /** @nullable */
+  reviewAction: Fp360SocialSecurityMovementReviewAction;
+  createdAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
+}
+
+export type Fp360SocialSecurityMovementInputOperationType = typeof Fp360SocialSecurityMovementInputOperationType[keyof typeof Fp360SocialSecurityMovementInputOperationType];
+
+
+export const Fp360SocialSecurityMovementInputOperationType = {
+  alta: 'alta',
+  variacion: 'variacion',
+  baja: 'baja',
+} as const;
+
+export type Fp360SocialSecurityMovementInputContractType = typeof Fp360SocialSecurityMovementInputContractType[keyof typeof Fp360SocialSecurityMovementInputContractType];
+
+
+export const Fp360SocialSecurityMovementInputContractType = {
+  indefinite: 'indefinite',
+  temporary: 'temporary',
+  part_time: 'part_time',
+  training: 'training',
+} as const;
+
+export interface Fp360SocialSecurityMovementInput {
+  operationType: Fp360SocialSecurityMovementInputOperationType;
+  effectiveDate: string;
+  /**
+     * @minimum 1
+     * @maximum 11
+     */
+  contributionGroup?: number;
+  contractType?: Fp360SocialSecurityMovementInputContractType;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  monthlyContributionBaseCents?: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  employerContributionCents?: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  workerContributionCents?: number;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360SocialSecurityMovementReviewInputAction = typeof Fp360SocialSecurityMovementReviewInputAction[keyof typeof Fp360SocialSecurityMovementReviewInputAction];
+
+
+export const Fp360SocialSecurityMovementReviewInputAction = {
+  approve: 'approve',
+  observe: 'observe',
+} as const;
+
+export interface Fp360SocialSecurityMovementReviewInput {
+  action: Fp360SocialSecurityMovementReviewInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360SocialSecuritySettlementStatus = typeof Fp360SocialSecuritySettlementStatus[keyof typeof Fp360SocialSecuritySettlementStatus];
+
+
+export const Fp360SocialSecuritySettlementStatus = {
+  draft: 'draft',
+  reviewed: 'reviewed',
+  closed_simulated: 'closed_simulated',
+} as const;
+
+export interface Fp360SocialSecuritySettlement {
+  id: string;
+  organizationId: string;
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
+  periodKey: string;
+  workerRefs: string[];
+  /** @minimum 0 */
+  workerCount: number;
+  /** @minimum 0 */
+  contributionBaseCents: number;
+  /** @minimum 0 */
+  employerContributionCents: number;
+  /** @minimum 0 */
+  workerContributionCents: number;
+  /** @minimum 0 */
+  totalContributionCents: number;
+  status: Fp360SocialSecuritySettlementStatus;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Fp360SocialSecuritySettlementInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
+  periodKey: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360SocialSecuritySettlementReviewInputAction = typeof Fp360SocialSecuritySettlementReviewInputAction[keyof typeof Fp360SocialSecuritySettlementReviewInputAction];
+
+
+export const Fp360SocialSecuritySettlementReviewInputAction = {
+  review: 'review',
+  close: 'close',
+} as const;
+
+export interface Fp360SocialSecuritySettlementReviewInput {
+  action: Fp360SocialSecuritySettlementReviewInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360SocialSecurityEvent {
+  id: string;
+  organizationId: string;
+  eventType: string;
+  description: string;
+  actorName: string;
+  createdAt: string;
+}
+
+export type Fp360SocialSecurityOverviewSummary = {
+  /** @minimum 0 */
+  activeWorkers: number;
+  /** @minimum 0 */
+  pendingMovements: number;
+  /** @minimum 0 */
+  openSettlements: number;
+  /** @minimum 0 */
+  monthlyEmployerContributionCents: number;
+  /** @minimum 0 */
+  monthlyWorkerContributionCents: number;
+};
+
+export interface Fp360SocialSecurityOverview {
+  organizationId: string;
+  simulatedDate: string;
+  workers: Fp360SocialSecurityWorker[];
+  movements: Fp360SocialSecurityMovement[];
+  settlements: Fp360SocialSecuritySettlement[];
+  events: Fp360SocialSecurityEvent[];
+  summary: Fp360SocialSecurityOverviewSummary;
+}
+
 export type Fp360TaxProfileInputEntityType = typeof Fp360TaxProfileInputEntityType[keyof typeof Fp360TaxProfileInputEntityType];
 
 
@@ -3527,6 +4669,27 @@ organizationId: string;
 };
 
 export type GetFp360TaxOverviewParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+};
+
+export type GetFp360PayrollOverviewParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+};
+
+export type GetFp360HrOverviewParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+};
+
+export type GetFp360SocialSecurityOverviewParams = {
 /**
  * @minLength 1
  */

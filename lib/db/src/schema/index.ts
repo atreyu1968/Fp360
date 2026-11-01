@@ -20,4 +20,7 @@
 export * from "./redfp360";
 export * from "./redfp360-bank";
 export * from "./redfp360-tax";
+export * from "./redfp360-social-security";
+export * from "./redfp360-hr";
+export * from "./redfp360-payroll";
 export * from "./auth";

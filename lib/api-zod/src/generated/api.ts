@@ -4607,6 +4607,1489 @@ export const GetFp360TaxOverviewResponse = zod.object({
 
 
 /**
+ * @summary Get educational payroll policies and monthly payroll runs
+ */
+
+
+
+export const GetFp360PayrollOverviewQueryParams = zod.object({
+  "organizationId": zod.coerce.string().min(1)
+})
+
+
+export const getFp360PayrollOverviewResponsePoliciesItemWorkerSocialSecurityBpsMin = 0;
+export const getFp360PayrollOverviewResponsePoliciesItemWorkerSocialSecurityBpsMax = 10000;
+
+export const getFp360PayrollOverviewResponsePoliciesItemEmployerSocialSecurityBpsMin = 0;
+export const getFp360PayrollOverviewResponsePoliciesItemEmployerSocialSecurityBpsMax = 10000;
+
+export const getFp360PayrollOverviewResponsePoliciesItemIncomeWithholdingBpsMin = 0;
+export const getFp360PayrollOverviewResponsePoliciesItemIncomeWithholdingBpsMax = 10000;
+
+export const getFp360PayrollOverviewResponseRunsItemPeriodKeyRegExp = new RegExp('^2027-(0[1-9]|1[0-2])$');
+
+export const getFp360PayrollOverviewResponseRunsItemReceiptLinesItemAbsenceDaysMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemReceiptLinesItemMonthlyBaseCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemReceiptLinesItemComplementCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemReceiptLinesItemGrossCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemReceiptLinesItemContributionBaseCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemReceiptLinesItemWorkerContributionCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemReceiptLinesItemEmployerContributionCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemReceiptLinesItemWithholdingCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemReceiptLinesItemAdvancesCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemReceiptLinesItemOtherDeductionsCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemReceiptLinesItemNetCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemReceiptLinesItemEmployerCostCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemEmployeeCountMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemGrossTotalCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemNetTotalCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseRunsItemEmployerCostTotalCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseEmployeesItemAnnualSalaryCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseSummaryActiveEmployeesMin = 0;
+
+export const getFp360PayrollOverviewResponseSummaryLatestRunCountMin = 0;
+
+export const getFp360PayrollOverviewResponseSummaryLatestGrossCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseSummaryLatestNetCentsMin = 0;
+
+export const getFp360PayrollOverviewResponseSummaryPendingApprovalsMin = 0;
+
+
+
+export const GetFp360PayrollOverviewResponse = zod.object({
+  "organizationId": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "policies": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "version": zod.number().int().min(1),
+  "workerSocialSecurityBps": zod.number().int().min(getFp360PayrollOverviewResponsePoliciesItemWorkerSocialSecurityBpsMin).max(getFp360PayrollOverviewResponsePoliciesItemWorkerSocialSecurityBpsMax),
+  "employerSocialSecurityBps": zod.number().int().min(getFp360PayrollOverviewResponsePoliciesItemEmployerSocialSecurityBpsMin).max(getFp360PayrollOverviewResponsePoliciesItemEmployerSocialSecurityBpsMax),
+  "incomeWithholdingBps": zod.number().int().min(getFp360PayrollOverviewResponsePoliciesItemIncomeWithholdingBpsMin).max(getFp360PayrollOverviewResponsePoliciesItemIncomeWithholdingBpsMax),
+  "status": zod.enum(['draft', 'active', 'archived']),
+  "createdByName": zod.string(),
+  "activatedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "activatedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "runs": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "periodKey": zod.string().regex(getFp360PayrollOverviewResponseRunsItemPeriodKeyRegExp),
+  "version": zod.number().int().min(1),
+  "policyId": zod.string(),
+  "receiptLines": zod.array(zod.object({
+  "employeeId": zod.string(),
+  "workerRef": zod.string(),
+  "absenceDays": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemReceiptLinesItemAbsenceDaysMin),
+  "monthlyBaseCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemReceiptLinesItemMonthlyBaseCentsMin),
+  "complementCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemReceiptLinesItemComplementCentsMin),
+  "absenceAdjustmentCents": zod.number().int(),
+  "grossCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemReceiptLinesItemGrossCentsMin),
+  "contributionBaseCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemReceiptLinesItemContributionBaseCentsMin),
+  "workerContributionCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemReceiptLinesItemWorkerContributionCentsMin),
+  "employerContributionCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemReceiptLinesItemEmployerContributionCentsMin),
+  "withholdingCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemReceiptLinesItemWithholdingCentsMin),
+  "advancesCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemReceiptLinesItemAdvancesCentsMin),
+  "otherDeductionsCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemReceiptLinesItemOtherDeductionsCentsMin),
+  "netCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemReceiptLinesItemNetCentsMin),
+  "employerCostCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemReceiptLinesItemEmployerCostCentsMin),
+  "receiptRef": zod.string()
+})),
+  "employeeCount": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemEmployeeCountMin),
+  "grossTotalCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemGrossTotalCentsMin),
+  "netTotalCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemNetTotalCentsMin),
+  "employerCostTotalCents": zod.number().int().min(getFp360PayrollOverviewResponseRunsItemEmployerCostTotalCentsMin),
+  "status": zod.enum(['draft', 'reviewed', 'closed', 'issued', 'payment_prepared', 'paid_simulated']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})),
+  "employees": zod.array(zod.object({
+  "id": zod.string(),
+  "workerRef": zod.string(),
+  "jobTitle": zod.string(),
+  "department": zod.string(),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date().nullable(),
+  "annualSalaryCents": zod.number().int().min(getFp360PayrollOverviewResponseEmployeesItemAnnualSalaryCentsMin),
+  "status": zod.enum(['pending', 'active', 'inactive'])
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "eventType": zod.string(),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "summary": zod.object({
+  "activeEmployees": zod.number().int().min(getFp360PayrollOverviewResponseSummaryActiveEmployeesMin),
+  "latestRunCount": zod.number().int().min(getFp360PayrollOverviewResponseSummaryLatestRunCountMin),
+  "latestGrossCents": zod.number().int().min(getFp360PayrollOverviewResponseSummaryLatestGrossCentsMin),
+  "latestNetCents": zod.number().int().min(getFp360PayrollOverviewResponseSummaryLatestNetCentsMin),
+  "pendingApprovals": zod.number().int().min(getFp360PayrollOverviewResponseSummaryPendingApprovalsMin)
+})
+})
+
+
+/**
+ * @summary Create a versioned educational payroll policy
+ */
+
+export const createFp360PayrollPolicyBodyWorkerSocialSecurityBpsMin = 0;
+export const createFp360PayrollPolicyBodyWorkerSocialSecurityBpsMax = 10000;
+
+export const createFp360PayrollPolicyBodyEmployerSocialSecurityBpsMin = 0;
+export const createFp360PayrollPolicyBodyEmployerSocialSecurityBpsMax = 10000;
+
+export const createFp360PayrollPolicyBodyIncomeWithholdingBpsMin = 0;
+export const createFp360PayrollPolicyBodyIncomeWithholdingBpsMax = 10000;
+
+export const createFp360PayrollPolicyBodyOperationIdMin = 8;
+export const createFp360PayrollPolicyBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360PayrollPolicyBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "workerSocialSecurityBps": zod.number().int().min(createFp360PayrollPolicyBodyWorkerSocialSecurityBpsMin).max(createFp360PayrollPolicyBodyWorkerSocialSecurityBpsMax),
+  "employerSocialSecurityBps": zod.number().int().min(createFp360PayrollPolicyBodyEmployerSocialSecurityBpsMin).max(createFp360PayrollPolicyBodyEmployerSocialSecurityBpsMax),
+  "incomeWithholdingBps": zod.number().int().min(createFp360PayrollPolicyBodyIncomeWithholdingBpsMin).max(createFp360PayrollPolicyBodyIncomeWithholdingBpsMax),
+  "operationId": zod.string().min(createFp360PayrollPolicyBodyOperationIdMin).max(createFp360PayrollPolicyBodyOperationIdMax)
+})
+
+
+export const createFp360PayrollPolicyResponseWorkerSocialSecurityBpsMin = 0;
+export const createFp360PayrollPolicyResponseWorkerSocialSecurityBpsMax = 10000;
+
+export const createFp360PayrollPolicyResponseEmployerSocialSecurityBpsMin = 0;
+export const createFp360PayrollPolicyResponseEmployerSocialSecurityBpsMax = 10000;
+
+export const createFp360PayrollPolicyResponseIncomeWithholdingBpsMin = 0;
+export const createFp360PayrollPolicyResponseIncomeWithholdingBpsMax = 10000;
+
+
+
+export const CreateFp360PayrollPolicyResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "version": zod.number().int().min(1),
+  "workerSocialSecurityBps": zod.number().int().min(createFp360PayrollPolicyResponseWorkerSocialSecurityBpsMin).max(createFp360PayrollPolicyResponseWorkerSocialSecurityBpsMax),
+  "employerSocialSecurityBps": zod.number().int().min(createFp360PayrollPolicyResponseEmployerSocialSecurityBpsMin).max(createFp360PayrollPolicyResponseEmployerSocialSecurityBpsMax),
+  "incomeWithholdingBps": zod.number().int().min(createFp360PayrollPolicyResponseIncomeWithholdingBpsMin).max(createFp360PayrollPolicyResponseIncomeWithholdingBpsMax),
+  "status": zod.enum(['draft', 'active', 'archived']),
+  "createdByName": zod.string(),
+  "activatedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "activatedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Activate a reviewed educational payroll policy
+ */
+
+
+
+export const ActivateFp360PayrollPolicyParams = zod.object({
+  "policyId": zod.coerce.string().min(1)
+})
+
+export const activateFp360PayrollPolicyBodyOperationIdMin = 8;
+export const activateFp360PayrollPolicyBodyOperationIdMax = 120;
+
+
+
+export const ActivateFp360PayrollPolicyBody = zod.object({
+  "operationId": zod.string().min(activateFp360PayrollPolicyBodyOperationIdMin).max(activateFp360PayrollPolicyBodyOperationIdMax)
+})
+
+
+export const activateFp360PayrollPolicyResponseWorkerSocialSecurityBpsMin = 0;
+export const activateFp360PayrollPolicyResponseWorkerSocialSecurityBpsMax = 10000;
+
+export const activateFp360PayrollPolicyResponseEmployerSocialSecurityBpsMin = 0;
+export const activateFp360PayrollPolicyResponseEmployerSocialSecurityBpsMax = 10000;
+
+export const activateFp360PayrollPolicyResponseIncomeWithholdingBpsMin = 0;
+export const activateFp360PayrollPolicyResponseIncomeWithholdingBpsMax = 10000;
+
+
+
+export const ActivateFp360PayrollPolicyResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "version": zod.number().int().min(1),
+  "workerSocialSecurityBps": zod.number().int().min(activateFp360PayrollPolicyResponseWorkerSocialSecurityBpsMin).max(activateFp360PayrollPolicyResponseWorkerSocialSecurityBpsMax),
+  "employerSocialSecurityBps": zod.number().int().min(activateFp360PayrollPolicyResponseEmployerSocialSecurityBpsMin).max(activateFp360PayrollPolicyResponseEmployerSocialSecurityBpsMax),
+  "incomeWithholdingBps": zod.number().int().min(activateFp360PayrollPolicyResponseIncomeWithholdingBpsMin).max(activateFp360PayrollPolicyResponseIncomeWithholdingBpsMax),
+  "status": zod.enum(['draft', 'active', 'archived']),
+  "createdByName": zod.string(),
+  "activatedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "activatedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Calculate a payroll run using active employees and educational parameters
+ */
+
+export const createFp360PayrollRunBodyPeriodKeyRegExp = new RegExp('^2027-(0[1-9]|1[0-2])$');
+
+
+export const createFp360PayrollRunBodyEmployeeInputsItemComplementCentsMin = 0;
+export const createFp360PayrollRunBodyEmployeeInputsItemComplementCentsMax = 1000000000;
+
+export const createFp360PayrollRunBodyEmployeeInputsItemAbsenceAdjustmentCentsMin = -1000000000;
+export const createFp360PayrollRunBodyEmployeeInputsItemAbsenceAdjustmentCentsMax = 1000000000;
+
+export const createFp360PayrollRunBodyEmployeeInputsItemAdvancesCentsMin = 0;
+export const createFp360PayrollRunBodyEmployeeInputsItemAdvancesCentsMax = 1000000000;
+
+export const createFp360PayrollRunBodyEmployeeInputsItemOtherDeductionsCentsMin = 0;
+export const createFp360PayrollRunBodyEmployeeInputsItemOtherDeductionsCentsMax = 1000000000;
+
+export const createFp360PayrollRunBodyEmployeeInputsMax = 200;
+
+export const createFp360PayrollRunBodyOperationIdMin = 8;
+export const createFp360PayrollRunBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360PayrollRunBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "periodKey": zod.string().regex(createFp360PayrollRunBodyPeriodKeyRegExp),
+  "policyId": zod.string().min(1),
+  "employeeInputs": zod.array(zod.object({
+  "employeeId": zod.string().min(1),
+  "complementCents": zod.number().int().min(createFp360PayrollRunBodyEmployeeInputsItemComplementCentsMin).max(createFp360PayrollRunBodyEmployeeInputsItemComplementCentsMax),
+  "absenceAdjustmentCents": zod.number().int().min(createFp360PayrollRunBodyEmployeeInputsItemAbsenceAdjustmentCentsMin).max(createFp360PayrollRunBodyEmployeeInputsItemAbsenceAdjustmentCentsMax),
+  "advancesCents": zod.number().int().min(createFp360PayrollRunBodyEmployeeInputsItemAdvancesCentsMin).max(createFp360PayrollRunBodyEmployeeInputsItemAdvancesCentsMax),
+  "otherDeductionsCents": zod.number().int().min(createFp360PayrollRunBodyEmployeeInputsItemOtherDeductionsCentsMin).max(createFp360PayrollRunBodyEmployeeInputsItemOtherDeductionsCentsMax)
+})).min(1).max(createFp360PayrollRunBodyEmployeeInputsMax),
+  "operationId": zod.string().min(createFp360PayrollRunBodyOperationIdMin).max(createFp360PayrollRunBodyOperationIdMax)
+})
+
+export const createFp360PayrollRunResponsePeriodKeyRegExp = new RegExp('^2027-(0[1-9]|1[0-2])$');
+
+export const createFp360PayrollRunResponseReceiptLinesItemAbsenceDaysMin = 0;
+
+export const createFp360PayrollRunResponseReceiptLinesItemMonthlyBaseCentsMin = 0;
+
+export const createFp360PayrollRunResponseReceiptLinesItemComplementCentsMin = 0;
+
+export const createFp360PayrollRunResponseReceiptLinesItemGrossCentsMin = 0;
+
+export const createFp360PayrollRunResponseReceiptLinesItemContributionBaseCentsMin = 0;
+
+export const createFp360PayrollRunResponseReceiptLinesItemWorkerContributionCentsMin = 0;
+
+export const createFp360PayrollRunResponseReceiptLinesItemEmployerContributionCentsMin = 0;
+
+export const createFp360PayrollRunResponseReceiptLinesItemWithholdingCentsMin = 0;
+
+export const createFp360PayrollRunResponseReceiptLinesItemAdvancesCentsMin = 0;
+
+export const createFp360PayrollRunResponseReceiptLinesItemOtherDeductionsCentsMin = 0;
+
+export const createFp360PayrollRunResponseReceiptLinesItemNetCentsMin = 0;
+
+export const createFp360PayrollRunResponseReceiptLinesItemEmployerCostCentsMin = 0;
+
+export const createFp360PayrollRunResponseEmployeeCountMin = 0;
+
+export const createFp360PayrollRunResponseGrossTotalCentsMin = 0;
+
+export const createFp360PayrollRunResponseNetTotalCentsMin = 0;
+
+export const createFp360PayrollRunResponseEmployerCostTotalCentsMin = 0;
+
+
+
+export const CreateFp360PayrollRunResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "periodKey": zod.string().regex(createFp360PayrollRunResponsePeriodKeyRegExp),
+  "version": zod.number().int().min(1),
+  "policyId": zod.string(),
+  "receiptLines": zod.array(zod.object({
+  "employeeId": zod.string(),
+  "workerRef": zod.string(),
+  "absenceDays": zod.number().int().min(createFp360PayrollRunResponseReceiptLinesItemAbsenceDaysMin),
+  "monthlyBaseCents": zod.number().int().min(createFp360PayrollRunResponseReceiptLinesItemMonthlyBaseCentsMin),
+  "complementCents": zod.number().int().min(createFp360PayrollRunResponseReceiptLinesItemComplementCentsMin),
+  "absenceAdjustmentCents": zod.number().int(),
+  "grossCents": zod.number().int().min(createFp360PayrollRunResponseReceiptLinesItemGrossCentsMin),
+  "contributionBaseCents": zod.number().int().min(createFp360PayrollRunResponseReceiptLinesItemContributionBaseCentsMin),
+  "workerContributionCents": zod.number().int().min(createFp360PayrollRunResponseReceiptLinesItemWorkerContributionCentsMin),
+  "employerContributionCents": zod.number().int().min(createFp360PayrollRunResponseReceiptLinesItemEmployerContributionCentsMin),
+  "withholdingCents": zod.number().int().min(createFp360PayrollRunResponseReceiptLinesItemWithholdingCentsMin),
+  "advancesCents": zod.number().int().min(createFp360PayrollRunResponseReceiptLinesItemAdvancesCentsMin),
+  "otherDeductionsCents": zod.number().int().min(createFp360PayrollRunResponseReceiptLinesItemOtherDeductionsCentsMin),
+  "netCents": zod.number().int().min(createFp360PayrollRunResponseReceiptLinesItemNetCentsMin),
+  "employerCostCents": zod.number().int().min(createFp360PayrollRunResponseReceiptLinesItemEmployerCostCentsMin),
+  "receiptRef": zod.string()
+})),
+  "employeeCount": zod.number().int().min(createFp360PayrollRunResponseEmployeeCountMin),
+  "grossTotalCents": zod.number().int().min(createFp360PayrollRunResponseGrossTotalCentsMin),
+  "netTotalCents": zod.number().int().min(createFp360PayrollRunResponseNetTotalCentsMin),
+  "employerCostTotalCents": zod.number().int().min(createFp360PayrollRunResponseEmployerCostTotalCentsMin),
+  "status": zod.enum(['draft', 'reviewed', 'closed', 'issued', 'payment_prepared', 'paid_simulated']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Review, close, issue, or simulate payment of a payroll run
+ */
+
+
+
+export const ActOnFp360PayrollRunParams = zod.object({
+  "runId": zod.coerce.string().min(1)
+})
+
+export const actOnFp360PayrollRunBodyOperationIdMin = 8;
+export const actOnFp360PayrollRunBodyOperationIdMax = 120;
+
+
+
+export const ActOnFp360PayrollRunBody = zod.object({
+  "action": zod.enum(['review', 'close', 'issue', 'prepare_payment', 'mark_paid_simulated']),
+  "operationId": zod.string().min(actOnFp360PayrollRunBodyOperationIdMin).max(actOnFp360PayrollRunBodyOperationIdMax)
+})
+
+export const actOnFp360PayrollRunResponsePeriodKeyRegExp = new RegExp('^2027-(0[1-9]|1[0-2])$');
+
+export const actOnFp360PayrollRunResponseReceiptLinesItemAbsenceDaysMin = 0;
+
+export const actOnFp360PayrollRunResponseReceiptLinesItemMonthlyBaseCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseReceiptLinesItemComplementCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseReceiptLinesItemGrossCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseReceiptLinesItemContributionBaseCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseReceiptLinesItemWorkerContributionCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseReceiptLinesItemEmployerContributionCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseReceiptLinesItemWithholdingCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseReceiptLinesItemAdvancesCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseReceiptLinesItemOtherDeductionsCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseReceiptLinesItemNetCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseReceiptLinesItemEmployerCostCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseEmployeeCountMin = 0;
+
+export const actOnFp360PayrollRunResponseGrossTotalCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseNetTotalCentsMin = 0;
+
+export const actOnFp360PayrollRunResponseEmployerCostTotalCentsMin = 0;
+
+
+
+export const ActOnFp360PayrollRunResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "periodKey": zod.string().regex(actOnFp360PayrollRunResponsePeriodKeyRegExp),
+  "version": zod.number().int().min(1),
+  "policyId": zod.string(),
+  "receiptLines": zod.array(zod.object({
+  "employeeId": zod.string(),
+  "workerRef": zod.string(),
+  "absenceDays": zod.number().int().min(actOnFp360PayrollRunResponseReceiptLinesItemAbsenceDaysMin),
+  "monthlyBaseCents": zod.number().int().min(actOnFp360PayrollRunResponseReceiptLinesItemMonthlyBaseCentsMin),
+  "complementCents": zod.number().int().min(actOnFp360PayrollRunResponseReceiptLinesItemComplementCentsMin),
+  "absenceAdjustmentCents": zod.number().int(),
+  "grossCents": zod.number().int().min(actOnFp360PayrollRunResponseReceiptLinesItemGrossCentsMin),
+  "contributionBaseCents": zod.number().int().min(actOnFp360PayrollRunResponseReceiptLinesItemContributionBaseCentsMin),
+  "workerContributionCents": zod.number().int().min(actOnFp360PayrollRunResponseReceiptLinesItemWorkerContributionCentsMin),
+  "employerContributionCents": zod.number().int().min(actOnFp360PayrollRunResponseReceiptLinesItemEmployerContributionCentsMin),
+  "withholdingCents": zod.number().int().min(actOnFp360PayrollRunResponseReceiptLinesItemWithholdingCentsMin),
+  "advancesCents": zod.number().int().min(actOnFp360PayrollRunResponseReceiptLinesItemAdvancesCentsMin),
+  "otherDeductionsCents": zod.number().int().min(actOnFp360PayrollRunResponseReceiptLinesItemOtherDeductionsCentsMin),
+  "netCents": zod.number().int().min(actOnFp360PayrollRunResponseReceiptLinesItemNetCentsMin),
+  "employerCostCents": zod.number().int().min(actOnFp360PayrollRunResponseReceiptLinesItemEmployerCostCentsMin),
+  "receiptRef": zod.string()
+})),
+  "employeeCount": zod.number().int().min(actOnFp360PayrollRunResponseEmployeeCountMin),
+  "grossTotalCents": zod.number().int().min(actOnFp360PayrollRunResponseGrossTotalCentsMin),
+  "netTotalCents": zod.number().int().min(actOnFp360PayrollRunResponseNetTotalCentsMin),
+  "employerCostTotalCents": zod.number().int().min(actOnFp360PayrollRunResponseEmployerCostTotalCentsMin),
+  "status": zod.enum(['draft', 'reviewed', 'closed', 'issued', 'payment_prepared', 'paid_simulated']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Get fictional workforce, hiring, contract, and absence records
+ */
+
+
+
+export const GetFp360HrOverviewQueryParams = zod.object({
+  "organizationId": zod.coerce.string().min(1)
+})
+
+export const getFp360HrOverviewResponseCandidatesItemTrainingScoreMin = 0;
+export const getFp360HrOverviewResponseCandidatesItemTrainingScoreMax = 5;
+
+export const getFp360HrOverviewResponseCandidatesItemSkillsScoreMin = 0;
+export const getFp360HrOverviewResponseCandidatesItemSkillsScoreMax = 5;
+
+export const getFp360HrOverviewResponseCandidatesItemAvailabilityScoreMin = 0;
+export const getFp360HrOverviewResponseCandidatesItemAvailabilityScoreMax = 5;
+
+export const getFp360HrOverviewResponseEmployeesItemWeeklyHoursMax = 40;
+
+export const getFp360HrOverviewResponseEmployeesItemContributionGroupMax = 11;
+
+export const getFp360HrOverviewResponseEmployeesItemAnnualSalaryCentsMin = 0;
+
+
+export const getFp360HrOverviewResponseContractsItemWeeklyHoursMax = 40;
+
+export const getFp360HrOverviewResponseContractsItemAnnualSalaryCentsMin = 0;
+
+export const getFp360HrOverviewResponseContractsItemContributionGroupMax = 11;
+
+export const getFp360HrOverviewResponseSummaryActiveEmployeesMin = 0;
+
+export const getFp360HrOverviewResponseSummaryOpenVacanciesMin = 0;
+
+export const getFp360HrOverviewResponseSummaryPendingContractsMin = 0;
+
+export const getFp360HrOverviewResponseSummaryPendingAbsencesMin = 0;
+
+export const getFp360HrOverviewResponseSummaryContractsExpiringSoonMin = 0;
+
+
+
+export const GetFp360HrOverviewResponse = zod.object({
+  "organizationId": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "vacancies": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "jobTitle": zod.string(),
+  "department": zod.string(),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "description": zod.string(),
+  "status": zod.enum(['open', 'filled', 'closed']),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})),
+  "candidates": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "vacancyId": zod.string(),
+  "candidateRef": zod.string(),
+  "trainingScore": zod.number().int().min(getFp360HrOverviewResponseCandidatesItemTrainingScoreMin).max(getFp360HrOverviewResponseCandidatesItemTrainingScoreMax),
+  "skillsScore": zod.number().int().min(getFp360HrOverviewResponseCandidatesItemSkillsScoreMin).max(getFp360HrOverviewResponseCandidatesItemSkillsScoreMax),
+  "availabilityScore": zod.number().int().min(getFp360HrOverviewResponseCandidatesItemAvailabilityScoreMin).max(getFp360HrOverviewResponseCandidatesItemAvailabilityScoreMax),
+  "status": zod.enum(['received', 'selected', 'rejected']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "employees": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "candidateId": zod.string(),
+  "workerRef": zod.string(),
+  "jobTitle": zod.string(),
+  "department": zod.string(),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "weeklyHours": zod.number().int().min(1).max(getFp360HrOverviewResponseEmployeesItemWeeklyHoursMax),
+  "contributionGroup": zod.number().int().min(1).max(getFp360HrOverviewResponseEmployeesItemContributionGroupMax),
+  "annualSalaryCents": zod.number().int().min(getFp360HrOverviewResponseEmployeesItemAnnualSalaryCentsMin),
+  "conventionName": zod.string(),
+  "virtualBankRef": zod.string(),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date().nullable(),
+  "status": zod.enum(['pending', 'active', 'inactive']),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})),
+  "contracts": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "employeeId": zod.string(),
+  "version": zod.number().int().min(1),
+  "documentType": zod.enum(['initial', 'amendment']),
+  "effectiveDate": zod.string().date(),
+  "endDate": zod.string().date().nullable(),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "weeklyHours": zod.number().int().min(1).max(getFp360HrOverviewResponseContractsItemWeeklyHoursMax),
+  "annualSalaryCents": zod.number().int().min(getFp360HrOverviewResponseContractsItemAnnualSalaryCentsMin),
+  "contributionGroup": zod.number().int().min(1).max(getFp360HrOverviewResponseContractsItemContributionGroupMax),
+  "conventionName": zod.string(),
+  "status": zod.enum(['pending_review', 'confirmed', 'observed']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "reviewAction": zod.union([zod.literal('confirm'),zod.literal('observe'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "absences": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "employeeId": zod.string(),
+  "workerRef": zod.string(),
+  "absenceType": zod.enum(['vacation', 'permission', 'other']),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date(),
+  "status": zod.enum(['pending_review', 'approved', 'observed']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "reviewAction": zod.union([zod.literal('approve'),zod.literal('observe'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "lifecycleChanges": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "employeeId": zod.string(),
+  "workerRef": zod.string(),
+  "changeType": zod.enum(['termination']),
+  "effectiveDate": zod.string().date(),
+  "status": zod.enum(['pending_review', 'approved', 'observed']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "reviewAction": zod.union([zod.literal('approve'),zod.literal('observe'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "eventType": zod.string(),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "summary": zod.object({
+  "activeEmployees": zod.number().int().min(getFp360HrOverviewResponseSummaryActiveEmployeesMin),
+  "openVacancies": zod.number().int().min(getFp360HrOverviewResponseSummaryOpenVacanciesMin),
+  "pendingContracts": zod.number().int().min(getFp360HrOverviewResponseSummaryPendingContractsMin),
+  "pendingAbsences": zod.number().int().min(getFp360HrOverviewResponseSummaryPendingAbsencesMin),
+  "contractsExpiringSoon": zod.number().int().min(getFp360HrOverviewResponseSummaryContractsExpiringSoonMin)
+})
+})
+
+
+/**
+ * @summary Create a fictional internal vacancy
+ */
+
+export const createFp360HrVacancyBodyJobTitleMin = 2;
+export const createFp360HrVacancyBodyJobTitleMax = 120;
+
+export const createFp360HrVacancyBodyDepartmentMin = 2;
+export const createFp360HrVacancyBodyDepartmentMax = 80;
+
+export const createFp360HrVacancyBodyDescriptionMin = 8;
+export const createFp360HrVacancyBodyDescriptionMax = 600;
+
+export const createFp360HrVacancyBodyOperationIdMin = 8;
+export const createFp360HrVacancyBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360HrVacancyBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "jobTitle": zod.string().min(createFp360HrVacancyBodyJobTitleMin).max(createFp360HrVacancyBodyJobTitleMax),
+  "department": zod.string().min(createFp360HrVacancyBodyDepartmentMin).max(createFp360HrVacancyBodyDepartmentMax),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "description": zod.string().min(createFp360HrVacancyBodyDescriptionMin).max(createFp360HrVacancyBodyDescriptionMax),
+  "operationId": zod.string().min(createFp360HrVacancyBodyOperationIdMin).max(createFp360HrVacancyBodyOperationIdMax)
+})
+
+export const CreateFp360HrVacancyResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "jobTitle": zod.string(),
+  "department": zod.string(),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "description": zod.string(),
+  "status": zod.enum(['open', 'filled', 'closed']),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Add a pseudonymous candidate with objective training scores
+ */
+
+
+
+export const CreateFp360HrCandidateParams = zod.object({
+  "vacancyId": zod.coerce.string().min(1)
+})
+
+export const createFp360HrCandidateBodyTrainingScoreMin = 0;
+export const createFp360HrCandidateBodyTrainingScoreMax = 5;
+
+export const createFp360HrCandidateBodySkillsScoreMin = 0;
+export const createFp360HrCandidateBodySkillsScoreMax = 5;
+
+export const createFp360HrCandidateBodyAvailabilityScoreMin = 0;
+export const createFp360HrCandidateBodyAvailabilityScoreMax = 5;
+
+export const createFp360HrCandidateBodyOperationIdMin = 8;
+export const createFp360HrCandidateBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360HrCandidateBody = zod.object({
+  "trainingScore": zod.number().int().min(createFp360HrCandidateBodyTrainingScoreMin).max(createFp360HrCandidateBodyTrainingScoreMax),
+  "skillsScore": zod.number().int().min(createFp360HrCandidateBodySkillsScoreMin).max(createFp360HrCandidateBodySkillsScoreMax),
+  "availabilityScore": zod.number().int().min(createFp360HrCandidateBodyAvailabilityScoreMin).max(createFp360HrCandidateBodyAvailabilityScoreMax),
+  "operationId": zod.string().min(createFp360HrCandidateBodyOperationIdMin).max(createFp360HrCandidateBodyOperationIdMax)
+})
+
+export const createFp360HrCandidateResponseTrainingScoreMin = 0;
+export const createFp360HrCandidateResponseTrainingScoreMax = 5;
+
+export const createFp360HrCandidateResponseSkillsScoreMin = 0;
+export const createFp360HrCandidateResponseSkillsScoreMax = 5;
+
+export const createFp360HrCandidateResponseAvailabilityScoreMin = 0;
+export const createFp360HrCandidateResponseAvailabilityScoreMax = 5;
+
+
+
+export const CreateFp360HrCandidateResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "vacancyId": zod.string(),
+  "candidateRef": zod.string(),
+  "trainingScore": zod.number().int().min(createFp360HrCandidateResponseTrainingScoreMin).max(createFp360HrCandidateResponseTrainingScoreMax),
+  "skillsScore": zod.number().int().min(createFp360HrCandidateResponseSkillsScoreMin).max(createFp360HrCandidateResponseSkillsScoreMax),
+  "availabilityScore": zod.number().int().min(createFp360HrCandidateResponseAvailabilityScoreMin).max(createFp360HrCandidateResponseAvailabilityScoreMax),
+  "status": zod.enum(['received', 'selected', 'rejected']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Record a teacher-reviewed selection decision
+ */
+
+
+
+export const DecideFp360HrCandidateParams = zod.object({
+  "candidateId": zod.coerce.string().min(1)
+})
+
+export const decideFp360HrCandidateBodyOperationIdMin = 8;
+export const decideFp360HrCandidateBodyOperationIdMax = 120;
+
+
+
+export const DecideFp360HrCandidateBody = zod.object({
+  "action": zod.enum(['select', 'reject']),
+  "operationId": zod.string().min(decideFp360HrCandidateBodyOperationIdMin).max(decideFp360HrCandidateBodyOperationIdMax)
+})
+
+export const decideFp360HrCandidateResponseTrainingScoreMin = 0;
+export const decideFp360HrCandidateResponseTrainingScoreMax = 5;
+
+export const decideFp360HrCandidateResponseSkillsScoreMin = 0;
+export const decideFp360HrCandidateResponseSkillsScoreMax = 5;
+
+export const decideFp360HrCandidateResponseAvailabilityScoreMin = 0;
+export const decideFp360HrCandidateResponseAvailabilityScoreMax = 5;
+
+
+
+export const DecideFp360HrCandidateResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "vacancyId": zod.string(),
+  "candidateRef": zod.string(),
+  "trainingScore": zod.number().int().min(decideFp360HrCandidateResponseTrainingScoreMin).max(decideFp360HrCandidateResponseTrainingScoreMax),
+  "skillsScore": zod.number().int().min(decideFp360HrCandidateResponseSkillsScoreMin).max(decideFp360HrCandidateResponseSkillsScoreMax),
+  "availabilityScore": zod.number().int().min(decideFp360HrCandidateResponseAvailabilityScoreMin).max(decideFp360HrCandidateResponseAvailabilityScoreMax),
+  "status": zod.enum(['received', 'selected', 'rejected']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Create a fictional employee and initial contract for review
+ */
+
+
+export const createFp360HrEmployeeBodyWeeklyHoursMax = 40;
+
+export const createFp360HrEmployeeBodyContributionGroupMax = 11;
+
+export const createFp360HrEmployeeBodyAnnualSalaryCentsMin = 0;
+export const createFp360HrEmployeeBodyAnnualSalaryCentsMax = 1000000000;
+
+export const createFp360HrEmployeeBodyConventionNameMin = 3;
+export const createFp360HrEmployeeBodyConventionNameMax = 120;
+
+export const createFp360HrEmployeeBodyOperationIdMin = 8;
+export const createFp360HrEmployeeBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360HrEmployeeBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "candidateId": zod.string().min(1),
+  "weeklyHours": zod.number().int().min(1).max(createFp360HrEmployeeBodyWeeklyHoursMax),
+  "contributionGroup": zod.number().int().min(1).max(createFp360HrEmployeeBodyContributionGroupMax),
+  "annualSalaryCents": zod.number().int().min(createFp360HrEmployeeBodyAnnualSalaryCentsMin).max(createFp360HrEmployeeBodyAnnualSalaryCentsMax),
+  "conventionName": zod.string().min(createFp360HrEmployeeBodyConventionNameMin).max(createFp360HrEmployeeBodyConventionNameMax),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date().nullish(),
+  "operationId": zod.string().min(createFp360HrEmployeeBodyOperationIdMin).max(createFp360HrEmployeeBodyOperationIdMax)
+})
+
+export const createFp360HrEmployeeResponseWeeklyHoursMax = 40;
+
+export const createFp360HrEmployeeResponseContributionGroupMax = 11;
+
+export const createFp360HrEmployeeResponseAnnualSalaryCentsMin = 0;
+
+
+
+export const CreateFp360HrEmployeeResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "candidateId": zod.string(),
+  "workerRef": zod.string(),
+  "jobTitle": zod.string(),
+  "department": zod.string(),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "weeklyHours": zod.number().int().min(1).max(createFp360HrEmployeeResponseWeeklyHoursMax),
+  "contributionGroup": zod.number().int().min(1).max(createFp360HrEmployeeResponseContributionGroupMax),
+  "annualSalaryCents": zod.number().int().min(createFp360HrEmployeeResponseAnnualSalaryCentsMin),
+  "conventionName": zod.string(),
+  "virtualBankRef": zod.string(),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date().nullable(),
+  "status": zod.enum(['pending', 'active', 'inactive']),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Create an educational contract amendment
+ */
+
+
+
+export const CreateFp360HrContractParams = zod.object({
+  "employeeId": zod.coerce.string().min(1)
+})
+
+export const createFp360HrContractBodyWeeklyHoursMax = 40;
+
+export const createFp360HrContractBodyAnnualSalaryCentsMin = 0;
+export const createFp360HrContractBodyAnnualSalaryCentsMax = 1000000000;
+
+export const createFp360HrContractBodyContributionGroupMax = 11;
+
+export const createFp360HrContractBodyConventionNameMin = 3;
+export const createFp360HrContractBodyConventionNameMax = 120;
+
+export const createFp360HrContractBodyOperationIdMin = 8;
+export const createFp360HrContractBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360HrContractBody = zod.object({
+  "effectiveDate": zod.string().date(),
+  "endDate": zod.string().date().nullish(),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "weeklyHours": zod.number().int().min(1).max(createFp360HrContractBodyWeeklyHoursMax),
+  "annualSalaryCents": zod.number().int().min(createFp360HrContractBodyAnnualSalaryCentsMin).max(createFp360HrContractBodyAnnualSalaryCentsMax),
+  "contributionGroup": zod.number().int().min(1).max(createFp360HrContractBodyContributionGroupMax),
+  "conventionName": zod.string().min(createFp360HrContractBodyConventionNameMin).max(createFp360HrContractBodyConventionNameMax),
+  "operationId": zod.string().min(createFp360HrContractBodyOperationIdMin).max(createFp360HrContractBodyOperationIdMax)
+})
+
+
+export const createFp360HrContractResponseWeeklyHoursMax = 40;
+
+export const createFp360HrContractResponseAnnualSalaryCentsMin = 0;
+
+export const createFp360HrContractResponseContributionGroupMax = 11;
+
+
+
+export const CreateFp360HrContractResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "employeeId": zod.string(),
+  "version": zod.number().int().min(1),
+  "documentType": zod.enum(['initial', 'amendment']),
+  "effectiveDate": zod.string().date(),
+  "endDate": zod.string().date().nullable(),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "weeklyHours": zod.number().int().min(1).max(createFp360HrContractResponseWeeklyHoursMax),
+  "annualSalaryCents": zod.number().int().min(createFp360HrContractResponseAnnualSalaryCentsMin),
+  "contributionGroup": zod.number().int().min(1).max(createFp360HrContractResponseContributionGroupMax),
+  "conventionName": zod.string(),
+  "status": zod.enum(['pending_review', 'confirmed', 'observed']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "reviewAction": zod.union([zod.literal('confirm'),zod.literal('observe'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Review and confirm an educational contract version
+ */
+
+
+
+export const ReviewFp360HrContractParams = zod.object({
+  "contractId": zod.coerce.string().min(1)
+})
+
+export const reviewFp360HrContractBodyOperationIdMin = 8;
+export const reviewFp360HrContractBodyOperationIdMax = 120;
+
+
+
+export const ReviewFp360HrContractBody = zod.object({
+  "action": zod.enum(['confirm', 'observe']),
+  "operationId": zod.string().min(reviewFp360HrContractBodyOperationIdMin).max(reviewFp360HrContractBodyOperationIdMax)
+})
+
+
+export const reviewFp360HrContractResponseWeeklyHoursMax = 40;
+
+export const reviewFp360HrContractResponseAnnualSalaryCentsMin = 0;
+
+export const reviewFp360HrContractResponseContributionGroupMax = 11;
+
+
+
+export const ReviewFp360HrContractResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "employeeId": zod.string(),
+  "version": zod.number().int().min(1),
+  "documentType": zod.enum(['initial', 'amendment']),
+  "effectiveDate": zod.string().date(),
+  "endDate": zod.string().date().nullable(),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "weeklyHours": zod.number().int().min(1).max(reviewFp360HrContractResponseWeeklyHoursMax),
+  "annualSalaryCents": zod.number().int().min(reviewFp360HrContractResponseAnnualSalaryCentsMin),
+  "contributionGroup": zod.number().int().min(1).max(reviewFp360HrContractResponseContributionGroupMax),
+  "conventionName": zod.string(),
+  "status": zod.enum(['pending_review', 'confirmed', 'observed']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "reviewAction": zod.union([zod.literal('confirm'),zod.literal('observe'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Request a fictional absence or leave period
+ */
+
+
+
+export const CreateFp360HrAbsenceParams = zod.object({
+  "employeeId": zod.coerce.string().min(1)
+})
+
+export const createFp360HrAbsenceBodyOperationIdMin = 8;
+export const createFp360HrAbsenceBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360HrAbsenceBody = zod.object({
+  "absenceType": zod.enum(['vacation', 'permission', 'other']),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date(),
+  "operationId": zod.string().min(createFp360HrAbsenceBodyOperationIdMin).max(createFp360HrAbsenceBodyOperationIdMax)
+})
+
+export const CreateFp360HrAbsenceResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "employeeId": zod.string(),
+  "workerRef": zod.string(),
+  "absenceType": zod.enum(['vacation', 'permission', 'other']),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date(),
+  "status": zod.enum(['pending_review', 'approved', 'observed']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "reviewAction": zod.union([zod.literal('approve'),zod.literal('observe'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Review a fictional absence request
+ */
+
+
+
+export const ReviewFp360HrAbsenceParams = zod.object({
+  "absenceId": zod.coerce.string().min(1)
+})
+
+export const reviewFp360HrAbsenceBodyOperationIdMin = 8;
+export const reviewFp360HrAbsenceBodyOperationIdMax = 120;
+
+
+
+export const ReviewFp360HrAbsenceBody = zod.object({
+  "action": zod.enum(['approve', 'observe']),
+  "operationId": zod.string().min(reviewFp360HrAbsenceBodyOperationIdMin).max(reviewFp360HrAbsenceBodyOperationIdMax)
+})
+
+export const ReviewFp360HrAbsenceResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "employeeId": zod.string(),
+  "workerRef": zod.string(),
+  "absenceType": zod.enum(['vacation', 'permission', 'other']),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date(),
+  "status": zod.enum(['pending_review', 'approved', 'observed']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "reviewAction": zod.union([zod.literal('approve'),zod.literal('observe'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Request a simulated employee termination
+ */
+
+
+
+export const CreateFp360HrTerminationParams = zod.object({
+  "employeeId": zod.coerce.string().min(1)
+})
+
+export const createFp360HrTerminationBodyOperationIdMin = 8;
+export const createFp360HrTerminationBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360HrTerminationBody = zod.object({
+  "effectiveDate": zod.string().date(),
+  "operationId": zod.string().min(createFp360HrTerminationBodyOperationIdMin).max(createFp360HrTerminationBodyOperationIdMax)
+})
+
+export const CreateFp360HrTerminationResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "employeeId": zod.string(),
+  "workerRef": zod.string(),
+  "changeType": zod.enum(['termination']),
+  "effectiveDate": zod.string().date(),
+  "status": zod.enum(['pending_review', 'approved', 'observed']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "reviewAction": zod.union([zod.literal('approve'),zod.literal('observe'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Review a simulated employee termination
+ */
+
+
+
+export const ReviewFp360HrTerminationParams = zod.object({
+  "changeId": zod.coerce.string().min(1)
+})
+
+export const reviewFp360HrTerminationBodyOperationIdMin = 8;
+export const reviewFp360HrTerminationBodyOperationIdMax = 120;
+
+
+
+export const ReviewFp360HrTerminationBody = zod.object({
+  "action": zod.enum(['approve', 'observe']),
+  "operationId": zod.string().min(reviewFp360HrTerminationBodyOperationIdMin).max(reviewFp360HrTerminationBodyOperationIdMax)
+})
+
+export const ReviewFp360HrTerminationResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "employeeId": zod.string(),
+  "workerRef": zod.string(),
+  "changeType": zod.enum(['termination']),
+  "effectiveDate": zod.string().date(),
+  "status": zod.enum(['pending_review', 'approved', 'observed']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "reviewAction": zod.union([zod.literal('approve'),zod.literal('observe'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Get simulated workforce affiliation and contribution records
+ */
+
+
+
+export const GetFp360SocialSecurityOverviewQueryParams = zod.object({
+  "organizationId": zod.coerce.string().min(1)
+})
+
+export const getFp360SocialSecurityOverviewResponseWorkersItemContributionGroupMax = 11;
+
+export const getFp360SocialSecurityOverviewResponseWorkersItemMonthlyContributionBaseCentsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseWorkersItemEmployerContributionCentsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseWorkersItemWorkerContributionCentsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseMovementsItemContributionGroupMax = 11;
+
+export const getFp360SocialSecurityOverviewResponseMovementsItemMonthlyContributionBaseCentsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseMovementsItemEmployerContributionCentsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseMovementsItemWorkerContributionCentsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseSettlementsItemPeriodKeyRegExp = new RegExp('^\\d{4}-(0[1-9]|1[0-2])$');
+export const getFp360SocialSecurityOverviewResponseSettlementsItemWorkerCountMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseSettlementsItemContributionBaseCentsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseSettlementsItemEmployerContributionCentsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseSettlementsItemWorkerContributionCentsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseSettlementsItemTotalContributionCentsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseSummaryActiveWorkersMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseSummaryPendingMovementsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseSummaryOpenSettlementsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseSummaryMonthlyEmployerContributionCentsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseSummaryMonthlyWorkerContributionCentsMin = 0;
+
+
+
+export const GetFp360SocialSecurityOverviewResponse = zod.object({
+  "organizationId": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "workers": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "workerRef": zod.string(),
+  "contributionGroup": zod.number().int().min(1).max(getFp360SocialSecurityOverviewResponseWorkersItemContributionGroupMax),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date().nullable(),
+  "monthlyContributionBaseCents": zod.number().int().min(getFp360SocialSecurityOverviewResponseWorkersItemMonthlyContributionBaseCentsMin),
+  "employerContributionCents": zod.number().int().min(getFp360SocialSecurityOverviewResponseWorkersItemEmployerContributionCentsMin),
+  "workerContributionCents": zod.number().int().min(getFp360SocialSecurityOverviewResponseWorkersItemWorkerContributionCentsMin),
+  "status": zod.enum(['pending', 'active', 'inactive']),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})),
+  "movements": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "workerId": zod.string(),
+  "workerRef": zod.string(),
+  "operationType": zod.enum(['alta', 'variacion', 'baja']),
+  "effectiveDate": zod.string().date(),
+  "contributionGroup": zod.number().int().min(1).max(getFp360SocialSecurityOverviewResponseMovementsItemContributionGroupMax).nullable(),
+  "contractType": zod.union([zod.literal('indefinite'),zod.literal('temporary'),zod.literal('part_time'),zod.literal('training'),zod.literal(null)]).nullable(),
+  "monthlyContributionBaseCents": zod.number().int().min(getFp360SocialSecurityOverviewResponseMovementsItemMonthlyContributionBaseCentsMin).nullable(),
+  "employerContributionCents": zod.number().int().min(getFp360SocialSecurityOverviewResponseMovementsItemEmployerContributionCentsMin).nullable(),
+  "workerContributionCents": zod.number().int().min(getFp360SocialSecurityOverviewResponseMovementsItemWorkerContributionCentsMin).nullable(),
+  "status": zod.enum(['pending_review', 'approved', 'observed']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "reviewAction": zod.union([zod.literal('approve'),zod.literal('observe'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "settlements": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "periodKey": zod.string().regex(getFp360SocialSecurityOverviewResponseSettlementsItemPeriodKeyRegExp),
+  "workerRefs": zod.array(zod.string()),
+  "workerCount": zod.number().int().min(getFp360SocialSecurityOverviewResponseSettlementsItemWorkerCountMin),
+  "contributionBaseCents": zod.number().int().min(getFp360SocialSecurityOverviewResponseSettlementsItemContributionBaseCentsMin),
+  "employerContributionCents": zod.number().int().min(getFp360SocialSecurityOverviewResponseSettlementsItemEmployerContributionCentsMin),
+  "workerContributionCents": zod.number().int().min(getFp360SocialSecurityOverviewResponseSettlementsItemWorkerContributionCentsMin),
+  "totalContributionCents": zod.number().int().min(getFp360SocialSecurityOverviewResponseSettlementsItemTotalContributionCentsMin),
+  "status": zod.enum(['draft', 'reviewed', 'closed_simulated']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "eventType": zod.string(),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "summary": zod.object({
+  "activeWorkers": zod.number().int().min(getFp360SocialSecurityOverviewResponseSummaryActiveWorkersMin),
+  "pendingMovements": zod.number().int().min(getFp360SocialSecurityOverviewResponseSummaryPendingMovementsMin),
+  "openSettlements": zod.number().int().min(getFp360SocialSecurityOverviewResponseSummaryOpenSettlementsMin),
+  "monthlyEmployerContributionCents": zod.number().int().min(getFp360SocialSecurityOverviewResponseSummaryMonthlyEmployerContributionCentsMin),
+  "monthlyWorkerContributionCents": zod.number().int().min(getFp360SocialSecurityOverviewResponseSummaryMonthlyWorkerContributionCentsMin)
+})
+})
+
+
+/**
+ * @summary Create a fictional worker and a pending simulated registration
+ */
+
+export const createFp360SocialSecurityWorkerBodyContributionGroupMax = 11;
+
+export const createFp360SocialSecurityWorkerBodyMonthlyContributionBaseCentsMin = 0;
+export const createFp360SocialSecurityWorkerBodyMonthlyContributionBaseCentsMax = 1000000000;
+
+export const createFp360SocialSecurityWorkerBodyEmployerContributionCentsMin = 0;
+export const createFp360SocialSecurityWorkerBodyEmployerContributionCentsMax = 1000000000;
+
+export const createFp360SocialSecurityWorkerBodyWorkerContributionCentsMin = 0;
+export const createFp360SocialSecurityWorkerBodyWorkerContributionCentsMax = 1000000000;
+
+export const createFp360SocialSecurityWorkerBodyOperationIdMin = 8;
+export const createFp360SocialSecurityWorkerBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360SocialSecurityWorkerBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "contributionGroup": zod.number().int().min(1).max(createFp360SocialSecurityWorkerBodyContributionGroupMax),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "startDate": zod.string().date(),
+  "monthlyContributionBaseCents": zod.number().int().min(createFp360SocialSecurityWorkerBodyMonthlyContributionBaseCentsMin).max(createFp360SocialSecurityWorkerBodyMonthlyContributionBaseCentsMax),
+  "employerContributionCents": zod.number().int().min(createFp360SocialSecurityWorkerBodyEmployerContributionCentsMin).max(createFp360SocialSecurityWorkerBodyEmployerContributionCentsMax),
+  "workerContributionCents": zod.number().int().min(createFp360SocialSecurityWorkerBodyWorkerContributionCentsMin).max(createFp360SocialSecurityWorkerBodyWorkerContributionCentsMax),
+  "operationId": zod.string().min(createFp360SocialSecurityWorkerBodyOperationIdMin).max(createFp360SocialSecurityWorkerBodyOperationIdMax)
+})
+
+export const createFp360SocialSecurityWorkerResponseContributionGroupMax = 11;
+
+export const createFp360SocialSecurityWorkerResponseMonthlyContributionBaseCentsMin = 0;
+
+export const createFp360SocialSecurityWorkerResponseEmployerContributionCentsMin = 0;
+
+export const createFp360SocialSecurityWorkerResponseWorkerContributionCentsMin = 0;
+
+
+
+export const CreateFp360SocialSecurityWorkerResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "workerRef": zod.string(),
+  "contributionGroup": zod.number().int().min(1).max(createFp360SocialSecurityWorkerResponseContributionGroupMax),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date().nullable(),
+  "monthlyContributionBaseCents": zod.number().int().min(createFp360SocialSecurityWorkerResponseMonthlyContributionBaseCentsMin),
+  "employerContributionCents": zod.number().int().min(createFp360SocialSecurityWorkerResponseEmployerContributionCentsMin),
+  "workerContributionCents": zod.number().int().min(createFp360SocialSecurityWorkerResponseWorkerContributionCentsMin),
+  "status": zod.enum(['pending', 'active', 'inactive']),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Create a simulated worker affiliation movement
+ */
+
+
+
+export const CreateFp360SocialSecurityMovementParams = zod.object({
+  "workerId": zod.coerce.string().min(1)
+})
+
+export const createFp360SocialSecurityMovementBodyContributionGroupMax = 11;
+
+export const createFp360SocialSecurityMovementBodyMonthlyContributionBaseCentsMin = 0;
+export const createFp360SocialSecurityMovementBodyMonthlyContributionBaseCentsMax = 1000000000;
+
+export const createFp360SocialSecurityMovementBodyEmployerContributionCentsMin = 0;
+export const createFp360SocialSecurityMovementBodyEmployerContributionCentsMax = 1000000000;
+
+export const createFp360SocialSecurityMovementBodyWorkerContributionCentsMin = 0;
+export const createFp360SocialSecurityMovementBodyWorkerContributionCentsMax = 1000000000;
+
+export const createFp360SocialSecurityMovementBodyOperationIdMin = 8;
+export const createFp360SocialSecurityMovementBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360SocialSecurityMovementBody = zod.object({
+  "operationType": zod.enum(['alta', 'variacion', 'baja']),
+  "effectiveDate": zod.string().date(),
+  "contributionGroup": zod.number().int().min(1).max(createFp360SocialSecurityMovementBodyContributionGroupMax).optional(),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']).optional(),
+  "monthlyContributionBaseCents": zod.number().int().min(createFp360SocialSecurityMovementBodyMonthlyContributionBaseCentsMin).max(createFp360SocialSecurityMovementBodyMonthlyContributionBaseCentsMax).optional(),
+  "employerContributionCents": zod.number().int().min(createFp360SocialSecurityMovementBodyEmployerContributionCentsMin).max(createFp360SocialSecurityMovementBodyEmployerContributionCentsMax).optional(),
+  "workerContributionCents": zod.number().int().min(createFp360SocialSecurityMovementBodyWorkerContributionCentsMin).max(createFp360SocialSecurityMovementBodyWorkerContributionCentsMax).optional(),
+  "operationId": zod.string().min(createFp360SocialSecurityMovementBodyOperationIdMin).max(createFp360SocialSecurityMovementBodyOperationIdMax)
+})
+
+export const createFp360SocialSecurityMovementResponseContributionGroupMax = 11;
+
+export const createFp360SocialSecurityMovementResponseMonthlyContributionBaseCentsMin = 0;
+
+export const createFp360SocialSecurityMovementResponseEmployerContributionCentsMin = 0;
+
+export const createFp360SocialSecurityMovementResponseWorkerContributionCentsMin = 0;
+
+
+
+export const CreateFp360SocialSecurityMovementResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "workerId": zod.string(),
+  "workerRef": zod.string(),
+  "operationType": zod.enum(['alta', 'variacion', 'baja']),
+  "effectiveDate": zod.string().date(),
+  "contributionGroup": zod.number().int().min(1).max(createFp360SocialSecurityMovementResponseContributionGroupMax).nullable(),
+  "contractType": zod.union([zod.literal('indefinite'),zod.literal('temporary'),zod.literal('part_time'),zod.literal('training'),zod.literal(null)]).nullable(),
+  "monthlyContributionBaseCents": zod.number().int().min(createFp360SocialSecurityMovementResponseMonthlyContributionBaseCentsMin).nullable(),
+  "employerContributionCents": zod.number().int().min(createFp360SocialSecurityMovementResponseEmployerContributionCentsMin).nullable(),
+  "workerContributionCents": zod.number().int().min(createFp360SocialSecurityMovementResponseWorkerContributionCentsMin).nullable(),
+  "status": zod.enum(['pending_review', 'approved', 'observed']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "reviewAction": zod.union([zod.literal('approve'),zod.literal('observe'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Review a simulated affiliation movement
+ */
+
+
+
+export const ReviewFp360SocialSecurityMovementParams = zod.object({
+  "movementId": zod.coerce.string().min(1)
+})
+
+export const reviewFp360SocialSecurityMovementBodyOperationIdMin = 8;
+export const reviewFp360SocialSecurityMovementBodyOperationIdMax = 120;
+
+
+
+export const ReviewFp360SocialSecurityMovementBody = zod.object({
+  "action": zod.enum(['approve', 'observe']),
+  "operationId": zod.string().min(reviewFp360SocialSecurityMovementBodyOperationIdMin).max(reviewFp360SocialSecurityMovementBodyOperationIdMax)
+})
+
+export const reviewFp360SocialSecurityMovementResponseContributionGroupMax = 11;
+
+export const reviewFp360SocialSecurityMovementResponseMonthlyContributionBaseCentsMin = 0;
+
+export const reviewFp360SocialSecurityMovementResponseEmployerContributionCentsMin = 0;
+
+export const reviewFp360SocialSecurityMovementResponseWorkerContributionCentsMin = 0;
+
+
+
+export const ReviewFp360SocialSecurityMovementResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "workerId": zod.string(),
+  "workerRef": zod.string(),
+  "operationType": zod.enum(['alta', 'variacion', 'baja']),
+  "effectiveDate": zod.string().date(),
+  "contributionGroup": zod.number().int().min(1).max(reviewFp360SocialSecurityMovementResponseContributionGroupMax).nullable(),
+  "contractType": zod.union([zod.literal('indefinite'),zod.literal('temporary'),zod.literal('part_time'),zod.literal('training'),zod.literal(null)]).nullable(),
+  "monthlyContributionBaseCents": zod.number().int().min(reviewFp360SocialSecurityMovementResponseMonthlyContributionBaseCentsMin).nullable(),
+  "employerContributionCents": zod.number().int().min(reviewFp360SocialSecurityMovementResponseEmployerContributionCentsMin).nullable(),
+  "workerContributionCents": zod.number().int().min(reviewFp360SocialSecurityMovementResponseWorkerContributionCentsMin).nullable(),
+  "status": zod.enum(['pending_review', 'approved', 'observed']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "reviewAction": zod.union([zod.literal('approve'),zod.literal('observe'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Create a monthly educational contribution statement from active fictional workers
+ */
+
+export const createFp360SocialSecuritySettlementBodyPeriodKeyRegExp = new RegExp('^\\d{4}-(0[1-9]|1[0-2])$');
+export const createFp360SocialSecuritySettlementBodyOperationIdMin = 8;
+export const createFp360SocialSecuritySettlementBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360SocialSecuritySettlementBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "periodKey": zod.string().regex(createFp360SocialSecuritySettlementBodyPeriodKeyRegExp),
+  "operationId": zod.string().min(createFp360SocialSecuritySettlementBodyOperationIdMin).max(createFp360SocialSecuritySettlementBodyOperationIdMax)
+})
+
+export const createFp360SocialSecuritySettlementResponsePeriodKeyRegExp = new RegExp('^\\d{4}-(0[1-9]|1[0-2])$');
+export const createFp360SocialSecuritySettlementResponseWorkerCountMin = 0;
+
+export const createFp360SocialSecuritySettlementResponseContributionBaseCentsMin = 0;
+
+export const createFp360SocialSecuritySettlementResponseEmployerContributionCentsMin = 0;
+
+export const createFp360SocialSecuritySettlementResponseWorkerContributionCentsMin = 0;
+
+export const createFp360SocialSecuritySettlementResponseTotalContributionCentsMin = 0;
+
+
+
+export const CreateFp360SocialSecuritySettlementResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "periodKey": zod.string().regex(createFp360SocialSecuritySettlementResponsePeriodKeyRegExp),
+  "workerRefs": zod.array(zod.string()),
+  "workerCount": zod.number().int().min(createFp360SocialSecuritySettlementResponseWorkerCountMin),
+  "contributionBaseCents": zod.number().int().min(createFp360SocialSecuritySettlementResponseContributionBaseCentsMin),
+  "employerContributionCents": zod.number().int().min(createFp360SocialSecuritySettlementResponseEmployerContributionCentsMin),
+  "workerContributionCents": zod.number().int().min(createFp360SocialSecuritySettlementResponseWorkerContributionCentsMin),
+  "totalContributionCents": zod.number().int().min(createFp360SocialSecuritySettlementResponseTotalContributionCentsMin),
+  "status": zod.enum(['draft', 'reviewed', 'closed_simulated']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Review or close a simulated monthly contribution statement
+ */
+
+
+
+export const ReviewFp360SocialSecuritySettlementParams = zod.object({
+  "settlementId": zod.coerce.string().min(1)
+})
+
+export const reviewFp360SocialSecuritySettlementBodyOperationIdMin = 8;
+export const reviewFp360SocialSecuritySettlementBodyOperationIdMax = 120;
+
+
+
+export const ReviewFp360SocialSecuritySettlementBody = zod.object({
+  "action": zod.enum(['review', 'close']),
+  "operationId": zod.string().min(reviewFp360SocialSecuritySettlementBodyOperationIdMin).max(reviewFp360SocialSecuritySettlementBodyOperationIdMax)
+})
+
+export const reviewFp360SocialSecuritySettlementResponsePeriodKeyRegExp = new RegExp('^\\d{4}-(0[1-9]|1[0-2])$');
+export const reviewFp360SocialSecuritySettlementResponseWorkerCountMin = 0;
+
+export const reviewFp360SocialSecuritySettlementResponseContributionBaseCentsMin = 0;
+
+export const reviewFp360SocialSecuritySettlementResponseEmployerContributionCentsMin = 0;
+
+export const reviewFp360SocialSecuritySettlementResponseWorkerContributionCentsMin = 0;
+
+export const reviewFp360SocialSecuritySettlementResponseTotalContributionCentsMin = 0;
+
+
+
+export const ReviewFp360SocialSecuritySettlementResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "periodKey": zod.string().regex(reviewFp360SocialSecuritySettlementResponsePeriodKeyRegExp),
+  "workerRefs": zod.array(zod.string()),
+  "workerCount": zod.number().int().min(reviewFp360SocialSecuritySettlementResponseWorkerCountMin),
+  "contributionBaseCents": zod.number().int().min(reviewFp360SocialSecuritySettlementResponseContributionBaseCentsMin),
+  "employerContributionCents": zod.number().int().min(reviewFp360SocialSecuritySettlementResponseEmployerContributionCentsMin),
+  "workerContributionCents": zod.number().int().min(reviewFp360SocialSecuritySettlementResponseWorkerContributionCentsMin),
+  "totalContributionCents": zod.number().int().min(reviewFp360SocialSecuritySettlementResponseTotalContributionCentsMin),
+  "status": zod.enum(['draft', 'reviewed', 'closed_simulated']),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
  * @summary Update an organization's educational tax profile
  */
 

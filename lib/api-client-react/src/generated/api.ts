@@ -81,6 +81,23 @@ import type {
   Fp360BankTransferInput,
   Fp360Dashboard,
   Fp360DispatchInput,
+  Fp360HrAbsence,
+  Fp360HrAbsenceInput,
+  Fp360HrAbsenceReviewInput,
+  Fp360HrCandidate,
+  Fp360HrCandidateDecisionInput,
+  Fp360HrCandidateInput,
+  Fp360HrContract,
+  Fp360HrContractInput,
+  Fp360HrContractReviewInput,
+  Fp360HrEmployee,
+  Fp360HrEmployeeInput,
+  Fp360HrLifecycleChange,
+  Fp360HrOverview,
+  Fp360HrTerminationInput,
+  Fp360HrTerminationReviewInput,
+  Fp360HrVacancy,
+  Fp360HrVacancyInput,
   Fp360Invoice,
   Fp360InvoiceInput,
   Fp360LogisticsDeliveryInput,
@@ -94,6 +111,13 @@ import type {
   Fp360OrganizationInput,
   Fp360OrganizationUpdate,
   Fp360PaymentInput,
+  Fp360PayrollOverview,
+  Fp360PayrollPolicy,
+  Fp360PayrollPolicyActivationInput,
+  Fp360PayrollPolicyInput,
+  Fp360PayrollRun,
+  Fp360PayrollRunActionInput,
+  Fp360PayrollRunInput,
   Fp360Product,
   Fp360ProductDocument,
   Fp360ProductDocumentDeleteResponse,
@@ -102,6 +126,15 @@ import type {
   Fp360ProductInput,
   Fp360ProductPriceVersion,
   Fp360ProductUpdate,
+  Fp360SocialSecurityMovement,
+  Fp360SocialSecurityMovementInput,
+  Fp360SocialSecurityMovementReviewInput,
+  Fp360SocialSecurityOverview,
+  Fp360SocialSecuritySettlement,
+  Fp360SocialSecuritySettlementInput,
+  Fp360SocialSecuritySettlementReviewInput,
+  Fp360SocialSecurityWorker,
+  Fp360SocialSecurityWorkerInput,
   Fp360StockAdjustment,
   Fp360StockAdjustmentInput,
   Fp360TaxDeclaration,
@@ -116,6 +149,9 @@ import type {
   GetFp360AccountingOverviewParams,
   GetFp360BankOverviewParams,
   GetFp360DirectionOverviewParams,
+  GetFp360HrOverviewParams,
+  GetFp360PayrollOverviewParams,
+  GetFp360SocialSecurityOverviewParams,
   GetFp360TaxOverviewParams,
   HealthStatus,
   InvitationAcceptanceInput,
@@ -9789,6 +9825,2015 @@ export function useGetFp360TaxOverview<TData = Awaited<ReturnType<typeof getFp36
 
 
 
+
+export const getGetFp360PayrollOverviewUrl = (params: GetFp360PayrollOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/payroll/overview?${stringifiedParams}` : `/api/redfp360/payroll/overview`
+}
+
+/**
+ * @summary Get educational payroll policies and monthly payroll runs
+ */
+export const getFp360PayrollOverview = async (params: GetFp360PayrollOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<Fp360PayrollOverview> => {
+
+  return customFetch<Fp360PayrollOverview>(getGetFp360PayrollOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360PayrollOverviewQueryKey = (params?: GetFp360PayrollOverviewParams,) => {
+    return [
+    `/api/redfp360/payroll/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360PayrollOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getFp360PayrollOverview>>, TError = ErrorType<void>>(params: GetFp360PayrollOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360PayrollOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360PayrollOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360PayrollOverview>>> = ({ signal }) => getFp360PayrollOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360PayrollOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360PayrollOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360PayrollOverview>>>
+export type GetFp360PayrollOverviewQueryError = ErrorType<void>
+
+
+export function useGetFp360PayrollOverview<TData = Awaited<ReturnType<typeof getFp360PayrollOverview>>, TError = ErrorType<void>>(
+ params: GetFp360PayrollOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360PayrollOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360PayrollOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360PayrollOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360PayrollOverview<TData = Awaited<ReturnType<typeof getFp360PayrollOverview>>, TError = ErrorType<void>>(
+ params: GetFp360PayrollOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360PayrollOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360PayrollOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360PayrollOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360PayrollOverview<TData = Awaited<ReturnType<typeof getFp360PayrollOverview>>, TError = ErrorType<void>>(
+ params: GetFp360PayrollOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360PayrollOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get educational payroll policies and monthly payroll runs
+ */
+
+export function useGetFp360PayrollOverview<TData = Awaited<ReturnType<typeof getFp360PayrollOverview>>, TError = ErrorType<void>>(
+ params: GetFp360PayrollOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360PayrollOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360PayrollOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360PayrollPolicyUrl = () => {
+
+
+
+
+  return `/api/redfp360/payroll/policies`
+}
+
+/**
+ * @summary Create a versioned educational payroll policy
+ */
+export const createFp360PayrollPolicy = async (fp360PayrollPolicyInput: Fp360PayrollPolicyInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360PayrollPolicy> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360PayrollPolicy>(getCreateFp360PayrollPolicyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360PayrollPolicyInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360PayrollPolicyMutationKey = () => ['createFp360PayrollPolicy'] as const;
+
+export const getCreateFp360PayrollPolicyMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360PayrollPolicy>>, TError,CreateFp360PayrollPolicyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360PayrollPolicy>>, TError,CreateFp360PayrollPolicyMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360PayrollPolicyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360PayrollPolicy>>, CreateFp360PayrollPolicyMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360PayrollPolicy(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360PayrollPolicyMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360PayrollPolicy>>>
+    export type CreateFp360PayrollPolicyMutationBody = BodyType<Fp360PayrollPolicyInput>
+    export type CreateFp360PayrollPolicyMutationError = ErrorType<void>
+    export type CreateFp360PayrollPolicyMutationVariables = {data: BodyType<Fp360PayrollPolicyInput>}
+
+    /**
+ * @summary Create a versioned educational payroll policy
+ */
+export const useCreateFp360PayrollPolicy = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360PayrollPolicy>>, TError,CreateFp360PayrollPolicyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360PayrollPolicy>>,
+        TError,
+        CreateFp360PayrollPolicyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360PayrollPolicyMutationOptions(options), queryClient);
+    }
+
+export const getActivateFp360PayrollPolicyUrl = (policyId: string,) => {
+
+
+
+
+  return `/api/redfp360/payroll/policies/${policyId}/activate`
+}
+
+/**
+ * @summary Activate a reviewed educational payroll policy
+ */
+export const activateFp360PayrollPolicy = async (policyId: string,
+    fp360PayrollPolicyActivationInput: Fp360PayrollPolicyActivationInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360PayrollPolicy> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360PayrollPolicy>(getActivateFp360PayrollPolicyUrl(policyId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360PayrollPolicyActivationInput)
+  }
+);}
+
+
+
+
+
+export const getActivateFp360PayrollPolicyMutationKey = () => ['activateFp360PayrollPolicy'] as const;
+
+export const getActivateFp360PayrollPolicyMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateFp360PayrollPolicy>>, TError,ActivateFp360PayrollPolicyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activateFp360PayrollPolicy>>, TError,ActivateFp360PayrollPolicyMutationVariables, TContext> => {
+
+const mutationKey = getActivateFp360PayrollPolicyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateFp360PayrollPolicy>>, ActivateFp360PayrollPolicyMutationVariables> = (props) => {
+          const {policyId,data} = props ?? {};
+
+          return  activateFp360PayrollPolicy(policyId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActivateFp360PayrollPolicyMutationResult = NonNullable<Awaited<ReturnType<typeof activateFp360PayrollPolicy>>>
+    export type ActivateFp360PayrollPolicyMutationBody = BodyType<Fp360PayrollPolicyActivationInput>
+    export type ActivateFp360PayrollPolicyMutationError = ErrorType<void>
+    export type ActivateFp360PayrollPolicyMutationVariables = {policyId: string;data: BodyType<Fp360PayrollPolicyActivationInput>}
+
+    /**
+ * @summary Activate a reviewed educational payroll policy
+ */
+export const useActivateFp360PayrollPolicy = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateFp360PayrollPolicy>>, TError,ActivateFp360PayrollPolicyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof activateFp360PayrollPolicy>>,
+        TError,
+        ActivateFp360PayrollPolicyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActivateFp360PayrollPolicyMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360PayrollRunUrl = () => {
+
+
+
+
+  return `/api/redfp360/payroll/runs`
+}
+
+/**
+ * @summary Calculate a payroll run using active employees and educational parameters
+ */
+export const createFp360PayrollRun = async (fp360PayrollRunInput: Fp360PayrollRunInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360PayrollRun> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360PayrollRun>(getCreateFp360PayrollRunUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360PayrollRunInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360PayrollRunMutationKey = () => ['createFp360PayrollRun'] as const;
+
+export const getCreateFp360PayrollRunMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360PayrollRun>>, TError,CreateFp360PayrollRunMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360PayrollRun>>, TError,CreateFp360PayrollRunMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360PayrollRunMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360PayrollRun>>, CreateFp360PayrollRunMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360PayrollRun(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360PayrollRunMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360PayrollRun>>>
+    export type CreateFp360PayrollRunMutationBody = BodyType<Fp360PayrollRunInput>
+    export type CreateFp360PayrollRunMutationError = ErrorType<void>
+    export type CreateFp360PayrollRunMutationVariables = {data: BodyType<Fp360PayrollRunInput>}
+
+    /**
+ * @summary Calculate a payroll run using active employees and educational parameters
+ */
+export const useCreateFp360PayrollRun = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360PayrollRun>>, TError,CreateFp360PayrollRunMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360PayrollRun>>,
+        TError,
+        CreateFp360PayrollRunMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360PayrollRunMutationOptions(options), queryClient);
+    }
+
+export const getActOnFp360PayrollRunUrl = (runId: string,) => {
+
+
+
+
+  return `/api/redfp360/payroll/runs/${runId}/actions`
+}
+
+/**
+ * @summary Review, close, issue, or simulate payment of a payroll run
+ */
+export const actOnFp360PayrollRun = async (runId: string,
+    fp360PayrollRunActionInput: Fp360PayrollRunActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360PayrollRun> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360PayrollRun>(getActOnFp360PayrollRunUrl(runId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360PayrollRunActionInput)
+  }
+);}
+
+
+
+
+
+export const getActOnFp360PayrollRunMutationKey = () => ['actOnFp360PayrollRun'] as const;
+
+export const getActOnFp360PayrollRunMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360PayrollRun>>, TError,ActOnFp360PayrollRunMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnFp360PayrollRun>>, TError,ActOnFp360PayrollRunMutationVariables, TContext> => {
+
+const mutationKey = getActOnFp360PayrollRunMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnFp360PayrollRun>>, ActOnFp360PayrollRunMutationVariables> = (props) => {
+          const {runId,data} = props ?? {};
+
+          return  actOnFp360PayrollRun(runId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnFp360PayrollRunMutationResult = NonNullable<Awaited<ReturnType<typeof actOnFp360PayrollRun>>>
+    export type ActOnFp360PayrollRunMutationBody = BodyType<Fp360PayrollRunActionInput>
+    export type ActOnFp360PayrollRunMutationError = ErrorType<void>
+    export type ActOnFp360PayrollRunMutationVariables = {runId: string;data: BodyType<Fp360PayrollRunActionInput>}
+
+    /**
+ * @summary Review, close, issue, or simulate payment of a payroll run
+ */
+export const useActOnFp360PayrollRun = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360PayrollRun>>, TError,ActOnFp360PayrollRunMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnFp360PayrollRun>>,
+        TError,
+        ActOnFp360PayrollRunMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnFp360PayrollRunMutationOptions(options), queryClient);
+    }
+
+export const getGetFp360HrOverviewUrl = (params: GetFp360HrOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/hr/overview?${stringifiedParams}` : `/api/redfp360/hr/overview`
+}
+
+/**
+ * @summary Get fictional workforce, hiring, contract, and absence records
+ */
+export const getFp360HrOverview = async (params: GetFp360HrOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<Fp360HrOverview> => {
+
+  return customFetch<Fp360HrOverview>(getGetFp360HrOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360HrOverviewQueryKey = (params?: GetFp360HrOverviewParams,) => {
+    return [
+    `/api/redfp360/hr/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360HrOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getFp360HrOverview>>, TError = ErrorType<void>>(params: GetFp360HrOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360HrOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360HrOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360HrOverview>>> = ({ signal }) => getFp360HrOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360HrOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360HrOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360HrOverview>>>
+export type GetFp360HrOverviewQueryError = ErrorType<void>
+
+
+export function useGetFp360HrOverview<TData = Awaited<ReturnType<typeof getFp360HrOverview>>, TError = ErrorType<void>>(
+ params: GetFp360HrOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360HrOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360HrOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360HrOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360HrOverview<TData = Awaited<ReturnType<typeof getFp360HrOverview>>, TError = ErrorType<void>>(
+ params: GetFp360HrOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360HrOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360HrOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360HrOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360HrOverview<TData = Awaited<ReturnType<typeof getFp360HrOverview>>, TError = ErrorType<void>>(
+ params: GetFp360HrOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360HrOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get fictional workforce, hiring, contract, and absence records
+ */
+
+export function useGetFp360HrOverview<TData = Awaited<ReturnType<typeof getFp360HrOverview>>, TError = ErrorType<void>>(
+ params: GetFp360HrOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360HrOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360HrOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360HrVacancyUrl = () => {
+
+
+
+
+  return `/api/redfp360/hr/vacancies`
+}
+
+/**
+ * @summary Create a fictional internal vacancy
+ */
+export const createFp360HrVacancy = async (fp360HrVacancyInput: Fp360HrVacancyInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360HrVacancy> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360HrVacancy>(getCreateFp360HrVacancyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360HrVacancyInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360HrVacancyMutationKey = () => ['createFp360HrVacancy'] as const;
+
+export const getCreateFp360HrVacancyMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360HrVacancy>>, TError,CreateFp360HrVacancyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360HrVacancy>>, TError,CreateFp360HrVacancyMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360HrVacancyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360HrVacancy>>, CreateFp360HrVacancyMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360HrVacancy(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360HrVacancyMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360HrVacancy>>>
+    export type CreateFp360HrVacancyMutationBody = BodyType<Fp360HrVacancyInput>
+    export type CreateFp360HrVacancyMutationError = ErrorType<void>
+    export type CreateFp360HrVacancyMutationVariables = {data: BodyType<Fp360HrVacancyInput>}
+
+    /**
+ * @summary Create a fictional internal vacancy
+ */
+export const useCreateFp360HrVacancy = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360HrVacancy>>, TError,CreateFp360HrVacancyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360HrVacancy>>,
+        TError,
+        CreateFp360HrVacancyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360HrVacancyMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360HrCandidateUrl = (vacancyId: string,) => {
+
+
+
+
+  return `/api/redfp360/hr/vacancies/${vacancyId}/candidates`
+}
+
+/**
+ * @summary Add a pseudonymous candidate with objective training scores
+ */
+export const createFp360HrCandidate = async (vacancyId: string,
+    fp360HrCandidateInput: Fp360HrCandidateInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360HrCandidate> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360HrCandidate>(getCreateFp360HrCandidateUrl(vacancyId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360HrCandidateInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360HrCandidateMutationKey = () => ['createFp360HrCandidate'] as const;
+
+export const getCreateFp360HrCandidateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360HrCandidate>>, TError,CreateFp360HrCandidateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360HrCandidate>>, TError,CreateFp360HrCandidateMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360HrCandidateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360HrCandidate>>, CreateFp360HrCandidateMutationVariables> = (props) => {
+          const {vacancyId,data} = props ?? {};
+
+          return  createFp360HrCandidate(vacancyId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360HrCandidateMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360HrCandidate>>>
+    export type CreateFp360HrCandidateMutationBody = BodyType<Fp360HrCandidateInput>
+    export type CreateFp360HrCandidateMutationError = ErrorType<void>
+    export type CreateFp360HrCandidateMutationVariables = {vacancyId: string;data: BodyType<Fp360HrCandidateInput>}
+
+    /**
+ * @summary Add a pseudonymous candidate with objective training scores
+ */
+export const useCreateFp360HrCandidate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360HrCandidate>>, TError,CreateFp360HrCandidateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360HrCandidate>>,
+        TError,
+        CreateFp360HrCandidateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360HrCandidateMutationOptions(options), queryClient);
+    }
+
+export const getDecideFp360HrCandidateUrl = (candidateId: string,) => {
+
+
+
+
+  return `/api/redfp360/hr/candidates/${candidateId}/decision`
+}
+
+/**
+ * @summary Record a teacher-reviewed selection decision
+ */
+export const decideFp360HrCandidate = async (candidateId: string,
+    fp360HrCandidateDecisionInput: Fp360HrCandidateDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360HrCandidate> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360HrCandidate>(getDecideFp360HrCandidateUrl(candidateId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360HrCandidateDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getDecideFp360HrCandidateMutationKey = () => ['decideFp360HrCandidate'] as const;
+
+export const getDecideFp360HrCandidateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decideFp360HrCandidate>>, TError,DecideFp360HrCandidateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof decideFp360HrCandidate>>, TError,DecideFp360HrCandidateMutationVariables, TContext> => {
+
+const mutationKey = getDecideFp360HrCandidateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof decideFp360HrCandidate>>, DecideFp360HrCandidateMutationVariables> = (props) => {
+          const {candidateId,data} = props ?? {};
+
+          return  decideFp360HrCandidate(candidateId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DecideFp360HrCandidateMutationResult = NonNullable<Awaited<ReturnType<typeof decideFp360HrCandidate>>>
+    export type DecideFp360HrCandidateMutationBody = BodyType<Fp360HrCandidateDecisionInput>
+    export type DecideFp360HrCandidateMutationError = ErrorType<void>
+    export type DecideFp360HrCandidateMutationVariables = {candidateId: string;data: BodyType<Fp360HrCandidateDecisionInput>}
+
+    /**
+ * @summary Record a teacher-reviewed selection decision
+ */
+export const useDecideFp360HrCandidate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decideFp360HrCandidate>>, TError,DecideFp360HrCandidateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof decideFp360HrCandidate>>,
+        TError,
+        DecideFp360HrCandidateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDecideFp360HrCandidateMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360HrEmployeeUrl = () => {
+
+
+
+
+  return `/api/redfp360/hr/employees`
+}
+
+/**
+ * @summary Create a fictional employee and initial contract for review
+ */
+export const createFp360HrEmployee = async (fp360HrEmployeeInput: Fp360HrEmployeeInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360HrEmployee> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360HrEmployee>(getCreateFp360HrEmployeeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360HrEmployeeInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360HrEmployeeMutationKey = () => ['createFp360HrEmployee'] as const;
+
+export const getCreateFp360HrEmployeeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360HrEmployee>>, TError,CreateFp360HrEmployeeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360HrEmployee>>, TError,CreateFp360HrEmployeeMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360HrEmployeeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360HrEmployee>>, CreateFp360HrEmployeeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360HrEmployee(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360HrEmployeeMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360HrEmployee>>>
+    export type CreateFp360HrEmployeeMutationBody = BodyType<Fp360HrEmployeeInput>
+    export type CreateFp360HrEmployeeMutationError = ErrorType<void>
+    export type CreateFp360HrEmployeeMutationVariables = {data: BodyType<Fp360HrEmployeeInput>}
+
+    /**
+ * @summary Create a fictional employee and initial contract for review
+ */
+export const useCreateFp360HrEmployee = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360HrEmployee>>, TError,CreateFp360HrEmployeeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360HrEmployee>>,
+        TError,
+        CreateFp360HrEmployeeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360HrEmployeeMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360HrContractUrl = (employeeId: string,) => {
+
+
+
+
+  return `/api/redfp360/hr/employees/${employeeId}/contracts`
+}
+
+/**
+ * @summary Create an educational contract amendment
+ */
+export const createFp360HrContract = async (employeeId: string,
+    fp360HrContractInput: Fp360HrContractInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360HrContract> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360HrContract>(getCreateFp360HrContractUrl(employeeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360HrContractInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360HrContractMutationKey = () => ['createFp360HrContract'] as const;
+
+export const getCreateFp360HrContractMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360HrContract>>, TError,CreateFp360HrContractMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360HrContract>>, TError,CreateFp360HrContractMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360HrContractMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360HrContract>>, CreateFp360HrContractMutationVariables> = (props) => {
+          const {employeeId,data} = props ?? {};
+
+          return  createFp360HrContract(employeeId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360HrContractMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360HrContract>>>
+    export type CreateFp360HrContractMutationBody = BodyType<Fp360HrContractInput>
+    export type CreateFp360HrContractMutationError = ErrorType<void>
+    export type CreateFp360HrContractMutationVariables = {employeeId: string;data: BodyType<Fp360HrContractInput>}
+
+    /**
+ * @summary Create an educational contract amendment
+ */
+export const useCreateFp360HrContract = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360HrContract>>, TError,CreateFp360HrContractMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360HrContract>>,
+        TError,
+        CreateFp360HrContractMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360HrContractMutationOptions(options), queryClient);
+    }
+
+export const getReviewFp360HrContractUrl = (contractId: string,) => {
+
+
+
+
+  return `/api/redfp360/hr/contracts/${contractId}/review`
+}
+
+/**
+ * @summary Review and confirm an educational contract version
+ */
+export const reviewFp360HrContract = async (contractId: string,
+    fp360HrContractReviewInput: Fp360HrContractReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360HrContract> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360HrContract>(getReviewFp360HrContractUrl(contractId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360HrContractReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewFp360HrContractMutationKey = () => ['reviewFp360HrContract'] as const;
+
+export const getReviewFp360HrContractMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360HrContract>>, TError,ReviewFp360HrContractMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewFp360HrContract>>, TError,ReviewFp360HrContractMutationVariables, TContext> => {
+
+const mutationKey = getReviewFp360HrContractMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewFp360HrContract>>, ReviewFp360HrContractMutationVariables> = (props) => {
+          const {contractId,data} = props ?? {};
+
+          return  reviewFp360HrContract(contractId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewFp360HrContractMutationResult = NonNullable<Awaited<ReturnType<typeof reviewFp360HrContract>>>
+    export type ReviewFp360HrContractMutationBody = BodyType<Fp360HrContractReviewInput>
+    export type ReviewFp360HrContractMutationError = ErrorType<void>
+    export type ReviewFp360HrContractMutationVariables = {contractId: string;data: BodyType<Fp360HrContractReviewInput>}
+
+    /**
+ * @summary Review and confirm an educational contract version
+ */
+export const useReviewFp360HrContract = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360HrContract>>, TError,ReviewFp360HrContractMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviewFp360HrContract>>,
+        TError,
+        ReviewFp360HrContractMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewFp360HrContractMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360HrAbsenceUrl = (employeeId: string,) => {
+
+
+
+
+  return `/api/redfp360/hr/employees/${employeeId}/absences`
+}
+
+/**
+ * @summary Request a fictional absence or leave period
+ */
+export const createFp360HrAbsence = async (employeeId: string,
+    fp360HrAbsenceInput: Fp360HrAbsenceInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360HrAbsence> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360HrAbsence>(getCreateFp360HrAbsenceUrl(employeeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360HrAbsenceInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360HrAbsenceMutationKey = () => ['createFp360HrAbsence'] as const;
+
+export const getCreateFp360HrAbsenceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360HrAbsence>>, TError,CreateFp360HrAbsenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360HrAbsence>>, TError,CreateFp360HrAbsenceMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360HrAbsenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360HrAbsence>>, CreateFp360HrAbsenceMutationVariables> = (props) => {
+          const {employeeId,data} = props ?? {};
+
+          return  createFp360HrAbsence(employeeId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360HrAbsenceMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360HrAbsence>>>
+    export type CreateFp360HrAbsenceMutationBody = BodyType<Fp360HrAbsenceInput>
+    export type CreateFp360HrAbsenceMutationError = ErrorType<void>
+    export type CreateFp360HrAbsenceMutationVariables = {employeeId: string;data: BodyType<Fp360HrAbsenceInput>}
+
+    /**
+ * @summary Request a fictional absence or leave period
+ */
+export const useCreateFp360HrAbsence = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360HrAbsence>>, TError,CreateFp360HrAbsenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360HrAbsence>>,
+        TError,
+        CreateFp360HrAbsenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360HrAbsenceMutationOptions(options), queryClient);
+    }
+
+export const getReviewFp360HrAbsenceUrl = (absenceId: string,) => {
+
+
+
+
+  return `/api/redfp360/hr/absences/${absenceId}/review`
+}
+
+/**
+ * @summary Review a fictional absence request
+ */
+export const reviewFp360HrAbsence = async (absenceId: string,
+    fp360HrAbsenceReviewInput: Fp360HrAbsenceReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360HrAbsence> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360HrAbsence>(getReviewFp360HrAbsenceUrl(absenceId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360HrAbsenceReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewFp360HrAbsenceMutationKey = () => ['reviewFp360HrAbsence'] as const;
+
+export const getReviewFp360HrAbsenceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360HrAbsence>>, TError,ReviewFp360HrAbsenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewFp360HrAbsence>>, TError,ReviewFp360HrAbsenceMutationVariables, TContext> => {
+
+const mutationKey = getReviewFp360HrAbsenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewFp360HrAbsence>>, ReviewFp360HrAbsenceMutationVariables> = (props) => {
+          const {absenceId,data} = props ?? {};
+
+          return  reviewFp360HrAbsence(absenceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewFp360HrAbsenceMutationResult = NonNullable<Awaited<ReturnType<typeof reviewFp360HrAbsence>>>
+    export type ReviewFp360HrAbsenceMutationBody = BodyType<Fp360HrAbsenceReviewInput>
+    export type ReviewFp360HrAbsenceMutationError = ErrorType<void>
+    export type ReviewFp360HrAbsenceMutationVariables = {absenceId: string;data: BodyType<Fp360HrAbsenceReviewInput>}
+
+    /**
+ * @summary Review a fictional absence request
+ */
+export const useReviewFp360HrAbsence = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360HrAbsence>>, TError,ReviewFp360HrAbsenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviewFp360HrAbsence>>,
+        TError,
+        ReviewFp360HrAbsenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewFp360HrAbsenceMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360HrTerminationUrl = (employeeId: string,) => {
+
+
+
+
+  return `/api/redfp360/hr/employees/${employeeId}/termination`
+}
+
+/**
+ * @summary Request a simulated employee termination
+ */
+export const createFp360HrTermination = async (employeeId: string,
+    fp360HrTerminationInput: Fp360HrTerminationInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360HrLifecycleChange> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360HrLifecycleChange>(getCreateFp360HrTerminationUrl(employeeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360HrTerminationInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360HrTerminationMutationKey = () => ['createFp360HrTermination'] as const;
+
+export const getCreateFp360HrTerminationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360HrTermination>>, TError,CreateFp360HrTerminationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360HrTermination>>, TError,CreateFp360HrTerminationMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360HrTerminationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360HrTermination>>, CreateFp360HrTerminationMutationVariables> = (props) => {
+          const {employeeId,data} = props ?? {};
+
+          return  createFp360HrTermination(employeeId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360HrTerminationMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360HrTermination>>>
+    export type CreateFp360HrTerminationMutationBody = BodyType<Fp360HrTerminationInput>
+    export type CreateFp360HrTerminationMutationError = ErrorType<void>
+    export type CreateFp360HrTerminationMutationVariables = {employeeId: string;data: BodyType<Fp360HrTerminationInput>}
+
+    /**
+ * @summary Request a simulated employee termination
+ */
+export const useCreateFp360HrTermination = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360HrTermination>>, TError,CreateFp360HrTerminationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360HrTermination>>,
+        TError,
+        CreateFp360HrTerminationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360HrTerminationMutationOptions(options), queryClient);
+    }
+
+export const getReviewFp360HrTerminationUrl = (changeId: string,) => {
+
+
+
+
+  return `/api/redfp360/hr/terminations/${changeId}/review`
+}
+
+/**
+ * @summary Review a simulated employee termination
+ */
+export const reviewFp360HrTermination = async (changeId: string,
+    fp360HrTerminationReviewInput: Fp360HrTerminationReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360HrLifecycleChange> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360HrLifecycleChange>(getReviewFp360HrTerminationUrl(changeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360HrTerminationReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewFp360HrTerminationMutationKey = () => ['reviewFp360HrTermination'] as const;
+
+export const getReviewFp360HrTerminationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360HrTermination>>, TError,ReviewFp360HrTerminationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewFp360HrTermination>>, TError,ReviewFp360HrTerminationMutationVariables, TContext> => {
+
+const mutationKey = getReviewFp360HrTerminationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewFp360HrTermination>>, ReviewFp360HrTerminationMutationVariables> = (props) => {
+          const {changeId,data} = props ?? {};
+
+          return  reviewFp360HrTermination(changeId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewFp360HrTerminationMutationResult = NonNullable<Awaited<ReturnType<typeof reviewFp360HrTermination>>>
+    export type ReviewFp360HrTerminationMutationBody = BodyType<Fp360HrTerminationReviewInput>
+    export type ReviewFp360HrTerminationMutationError = ErrorType<void>
+    export type ReviewFp360HrTerminationMutationVariables = {changeId: string;data: BodyType<Fp360HrTerminationReviewInput>}
+
+    /**
+ * @summary Review a simulated employee termination
+ */
+export const useReviewFp360HrTermination = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360HrTermination>>, TError,ReviewFp360HrTerminationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviewFp360HrTermination>>,
+        TError,
+        ReviewFp360HrTerminationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewFp360HrTerminationMutationOptions(options), queryClient);
+    }
+
+export const getGetFp360SocialSecurityOverviewUrl = (params: GetFp360SocialSecurityOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/social-security/overview?${stringifiedParams}` : `/api/redfp360/social-security/overview`
+}
+
+/**
+ * @summary Get simulated workforce affiliation and contribution records
+ */
+export const getFp360SocialSecurityOverview = async (params: GetFp360SocialSecurityOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<Fp360SocialSecurityOverview> => {
+
+  return customFetch<Fp360SocialSecurityOverview>(getGetFp360SocialSecurityOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360SocialSecurityOverviewQueryKey = (params?: GetFp360SocialSecurityOverviewParams,) => {
+    return [
+    `/api/redfp360/social-security/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360SocialSecurityOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>, TError = ErrorType<void>>(params: GetFp360SocialSecurityOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360SocialSecurityOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>> = ({ signal }) => getFp360SocialSecurityOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360SocialSecurityOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>>
+export type GetFp360SocialSecurityOverviewQueryError = ErrorType<void>
+
+
+export function useGetFp360SocialSecurityOverview<TData = Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>, TError = ErrorType<void>>(
+ params: GetFp360SocialSecurityOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360SocialSecurityOverview<TData = Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>, TError = ErrorType<void>>(
+ params: GetFp360SocialSecurityOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360SocialSecurityOverview<TData = Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>, TError = ErrorType<void>>(
+ params: GetFp360SocialSecurityOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get simulated workforce affiliation and contribution records
+ */
+
+export function useGetFp360SocialSecurityOverview<TData = Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>, TError = ErrorType<void>>(
+ params: GetFp360SocialSecurityOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360SocialSecurityOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360SocialSecurityOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360SocialSecurityWorkerUrl = () => {
+
+
+
+
+  return `/api/redfp360/social-security/workers`
+}
+
+/**
+ * @summary Create a fictional worker and a pending simulated registration
+ */
+export const createFp360SocialSecurityWorker = async (fp360SocialSecurityWorkerInput: Fp360SocialSecurityWorkerInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360SocialSecurityWorker> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360SocialSecurityWorker>(getCreateFp360SocialSecurityWorkerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360SocialSecurityWorkerInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360SocialSecurityWorkerMutationKey = () => ['createFp360SocialSecurityWorker'] as const;
+
+export const getCreateFp360SocialSecurityWorkerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360SocialSecurityWorker>>, TError,CreateFp360SocialSecurityWorkerMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360SocialSecurityWorker>>, TError,CreateFp360SocialSecurityWorkerMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360SocialSecurityWorkerMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360SocialSecurityWorker>>, CreateFp360SocialSecurityWorkerMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360SocialSecurityWorker(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360SocialSecurityWorkerMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360SocialSecurityWorker>>>
+    export type CreateFp360SocialSecurityWorkerMutationBody = BodyType<Fp360SocialSecurityWorkerInput>
+    export type CreateFp360SocialSecurityWorkerMutationError = ErrorType<void>
+    export type CreateFp360SocialSecurityWorkerMutationVariables = {data: BodyType<Fp360SocialSecurityWorkerInput>}
+
+    /**
+ * @summary Create a fictional worker and a pending simulated registration
+ */
+export const useCreateFp360SocialSecurityWorker = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360SocialSecurityWorker>>, TError,CreateFp360SocialSecurityWorkerMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360SocialSecurityWorker>>,
+        TError,
+        CreateFp360SocialSecurityWorkerMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360SocialSecurityWorkerMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360SocialSecurityMovementUrl = (workerId: string,) => {
+
+
+
+
+  return `/api/redfp360/social-security/workers/${workerId}/movements`
+}
+
+/**
+ * @summary Create a simulated worker affiliation movement
+ */
+export const createFp360SocialSecurityMovement = async (workerId: string,
+    fp360SocialSecurityMovementInput: Fp360SocialSecurityMovementInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360SocialSecurityMovement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360SocialSecurityMovement>(getCreateFp360SocialSecurityMovementUrl(workerId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360SocialSecurityMovementInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360SocialSecurityMovementMutationKey = () => ['createFp360SocialSecurityMovement'] as const;
+
+export const getCreateFp360SocialSecurityMovementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360SocialSecurityMovement>>, TError,CreateFp360SocialSecurityMovementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360SocialSecurityMovement>>, TError,CreateFp360SocialSecurityMovementMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360SocialSecurityMovementMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360SocialSecurityMovement>>, CreateFp360SocialSecurityMovementMutationVariables> = (props) => {
+          const {workerId,data} = props ?? {};
+
+          return  createFp360SocialSecurityMovement(workerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360SocialSecurityMovementMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360SocialSecurityMovement>>>
+    export type CreateFp360SocialSecurityMovementMutationBody = BodyType<Fp360SocialSecurityMovementInput>
+    export type CreateFp360SocialSecurityMovementMutationError = ErrorType<void>
+    export type CreateFp360SocialSecurityMovementMutationVariables = {workerId: string;data: BodyType<Fp360SocialSecurityMovementInput>}
+
+    /**
+ * @summary Create a simulated worker affiliation movement
+ */
+export const useCreateFp360SocialSecurityMovement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360SocialSecurityMovement>>, TError,CreateFp360SocialSecurityMovementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360SocialSecurityMovement>>,
+        TError,
+        CreateFp360SocialSecurityMovementMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360SocialSecurityMovementMutationOptions(options), queryClient);
+    }
+
+export const getReviewFp360SocialSecurityMovementUrl = (movementId: string,) => {
+
+
+
+
+  return `/api/redfp360/social-security/movements/${movementId}/review`
+}
+
+/**
+ * @summary Review a simulated affiliation movement
+ */
+export const reviewFp360SocialSecurityMovement = async (movementId: string,
+    fp360SocialSecurityMovementReviewInput: Fp360SocialSecurityMovementReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360SocialSecurityMovement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360SocialSecurityMovement>(getReviewFp360SocialSecurityMovementUrl(movementId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360SocialSecurityMovementReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewFp360SocialSecurityMovementMutationKey = () => ['reviewFp360SocialSecurityMovement'] as const;
+
+export const getReviewFp360SocialSecurityMovementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360SocialSecurityMovement>>, TError,ReviewFp360SocialSecurityMovementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewFp360SocialSecurityMovement>>, TError,ReviewFp360SocialSecurityMovementMutationVariables, TContext> => {
+
+const mutationKey = getReviewFp360SocialSecurityMovementMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewFp360SocialSecurityMovement>>, ReviewFp360SocialSecurityMovementMutationVariables> = (props) => {
+          const {movementId,data} = props ?? {};
+
+          return  reviewFp360SocialSecurityMovement(movementId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewFp360SocialSecurityMovementMutationResult = NonNullable<Awaited<ReturnType<typeof reviewFp360SocialSecurityMovement>>>
+    export type ReviewFp360SocialSecurityMovementMutationBody = BodyType<Fp360SocialSecurityMovementReviewInput>
+    export type ReviewFp360SocialSecurityMovementMutationError = ErrorType<void>
+    export type ReviewFp360SocialSecurityMovementMutationVariables = {movementId: string;data: BodyType<Fp360SocialSecurityMovementReviewInput>}
+
+    /**
+ * @summary Review a simulated affiliation movement
+ */
+export const useReviewFp360SocialSecurityMovement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360SocialSecurityMovement>>, TError,ReviewFp360SocialSecurityMovementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviewFp360SocialSecurityMovement>>,
+        TError,
+        ReviewFp360SocialSecurityMovementMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewFp360SocialSecurityMovementMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360SocialSecuritySettlementUrl = () => {
+
+
+
+
+  return `/api/redfp360/social-security/settlements`
+}
+
+/**
+ * @summary Create a monthly educational contribution statement from active fictional workers
+ */
+export const createFp360SocialSecuritySettlement = async (fp360SocialSecuritySettlementInput: Fp360SocialSecuritySettlementInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360SocialSecuritySettlement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360SocialSecuritySettlement>(getCreateFp360SocialSecuritySettlementUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360SocialSecuritySettlementInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360SocialSecuritySettlementMutationKey = () => ['createFp360SocialSecuritySettlement'] as const;
+
+export const getCreateFp360SocialSecuritySettlementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360SocialSecuritySettlement>>, TError,CreateFp360SocialSecuritySettlementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360SocialSecuritySettlement>>, TError,CreateFp360SocialSecuritySettlementMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360SocialSecuritySettlementMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360SocialSecuritySettlement>>, CreateFp360SocialSecuritySettlementMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360SocialSecuritySettlement(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360SocialSecuritySettlementMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360SocialSecuritySettlement>>>
+    export type CreateFp360SocialSecuritySettlementMutationBody = BodyType<Fp360SocialSecuritySettlementInput>
+    export type CreateFp360SocialSecuritySettlementMutationError = ErrorType<void>
+    export type CreateFp360SocialSecuritySettlementMutationVariables = {data: BodyType<Fp360SocialSecuritySettlementInput>}
+
+    /**
+ * @summary Create a monthly educational contribution statement from active fictional workers
+ */
+export const useCreateFp360SocialSecuritySettlement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360SocialSecuritySettlement>>, TError,CreateFp360SocialSecuritySettlementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360SocialSecuritySettlement>>,
+        TError,
+        CreateFp360SocialSecuritySettlementMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360SocialSecuritySettlementMutationOptions(options), queryClient);
+    }
+
+export const getReviewFp360SocialSecuritySettlementUrl = (settlementId: string,) => {
+
+
+
+
+  return `/api/redfp360/social-security/settlements/${settlementId}/review`
+}
+
+/**
+ * @summary Review or close a simulated monthly contribution statement
+ */
+export const reviewFp360SocialSecuritySettlement = async (settlementId: string,
+    fp360SocialSecuritySettlementReviewInput: Fp360SocialSecuritySettlementReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360SocialSecuritySettlement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360SocialSecuritySettlement>(getReviewFp360SocialSecuritySettlementUrl(settlementId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360SocialSecuritySettlementReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewFp360SocialSecuritySettlementMutationKey = () => ['reviewFp360SocialSecuritySettlement'] as const;
+
+export const getReviewFp360SocialSecuritySettlementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360SocialSecuritySettlement>>, TError,ReviewFp360SocialSecuritySettlementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewFp360SocialSecuritySettlement>>, TError,ReviewFp360SocialSecuritySettlementMutationVariables, TContext> => {
+
+const mutationKey = getReviewFp360SocialSecuritySettlementMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewFp360SocialSecuritySettlement>>, ReviewFp360SocialSecuritySettlementMutationVariables> = (props) => {
+          const {settlementId,data} = props ?? {};
+
+          return  reviewFp360SocialSecuritySettlement(settlementId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewFp360SocialSecuritySettlementMutationResult = NonNullable<Awaited<ReturnType<typeof reviewFp360SocialSecuritySettlement>>>
+    export type ReviewFp360SocialSecuritySettlementMutationBody = BodyType<Fp360SocialSecuritySettlementReviewInput>
+    export type ReviewFp360SocialSecuritySettlementMutationError = ErrorType<void>
+    export type ReviewFp360SocialSecuritySettlementMutationVariables = {settlementId: string;data: BodyType<Fp360SocialSecuritySettlementReviewInput>}
+
+    /**
+ * @summary Review or close a simulated monthly contribution statement
+ */
+export const useReviewFp360SocialSecuritySettlement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360SocialSecuritySettlement>>, TError,ReviewFp360SocialSecuritySettlementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviewFp360SocialSecuritySettlement>>,
+        TError,
+        ReviewFp360SocialSecuritySettlementMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewFp360SocialSecuritySettlementMutationOptions(options), queryClient);
+    }
 
 export const getUpdateFp360TaxProfileUrl = () => {
 

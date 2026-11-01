@@ -509,15 +509,18 @@ body { margin: 0; }
 .context-selector small { color: var(--fp-muted); font-size: 9px; white-space: nowrap; }
 .context-selector > svg { color: #94a4b3; }
 .nav-caption { padding: 4px 23px 9px; }
-.main-nav { display: flex; flex-direction: column; gap: 3px; padding: 0 11px; }
-.nav-link { height: 41px; padding: 0 12px; display: flex; align-items: center; gap: 12px; color: #536a82; border-radius: 7px; text-decoration: none; font-size: 12px; font-weight: 600; position: relative; }
+.main-nav { min-height: 0; flex: 1 1 auto; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #c8d5e1 transparent; display: flex; flex-direction: column; gap: 3px; padding: 0 11px; }
+.main-nav::-webkit-scrollbar { width: 6px; }
+.main-nav::-webkit-scrollbar-thumb { background: #c8d5e1; border-radius: 6px; }
+.main-nav::-webkit-scrollbar-track { background: transparent; }
+.nav-link { flex: 0 0 41px; height: 41px; padding: 0 12px; display: flex; align-items: center; gap: 12px; color: #536a82; border-radius: 7px; text-decoration: none; font-size: 12px; font-weight: 600; position: relative; }
 .nav-link > svg { color: #7e91a4; }
 .nav-link:hover { background: #f5f8fb; color: var(--fp-navy); }
 .nav-link.nav-active { color: var(--fp-blue); background: #edf5ff; font-weight: 700; }
 .nav-link.nav-active > svg { color: var(--fp-blue); }
 .nav-link.nav-active::before { content: ''; position: absolute; inset: 8px auto 8px 0; width: 3px; border-radius: 0 3px 3px 0; background: var(--fp-blue); }
 .nav-count { margin-left: auto; min-width: 22px; height: 19px; padding: 0 5px; border-radius: 5px; display: grid; place-items: center; font-size: 9px; color: #60758a; background: #eef2f6; }
-.sidebar-bottom { margin-top: auto; padding: 13px 13px 0; }
+.sidebar-bottom { flex: 0 0 auto; margin-top: auto; padding: 13px 13px 0; }
 .help-card { padding: 13px; background: #f5f8fc; border: 1px solid #e7eef6; border-radius: 9px; }
 .help-icon { color: var(--fp-blue); margin-bottom: 8px; }
 .help-card b { font-size: 11px; }
