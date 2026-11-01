@@ -18,6 +18,11 @@ import {
   CreateFp360HrTerminationResponse,
   CreateFp360HrVacancyBody,
   CreateFp360HrVacancyResponse,
+  CreateFp360EmploymentCommunicationBody,
+  CreateFp360EmploymentCommunicationResponse,
+  CreateFp360EmploymentCertificateBody,
+  CreateFp360EmploymentCertificateParams,
+  CreateFp360EmploymentCertificateResponse,
   DecideFp360HrCandidateBody,
   DecideFp360HrCandidateParams,
   DecideFp360HrCandidateResponse,
@@ -32,9 +37,15 @@ import {
   ReviewFp360HrTerminationBody,
   ReviewFp360HrTerminationParams,
   ReviewFp360HrTerminationResponse,
+  GetFp360EmploymentCommunicationsQueryParams,
+  GetFp360EmploymentCommunicationsResponse,
+  ResubmitFp360EmploymentCommunicationBody,
+  ResubmitFp360EmploymentCommunicationParams,
+  ResubmitFp360EmploymentCommunicationResponse,
 } from "@workspace/api-zod";
 import {
   db,
+  fpEmploymentCommunications,
   fpHrAbsences,
   fpHrCandidates,
   fpHrContracts,
@@ -218,6 +229,7 @@ async function lifecycleResponse(row: typeof fpHrLifecycleChanges.$inferSelect, 
 }
 
 router.use("/redfp360/hr", requireAuth, requireSimulationWriteAccess);
+router.use("/redfp360/employment", requireAuth, requireSimulationWriteAccess);
 
 router.get("/redfp360/hr/overview", route(async (request, response) => {
   const query = GetFp360HrOverviewQueryParams.safeParse(request.query);
@@ -824,6 +836,290 @@ router.post("/redfp360/hr/terminations/:changeId/review", route(async (request, 
     return [saved];
   });
   response.json(ReviewFp360HrTerminationResponse.parse(await lifecycleResponse(updated)));
+}));
+
+function employmentCommunicationResponse(row: typeof fpEmploymentCommunications.$inferSelect) {
+  return {
+    id: row.id,
+    organizationId: row.organizationId,
+    communicationRef: row.communicationRef,
+    communicationType: row.communicationType,
+    contractId: row.contractId,
+    lifecycleChangeId: row.lifecycleChangeId,
+    simulatedDate: row.simulatedDate,
+    status: row.status,
+    acknowledgmentRef: row.acknowledgmentRef,
+    responseMessage: row.responseMessage,
+    createdByName: row.createdByName,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    resubmittedAt: row.resubmittedAt?.toISOString() ?? null,
+  };
+}
+
+router.get("/redfp360/employment/communications", route(async (request, response) => {
+  const query = GetFp360EmploymentCommunicationsQueryParams.safeParse(request.query);
+  if (!query.success) {
+    response.status(400).json({ error: "Selecciona una organización válida." });
+    return;
+  }
+  const actor = request.auth as AuthContext;
+  const organizationId = await resolveOrganization(actor, query.data.organizationId);
+  if (!organizationId) {
+    response.status(403).json({ error: "No tienes acceso a la organización seleccionada." });
+    return;
+  }
+  const rows = await db.select().from(fpEmploymentCommunications).where(and(
+    eq(fpEmploymentCommunications.tenantId, actor.tenantId),
+    eq(fpEmploymentCommunications.organizationId, organizationId),
+  )).orderBy(desc(fpEmploymentCommunications.createdAt)).limit(200);
+  response.json(GetFp360EmploymentCommunicationsResponse.parse({
+    organizationId,
+    communications: rows.map(employmentCommunicationResponse),
+  }));
+}));
+
+router.post("/redfp360/employment/communications", route(async (request, response) => {
+  const body = CreateFp360EmploymentCommunicationBody.safeParse(request.body);
+  if (!body.success) {
+    response.status(400).json({ error: "Revisa los datos de la comunicación educativa." });
+    return;
+  }
+  const actor = request.auth as AuthContext;
+  const organizationId = await resolveOrganization(actor, body.data.organizationId);
+  if (!organizationId) {
+    response.status(403).json({ error: "No tienes acceso a la organización seleccionada." });
+    return;
+  }
+  if (!validScenarioDate(body.data.simulatedDate)
+    || (body.data.scenarioOutcome === "observed" && !body.data.responseMessage?.trim())) {
+    response.status(400).json({ error: "La fecha debe pertenecer al escenario 2027 y las observaciones deben explicar la subsanación." });
+    return;
+  }
+
+  let contractId: string | null = null;
+  let lifecycleChangeId: string | null = null;
+  let sourceLabel = "";
+  if (body.data.communicationType === "termination") {
+    lifecycleChangeId = body.data.lifecycleChangeId;
+    if (!lifecycleChangeId || body.data.contractId) {
+      response.status(400).json({ error: "La finalización debe vincularse a una solicitud de baja aprobada." });
+      return;
+    }
+    const [change] = await db.select().from(fpHrLifecycleChanges).where(and(
+      eq(fpHrLifecycleChanges.id, lifecycleChangeId),
+      eq(fpHrLifecycleChanges.tenantId, actor.tenantId),
+      eq(fpHrLifecycleChanges.organizationId, organizationId),
+    )).limit(1);
+    if (!change || change.status !== "approved") {
+      response.status(409).json({ error: "Solo se pueden comunicar finalizaciones ya aprobadas en el expediente simulado." });
+      return;
+    }
+    sourceLabel = `baja ${change.id}`;
+  } else {
+    contractId = body.data.contractId;
+    if (!contractId || body.data.lifecycleChangeId) {
+      response.status(400).json({ error: "La comunicación debe vincularse a una versión contractual." });
+      return;
+    }
+    const [contract] = await db.select().from(fpHrContracts).where(and(
+      eq(fpHrContracts.id, contractId),
+      eq(fpHrContracts.tenantId, actor.tenantId),
+      eq(fpHrContracts.organizationId, organizationId),
+    )).limit(1);
+    const expectedDocumentType = body.data.communicationType === "initial_contract" ? "initial" : "amendment";
+    if (!contract || contract.status !== "confirmed" || contract.documentType !== expectedDocumentType) {
+      response.status(409).json({ error: "La comunicación requiere una versión contractual confirmada del tipo correspondiente." });
+      return;
+    }
+    sourceLabel = `contrato ${contract.id}, versión ${contract.version}`;
+  }
+
+  const requestFingerprint = fingerprint(body.data);
+  const prior = await priorEvent(actor, body.data.operationId, requestFingerprint);
+  if (prior) {
+    const [existing] = await db.select().from(fpEmploymentCommunications).where(and(
+      eq(fpEmploymentCommunications.id, prior.entityId),
+      eq(fpEmploymentCommunications.organizationId, organizationId),
+    )).limit(1);
+    if (existing) {
+      response.status(201).json(CreateFp360EmploymentCommunicationResponse.parse(employmentCommunicationResponse(existing)));
+      return;
+    }
+  }
+  const [sameSource] = await db.select({ id: fpEmploymentCommunications.id }).from(fpEmploymentCommunications).where(and(
+    eq(fpEmploymentCommunications.tenantId, actor.tenantId),
+    contractId ? eq(fpEmploymentCommunications.contractId, contractId) : eq(fpEmploymentCommunications.lifecycleChangeId, lifecycleChangeId!),
+  )).limit(1);
+  if (sameSource) {
+    response.status(409).json({ error: "Este expediente ya tiene una comunicación simulada. Revisa su acuse o subsana la observación existente." });
+    return;
+  }
+
+  const id = randomUUID();
+  const now = new Date();
+  const saved = await db.transaction(async (tx) => {
+    const [communication] = await tx.insert(fpEmploymentCommunications).values({
+      id,
+      tenantId: actor.tenantId,
+      organizationId,
+      communicationRef: `EMP-COM-${id.slice(0, 8).toUpperCase()}`,
+      communicationType: body.data.communicationType,
+      contractId,
+      lifecycleChangeId,
+      simulatedDate: body.data.simulatedDate,
+      status: body.data.scenarioOutcome,
+      acknowledgmentRef: body.data.scenarioOutcome === "acknowledged" ? `SIM-ACK-${id.slice(0, 8).toUpperCase()}` : null,
+      responseMessage: body.data.scenarioOutcome === "acknowledged"
+        ? "Recibida por el portal de empleo simulado. Este acuse no tiene validez administrativa."
+        : body.data.responseMessage?.trim() ?? null,
+      operationId: body.data.operationId,
+      requestFingerprint,
+      createdByUserId: actor.userId,
+      createdByName: actor.displayName,
+      createdAt: now,
+      updatedAt: now,
+    }).onConflictDoNothing().returning();
+    if (!communication) throw new HrError(409, "Ya existe una comunicación para esta versión o identificador de operación.");
+    await appendEvent(tx, actor, organizationId, {
+      operationId: body.data.operationId,
+      requestFingerprint,
+      entityId: communication.id,
+      eventType: body.data.scenarioOutcome === "acknowledged" ? "employment_communication_acknowledged" : "employment_communication_observed",
+      description: `Comunicación laboral simulada ${body.data.scenarioOutcome} · ${sourceLabel} · fecha ${body.data.simulatedDate}.`,
+    });
+    return communication;
+  });
+  response.status(201).json(CreateFp360EmploymentCommunicationResponse.parse(employmentCommunicationResponse(saved)));
+}));
+
+router.post("/redfp360/employment/communications/:communicationId/resubmit", route(async (request, response) => {
+  const params = ResubmitFp360EmploymentCommunicationParams.safeParse(request.params);
+  const body = ResubmitFp360EmploymentCommunicationBody.safeParse(request.body);
+  if (!params.success || !body.success) {
+    response.status(400).json({ error: "Revisa la fecha y el identificador de reenvío." });
+    return;
+  }
+  const actor = request.auth as AuthContext;
+  const [communication] = await db.select().from(fpEmploymentCommunications).where(and(
+    eq(fpEmploymentCommunications.id, params.data.communicationId),
+    eq(fpEmploymentCommunications.tenantId, actor.tenantId),
+  )).limit(1);
+  if (!communication || !await resolveOrganization(actor, communication.organizationId)) {
+    response.status(404).json({ error: "No se encontró la comunicación educativa." });
+    return;
+  }
+  if (!validScenarioDate(body.data.simulatedDate)) {
+    response.status(400).json({ error: "La fecha de subsanación debe pertenecer al escenario 2027." });
+    return;
+  }
+  const requestFingerprint = fingerprint({ communicationId: communication.id, ...body.data });
+  const prior = await priorEvent(actor, body.data.operationId, requestFingerprint);
+  if (prior) {
+    const [existing] = await db.select().from(fpEmploymentCommunications).where(and(
+      eq(fpEmploymentCommunications.id, communication.id),
+      eq(fpEmploymentCommunications.organizationId, communication.organizationId),
+    )).limit(1);
+    if (existing) {
+      response.json(ResubmitFp360EmploymentCommunicationResponse.parse(employmentCommunicationResponse(existing)));
+      return;
+    }
+  }
+  if (communication.status !== "observed" || body.data.simulatedDate < communication.simulatedDate) {
+    response.status(409).json({ error: "Solo se puede reenviar una comunicación observada con una fecha coherente del escenario." });
+    return;
+  }
+  const now = new Date();
+  const updated = await db.transaction(async (tx) => {
+    const [saved] = await tx.update(fpEmploymentCommunications).set({
+      simulatedDate: body.data.simulatedDate,
+      status: "acknowledged",
+      acknowledgmentRef: `SIM-ACK-${randomUUID().slice(0, 8).toUpperCase()}`,
+      responseMessage: "Recibida tras la subsanación simulada. Este acuse no tiene validez administrativa.",
+      operationId: body.data.operationId,
+      requestFingerprint,
+      updatedAt: now,
+      resubmittedAt: now,
+    }).where(and(
+      eq(fpEmploymentCommunications.id, communication.id),
+      eq(fpEmploymentCommunications.status, "observed"),
+    )).returning();
+    if (!saved) throw new HrError(409, "La comunicación cambió mientras se subsanaba.");
+    await appendEvent(tx, actor, communication.organizationId, {
+      operationId: body.data.operationId,
+      requestFingerprint,
+      entityId: communication.id,
+      eventType: "employment_communication_resubmitted",
+      description: `Comunicación laboral simulada subsanada y recibida · ${communication.communicationRef} · fecha ${body.data.simulatedDate}.`,
+    });
+    return saved;
+  });
+  response.json(ResubmitFp360EmploymentCommunicationResponse.parse(employmentCommunicationResponse(updated)));
+}));
+
+router.post("/redfp360/employment/terminations/:changeId/certificate", route(async (request, response) => {
+  const params = CreateFp360EmploymentCertificateParams.safeParse(request.params);
+  const body = CreateFp360EmploymentCertificateBody.safeParse(request.body);
+  if (!params.success || !body.success) {
+    response.status(400).json({ error: "Revisa la referencia y el identificador del documento educativo." });
+    return;
+  }
+  const actor = request.auth as AuthContext;
+  const [change] = await db.select().from(fpHrLifecycleChanges).where(and(
+    eq(fpHrLifecycleChanges.id, params.data.changeId),
+    eq(fpHrLifecycleChanges.tenantId, actor.tenantId),
+  )).limit(1);
+  if (!change || !await resolveOrganization(actor, change.organizationId)) {
+    response.status(404).json({ error: "No se encontró la finalización educativa." });
+    return;
+  }
+  if (change.status !== "approved") {
+    response.status(409).json({ error: "La constancia solo se genera después de aprobar la finalización simulada." });
+    return;
+  }
+  const [employee] = await db.select().from(fpHrEmployees).where(and(
+    eq(fpHrEmployees.id, change.employeeId),
+    eq(fpHrEmployees.tenantId, actor.tenantId),
+    eq(fpHrEmployees.organizationId, change.organizationId),
+  )).limit(1);
+  if (!employee) {
+    response.status(404).json({ error: "No se encontró la referencia laboral asociada." });
+    return;
+  }
+  const requestFingerprint = fingerprint({ changeId: change.id, ...body.data });
+  const prior = await priorEvent(actor, body.data.operationId, requestFingerprint);
+  const [existingIssue] = prior ? [prior] : await db.select().from(fpHrEvents).where(and(
+    eq(fpHrEvents.tenantId, actor.tenantId),
+    eq(fpHrEvents.organizationId, change.organizationId),
+    eq(fpHrEvents.entityId, change.id),
+    eq(fpHrEvents.eventType, "employment_certificate_issued"),
+  )).limit(1);
+  let issuedAt = existingIssue?.createdAt ?? null;
+  if (!issuedAt) {
+    const now = new Date();
+    await db.transaction(async (tx) => {
+      await appendEvent(tx, actor, change.organizationId, {
+        operationId: body.data.operationId,
+        requestFingerprint,
+        entityId: change.id,
+        eventType: "employment_certificate_issued",
+        description: `Constancia educativa de finalización emitida · ${employee.workerRef} · fecha efectiva ${change.effectiveDate}.`,
+      });
+    });
+    issuedAt = now;
+  }
+  response.status(201).json(CreateFp360EmploymentCertificateResponse.parse({
+    id: change.id,
+    certificateRef: `CONST-2027-${change.id.slice(0, 8).toUpperCase()}`,
+    organizationId: change.organizationId,
+    workerRef: employee.workerRef,
+    jobTitle: employee.jobTitle,
+    department: employee.department,
+    effectiveDate: change.effectiveDate,
+    simulatedDate: SIMULATED_DATE,
+    issuedAt: issuedAt.toISOString(),
+    disclaimer: "CONSTANCIA DIDÁCTICA · SIN VALIDEZ OFICIAL NI EFECTOS LABORALES",
+  }));
 }));
 
 export default router;

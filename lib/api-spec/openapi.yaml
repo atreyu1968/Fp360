@@ -254,6 +254,97 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Fp360Dashboard"
+  /redfp360/simulations/overview:
+    get:
+      operationId: getFp360SimulationsOverview
+      tags: [redfp360]
+      summary: List campaigns and scenario events visible to the actor
+      responses:
+        "200":
+          description: Campaigns, events, and active organizations available for the simulation workspace
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360SimulationsOverview" }
+  /redfp360/simulations/campaigns:
+    post:
+      operationId: createFp360SimulationCampaign
+      tags: [redfp360]
+      summary: Create a draft educational campaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360SimulationCampaignInput" }
+      responses:
+        "201":
+          description: Draft campaign
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360SimulationCampaign" }
+        "400": { description: Invalid campaign data }
+  /redfp360/simulations/campaigns/{id}/action:
+    post:
+      operationId: actOnFp360SimulationCampaign
+      tags: [redfp360]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360SimulationCampaignAction" }
+      responses:
+        "200":
+          description: Updated campaign state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360SimulationCampaign" }
+        "400": { description: Invalid campaign transition }
+  /redfp360/simulations/campaigns/{id}/events:
+    post:
+      operationId: createFp360SimulationEvent
+      tags: [redfp360]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360SimulationEventInput" }
+      responses:
+        "201":
+          description: Draft scenario event
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360SimulationEvent" }
+        "400": { description: Invalid scenario event }
+  /redfp360/simulations/events/{id}/action:
+    post:
+      operationId: actOnFp360SimulationEvent
+      tags: [redfp360]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360SimulationEventAction" }
+      responses:
+        "200":
+          description: Updated event state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360SimulationEvent" }
+        "400": { description: Invalid event transition }
   /redfp360/direction/overview:
     get:
       operationId: getFp360DirectionOverview
@@ -2079,6 +2170,349 @@ paths:
               schema: { $ref: "#/components/schemas/Fp360PayrollRun" }
         "401":
           description: Authentication required
+  /redfp360/projects/overview:
+    get:
+      operationId: getFp360ProjectsOverview
+      tags: [redfp360]
+      summary: Get projects, work, costs, deliverables, and billing status
+      parameters:
+        - in: query
+          name: organizationId
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Project portfolio for one organization
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectsOverview" }
+        "401":
+          description: Authentication required
+  /redfp360/projects:
+    post:
+      operationId: createFp360Project
+      tags: [redfp360]
+      summary: Create an internal or customer project draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectInput" }
+      responses:
+        "201":
+          description: Project draft created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360Project" }
+        "401":
+          description: Authentication required
+  /redfp360/projects/{projectId}/actions:
+    post:
+      operationId: actOnFp360Project
+      tags: [redfp360]
+      summary: Plan, start, pause, complete, close, or cancel a project
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectActionInput" }
+      responses:
+        "200":
+          description: Project after transition
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360Project" }
+        "401":
+          description: Authentication required
+  /redfp360/projects/{projectId}/revisions:
+    post:
+      operationId: createFp360ProjectRevision
+      tags: [redfp360]
+      summary: Propose a versioned scope or budget revision
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectRevisionInput" }
+      responses:
+        "201":
+          description: Revision submitted for review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectRevision" }
+        "401":
+          description: Authentication required
+  /redfp360/project-revisions/{revisionId}/review:
+    post:
+      operationId: reviewFp360ProjectRevision
+      tags: [redfp360]
+      summary: Approve or reject a proposed project revision
+      parameters:
+        - in: path
+          name: revisionId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectRevisionReviewInput" }
+      responses:
+        "200":
+          description: Reviewed revision
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectRevision" }
+        "401":
+          description: Authentication required
+  /redfp360/projects/{projectId}/work-orders:
+    post:
+      operationId: createFp360ProjectWorkOrder
+      tags: [redfp360]
+      summary: Create a work order with a didactic cost rate
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectWorkOrderInput" }
+      responses:
+        "201":
+          description: Work order created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectWorkOrder" }
+        "401":
+          description: Authentication required
+  /redfp360/project-work-orders/{workOrderId}/actions:
+    post:
+      operationId: actOnFp360ProjectWorkOrder
+      tags: [redfp360]
+      summary: Start, complete, review, or block a work order
+      parameters:
+        - in: path
+          name: workOrderId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectWorkOrderActionInput" }
+      responses:
+        "200":
+          description: Updated work order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectWorkOrder" }
+        "401":
+          description: Authentication required
+  /redfp360/project-time-entries:
+    post:
+      operationId: createFp360ProjectTimeEntry
+      tags: [redfp360]
+      summary: Record a simulated time entry within the project calendar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectTimeEntryInput" }
+      responses:
+        "201":
+          description: Time entry submitted for review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectTimeEntry" }
+        "401":
+          description: Authentication required
+  /redfp360/project-time-entries/{entryId}/review:
+    post:
+      operationId: reviewFp360ProjectTimeEntry
+      tags: [redfp360]
+      summary: Approve or reject a submitted time entry
+      parameters:
+        - in: path
+          name: entryId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectReviewInput" }
+      responses:
+        "200":
+          description: Reviewed time entry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectTimeEntry" }
+        "401":
+          description: Authentication required
+  /redfp360/project-resources:
+    post:
+      operationId: createFp360ProjectResource
+      tags: [redfp360]
+      summary: Record a project material or external service cost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectResourceInput" }
+      responses:
+        "201":
+          description: Resource cost submitted for review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectResource" }
+        "401":
+          description: Authentication required
+  /redfp360/project-resources/{resourceId}/review:
+    post:
+      operationId: reviewFp360ProjectResource
+      tags: [redfp360]
+      summary: Approve or reject a project resource cost
+      parameters:
+        - in: path
+          name: resourceId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectReviewInput" }
+      responses:
+        "200":
+          description: Reviewed resource cost
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectResource" }
+        "401":
+          description: Authentication required
+  /redfp360/projects/{projectId}/milestones:
+    post:
+      operationId: createFp360ProjectMilestone
+      tags: [redfp360]
+      summary: Add a project milestone with an agreed didactic billing amount
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectMilestoneInput" }
+      responses:
+        "201":
+          description: Milestone created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectMilestone" }
+        "401":
+          description: Authentication required
+  /redfp360/project-milestones/{milestoneId}/actions:
+    post:
+      operationId: actOnFp360ProjectMilestone
+      tags: [redfp360]
+      summary: Start, submit, accept, or reject a milestone
+      parameters:
+        - in: path
+          name: milestoneId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectMilestoneActionInput" }
+      responses:
+        "200":
+          description: Updated milestone
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectMilestone" }
+        "401":
+          description: Authentication required
+  /redfp360/projects/{projectId}/deliverables:
+    post:
+      operationId: createFp360ProjectDeliverable
+      tags: [redfp360]
+      summary: Create a deliverable linked to the project or a milestone
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectDeliverableInput" }
+      responses:
+        "201":
+          description: Deliverable draft created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectDeliverable" }
+        "401":
+          description: Authentication required
+  /redfp360/project-deliverables/{deliverableId}/actions:
+    post:
+      operationId: actOnFp360ProjectDeliverable
+      tags: [redfp360]
+      summary: Submit, accept, request changes, or reject a deliverable
+      parameters:
+        - in: path
+          name: deliverableId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectDeliverableActionInput" }
+      responses:
+        "200":
+          description: Updated deliverable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectDeliverable" }
+        "401":
+          description: Authentication required
+  /redfp360/project-billing-requests:
+    post:
+      operationId: createFp360ProjectBilling
+      tags: [redfp360]
+      summary: Create one service order for an accepted project milestone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360ProjectBillingInput" }
+      responses:
+        "201":
+          description: Service order ready for the existing invoice workflow
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360ProjectBilling" }
+        "401":
+          description: Authentication required
   /redfp360/customer-service/overview:
     get:
       operationId: getFp360CustomerServiceOverview
@@ -2218,6 +2652,242 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Fp360CustomerAgreement" }
+        "401":
+          description: Authentication required
+  /redfp360/employment/communications:
+    get:
+      operationId: getFp360EmploymentCommunications
+      tags: [redfp360]
+      summary: Get simulated contract communications for one organization
+      parameters:
+        - in: query
+          name: organizationId
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Educational communications and simulated acknowledgements
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360EmploymentCommunicationsResponse" }
+        "401":
+          description: Authentication required
+    post:
+      operationId: createFp360EmploymentCommunication
+      tags: [redfp360]
+      summary: Submit a fictional employment communication to the simulated portal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360EmploymentCommunicationInput" }
+      responses:
+        "201":
+          description: Simulated communication and acknowledgement
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360EmploymentCommunication" }
+        "401":
+          description: Authentication required
+  /redfp360/employment/communications/{communicationId}/resubmit:
+    post:
+      operationId: resubmitFp360EmploymentCommunication
+      tags: [redfp360]
+      summary: Resubmit an observed communication after simulated correction
+      parameters:
+        - in: path
+          name: communicationId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360EmploymentCommunicationResubmitInput" }
+      responses:
+        "200":
+          description: Updated simulated communication
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360EmploymentCommunication" }
+        "401":
+          description: Authentication required
+  /redfp360/employment/terminations/{changeId}/certificate:
+    post:
+      operationId: createFp360EmploymentCertificate
+      tags: [redfp360]
+      summary: Issue an educational-only employment closure certificate
+      parameters:
+        - in: path
+          name: changeId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360EmploymentCertificateInput" }
+      responses:
+        "201":
+          description: Persisted educational certificate record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360EmploymentCertificate" }
+        "401":
+          description: Authentication required
+  /redfp360/communications:
+    get:
+      operationId: getFp360CommunicationsOverview
+      tags: [redfp360]
+      summary: Get organization-scoped simulated communications
+      parameters:
+        - in: query
+          name: organizationId
+          required: true
+          schema: { type: string, minLength: 1 }
+        - in: query
+          name: search
+          required: false
+          schema: { type: string, maxLength: 100 }
+      responses:
+        "200":
+          description: Messages, tasks, templates, and internal notification totals
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CommunicationsOverview" }
+        "401":
+          description: Authentication required
+  /redfp360/communications/threads:
+    post:
+      operationId: createFp360CommunicationsThread
+      tags: [redfp360]
+      summary: Create a fictional message draft or send a new internal thread
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360CommunicationsCreateThreadInput" }
+      responses:
+        "201":
+          description: Created simulated thread
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CommunicationsThread" }
+        "401":
+          description: Authentication required
+  /redfp360/communications/threads/{threadId}/send:
+    post:
+      operationId: sendFp360CommunicationsThread
+      tags: [redfp360]
+      summary: Send a saved draft inside the training network
+      parameters:
+        - in: path
+          name: threadId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360CommunicationsOperationInput" }
+      responses:
+        "200":
+          description: Draft sent inside the simulated network
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CommunicationsThread" }
+        "401":
+          description: Authentication required
+  /redfp360/communications/threads/{threadId}/messages:
+    post:
+      operationId: replyFp360CommunicationsThread
+      tags: [redfp360]
+      summary: Add a simulated internal reply to a thread
+      parameters:
+        - in: path
+          name: threadId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360CommunicationsReplyInput" }
+      responses:
+        "201":
+          description: Added simulated reply
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CommunicationsThread" }
+        "401":
+          description: Authentication required
+  /redfp360/communications/threads/{threadId}/state:
+    post:
+      operationId: updateFp360CommunicationsThreadState
+      tags: [redfp360]
+      summary: Mark a thread read, archive it, or assign a department
+      parameters:
+        - in: path
+          name: threadId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360CommunicationsThreadStateInput" }
+      responses:
+        "200":
+          description: Updated thread state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CommunicationsThread" }
+        "401":
+          description: Authentication required
+  /redfp360/communications/threads/{threadId}/tasks:
+    post:
+      operationId: createFp360CommunicationsTask
+      tags: [redfp360]
+      summary: Create a separate departmental commitment with a due date
+      parameters:
+        - in: path
+          name: threadId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360CommunicationsTaskInput" }
+      responses:
+        "201":
+          description: Created task linked to the conversation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CommunicationsThread" }
+        "401":
+          description: Authentication required
+  /redfp360/communications/tasks/{taskId}/complete:
+    post:
+      operationId: completeFp360CommunicationsTask
+      tags: [redfp360]
+      summary: Complete a simulated communication commitment
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360CommunicationsOperationInput" }
+      responses:
+        "200":
+          description: Completed simulated task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CommunicationsOverview" }
         "401":
           description: Authentication required
   /redfp360/hr/overview:
@@ -2693,6 +3363,294 @@ paths:
               schema: { $ref: "#/components/schemas/Fp360TaxRequirement" }
         "404":
           description: Request not found
+  /redfp360/documents/overview:
+    get:
+      operationId: getFp360DocumentsOverview
+      tags: [redfp360]
+      summary: List documents, dossiers, versions, templates, and audit events
+      parameters:
+        - in: query
+          name: organizationId
+          required: true
+          schema: { type: string, minLength: 1 }
+        - in: query
+          name: documentId
+          schema: { type: string, minLength: 1 }
+        - in: query
+          name: search
+          schema: { type: string, maxLength: 120 }
+      responses:
+        "200":
+          description: Document management overview for the selected organization
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360DocumentsOverview" }
+        "401":
+          description: Authentication required
+  /redfp360/documents/dossiers:
+    post:
+      operationId: createFp360DocumentDossier
+      tags: [redfp360]
+      summary: Create a simulated document dossier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360DocumentDossierInput" }
+      responses:
+        "201":
+          description: Dossier created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360DocumentDossier" }
+        "401":
+          description: Authentication required
+  /redfp360/documents:
+    post:
+      operationId: createFp360Document
+      tags: [redfp360]
+      summary: Create a simulated document record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360DocumentInput" }
+      responses:
+        "201":
+          description: Document draft created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360Document" }
+        "401":
+          description: Authentication required
+  /redfp360/documents/{documentId}:
+    patch:
+      operationId: updateFp360Document
+      tags: [redfp360]
+      summary: Update metadata on an editable document
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360DocumentUpdateInput" }
+      responses:
+        "200":
+          description: Updated document
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360Document" }
+        "401":
+          description: Authentication required
+  /redfp360/documents/{documentId}/access-log:
+    post:
+      operationId: logFp360DocumentAccess
+      tags: [redfp360]
+      summary: Record an authenticated document detail view
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "201":
+          description: Access recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [recorded]
+                properties:
+                  recorded: { type: boolean }
+        "401":
+          description: Authentication required
+        "404":
+          description: Document not found
+  /redfp360/documents/dossiers/{dossierId}/actions:
+    post:
+      operationId: actOnFp360DocumentDossier
+      tags: [redfp360]
+      summary: Archive or reopen a dossier with its audit history preserved
+      parameters:
+        - in: path
+          name: dossierId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360DocumentDossierActionInput" }
+      responses:
+        "200":
+          description: Updated dossier
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360DocumentDossier" }
+        "401":
+          description: Authentication required
+  /redfp360/documents/dossiers/{dossierId}/package:
+    get:
+      operationId: downloadFp360DocumentDossierPackage
+      tags: [redfp360]
+      summary: Download an authenticated educational dossier package
+      parameters:
+        - in: path
+          name: dossierId
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: ZIP containing a manifest and verified document versions
+          content:
+            application/zip:
+              schema: { type: string, format: binary }
+        "401":
+          description: Authentication required
+        "403":
+          description: Reviewer access required
+        "404":
+          description: Dossier not found
+        "409":
+          description: Package cannot be generated
+        "413":
+          description: Package exceeds the size or version limit
+  /redfp360/documents/templates/{templateKey}/generate:
+    post:
+      operationId: generateFp360DocumentFromTemplate
+      tags: [redfp360]
+      summary: Generate a clearly marked educational document from a template
+      parameters:
+        - in: path
+          name: templateKey
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360DocumentTemplateInput" }
+      responses:
+        "201":
+          description: Educational document created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360Document" }
+        "401":
+          description: Authentication required
+  /redfp360/documents/{documentId}/versions/upload-url:
+    post:
+      operationId: requestFp360DocumentUploadUrl
+      tags: [redfp360]
+      summary: Create a new immutable document version and private upload URL
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360DocumentUploadInput" }
+      responses:
+        "201":
+          description: Upload URL created for the next document version
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360DocumentUploadUrlResponse" }
+        "401":
+          description: Authentication required
+  /redfp360/documents/{documentId}/versions/{versionId}/complete:
+    post:
+      operationId: completeFp360DocumentUpload
+      tags: [redfp360]
+      summary: Verify an uploaded file and finalize its version metadata
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema: { type: string, minLength: 1 }
+        - in: path
+          name: versionId
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Verified document version
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360DocumentVersion" }
+        "401":
+          description: Authentication required
+  /redfp360/documents/{documentId}/versions/{versionId}:
+    delete:
+      operationId: abandonFp360DocumentUpload
+      tags: [redfp360]
+      summary: Abandon an incomplete upload without deleting document history
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema: { type: string, minLength: 1 }
+        - in: path
+          name: versionId
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Pending upload abandoned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360DocumentDeleteResponse" }
+        "401":
+          description: Authentication required
+  /redfp360/documents/{documentId}/versions/{versionId}/download:
+    get:
+      operationId: downloadFp360DocumentVersion
+      tags: [redfp360]
+      summary: Download a document version through an access-controlled short-lived URL
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema: { type: string, minLength: 1 }
+        - in: path
+          name: versionId
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "302":
+          description: Redirect to a short-lived private download URL
+        "401":
+          description: Authentication required
+  /redfp360/documents/{documentId}/actions:
+    post:
+      operationId: actOnFp360Document
+      tags: [redfp360]
+      summary: Submit, review, confirm, finalize, void, or restore a document version
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360DocumentActionInput" }
+      responses:
+        "200":
+          description: Updated document record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360Document" }
+        "401":
+          description: Authentication required
 components:
   securitySchemes:
     sessionCookie:
@@ -3939,6 +4897,361 @@ components:
         withholdingBaseCents: { type: integer, minimum: 0, maximum: 1000000000 }
         withholdingCents: { type: integer, minimum: 0, maximum: 1000000000 }
         operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectsOverview:
+      type: object
+      required: [organizationId, simulatedDate, projects, customerOrganizations, serviceProducts, purchaseReceipts, purchaseReceiptLines, revisions, workOrders, timeEntries, resources, milestones, deliverables, billings, events, summary]
+      properties:
+        organizationId: { type: string }
+        simulatedDate: { type: string, format: date }
+        projects: { type: array, items: { $ref: "#/components/schemas/Fp360Project" } }
+        customerOrganizations: { type: array, items: { $ref: "#/components/schemas/Fp360ProjectOrganization" } }
+        serviceProducts: { type: array, items: { $ref: "#/components/schemas/Fp360ProjectServiceProduct" } }
+        purchaseReceipts: { type: array, items: { $ref: "#/components/schemas/Fp360ProjectPurchaseReceipt" } }
+        purchaseReceiptLines: { type: array, items: { $ref: "#/components/schemas/Fp360ProjectPurchaseReceiptLine" } }
+        revisions: { type: array, items: { $ref: "#/components/schemas/Fp360ProjectRevision" } }
+        workOrders: { type: array, items: { $ref: "#/components/schemas/Fp360ProjectWorkOrder" } }
+        timeEntries: { type: array, items: { $ref: "#/components/schemas/Fp360ProjectTimeEntry" } }
+        resources: { type: array, items: { $ref: "#/components/schemas/Fp360ProjectResource" } }
+        milestones: { type: array, items: { $ref: "#/components/schemas/Fp360ProjectMilestone" } }
+        deliverables: { type: array, items: { $ref: "#/components/schemas/Fp360ProjectDeliverable" } }
+        billings: { type: array, items: { $ref: "#/components/schemas/Fp360ProjectBilling" } }
+        events: { type: array, items: { $ref: "#/components/schemas/Fp360ProjectEvent" } }
+        summary:
+          type: object
+          required: [activeProjects, pendingReviews, plannedMinutes, approvedMinutes, approvedCostCents, acceptedValueCents, invoicedCents, upcomingMilestones]
+          properties:
+            activeProjects: { type: integer, minimum: 0 }
+            pendingReviews: { type: integer, minimum: 0 }
+            plannedMinutes: { type: integer, minimum: 0 }
+            approvedMinutes: { type: integer, minimum: 0 }
+            approvedCostCents: { type: integer, minimum: 0 }
+            acceptedValueCents: { type: integer, minimum: 0 }
+            invoicedCents: { type: integer, minimum: 0 }
+            upcomingMilestones: { type: integer, minimum: 0 }
+    Fp360ProjectOrganization:
+      type: object
+      required: [id, name, center, island]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        center: { type: string }
+        island: { type: string }
+    Fp360ProjectServiceProduct:
+      type: object
+      required: [id, sku, name, unitPriceCents, igicBasisPoints]
+      properties:
+        id: { type: string }
+        sku: { type: string }
+        name: { type: string }
+        unitPriceCents: { type: integer, minimum: 0 }
+        igicBasisPoints: { type: integer, minimum: 0, maximum: 10000 }
+    Fp360ProjectPurchaseReceipt:
+      type: object
+      required: [id, reference, receivedDate, status]
+      properties:
+        id: { type: string }
+        reference: { type: string }
+        receivedDate: { type: string, format: date }
+        status: { type: string }
+    Fp360ProjectPurchaseReceiptLine:
+      type: object
+      required: [id, receiptId, receiptReference, sku, productName, quantityAccepted, unitPriceCents]
+      properties:
+        id: { type: string }
+        receiptId: { type: string }
+        receiptReference: { type: string }
+        sku: { type: string }
+        productName: { type: string }
+        quantityAccepted: { type: integer, minimum: 1 }
+        unitPriceCents: { type: integer, minimum: 0 }
+    Fp360Project:
+      type: object
+      required: [id, organizationId, customerOrganizationId, customerOrganizationName, projectRef, projectType, title, objective, scope, budgetMinutes, budgetAmountCents, startDate, endDate, status, version, createdByName, createdAt, updatedAt, actualMinutes, actualCostCents, acceptedValueCents, invoicedCents, projectedMarginCents]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        customerOrganizationId: { type: ["string", "null"] }
+        customerOrganizationName: { type: ["string", "null"] }
+        projectRef: { type: string }
+        projectType: { type: string, enum: [internal, external] }
+        title: { type: string }
+        objective: { type: string }
+        scope: { type: string }
+        budgetMinutes: { type: integer, minimum: 0 }
+        budgetAmountCents: { type: integer, minimum: 0 }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        status: { type: string, enum: [draft, planned, in_progress, on_hold, completed, closed, cancelled] }
+        version: { type: integer, minimum: 1 }
+        createdByName: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        actualMinutes: { type: integer, minimum: 0 }
+        actualCostCents: { type: integer, minimum: 0 }
+        acceptedValueCents: { type: integer, minimum: 0 }
+        invoicedCents: { type: integer, minimum: 0 }
+        projectedMarginCents: { type: integer }
+    Fp360ProjectInput:
+      type: object
+      required: [organizationId, projectType, title, objective, scope, budgetMinutes, budgetAmountCents, startDate, endDate, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        customerOrganizationId: { type: string, minLength: 1 }
+        projectType: { type: string, enum: [internal, external] }
+        title: { type: string, minLength: 3, maxLength: 140 }
+        objective: { type: string, minLength: 10, maxLength: 1000 }
+        scope: { type: string, minLength: 10, maxLength: 3000 }
+        budgetMinutes: { type: integer, minimum: 60, maximum: 1000000 }
+        budgetAmountCents: { type: integer, minimum: 0, maximum: 1000000000 }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectActionInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [plan, start, hold, resume, complete, close, cancel] }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectRevision:
+      type: object
+      required: [id, projectId, version, title, objective, scope, budgetMinutes, budgetAmountCents, status, reason, createdByName, reviewedByName, createdAt, reviewedAt]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        version: { type: integer, minimum: 2 }
+        title: { type: string }
+        objective: { type: string }
+        scope: { type: string }
+        budgetMinutes: { type: integer, minimum: 0 }
+        budgetAmountCents: { type: integer, minimum: 0 }
+        status: { type: string, enum: [pending_review, approved, rejected] }
+        reason: { type: string }
+        createdByName: { type: string }
+        reviewedByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        reviewedAt: { type: ["string", "null"], format: date-time }
+    Fp360ProjectRevisionInput:
+      type: object
+      required: [title, objective, scope, budgetMinutes, budgetAmountCents, reason, operationId]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 140 }
+        objective: { type: string, minLength: 10, maxLength: 1000 }
+        scope: { type: string, minLength: 10, maxLength: 3000 }
+        budgetMinutes: { type: integer, minimum: 60, maximum: 1000000 }
+        budgetAmountCents: { type: integer, minimum: 0, maximum: 1000000000 }
+        reason: { type: string, minLength: 10, maxLength: 1000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectRevisionReviewInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [approve, reject] }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectWorkOrder:
+      type: object
+      required: [id, projectId, workRef, title, description, assignedToName, plannedMinutes, hourlyCostRateCents, status, createdByName, reviewedByName, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        workRef: { type: string }
+        title: { type: string }
+        description: { type: string }
+        assignedToName: { type: string }
+        plannedMinutes: { type: integer, minimum: 1 }
+        hourlyCostRateCents: { type: integer, minimum: 0 }
+        status: { type: string, enum: [assigned, in_progress, completed, reviewed, blocked] }
+        createdByName: { type: string }
+        reviewedByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Fp360ProjectWorkOrderInput:
+      type: object
+      required: [title, description, plannedMinutes, hourlyCostRateCents, operationId]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 140 }
+        description: { type: string, minLength: 10, maxLength: 2000 }
+        plannedMinutes: { type: integer, minimum: 15, maximum: 100000 }
+        hourlyCostRateCents: { type: integer, minimum: 0, maximum: 10000000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectWorkOrderActionInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [start, complete, review, block] }
+        description: { type: string, maxLength: 1000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectTimeEntry:
+      type: object
+      required: [id, projectId, workOrderId, minutes, hourlyCostRateCents, costCents, simulatedDate, description, status, createdByName, reviewedByName, createdAt, reviewedAt]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        workOrderId: { type: string }
+        minutes: { type: integer, minimum: 1 }
+        hourlyCostRateCents: { type: integer, minimum: 0 }
+        costCents: { type: integer, minimum: 0 }
+        simulatedDate: { type: string, format: date }
+        description: { type: string }
+        status: { type: string, enum: [pending_review, approved, rejected] }
+        createdByName: { type: string }
+        reviewedByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        reviewedAt: { type: ["string", "null"], format: date-time }
+    Fp360ProjectTimeEntryInput:
+      type: object
+      required: [workOrderId, minutes, simulatedDate, description, operationId]
+      properties:
+        workOrderId: { type: string, minLength: 1 }
+        minutes: { type: integer, minimum: 1, maximum: 1440 }
+        simulatedDate: { type: string, format: date }
+        description: { type: string, minLength: 10, maxLength: 1000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectReviewInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [approve, reject] }
+        reason: { type: string, maxLength: 1000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectResource:
+      type: object
+      required: [id, projectId, workOrderId, resourceType, description, quantityUnits, unitCostCents, totalCostCents, sourceType, sourceReference, sourceLineId, status, createdByName, reviewedByName, createdAt, reviewedAt]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        workOrderId: { type: ["string", "null"] }
+        resourceType: { type: string, enum: [material, external_service] }
+        description: { type: string }
+        quantityUnits: { type: integer, minimum: 1 }
+        unitCostCents: { type: integer, minimum: 0 }
+        totalCostCents: { type: integer, minimum: 0 }
+        sourceType: { type: string, enum: [manual, purchase_receipt] }
+        sourceReference: { type: ["string", "null"] }
+        sourceLineId: { type: ["string", "null"] }
+        status: { type: string, enum: [pending_review, approved, rejected] }
+        createdByName: { type: string }
+        reviewedByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        reviewedAt: { type: ["string", "null"], format: date-time }
+    Fp360ProjectResourceInput:
+      type: object
+      required: [projectId, resourceType, description, quantityUnits, sourceType, operationId]
+      properties:
+        projectId: { type: string, minLength: 1 }
+        workOrderId: { type: string, minLength: 1 }
+        resourceType: { type: string, enum: [material, external_service] }
+        description: { type: string, minLength: 3, maxLength: 1000 }
+        quantityUnits: { type: integer, minimum: 1, maximum: 10000 }
+        unitCostCents: { type: integer, minimum: 0, maximum: 1000000000 }
+        sourceType: { type: string, enum: [manual, purchase_receipt] }
+        sourceReference: { type: string, maxLength: 120 }
+        sourceLineId: { type: string, minLength: 1, maxLength: 120 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectMilestone:
+      type: object
+      required: [id, projectId, milestoneRef, title, description, dueDate, billingAmountCents, requiresApproval, status, createdByName, reviewedByName, createdAt, updatedAt, acceptedAt]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        milestoneRef: { type: string }
+        title: { type: string }
+        description: { type: string }
+        dueDate: { type: ["string", "null"], format: date }
+        billingAmountCents: { type: integer, minimum: 0 }
+        requiresApproval: { type: boolean }
+        status: { type: string, enum: [planned, in_progress, submitted, accepted, rejected] }
+        createdByName: { type: string }
+        reviewedByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        acceptedAt: { type: ["string", "null"], format: date-time }
+    Fp360ProjectMilestoneInput:
+      type: object
+      required: [title, description, billingAmountCents, requiresApproval, operationId]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 140 }
+        description: { type: string, minLength: 10, maxLength: 2000 }
+        dueDate: { type: string, format: date }
+        billingAmountCents: { type: integer, minimum: 0, maximum: 1000000000 }
+        requiresApproval: { type: boolean }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectMilestoneActionInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [start, submit, accept, reject] }
+        description: { type: string, maxLength: 1000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectDeliverable:
+      type: object
+      required: [id, projectId, milestoneId, deliverableRef, title, description, documentReference, version, status, createdByName, reviewedByName, createdAt, updatedAt, reviewedAt]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        milestoneId: { type: ["string", "null"] }
+        deliverableRef: { type: string }
+        title: { type: string }
+        description: { type: string }
+        documentReference: { type: ["string", "null"] }
+        version: { type: integer, minimum: 1 }
+        status: { type: string, enum: [draft, submitted, accepted, rejected, changes_requested] }
+        createdByName: { type: string }
+        reviewedByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        reviewedAt: { type: ["string", "null"], format: date-time }
+    Fp360ProjectDeliverableInput:
+      type: object
+      required: [title, description, operationId]
+      properties:
+        milestoneId: { type: string, minLength: 1 }
+        title: { type: string, minLength: 3, maxLength: 140 }
+        description: { type: string, minLength: 10, maxLength: 2000 }
+        documentReference: { type: string, maxLength: 200 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectDeliverableActionInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [submit, accept, request_changes, reject] }
+        description: { type: string, maxLength: 1000 }
+        documentReference: { type: string, maxLength: 200 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectBilling:
+      type: object
+      required: [id, projectId, milestoneId, orderId, orderReference, serviceSku, amountCents, invoiceId, invoiceReference, createdByName, createdAt]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        milestoneId: { type: string }
+        orderId: { type: string }
+        orderReference: { type: string }
+        serviceSku: { type: string }
+        amountCents: { type: integer, minimum: 0 }
+        invoiceId: { type: ["string", "null"] }
+        invoiceReference: { type: ["string", "null"] }
+        createdByName: { type: string }
+        createdAt: { type: string, format: date-time }
+    Fp360ProjectBillingInput:
+      type: object
+      required: [milestoneId, serviceSku, operationId]
+      properties:
+        milestoneId: { type: string, minLength: 1 }
+        serviceSku: { type: string, minLength: 1, maxLength: 80 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360ProjectEvent:
+      type: object
+      required: [id, projectId, entityType, entityId, eventType, description, actorName, simulatedDate, createdAt]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        entityType: { type: string }
+        entityId: { type: string }
+        eventType: { type: string }
+        description: { type: string }
+        actorName: { type: string }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
     Fp360CustomerServiceOverview:
       type: object
       required: [organizationId, simulatedDate, customerOrganizations, products, cases, events, returns, agreements, returnSources, summary]
@@ -4492,6 +5805,210 @@ components:
         description: { type: string }
         actorName: { type: string }
         createdAt: { type: string, format: date-time }
+    Fp360EmploymentCommunication:
+      type: object
+      required: [id, organizationId, communicationRef, communicationType, contractId, lifecycleChangeId, simulatedDate, status, acknowledgmentRef, responseMessage, createdByName, createdAt, updatedAt, resubmittedAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        communicationRef: { type: string }
+        communicationType: { type: string, enum: [initial_contract, amendment, termination] }
+        contractId: { type: ["string", "null"] }
+        lifecycleChangeId: { type: ["string", "null"] }
+        simulatedDate: { type: string, format: date }
+        status: { type: string, enum: [acknowledged, observed] }
+        acknowledgmentRef: { type: ["string", "null"] }
+        responseMessage: { type: ["string", "null"] }
+        createdByName: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        resubmittedAt: { type: ["string", "null"], format: date-time }
+    Fp360EmploymentCommunicationInput:
+      type: object
+      required: [organizationId, communicationType, contractId, lifecycleChangeId, simulatedDate, scenarioOutcome, responseMessage, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        communicationType: { type: string, enum: [initial_contract, amendment, termination] }
+        contractId: { type: ["string", "null"] }
+        lifecycleChangeId: { type: ["string", "null"] }
+        simulatedDate: { type: string, format: date }
+        scenarioOutcome: { type: string, enum: [acknowledged, observed] }
+        responseMessage: { type: ["string", "null"], maxLength: 500 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360EmploymentCommunicationResubmitInput:
+      type: object
+      required: [simulatedDate, operationId]
+      properties:
+        simulatedDate: { type: string, format: date }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360EmploymentCommunicationsResponse:
+      type: object
+      required: [organizationId, communications]
+      properties:
+        organizationId: { type: string }
+        communications: { type: array, items: { $ref: "#/components/schemas/Fp360EmploymentCommunication" } }
+    Fp360EmploymentCertificate:
+      type: object
+      required: [id, certificateRef, organizationId, workerRef, jobTitle, department, effectiveDate, simulatedDate, issuedAt, disclaimer]
+      properties:
+        id: { type: string }
+        certificateRef: { type: string }
+        organizationId: { type: string }
+        workerRef: { type: string }
+        jobTitle: { type: string }
+        department: { type: string }
+        effectiveDate: { type: string, format: date }
+        simulatedDate: { type: string, format: date }
+        issuedAt: { type: string, format: date-time }
+        disclaimer: { type: string }
+    Fp360EmploymentCertificateInput:
+      type: object
+      required: [operationId]
+      properties:
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360CommunicationsOrganization:
+      type: object
+      required: [id, name, center]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        center: { type: string }
+    Fp360CommunicationsAttachment:
+      type: object
+      required: [id, reference, title, accessible]
+      properties:
+        id: { type: string }
+        reference: { type: string }
+        title: { type: string }
+        accessible: { type: boolean }
+    Fp360CommunicationsMessage:
+      type: object
+      required: [id, authorRef, senderOrganizationId, department, body, attachments, simulatedDate, status, sentAt]
+      properties:
+        id: { type: string }
+        authorRef: { type: string }
+        senderOrganizationId: { type: string }
+        department: { type: string }
+        body: { type: string }
+        attachments: { type: array, items: { $ref: "#/components/schemas/Fp360CommunicationsAttachment" } }
+        simulatedDate: { type: string, format: date }
+        status: { type: string, enum: [draft, sent] }
+        sentAt: { type: ["string", "null"], format: date-time }
+    Fp360CommunicationsTask:
+      type: object
+      required: [id, title, assignedOrganizationId, assignedOrganizationName, department, dueDate, status, createdAt, completedAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        assignedOrganizationId: { type: string }
+        assignedOrganizationName: { type: string }
+        department: { type: string }
+        dueDate: { type: string, format: date }
+        status: { type: string, enum: [open, completed] }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+    Fp360CommunicationsThread:
+      type: object
+      required: [id, reference, originOrganizationId, originOrganizationName, recipientOrganizationId, recipientOrganizationName, originDepartment, recipientDepartment, subject, priority, status, relatedReference, assignedOrganizationId, assignedDepartment, createdByRef, createdAt, updatedAt, sentAt, simulatedDate, unread, archived, messages, tasks]
+      properties:
+        id: { type: string }
+        reference: { type: string }
+        originOrganizationId: { type: string }
+        originOrganizationName: { type: string }
+        recipientOrganizationId: { type: string }
+        recipientOrganizationName: { type: string }
+        originDepartment: { type: string }
+        recipientDepartment: { type: string }
+        subject: { type: string }
+        priority: { type: string, enum: [low, normal, high, urgent] }
+        status: { type: string, enum: [draft, open, closed] }
+        relatedReference: { type: ["string", "null"] }
+        assignedOrganizationId: { type: ["string", "null"] }
+        assignedDepartment: { type: ["string", "null"] }
+        createdByRef: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        sentAt: { type: ["string", "null"], format: date-time }
+        simulatedDate: { type: string, format: date }
+        unread: { type: boolean }
+        archived: { type: boolean }
+        messages: { type: array, items: { $ref: "#/components/schemas/Fp360CommunicationsMessage" } }
+        tasks: { type: array, items: { $ref: "#/components/schemas/Fp360CommunicationsTask" } }
+    Fp360CommunicationsTemplate:
+      type: object
+      required: [id, title, subject, body, department]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        subject: { type: string }
+        body: { type: string }
+        department: { type: string }
+    Fp360CommunicationsOverview:
+      type: object
+      required: [organizationId, organizations, threads, templates, metrics]
+      properties:
+        organizationId: { type: string }
+        organizations: { type: array, items: { $ref: "#/components/schemas/Fp360CommunicationsOrganization" } }
+        threads: { type: array, items: { $ref: "#/components/schemas/Fp360CommunicationsThread" } }
+        templates: { type: array, items: { $ref: "#/components/schemas/Fp360CommunicationsTemplate" } }
+        metrics:
+          type: object
+          required: [unreadCount, activeConversations, newRequests, averageResponseHours]
+          properties:
+            unreadCount: { type: integer }
+            activeConversations: { type: integer }
+            newRequests: { type: integer }
+            averageResponseHours: { type: number }
+    Fp360CommunicationsCreateThreadInput:
+      type: object
+      required: [organizationId, recipientOrganizationId, originDepartment, recipientDepartment, subject, body, priority, relatedReference, attachmentDocumentIds, simulatedDate, saveAsDraft, operationId]
+      properties:
+        organizationId: { type: string }
+        recipientOrganizationId: { type: string }
+        originDepartment: { type: string, enum: [management, sales, purchasing, warehouse, customer_service, suppliers, treasury, accounting, hr, tax, education, logistics] }
+        recipientDepartment: { type: string, enum: [management, sales, purchasing, warehouse, customer_service, suppliers, treasury, accounting, hr, tax, education, logistics] }
+        subject: { type: string, minLength: 3, maxLength: 160 }
+        body: { type: string, minLength: 10, maxLength: 5000 }
+        priority: { type: string, enum: [low, normal, high, urgent] }
+        relatedReference: { type: ["string", "null"], maxLength: 100 }
+        attachmentDocumentIds: { type: array, maxItems: 5, items: { type: string, minLength: 1 } }
+        simulatedDate: { type: string, format: date }
+        saveAsDraft: { type: boolean }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360CommunicationsReplyInput:
+      type: object
+      required: [organizationId, body, attachmentDocumentIds, simulatedDate, operationId]
+      properties:
+        organizationId: { type: string }
+        body: { type: string, minLength: 10, maxLength: 5000 }
+        attachmentDocumentIds: { type: array, maxItems: 5, items: { type: string, minLength: 1 } }
+        simulatedDate: { type: string, format: date }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360CommunicationsOperationInput:
+      type: object
+      required: [organizationId, operationId]
+      properties:
+        organizationId: { type: string }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360CommunicationsThreadStateInput:
+      type: object
+      required: [organizationId, action, operationId]
+      properties:
+        organizationId: { type: string }
+        action: { type: string, enum: [mark_read, archive, unarchive, assign] }
+        assignedOrganizationId: { type: ["string", "null"] }
+        assignedDepartment: { type: ["string", "null"] }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360CommunicationsTaskInput:
+      type: object
+      required: [organizationId, title, assignedOrganizationId, assignedDepartment, dueDate, operationId]
+      properties:
+        organizationId: { type: string }
+        title: { type: string, minLength: 3, maxLength: 160 }
+        assignedOrganizationId: { type: string }
+        assignedDepartment: { type: string, enum: [management, sales, purchasing, warehouse, customer_service, suppliers, treasury, accounting, hr, tax, education, logistics] }
+        dueDate: { type: string, format: date }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
     Fp360HrOverview:
       type: object
       required: [organizationId, simulatedDate, vacancies, candidates, employees, contracts, absences, lifecycleChanges, events, summary]
@@ -5245,4 +6762,328 @@ components:
         reason: { type: string }
         simulatedDate: { type: string, format: date }
         createdAt: { type: string, format: date-time }
+    Fp360DocumentsOverview:
+      type: object
+      required: [organizationId, metrics, dossiers, documents, versions, events, templates]
+      properties:
+        organizationId: { type: string }
+        metrics: { $ref: "#/components/schemas/Fp360DocumentMetrics" }
+        dossiers:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360DocumentDossier" }
+        documents:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360Document" }
+        versions:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360DocumentVersion" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360DocumentEvent" }
+        templates:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360DocumentTemplate" }
+    Fp360DocumentMetrics:
+      type: object
+      required: [activeDocuments, openDossiers, pendingApprovals, classificationPercent]
+      properties:
+        activeDocuments: { type: integer, minimum: 0 }
+        openDossiers: { type: integer, minimum: 0 }
+        pendingApprovals: { type: integer, minimum: 0 }
+        classificationPercent: { type: integer, minimum: 0, maximum: 100 }
+    Fp360DocumentDossier:
+      type: object
+      required: [id, organizationId, reference, title, dossierType, department, period, status, retentionRule, documentCount, requiredCount, progressPercent, createdByUserId, createdByName, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        reference: { type: string }
+        title: { type: string }
+        dossierType: { type: string, enum: [purchase, sales, accounting, labor, project, educational, other] }
+        department: { type: string }
+        period: { type: string }
+        status: { type: string, enum: [open, archived] }
+        retentionRule: { type: string }
+        documentCount: { type: integer, minimum: 0 }
+        requiredCount: { type: integer, minimum: 0 }
+        progressPercent: { type: integer, minimum: 0, maximum: 100 }
+        createdByUserId: { type: string }
+        createdByName: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Fp360Document:
+      type: object
+      required: [id, organizationId, dossierId, reference, documentType, title, description, department, period, documentDate, status, visibility, ownerUserId, ownerName, originApp, tags, versionNumber, isSynthetic, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        dossierId: { type: string }
+        reference: { type: string }
+        documentType: { type: string, enum: [purchase_request, quote, purchase_order, delivery_note, invoice, payment, incident, contract, project, employment_form, accounting, educational, other] }
+        title: { type: string }
+        description: { type: string }
+        department: { type: string }
+        period: { type: string }
+        documentDate: { type: string, format: date }
+        status: { type: string, enum: [draft, pending_review, validated, confirmed, executed, finalized, observed, rejected, voided, rectified] }
+        visibility: { type: string, enum: [organization, restricted] }
+        ownerUserId: { type: string }
+        ownerName: { type: string }
+        originApp: { type: string, enum: [manual, purchases, sales, logistics, accounting, treasury, tax, hr, payroll, projects, education] }
+        originId: { type: string, nullable: true }
+        rectifiesDocumentId: { type: string, nullable: true }
+        tags:
+          type: array
+          items: { type: string }
+        versionNumber: { type: integer, minimum: 0 }
+        isSynthetic: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Fp360DocumentVersion:
+      type: object
+      required: [id, documentId, versionNumber, status, originalName, contentType, sizeBytes, checksumSha256, description, sourceVersionId, createdByUserId, createdByName, createdAt]
+      properties:
+        id: { type: string }
+        documentId: { type: string }
+        versionNumber: { type: integer, minimum: 1 }
+        status: { type: string, enum: [pending_upload, uploaded, abandoned] }
+        originalName: { type: string, nullable: true }
+        contentType: { type: string }
+        sizeBytes: { type: integer, minimum: 0 }
+        checksumSha256: { type: string, nullable: true }
+        description: { type: string }
+        sourceVersionId: { type: string, nullable: true }
+        createdByUserId: { type: string }
+        createdByName: { type: string }
+        createdAt: { type: string, format: date-time }
+    Fp360DocumentEvent:
+      type: object
+      required: [id, dossierId, documentId, versionId, eventType, details, actorUserId, actorName, simulatedDate, createdAt]
+      properties:
+        id: { type: string }
+        dossierId: { type: string, nullable: true }
+        documentId: { type: string, nullable: true }
+        versionId: { type: string, nullable: true }
+        eventType: { type: string }
+        details: { type: string }
+        actorUserId: { type: string }
+        actorName: { type: string }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    Fp360DocumentTemplate:
+      type: object
+      required: [key, name, documentType, description, educationalOnly]
+      properties:
+        key: { type: string }
+        name: { type: string }
+        documentType: { type: string }
+        description: { type: string }
+        educationalOnly: { type: boolean }
+    Fp360DocumentDossierInput:
+      type: object
+      required: [organizationId, title, dossierType, department, period, operationId]
+      properties:
+        organizationId: { type: string }
+        title: { type: string, minLength: 3, maxLength: 160 }
+        dossierType: { type: string, enum: [purchase, sales, accounting, labor, project, educational, other] }
+        department: { type: string, minLength: 2, maxLength: 80 }
+        period: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' }
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    Fp360DocumentInput:
+      type: object
+      required: [organizationId, dossierId, documentType, title, description, department, period, documentDate, visibility, originApp, tags, operationId]
+      properties:
+        organizationId: { type: string }
+        dossierId: { type: string }
+        documentType: { type: string, enum: [purchase_request, quote, purchase_order, delivery_note, invoice, payment, incident, contract, project, employment_form, accounting, educational, other] }
+        title: { type: string, minLength: 3, maxLength: 180 }
+        description: { type: string, maxLength: 2000 }
+        department: { type: string, minLength: 2, maxLength: 80 }
+        period: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' }
+        documentDate: { type: string, format: date }
+        visibility: { type: string, enum: [organization, restricted] }
+        originApp: { type: string, enum: [manual, purchases, sales, logistics, accounting, treasury, tax, hr, payroll, projects, education] }
+        originId: { type: string, maxLength: 120, nullable: true }
+        rectifiesDocumentId: { type: string, nullable: true }
+        tags:
+          type: array
+          maxItems: 20
+          items: { type: string, minLength: 1, maxLength: 40 }
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    Fp360DocumentUpdateInput:
+      type: object
+      required: [title, description, department, period, documentDate, visibility, tags, operationId]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 180 }
+        description: { type: string, maxLength: 2000 }
+        department: { type: string, minLength: 2, maxLength: 80 }
+        period: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' }
+        documentDate: { type: string, format: date }
+        visibility: { type: string, enum: [organization, restricted] }
+        tags:
+          type: array
+          maxItems: 20
+          items: { type: string, minLength: 1, maxLength: 40 }
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    Fp360DocumentDossierActionInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [archive, reopen] }
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    Fp360DocumentTemplateInput:
+      type: object
+      required: [organizationId, dossierId, title, department, period, documentDate, fields, operationId]
+      properties:
+        organizationId: { type: string }
+        dossierId: { type: string }
+        title: { type: string, minLength: 3, maxLength: 180 }
+        department: { type: string, minLength: 2, maxLength: 80 }
+        period: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' }
+        documentDate: { type: string, format: date }
+        fields:
+          type: object
+          additionalProperties: { type: string, maxLength: 500 }
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    Fp360DocumentUploadInput:
+      type: object
+      required: [name, size, contentType, operationId]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 180 }
+        size: { type: integer, minimum: 1, maximum: 10485760 }
+        contentType: { type: string, enum: [application/pdf, image/jpeg, image/png, image/webp, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, text/csv] }
+        description: { type: string, maxLength: 500 }
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    Fp360DocumentUploadUrlResponse:
+      type: object
+      required: [versionId, versionNumber, uploadURL]
+      properties:
+        versionId: { type: string }
+        versionNumber: { type: integer, minimum: 1 }
+        uploadURL: { type: string }
+    Fp360DocumentActionInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [submit, approve, return, reject, confirm, execute, finalize, void, restore] }
+        description: { type: string, maxLength: 1000 }
+        sourceVersionId: { type: string }
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    Fp360DocumentDeleteResponse:
+      type: object
+      required: [deleted]
+      properties:
+        deleted: { type: boolean, enum: [true] }
+    Fp360SimulationCampaign:
+      type: object
+      required: [id, ownerOrganizationId, ownerOrganizationName, title, description, mode, durationWeeks, difficulty, status, startDate, endDate, participantOrganizationIds, participantNames, createdAt, updatedAt, eventCount]
+      properties:
+        id: { type: string }
+        ownerOrganizationId: { type: string }
+        ownerOrganizationName: { type: string }
+        title: { type: string }
+        description: { type: string }
+        mode: { type: string, enum: [manual, supervised, autonomous] }
+        durationWeeks: { type: integer }
+        difficulty: { type: string, enum: [low, medium, high] }
+        status: { type: string, enum: [draft, review, approved, active, paused, closed, rejected] }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        participantOrganizationIds:
+          type: array
+          items: { type: string }
+        participantNames:
+          type: array
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        eventCount: { type: integer, minimum: 0 }
+    Fp360SimulationEvent:
+      type: object
+      required: [id, campaignId, organizationId, title, eventType, status, description, preconditions, requiredDocumentType, simulatedDate, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        organizationId: { type: string }
+        title: { type: string }
+        eventType: { type: string, enum: [offer, late_payment, stock_break, claim, financing, service_incident, other] }
+        status: { type: string, enum: [draft, proposed, approved, published, cancelled] }
+        description: { type: string }
+        preconditions:
+          type: array
+          items: { type: string }
+        requiredDocumentType: { type: string, nullable: true }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Fp360SimulationOrganization:
+      type: object
+      required: [id, name, center, island]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        center: { type: string }
+        island: { type: string }
+    Fp360SimulationsOverview:
+      type: object
+      required: [campaigns, events, organizations]
+      properties:
+        campaigns:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360SimulationCampaign" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360SimulationEvent" }
+        organizations:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360SimulationOrganization" }
+    Fp360SimulationCampaignInput:
+      type: object
+      required: [ownerOrganizationId, title, description, mode, durationWeeks, difficulty, startDate, endDate, participantOrganizationIds, operationId]
+      properties:
+        ownerOrganizationId: { type: string }
+        title: { type: string, minLength: 3, maxLength: 120 }
+        description: { type: string, maxLength: 1000 }
+        mode: { type: string, enum: [manual, supervised, autonomous] }
+        durationWeeks: { type: integer, minimum: 1, maximum: 16 }
+        difficulty: { type: string, enum: [low, medium, high] }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        participantOrganizationIds:
+          type: array
+          minItems: 1
+          maxItems: 40
+          items: { type: string }
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    Fp360SimulationCampaignAction:
+      type: object
+      required: [organizationId, action, operationId]
+      properties:
+        organizationId: { type: string }
+        action: { type: string, enum: [submit, approve, reject, start, pause, close] }
+        note: { type: string, maxLength: 500 }
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    Fp360SimulationEventInput:
+      type: object
+      required: [organizationId, title, eventType, description, preconditions, simulatedDate, operationId]
+      properties:
+        organizationId: { type: string }
+        title: { type: string, minLength: 3, maxLength: 120 }
+        eventType: { type: string, enum: [offer, late_payment, stock_break, claim, financing, service_incident, other] }
+        description: { type: string, minLength: 10, maxLength: 2000 }
+        preconditions:
+          type: array
+          maxItems: 10
+          items: { type: string, minLength: 2, maxLength: 160 }
+        requiredDocumentType: { type: string, nullable: true }
+        simulatedDate: { type: string, format: date }
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    Fp360SimulationEventAction:
+      type: object
+      required: [organizationId, action, operationId]
+      properties:
+        organizationId: { type: string }
+        action: { type: string, enum: [approve, publish, cancel, return] }
+        note: { type: string, maxLength: 500 }
+        operationId: { type: string, minLength: 8, maxLength: 100 }
 

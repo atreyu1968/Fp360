@@ -16,6 +16,10 @@ import socialSecurityRouter from "./social-security";
 import humanResourcesRouter from "./human-resources";
 import payrollRouter from "./payroll";
 import customerServiceRouter from "./customer-service";
+import projectsRouter from "./projects";
+import documentsRouter from "./documents";
+import communicationsRouter from "./communications";
+import simulationsRouter from "./simulations";
 
 const router: IRouter = Router();
 
@@ -35,6 +39,10 @@ router.use(socialSecurityRouter);
 router.use(humanResourcesRouter);
 router.use(payrollRouter);
 router.use(customerServiceRouter);
+router.use(projectsRouter);
+router.use(documentsRouter);
+router.use(communicationsRouter);
+router.use(simulationsRouter);
 router.use(redfp360Router);
 
 export default router;

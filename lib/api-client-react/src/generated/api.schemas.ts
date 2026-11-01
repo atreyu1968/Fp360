@@ -2396,6 +2396,748 @@ export interface Fp360TaxDeclarationInput {
   operationId: string;
 }
 
+export type Fp360ProjectsOverviewSummary = {
+  /** @minimum 0 */
+  activeProjects: number;
+  /** @minimum 0 */
+  pendingReviews: number;
+  /** @minimum 0 */
+  plannedMinutes: number;
+  /** @minimum 0 */
+  approvedMinutes: number;
+  /** @minimum 0 */
+  approvedCostCents: number;
+  /** @minimum 0 */
+  acceptedValueCents: number;
+  /** @minimum 0 */
+  invoicedCents: number;
+  /** @minimum 0 */
+  upcomingMilestones: number;
+};
+
+export type Fp360ProjectProjectType = typeof Fp360ProjectProjectType[keyof typeof Fp360ProjectProjectType];
+
+
+export const Fp360ProjectProjectType = {
+  internal: 'internal',
+  external: 'external',
+} as const;
+
+export type Fp360ProjectStatus = typeof Fp360ProjectStatus[keyof typeof Fp360ProjectStatus];
+
+
+export const Fp360ProjectStatus = {
+  draft: 'draft',
+  planned: 'planned',
+  in_progress: 'in_progress',
+  on_hold: 'on_hold',
+  completed: 'completed',
+  closed: 'closed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface Fp360Project {
+  id: string;
+  organizationId: string;
+  /** @nullable */
+  customerOrganizationId: string | null;
+  /** @nullable */
+  customerOrganizationName: string | null;
+  projectRef: string;
+  projectType: Fp360ProjectProjectType;
+  title: string;
+  objective: string;
+  scope: string;
+  /** @minimum 0 */
+  budgetMinutes: number;
+  /** @minimum 0 */
+  budgetAmountCents: number;
+  startDate: string;
+  endDate: string;
+  status: Fp360ProjectStatus;
+  /** @minimum 1 */
+  version: number;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+  /** @minimum 0 */
+  actualMinutes: number;
+  /** @minimum 0 */
+  actualCostCents: number;
+  /** @minimum 0 */
+  acceptedValueCents: number;
+  /** @minimum 0 */
+  invoicedCents: number;
+  projectedMarginCents: number;
+}
+
+export interface Fp360ProjectOrganization {
+  id: string;
+  name: string;
+  center: string;
+  island: string;
+}
+
+export interface Fp360ProjectServiceProduct {
+  id: string;
+  sku: string;
+  name: string;
+  /** @minimum 0 */
+  unitPriceCents: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  igicBasisPoints: number;
+}
+
+export interface Fp360ProjectPurchaseReceipt {
+  id: string;
+  reference: string;
+  receivedDate: string;
+  status: string;
+}
+
+export interface Fp360ProjectPurchaseReceiptLine {
+  id: string;
+  receiptId: string;
+  receiptReference: string;
+  sku: string;
+  productName: string;
+  /** @minimum 1 */
+  quantityAccepted: number;
+  /** @minimum 0 */
+  unitPriceCents: number;
+}
+
+export type Fp360ProjectRevisionStatus = typeof Fp360ProjectRevisionStatus[keyof typeof Fp360ProjectRevisionStatus];
+
+
+export const Fp360ProjectRevisionStatus = {
+  pending_review: 'pending_review',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface Fp360ProjectRevision {
+  id: string;
+  projectId: string;
+  /** @minimum 2 */
+  version: number;
+  title: string;
+  objective: string;
+  scope: string;
+  /** @minimum 0 */
+  budgetMinutes: number;
+  /** @minimum 0 */
+  budgetAmountCents: number;
+  status: Fp360ProjectRevisionStatus;
+  reason: string;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  createdAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
+}
+
+export type Fp360ProjectWorkOrderStatus = typeof Fp360ProjectWorkOrderStatus[keyof typeof Fp360ProjectWorkOrderStatus];
+
+
+export const Fp360ProjectWorkOrderStatus = {
+  assigned: 'assigned',
+  in_progress: 'in_progress',
+  completed: 'completed',
+  reviewed: 'reviewed',
+  blocked: 'blocked',
+} as const;
+
+export interface Fp360ProjectWorkOrder {
+  id: string;
+  projectId: string;
+  workRef: string;
+  title: string;
+  description: string;
+  assignedToName: string;
+  /** @minimum 1 */
+  plannedMinutes: number;
+  /** @minimum 0 */
+  hourlyCostRateCents: number;
+  status: Fp360ProjectWorkOrderStatus;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type Fp360ProjectTimeEntryStatus = typeof Fp360ProjectTimeEntryStatus[keyof typeof Fp360ProjectTimeEntryStatus];
+
+
+export const Fp360ProjectTimeEntryStatus = {
+  pending_review: 'pending_review',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface Fp360ProjectTimeEntry {
+  id: string;
+  projectId: string;
+  workOrderId: string;
+  /** @minimum 1 */
+  minutes: number;
+  /** @minimum 0 */
+  hourlyCostRateCents: number;
+  /** @minimum 0 */
+  costCents: number;
+  simulatedDate: string;
+  description: string;
+  status: Fp360ProjectTimeEntryStatus;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  createdAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
+}
+
+export type Fp360ProjectResourceResourceType = typeof Fp360ProjectResourceResourceType[keyof typeof Fp360ProjectResourceResourceType];
+
+
+export const Fp360ProjectResourceResourceType = {
+  material: 'material',
+  external_service: 'external_service',
+} as const;
+
+export type Fp360ProjectResourceSourceType = typeof Fp360ProjectResourceSourceType[keyof typeof Fp360ProjectResourceSourceType];
+
+
+export const Fp360ProjectResourceSourceType = {
+  manual: 'manual',
+  purchase_receipt: 'purchase_receipt',
+} as const;
+
+export type Fp360ProjectResourceStatus = typeof Fp360ProjectResourceStatus[keyof typeof Fp360ProjectResourceStatus];
+
+
+export const Fp360ProjectResourceStatus = {
+  pending_review: 'pending_review',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface Fp360ProjectResource {
+  id: string;
+  projectId: string;
+  /** @nullable */
+  workOrderId: string | null;
+  resourceType: Fp360ProjectResourceResourceType;
+  description: string;
+  /** @minimum 1 */
+  quantityUnits: number;
+  /** @minimum 0 */
+  unitCostCents: number;
+  /** @minimum 0 */
+  totalCostCents: number;
+  sourceType: Fp360ProjectResourceSourceType;
+  /** @nullable */
+  sourceReference: string | null;
+  /** @nullable */
+  sourceLineId: string | null;
+  status: Fp360ProjectResourceStatus;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  createdAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
+}
+
+export type Fp360ProjectMilestoneStatus = typeof Fp360ProjectMilestoneStatus[keyof typeof Fp360ProjectMilestoneStatus];
+
+
+export const Fp360ProjectMilestoneStatus = {
+  planned: 'planned',
+  in_progress: 'in_progress',
+  submitted: 'submitted',
+  accepted: 'accepted',
+  rejected: 'rejected',
+} as const;
+
+export interface Fp360ProjectMilestone {
+  id: string;
+  projectId: string;
+  milestoneRef: string;
+  title: string;
+  description: string;
+  /** @nullable */
+  dueDate: string | null;
+  /** @minimum 0 */
+  billingAmountCents: number;
+  requiresApproval: boolean;
+  status: Fp360ProjectMilestoneStatus;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  acceptedAt: string | null;
+}
+
+export type Fp360ProjectDeliverableStatus = typeof Fp360ProjectDeliverableStatus[keyof typeof Fp360ProjectDeliverableStatus];
+
+
+export const Fp360ProjectDeliverableStatus = {
+  draft: 'draft',
+  submitted: 'submitted',
+  accepted: 'accepted',
+  rejected: 'rejected',
+  changes_requested: 'changes_requested',
+} as const;
+
+export interface Fp360ProjectDeliverable {
+  id: string;
+  projectId: string;
+  /** @nullable */
+  milestoneId: string | null;
+  deliverableRef: string;
+  title: string;
+  description: string;
+  /** @nullable */
+  documentReference: string | null;
+  /** @minimum 1 */
+  version: number;
+  status: Fp360ProjectDeliverableStatus;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  reviewedAt: string | null;
+}
+
+export interface Fp360ProjectBilling {
+  id: string;
+  projectId: string;
+  milestoneId: string;
+  orderId: string;
+  orderReference: string;
+  serviceSku: string;
+  /** @minimum 0 */
+  amountCents: number;
+  /** @nullable */
+  invoiceId: string | null;
+  /** @nullable */
+  invoiceReference: string | null;
+  createdByName: string;
+  createdAt: string;
+}
+
+export interface Fp360ProjectEvent {
+  id: string;
+  projectId: string;
+  entityType: string;
+  entityId: string;
+  eventType: string;
+  description: string;
+  actorName: string;
+  simulatedDate: string;
+  createdAt: string;
+}
+
+export interface Fp360ProjectsOverview {
+  organizationId: string;
+  simulatedDate: string;
+  projects: Fp360Project[];
+  customerOrganizations: Fp360ProjectOrganization[];
+  serviceProducts: Fp360ProjectServiceProduct[];
+  purchaseReceipts: Fp360ProjectPurchaseReceipt[];
+  purchaseReceiptLines: Fp360ProjectPurchaseReceiptLine[];
+  revisions: Fp360ProjectRevision[];
+  workOrders: Fp360ProjectWorkOrder[];
+  timeEntries: Fp360ProjectTimeEntry[];
+  resources: Fp360ProjectResource[];
+  milestones: Fp360ProjectMilestone[];
+  deliverables: Fp360ProjectDeliverable[];
+  billings: Fp360ProjectBilling[];
+  events: Fp360ProjectEvent[];
+  summary: Fp360ProjectsOverviewSummary;
+}
+
+export type Fp360ProjectInputProjectType = typeof Fp360ProjectInputProjectType[keyof typeof Fp360ProjectInputProjectType];
+
+
+export const Fp360ProjectInputProjectType = {
+  internal: 'internal',
+  external: 'external',
+} as const;
+
+export interface Fp360ProjectInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /** @minLength 1 */
+  customerOrganizationId?: string;
+  projectType: Fp360ProjectInputProjectType;
+  /**
+     * @minLength 3
+     * @maxLength 140
+     */
+  title: string;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  objective: string;
+  /**
+     * @minLength 10
+     * @maxLength 3000
+     */
+  scope: string;
+  /**
+     * @minimum 60
+     * @maximum 1000000
+     */
+  budgetMinutes: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  budgetAmountCents: number;
+  startDate: string;
+  endDate: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360ProjectActionInputAction = typeof Fp360ProjectActionInputAction[keyof typeof Fp360ProjectActionInputAction];
+
+
+export const Fp360ProjectActionInputAction = {
+  plan: 'plan',
+  start: 'start',
+  hold: 'hold',
+  resume: 'resume',
+  complete: 'complete',
+  close: 'close',
+  cancel: 'cancel',
+} as const;
+
+export interface Fp360ProjectActionInput {
+  action: Fp360ProjectActionInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360ProjectRevisionInput {
+  /**
+     * @minLength 3
+     * @maxLength 140
+     */
+  title: string;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  objective: string;
+  /**
+     * @minLength 10
+     * @maxLength 3000
+     */
+  scope: string;
+  /**
+     * @minimum 60
+     * @maximum 1000000
+     */
+  budgetMinutes: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  budgetAmountCents: number;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  reason: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360ProjectRevisionReviewInputAction = typeof Fp360ProjectRevisionReviewInputAction[keyof typeof Fp360ProjectRevisionReviewInputAction];
+
+
+export const Fp360ProjectRevisionReviewInputAction = {
+  approve: 'approve',
+  reject: 'reject',
+} as const;
+
+export interface Fp360ProjectRevisionReviewInput {
+  action: Fp360ProjectRevisionReviewInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360ProjectWorkOrderInput {
+  /**
+     * @minLength 3
+     * @maxLength 140
+     */
+  title: string;
+  /**
+     * @minLength 10
+     * @maxLength 2000
+     */
+  description: string;
+  /**
+     * @minimum 15
+     * @maximum 100000
+     */
+  plannedMinutes: number;
+  /**
+     * @minimum 0
+     * @maximum 10000000
+     */
+  hourlyCostRateCents: number;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360ProjectWorkOrderActionInputAction = typeof Fp360ProjectWorkOrderActionInputAction[keyof typeof Fp360ProjectWorkOrderActionInputAction];
+
+
+export const Fp360ProjectWorkOrderActionInputAction = {
+  start: 'start',
+  complete: 'complete',
+  review: 'review',
+  block: 'block',
+} as const;
+
+export interface Fp360ProjectWorkOrderActionInput {
+  action: Fp360ProjectWorkOrderActionInputAction;
+  /** @maxLength 1000 */
+  description?: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360ProjectTimeEntryInput {
+  /** @minLength 1 */
+  workOrderId: string;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  minutes: number;
+  simulatedDate: string;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  description: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360ProjectReviewInputAction = typeof Fp360ProjectReviewInputAction[keyof typeof Fp360ProjectReviewInputAction];
+
+
+export const Fp360ProjectReviewInputAction = {
+  approve: 'approve',
+  reject: 'reject',
+} as const;
+
+export interface Fp360ProjectReviewInput {
+  action: Fp360ProjectReviewInputAction;
+  /** @maxLength 1000 */
+  reason?: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360ProjectResourceInputResourceType = typeof Fp360ProjectResourceInputResourceType[keyof typeof Fp360ProjectResourceInputResourceType];
+
+
+export const Fp360ProjectResourceInputResourceType = {
+  material: 'material',
+  external_service: 'external_service',
+} as const;
+
+export type Fp360ProjectResourceInputSourceType = typeof Fp360ProjectResourceInputSourceType[keyof typeof Fp360ProjectResourceInputSourceType];
+
+
+export const Fp360ProjectResourceInputSourceType = {
+  manual: 'manual',
+  purchase_receipt: 'purchase_receipt',
+} as const;
+
+export interface Fp360ProjectResourceInput {
+  /** @minLength 1 */
+  projectId: string;
+  /** @minLength 1 */
+  workOrderId?: string;
+  resourceType: Fp360ProjectResourceInputResourceType;
+  /**
+     * @minLength 3
+     * @maxLength 1000
+     */
+  description: string;
+  /**
+     * @minimum 1
+     * @maximum 10000
+     */
+  quantityUnits: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  unitCostCents?: number;
+  sourceType: Fp360ProjectResourceInputSourceType;
+  /** @maxLength 120 */
+  sourceReference?: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  sourceLineId?: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360ProjectMilestoneInput {
+  /**
+     * @minLength 3
+     * @maxLength 140
+     */
+  title: string;
+  /**
+     * @minLength 10
+     * @maxLength 2000
+     */
+  description: string;
+  dueDate?: string;
+  /**
+     * @minimum 0
+     * @maximum 1000000000
+     */
+  billingAmountCents: number;
+  requiresApproval: boolean;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360ProjectMilestoneActionInputAction = typeof Fp360ProjectMilestoneActionInputAction[keyof typeof Fp360ProjectMilestoneActionInputAction];
+
+
+export const Fp360ProjectMilestoneActionInputAction = {
+  start: 'start',
+  submit: 'submit',
+  accept: 'accept',
+  reject: 'reject',
+} as const;
+
+export interface Fp360ProjectMilestoneActionInput {
+  action: Fp360ProjectMilestoneActionInputAction;
+  /** @maxLength 1000 */
+  description?: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360ProjectDeliverableInput {
+  /** @minLength 1 */
+  milestoneId?: string;
+  /**
+     * @minLength 3
+     * @maxLength 140
+     */
+  title: string;
+  /**
+     * @minLength 10
+     * @maxLength 2000
+     */
+  description: string;
+  /** @maxLength 200 */
+  documentReference?: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360ProjectDeliverableActionInputAction = typeof Fp360ProjectDeliverableActionInputAction[keyof typeof Fp360ProjectDeliverableActionInputAction];
+
+
+export const Fp360ProjectDeliverableActionInputAction = {
+  submit: 'submit',
+  accept: 'accept',
+  request_changes: 'request_changes',
+  reject: 'reject',
+} as const;
+
+export interface Fp360ProjectDeliverableActionInput {
+  action: Fp360ProjectDeliverableActionInputAction;
+  /** @maxLength 1000 */
+  description?: string;
+  /** @maxLength 200 */
+  documentReference?: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360ProjectBillingInput {
+  /** @minLength 1 */
+  milestoneId: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  serviceSku: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
 export type Fp360CustomerServiceOverviewSummary = {
   /** @minimum 0 */
   openCases: number;
@@ -3624,6 +4366,415 @@ export interface Fp360HrEvent {
   description: string;
   actorName: string;
   createdAt: string;
+}
+
+export type Fp360EmploymentCommunicationCommunicationType = typeof Fp360EmploymentCommunicationCommunicationType[keyof typeof Fp360EmploymentCommunicationCommunicationType];
+
+
+export const Fp360EmploymentCommunicationCommunicationType = {
+  initial_contract: 'initial_contract',
+  amendment: 'amendment',
+  termination: 'termination',
+} as const;
+
+export type Fp360EmploymentCommunicationStatus = typeof Fp360EmploymentCommunicationStatus[keyof typeof Fp360EmploymentCommunicationStatus];
+
+
+export const Fp360EmploymentCommunicationStatus = {
+  acknowledged: 'acknowledged',
+  observed: 'observed',
+} as const;
+
+export interface Fp360EmploymentCommunication {
+  id: string;
+  organizationId: string;
+  communicationRef: string;
+  communicationType: Fp360EmploymentCommunicationCommunicationType;
+  /** @nullable */
+  contractId: string | null;
+  /** @nullable */
+  lifecycleChangeId: string | null;
+  simulatedDate: string;
+  status: Fp360EmploymentCommunicationStatus;
+  /** @nullable */
+  acknowledgmentRef: string | null;
+  /** @nullable */
+  responseMessage: string | null;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  resubmittedAt: string | null;
+}
+
+export type Fp360EmploymentCommunicationInputCommunicationType = typeof Fp360EmploymentCommunicationInputCommunicationType[keyof typeof Fp360EmploymentCommunicationInputCommunicationType];
+
+
+export const Fp360EmploymentCommunicationInputCommunicationType = {
+  initial_contract: 'initial_contract',
+  amendment: 'amendment',
+  termination: 'termination',
+} as const;
+
+export type Fp360EmploymentCommunicationInputScenarioOutcome = typeof Fp360EmploymentCommunicationInputScenarioOutcome[keyof typeof Fp360EmploymentCommunicationInputScenarioOutcome];
+
+
+export const Fp360EmploymentCommunicationInputScenarioOutcome = {
+  acknowledged: 'acknowledged',
+  observed: 'observed',
+} as const;
+
+export interface Fp360EmploymentCommunicationInput {
+  /** @minLength 1 */
+  organizationId: string;
+  communicationType: Fp360EmploymentCommunicationInputCommunicationType;
+  /** @nullable */
+  contractId: string | null;
+  /** @nullable */
+  lifecycleChangeId: string | null;
+  simulatedDate: string;
+  scenarioOutcome: Fp360EmploymentCommunicationInputScenarioOutcome;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  responseMessage: string | null;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360EmploymentCommunicationResubmitInput {
+  simulatedDate: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360EmploymentCommunicationsResponse {
+  organizationId: string;
+  communications: Fp360EmploymentCommunication[];
+}
+
+export interface Fp360EmploymentCertificate {
+  id: string;
+  certificateRef: string;
+  organizationId: string;
+  workerRef: string;
+  jobTitle: string;
+  department: string;
+  effectiveDate: string;
+  simulatedDate: string;
+  issuedAt: string;
+  disclaimer: string;
+}
+
+export interface Fp360EmploymentCertificateInput {
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360CommunicationsOrganization {
+  id: string;
+  name: string;
+  center: string;
+}
+
+export interface Fp360CommunicationsAttachment {
+  id: string;
+  reference: string;
+  title: string;
+  accessible: boolean;
+}
+
+export type Fp360CommunicationsMessageStatus = typeof Fp360CommunicationsMessageStatus[keyof typeof Fp360CommunicationsMessageStatus];
+
+
+export const Fp360CommunicationsMessageStatus = {
+  draft: 'draft',
+  sent: 'sent',
+} as const;
+
+export interface Fp360CommunicationsMessage {
+  id: string;
+  authorRef: string;
+  senderOrganizationId: string;
+  department: string;
+  body: string;
+  attachments: Fp360CommunicationsAttachment[];
+  simulatedDate: string;
+  status: Fp360CommunicationsMessageStatus;
+  /** @nullable */
+  sentAt: string | null;
+}
+
+export type Fp360CommunicationsTaskStatus = typeof Fp360CommunicationsTaskStatus[keyof typeof Fp360CommunicationsTaskStatus];
+
+
+export const Fp360CommunicationsTaskStatus = {
+  open: 'open',
+  completed: 'completed',
+} as const;
+
+export interface Fp360CommunicationsTask {
+  id: string;
+  title: string;
+  assignedOrganizationId: string;
+  assignedOrganizationName: string;
+  department: string;
+  dueDate: string;
+  status: Fp360CommunicationsTaskStatus;
+  createdAt: string;
+  /** @nullable */
+  completedAt: string | null;
+}
+
+export type Fp360CommunicationsThreadPriority = typeof Fp360CommunicationsThreadPriority[keyof typeof Fp360CommunicationsThreadPriority];
+
+
+export const Fp360CommunicationsThreadPriority = {
+  low: 'low',
+  normal: 'normal',
+  high: 'high',
+  urgent: 'urgent',
+} as const;
+
+export type Fp360CommunicationsThreadStatus = typeof Fp360CommunicationsThreadStatus[keyof typeof Fp360CommunicationsThreadStatus];
+
+
+export const Fp360CommunicationsThreadStatus = {
+  draft: 'draft',
+  open: 'open',
+  closed: 'closed',
+} as const;
+
+export interface Fp360CommunicationsThread {
+  id: string;
+  reference: string;
+  originOrganizationId: string;
+  originOrganizationName: string;
+  recipientOrganizationId: string;
+  recipientOrganizationName: string;
+  originDepartment: string;
+  recipientDepartment: string;
+  subject: string;
+  priority: Fp360CommunicationsThreadPriority;
+  status: Fp360CommunicationsThreadStatus;
+  /** @nullable */
+  relatedReference: string | null;
+  /** @nullable */
+  assignedOrganizationId: string | null;
+  /** @nullable */
+  assignedDepartment: string | null;
+  createdByRef: string;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  sentAt: string | null;
+  simulatedDate: string;
+  unread: boolean;
+  archived: boolean;
+  messages: Fp360CommunicationsMessage[];
+  tasks: Fp360CommunicationsTask[];
+}
+
+export interface Fp360CommunicationsTemplate {
+  id: string;
+  title: string;
+  subject: string;
+  body: string;
+  department: string;
+}
+
+export type Fp360CommunicationsOverviewMetrics = {
+  unreadCount: number;
+  activeConversations: number;
+  newRequests: number;
+  averageResponseHours: number;
+};
+
+export interface Fp360CommunicationsOverview {
+  organizationId: string;
+  organizations: Fp360CommunicationsOrganization[];
+  threads: Fp360CommunicationsThread[];
+  templates: Fp360CommunicationsTemplate[];
+  metrics: Fp360CommunicationsOverviewMetrics;
+}
+
+export type Fp360CommunicationsCreateThreadInputOriginDepartment = typeof Fp360CommunicationsCreateThreadInputOriginDepartment[keyof typeof Fp360CommunicationsCreateThreadInputOriginDepartment];
+
+
+export const Fp360CommunicationsCreateThreadInputOriginDepartment = {
+  management: 'management',
+  sales: 'sales',
+  purchasing: 'purchasing',
+  warehouse: 'warehouse',
+  customer_service: 'customer_service',
+  suppliers: 'suppliers',
+  treasury: 'treasury',
+  accounting: 'accounting',
+  hr: 'hr',
+  tax: 'tax',
+  education: 'education',
+  logistics: 'logistics',
+} as const;
+
+export type Fp360CommunicationsCreateThreadInputRecipientDepartment = typeof Fp360CommunicationsCreateThreadInputRecipientDepartment[keyof typeof Fp360CommunicationsCreateThreadInputRecipientDepartment];
+
+
+export const Fp360CommunicationsCreateThreadInputRecipientDepartment = {
+  management: 'management',
+  sales: 'sales',
+  purchasing: 'purchasing',
+  warehouse: 'warehouse',
+  customer_service: 'customer_service',
+  suppliers: 'suppliers',
+  treasury: 'treasury',
+  accounting: 'accounting',
+  hr: 'hr',
+  tax: 'tax',
+  education: 'education',
+  logistics: 'logistics',
+} as const;
+
+export type Fp360CommunicationsCreateThreadInputPriority = typeof Fp360CommunicationsCreateThreadInputPriority[keyof typeof Fp360CommunicationsCreateThreadInputPriority];
+
+
+export const Fp360CommunicationsCreateThreadInputPriority = {
+  low: 'low',
+  normal: 'normal',
+  high: 'high',
+  urgent: 'urgent',
+} as const;
+
+export interface Fp360CommunicationsCreateThreadInput {
+  organizationId: string;
+  recipientOrganizationId: string;
+  originDepartment: Fp360CommunicationsCreateThreadInputOriginDepartment;
+  recipientDepartment: Fp360CommunicationsCreateThreadInputRecipientDepartment;
+  /**
+     * @minLength 3
+     * @maxLength 160
+     */
+  subject: string;
+  /**
+     * @minLength 10
+     * @maxLength 5000
+     */
+  body: string;
+  priority: Fp360CommunicationsCreateThreadInputPriority;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  relatedReference: string | null;
+  /**
+     * @maxItems 5
+     * @items.minLength 1
+     */
+  attachmentDocumentIds: string[];
+  simulatedDate: string;
+  saveAsDraft: boolean;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360CommunicationsReplyInput {
+  organizationId: string;
+  /**
+     * @minLength 10
+     * @maxLength 5000
+     */
+  body: string;
+  /**
+     * @maxItems 5
+     * @items.minLength 1
+     */
+  attachmentDocumentIds: string[];
+  simulatedDate: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360CommunicationsOperationInput {
+  organizationId: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360CommunicationsThreadStateInputAction = typeof Fp360CommunicationsThreadStateInputAction[keyof typeof Fp360CommunicationsThreadStateInputAction];
+
+
+export const Fp360CommunicationsThreadStateInputAction = {
+  mark_read: 'mark_read',
+  archive: 'archive',
+  unarchive: 'unarchive',
+  assign: 'assign',
+} as const;
+
+export interface Fp360CommunicationsThreadStateInput {
+  organizationId: string;
+  action: Fp360CommunicationsThreadStateInputAction;
+  /** @nullable */
+  assignedOrganizationId?: string | null;
+  /** @nullable */
+  assignedDepartment?: string | null;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360CommunicationsTaskInputAssignedDepartment = typeof Fp360CommunicationsTaskInputAssignedDepartment[keyof typeof Fp360CommunicationsTaskInputAssignedDepartment];
+
+
+export const Fp360CommunicationsTaskInputAssignedDepartment = {
+  management: 'management',
+  sales: 'sales',
+  purchasing: 'purchasing',
+  warehouse: 'warehouse',
+  customer_service: 'customer_service',
+  suppliers: 'suppliers',
+  treasury: 'treasury',
+  accounting: 'accounting',
+  hr: 'hr',
+  tax: 'tax',
+  education: 'education',
+  logistics: 'logistics',
+} as const;
+
+export interface Fp360CommunicationsTaskInput {
+  organizationId: string;
+  /**
+     * @minLength 3
+     * @maxLength 160
+     */
+  title: string;
+  assignedOrganizationId: string;
+  assignedDepartment: Fp360CommunicationsTaskInputAssignedDepartment;
+  dueDate: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
 }
 
 export type Fp360HrOverviewSummary = {
@@ -5060,6 +6211,731 @@ export interface DirectionEvent {
   createdAt: string;
 }
 
+export interface Fp360DocumentMetrics {
+  /** @minimum 0 */
+  activeDocuments: number;
+  /** @minimum 0 */
+  openDossiers: number;
+  /** @minimum 0 */
+  pendingApprovals: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  classificationPercent: number;
+}
+
+export type Fp360DocumentDossierDossierType = typeof Fp360DocumentDossierDossierType[keyof typeof Fp360DocumentDossierDossierType];
+
+
+export const Fp360DocumentDossierDossierType = {
+  purchase: 'purchase',
+  sales: 'sales',
+  accounting: 'accounting',
+  labor: 'labor',
+  project: 'project',
+  educational: 'educational',
+  other: 'other',
+} as const;
+
+export type Fp360DocumentDossierStatus = typeof Fp360DocumentDossierStatus[keyof typeof Fp360DocumentDossierStatus];
+
+
+export const Fp360DocumentDossierStatus = {
+  open: 'open',
+  archived: 'archived',
+} as const;
+
+export interface Fp360DocumentDossier {
+  id: string;
+  organizationId: string;
+  reference: string;
+  title: string;
+  dossierType: Fp360DocumentDossierDossierType;
+  department: string;
+  period: string;
+  status: Fp360DocumentDossierStatus;
+  retentionRule: string;
+  /** @minimum 0 */
+  documentCount: number;
+  /** @minimum 0 */
+  requiredCount: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  progressPercent: number;
+  createdByUserId: string;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type Fp360DocumentDocumentType = typeof Fp360DocumentDocumentType[keyof typeof Fp360DocumentDocumentType];
+
+
+export const Fp360DocumentDocumentType = {
+  purchase_request: 'purchase_request',
+  quote: 'quote',
+  purchase_order: 'purchase_order',
+  delivery_note: 'delivery_note',
+  invoice: 'invoice',
+  payment: 'payment',
+  incident: 'incident',
+  contract: 'contract',
+  project: 'project',
+  employment_form: 'employment_form',
+  accounting: 'accounting',
+  educational: 'educational',
+  other: 'other',
+} as const;
+
+export type Fp360DocumentStatus = typeof Fp360DocumentStatus[keyof typeof Fp360DocumentStatus];
+
+
+export const Fp360DocumentStatus = {
+  draft: 'draft',
+  pending_review: 'pending_review',
+  validated: 'validated',
+  confirmed: 'confirmed',
+  executed: 'executed',
+  finalized: 'finalized',
+  observed: 'observed',
+  rejected: 'rejected',
+  voided: 'voided',
+  rectified: 'rectified',
+} as const;
+
+export type Fp360DocumentVisibility = typeof Fp360DocumentVisibility[keyof typeof Fp360DocumentVisibility];
+
+
+export const Fp360DocumentVisibility = {
+  organization: 'organization',
+  restricted: 'restricted',
+} as const;
+
+export type Fp360DocumentOriginApp = typeof Fp360DocumentOriginApp[keyof typeof Fp360DocumentOriginApp];
+
+
+export const Fp360DocumentOriginApp = {
+  manual: 'manual',
+  purchases: 'purchases',
+  sales: 'sales',
+  logistics: 'logistics',
+  accounting: 'accounting',
+  treasury: 'treasury',
+  tax: 'tax',
+  hr: 'hr',
+  payroll: 'payroll',
+  projects: 'projects',
+  education: 'education',
+} as const;
+
+export interface Fp360Document {
+  id: string;
+  organizationId: string;
+  dossierId: string;
+  reference: string;
+  documentType: Fp360DocumentDocumentType;
+  title: string;
+  description: string;
+  department: string;
+  period: string;
+  documentDate: string;
+  status: Fp360DocumentStatus;
+  visibility: Fp360DocumentVisibility;
+  ownerUserId: string;
+  ownerName: string;
+  originApp: Fp360DocumentOriginApp;
+  /** @nullable */
+  originId?: string | null;
+  /** @nullable */
+  rectifiesDocumentId?: string | null;
+  tags: string[];
+  /** @minimum 0 */
+  versionNumber: number;
+  isSynthetic: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type Fp360DocumentVersionStatus = typeof Fp360DocumentVersionStatus[keyof typeof Fp360DocumentVersionStatus];
+
+
+export const Fp360DocumentVersionStatus = {
+  pending_upload: 'pending_upload',
+  uploaded: 'uploaded',
+  abandoned: 'abandoned',
+} as const;
+
+export interface Fp360DocumentVersion {
+  id: string;
+  documentId: string;
+  /** @minimum 1 */
+  versionNumber: number;
+  status: Fp360DocumentVersionStatus;
+  /** @nullable */
+  originalName: string | null;
+  contentType: string;
+  /** @minimum 0 */
+  sizeBytes: number;
+  /** @nullable */
+  checksumSha256: string | null;
+  description: string;
+  /** @nullable */
+  sourceVersionId: string | null;
+  createdByUserId: string;
+  createdByName: string;
+  createdAt: string;
+}
+
+export interface Fp360DocumentEvent {
+  id: string;
+  /** @nullable */
+  dossierId: string | null;
+  /** @nullable */
+  documentId: string | null;
+  /** @nullable */
+  versionId: string | null;
+  eventType: string;
+  details: string;
+  actorUserId: string;
+  actorName: string;
+  simulatedDate: string;
+  createdAt: string;
+}
+
+export interface Fp360DocumentTemplate {
+  key: string;
+  name: string;
+  documentType: string;
+  description: string;
+  educationalOnly: boolean;
+}
+
+export interface Fp360DocumentsOverview {
+  organizationId: string;
+  metrics: Fp360DocumentMetrics;
+  dossiers: Fp360DocumentDossier[];
+  documents: Fp360Document[];
+  versions: Fp360DocumentVersion[];
+  events: Fp360DocumentEvent[];
+  templates: Fp360DocumentTemplate[];
+}
+
+export type Fp360DocumentDossierInputDossierType = typeof Fp360DocumentDossierInputDossierType[keyof typeof Fp360DocumentDossierInputDossierType];
+
+
+export const Fp360DocumentDossierInputDossierType = {
+  purchase: 'purchase',
+  sales: 'sales',
+  accounting: 'accounting',
+  labor: 'labor',
+  project: 'project',
+  educational: 'educational',
+  other: 'other',
+} as const;
+
+export interface Fp360DocumentDossierInput {
+  organizationId: string;
+  /**
+     * @minLength 3
+     * @maxLength 160
+     */
+  title: string;
+  dossierType: Fp360DocumentDossierInputDossierType;
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  department: string;
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
+  period: string;
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export type Fp360DocumentInputDocumentType = typeof Fp360DocumentInputDocumentType[keyof typeof Fp360DocumentInputDocumentType];
+
+
+export const Fp360DocumentInputDocumentType = {
+  purchase_request: 'purchase_request',
+  quote: 'quote',
+  purchase_order: 'purchase_order',
+  delivery_note: 'delivery_note',
+  invoice: 'invoice',
+  payment: 'payment',
+  incident: 'incident',
+  contract: 'contract',
+  project: 'project',
+  employment_form: 'employment_form',
+  accounting: 'accounting',
+  educational: 'educational',
+  other: 'other',
+} as const;
+
+export type Fp360DocumentInputVisibility = typeof Fp360DocumentInputVisibility[keyof typeof Fp360DocumentInputVisibility];
+
+
+export const Fp360DocumentInputVisibility = {
+  organization: 'organization',
+  restricted: 'restricted',
+} as const;
+
+export type Fp360DocumentInputOriginApp = typeof Fp360DocumentInputOriginApp[keyof typeof Fp360DocumentInputOriginApp];
+
+
+export const Fp360DocumentInputOriginApp = {
+  manual: 'manual',
+  purchases: 'purchases',
+  sales: 'sales',
+  logistics: 'logistics',
+  accounting: 'accounting',
+  treasury: 'treasury',
+  tax: 'tax',
+  hr: 'hr',
+  payroll: 'payroll',
+  projects: 'projects',
+  education: 'education',
+} as const;
+
+export interface Fp360DocumentInput {
+  organizationId: string;
+  dossierId: string;
+  documentType: Fp360DocumentInputDocumentType;
+  /**
+     * @minLength 3
+     * @maxLength 180
+     */
+  title: string;
+  /** @maxLength 2000 */
+  description: string;
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  department: string;
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
+  period: string;
+  documentDate: string;
+  visibility: Fp360DocumentInputVisibility;
+  originApp: Fp360DocumentInputOriginApp;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  originId?: string | null;
+  /** @nullable */
+  rectifiesDocumentId?: string | null;
+  /**
+     * @maxItems 20
+     * @items.minLength 1
+     * @items.maxLength 40
+     */
+  tags: string[];
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export type Fp360DocumentUpdateInputVisibility = typeof Fp360DocumentUpdateInputVisibility[keyof typeof Fp360DocumentUpdateInputVisibility];
+
+
+export const Fp360DocumentUpdateInputVisibility = {
+  organization: 'organization',
+  restricted: 'restricted',
+} as const;
+
+export interface Fp360DocumentUpdateInput {
+  /**
+     * @minLength 3
+     * @maxLength 180
+     */
+  title: string;
+  /** @maxLength 2000 */
+  description: string;
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  department: string;
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
+  period: string;
+  documentDate: string;
+  visibility: Fp360DocumentUpdateInputVisibility;
+  /**
+     * @maxItems 20
+     * @items.minLength 1
+     * @items.maxLength 40
+     */
+  tags: string[];
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export type Fp360DocumentDossierActionInputAction = typeof Fp360DocumentDossierActionInputAction[keyof typeof Fp360DocumentDossierActionInputAction];
+
+
+export const Fp360DocumentDossierActionInputAction = {
+  archive: 'archive',
+  reopen: 'reopen',
+} as const;
+
+export interface Fp360DocumentDossierActionInput {
+  action: Fp360DocumentDossierActionInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export type Fp360DocumentTemplateInputFields = {[key: string]: string};
+
+export interface Fp360DocumentTemplateInput {
+  organizationId: string;
+  dossierId: string;
+  /**
+     * @minLength 3
+     * @maxLength 180
+     */
+  title: string;
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  department: string;
+  /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
+  period: string;
+  documentDate: string;
+  fields: Fp360DocumentTemplateInputFields;
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export type Fp360DocumentUploadInputContentType = typeof Fp360DocumentUploadInputContentType[keyof typeof Fp360DocumentUploadInputContentType];
+
+
+export const Fp360DocumentUploadInputContentType = {
+  'application/pdf': 'application/pdf',
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+  'image/webp': 'image/webp',
+  'application/vndopenxmlformats-officedocumentwordprocessingmldocument': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vndopenxmlformats-officedocumentspreadsheetmlsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/csv': 'text/csv',
+} as const;
+
+export interface Fp360DocumentUploadInput {
+  /**
+     * @minLength 1
+     * @maxLength 180
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 10485760
+     */
+  size: number;
+  contentType: Fp360DocumentUploadInputContentType;
+  /** @maxLength 500 */
+  description?: string;
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export interface Fp360DocumentUploadUrlResponse {
+  versionId: string;
+  /** @minimum 1 */
+  versionNumber: number;
+  uploadURL: string;
+}
+
+export type Fp360DocumentActionInputAction = typeof Fp360DocumentActionInputAction[keyof typeof Fp360DocumentActionInputAction];
+
+
+export const Fp360DocumentActionInputAction = {
+  submit: 'submit',
+  approve: 'approve',
+  return: 'return',
+  reject: 'reject',
+  confirm: 'confirm',
+  execute: 'execute',
+  finalize: 'finalize',
+  void: 'void',
+  restore: 'restore',
+} as const;
+
+export interface Fp360DocumentActionInput {
+  action: Fp360DocumentActionInputAction;
+  /** @maxLength 1000 */
+  description?: string;
+  sourceVersionId?: string;
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export interface Fp360DocumentDeleteResponse {
+  deleted: true;
+}
+
+export type Fp360SimulationCampaignMode = typeof Fp360SimulationCampaignMode[keyof typeof Fp360SimulationCampaignMode];
+
+
+export const Fp360SimulationCampaignMode = {
+  manual: 'manual',
+  supervised: 'supervised',
+  autonomous: 'autonomous',
+} as const;
+
+export type Fp360SimulationCampaignDifficulty = typeof Fp360SimulationCampaignDifficulty[keyof typeof Fp360SimulationCampaignDifficulty];
+
+
+export const Fp360SimulationCampaignDifficulty = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export type Fp360SimulationCampaignStatus = typeof Fp360SimulationCampaignStatus[keyof typeof Fp360SimulationCampaignStatus];
+
+
+export const Fp360SimulationCampaignStatus = {
+  draft: 'draft',
+  review: 'review',
+  approved: 'approved',
+  active: 'active',
+  paused: 'paused',
+  closed: 'closed',
+  rejected: 'rejected',
+} as const;
+
+export interface Fp360SimulationCampaign {
+  id: string;
+  ownerOrganizationId: string;
+  ownerOrganizationName: string;
+  title: string;
+  description: string;
+  mode: Fp360SimulationCampaignMode;
+  durationWeeks: number;
+  difficulty: Fp360SimulationCampaignDifficulty;
+  status: Fp360SimulationCampaignStatus;
+  startDate: string;
+  endDate: string;
+  participantOrganizationIds: string[];
+  participantNames: string[];
+  createdAt: string;
+  updatedAt: string;
+  /** @minimum 0 */
+  eventCount: number;
+}
+
+export type Fp360SimulationEventEventType = typeof Fp360SimulationEventEventType[keyof typeof Fp360SimulationEventEventType];
+
+
+export const Fp360SimulationEventEventType = {
+  offer: 'offer',
+  late_payment: 'late_payment',
+  stock_break: 'stock_break',
+  claim: 'claim',
+  financing: 'financing',
+  service_incident: 'service_incident',
+  other: 'other',
+} as const;
+
+export type Fp360SimulationEventStatus = typeof Fp360SimulationEventStatus[keyof typeof Fp360SimulationEventStatus];
+
+
+export const Fp360SimulationEventStatus = {
+  draft: 'draft',
+  proposed: 'proposed',
+  approved: 'approved',
+  published: 'published',
+  cancelled: 'cancelled',
+} as const;
+
+export interface Fp360SimulationEvent {
+  id: string;
+  campaignId: string;
+  organizationId: string;
+  title: string;
+  eventType: Fp360SimulationEventEventType;
+  status: Fp360SimulationEventStatus;
+  description: string;
+  preconditions: string[];
+  /** @nullable */
+  requiredDocumentType: string | null;
+  simulatedDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Fp360SimulationOrganization {
+  id: string;
+  name: string;
+  center: string;
+  island: string;
+}
+
+export interface Fp360SimulationsOverview {
+  campaigns: Fp360SimulationCampaign[];
+  events: Fp360SimulationEvent[];
+  organizations: Fp360SimulationOrganization[];
+}
+
+export type Fp360SimulationCampaignInputMode = typeof Fp360SimulationCampaignInputMode[keyof typeof Fp360SimulationCampaignInputMode];
+
+
+export const Fp360SimulationCampaignInputMode = {
+  manual: 'manual',
+  supervised: 'supervised',
+  autonomous: 'autonomous',
+} as const;
+
+export type Fp360SimulationCampaignInputDifficulty = typeof Fp360SimulationCampaignInputDifficulty[keyof typeof Fp360SimulationCampaignInputDifficulty];
+
+
+export const Fp360SimulationCampaignInputDifficulty = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface Fp360SimulationCampaignInput {
+  ownerOrganizationId: string;
+  /**
+     * @minLength 3
+     * @maxLength 120
+     */
+  title: string;
+  /** @maxLength 1000 */
+  description: string;
+  mode: Fp360SimulationCampaignInputMode;
+  /**
+     * @minimum 1
+     * @maximum 16
+     */
+  durationWeeks: number;
+  difficulty: Fp360SimulationCampaignInputDifficulty;
+  startDate: string;
+  endDate: string;
+  /**
+     * @minItems 1
+     * @maxItems 40
+     */
+  participantOrganizationIds: string[];
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export type Fp360SimulationCampaignActionAction = typeof Fp360SimulationCampaignActionAction[keyof typeof Fp360SimulationCampaignActionAction];
+
+
+export const Fp360SimulationCampaignActionAction = {
+  submit: 'submit',
+  approve: 'approve',
+  reject: 'reject',
+  start: 'start',
+  pause: 'pause',
+  close: 'close',
+} as const;
+
+export interface Fp360SimulationCampaignAction {
+  organizationId: string;
+  action: Fp360SimulationCampaignActionAction;
+  /** @maxLength 500 */
+  note?: string;
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export type Fp360SimulationEventInputEventType = typeof Fp360SimulationEventInputEventType[keyof typeof Fp360SimulationEventInputEventType];
+
+
+export const Fp360SimulationEventInputEventType = {
+  offer: 'offer',
+  late_payment: 'late_payment',
+  stock_break: 'stock_break',
+  claim: 'claim',
+  financing: 'financing',
+  service_incident: 'service_incident',
+  other: 'other',
+} as const;
+
+export interface Fp360SimulationEventInput {
+  organizationId: string;
+  /**
+     * @minLength 3
+     * @maxLength 120
+     */
+  title: string;
+  eventType: Fp360SimulationEventInputEventType;
+  /**
+     * @minLength 10
+     * @maxLength 2000
+     */
+  description: string;
+  /**
+     * @maxItems 10
+     * @items.minLength 2
+     * @items.maxLength 160
+     */
+  preconditions: string[];
+  /** @nullable */
+  requiredDocumentType?: string | null;
+  simulatedDate: string;
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export type Fp360SimulationEventActionAction = typeof Fp360SimulationEventActionAction[keyof typeof Fp360SimulationEventActionAction];
+
+
+export const Fp360SimulationEventActionAction = {
+  approve: 'approve',
+  publish: 'publish',
+  cancel: 'cancel',
+  return: 'return',
+} as const;
+
+export interface Fp360SimulationEventAction {
+  organizationId: string;
+  action: Fp360SimulationEventActionAction;
+  /** @maxLength 500 */
+  note?: string;
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
 export type GetFp360DirectionOverviewParams = {
 periodStart?: string;
 periodEnd?: string;
@@ -5126,11 +7002,36 @@ export type GetFp360PayrollOverviewParams = {
 organizationId: string;
 };
 
+export type GetFp360ProjectsOverviewParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+};
+
 export type GetFp360CustomerServiceOverviewParams = {
 /**
  * @minLength 1
  */
 organizationId: string;
+};
+
+export type GetFp360EmploymentCommunicationsParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+};
+
+export type GetFp360CommunicationsOverviewParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+/**
+ * @maxLength 100
+ */
+search?: string;
 };
 
 export type GetFp360HrOverviewParams = {
@@ -5145,5 +7046,24 @@ export type GetFp360SocialSecurityOverviewParams = {
  * @minLength 1
  */
 organizationId: string;
+};
+
+export type GetFp360DocumentsOverviewParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+/**
+ * @minLength 1
+ */
+documentId?: string;
+/**
+ * @maxLength 120
+ */
+search?: string;
+};
+
+export type LogFp360DocumentAccess201 = {
+  recorded: boolean;
 };
 

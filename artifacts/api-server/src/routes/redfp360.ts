@@ -35,6 +35,7 @@ import {
   fpOrganizations,
   fpPayments,
   fpProducts,
+  fpProjectBillings,
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 
@@ -976,6 +977,13 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
         status: 404 as const,
         error: "Pedido no encontrado.",
       };
+    }
+    const [projectBilling] = await tx.select({ organizationId: fpProjectBillings.organizationId }).from(fpProjectBillings).where(and(
+      eq(fpProjectBillings.tenantId, tenantId),
+      eq(fpProjectBillings.orderId, order.id),
+    )).limit(1);
+    if (projectBilling && actor.organizationId !== projectBilling.organizationId) {
+      return { ok: false as const, status: 403 as const, error: "La factura de este proyecto debe emitirla la empresa responsable." };
     }
     if (!["delivered", "invoiced", "paid"].includes(order.status)) {
       return { ok: false as const, status: 409 as const, error: "Confirma la recepción logística antes de facturar el pedido." };

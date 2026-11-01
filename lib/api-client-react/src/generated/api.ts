@@ -79,6 +79,13 @@ import type {
   Fp360BankTransfer,
   Fp360BankTransferActionInput,
   Fp360BankTransferInput,
+  Fp360CommunicationsCreateThreadInput,
+  Fp360CommunicationsOperationInput,
+  Fp360CommunicationsOverview,
+  Fp360CommunicationsReplyInput,
+  Fp360CommunicationsTaskInput,
+  Fp360CommunicationsThread,
+  Fp360CommunicationsThreadStateInput,
   Fp360CustomerAgreement,
   Fp360CustomerAgreementActionInput,
   Fp360CustomerAgreementInput,
@@ -91,6 +98,25 @@ import type {
   Fp360CustomerServiceOverview,
   Fp360Dashboard,
   Fp360DispatchInput,
+  Fp360Document,
+  Fp360DocumentActionInput,
+  Fp360DocumentDeleteResponse,
+  Fp360DocumentDossier,
+  Fp360DocumentDossierActionInput,
+  Fp360DocumentDossierInput,
+  Fp360DocumentInput,
+  Fp360DocumentTemplateInput,
+  Fp360DocumentUpdateInput,
+  Fp360DocumentUploadInput,
+  Fp360DocumentUploadUrlResponse,
+  Fp360DocumentVersion,
+  Fp360DocumentsOverview,
+  Fp360EmploymentCertificate,
+  Fp360EmploymentCertificateInput,
+  Fp360EmploymentCommunication,
+  Fp360EmploymentCommunicationInput,
+  Fp360EmploymentCommunicationResubmitInput,
+  Fp360EmploymentCommunicationsResponse,
   Fp360HrAbsence,
   Fp360HrAbsenceInput,
   Fp360HrAbsenceReviewInput,
@@ -136,6 +162,36 @@ import type {
   Fp360ProductInput,
   Fp360ProductPriceVersion,
   Fp360ProductUpdate,
+  Fp360Project,
+  Fp360ProjectActionInput,
+  Fp360ProjectBilling,
+  Fp360ProjectBillingInput,
+  Fp360ProjectDeliverable,
+  Fp360ProjectDeliverableActionInput,
+  Fp360ProjectDeliverableInput,
+  Fp360ProjectInput,
+  Fp360ProjectMilestone,
+  Fp360ProjectMilestoneActionInput,
+  Fp360ProjectMilestoneInput,
+  Fp360ProjectResource,
+  Fp360ProjectResourceInput,
+  Fp360ProjectReviewInput,
+  Fp360ProjectRevision,
+  Fp360ProjectRevisionInput,
+  Fp360ProjectRevisionReviewInput,
+  Fp360ProjectTimeEntry,
+  Fp360ProjectTimeEntryInput,
+  Fp360ProjectWorkOrder,
+  Fp360ProjectWorkOrderActionInput,
+  Fp360ProjectWorkOrderInput,
+  Fp360ProjectsOverview,
+  Fp360SimulationCampaign,
+  Fp360SimulationCampaignAction,
+  Fp360SimulationCampaignInput,
+  Fp360SimulationEvent,
+  Fp360SimulationEventAction,
+  Fp360SimulationEventInput,
+  Fp360SimulationsOverview,
   Fp360SocialSecurityMovement,
   Fp360SocialSecurityMovementInput,
   Fp360SocialSecurityMovementReviewInput,
@@ -158,10 +214,14 @@ import type {
   Fp360TaxRequirementInput,
   GetFp360AccountingOverviewParams,
   GetFp360BankOverviewParams,
+  GetFp360CommunicationsOverviewParams,
   GetFp360CustomerServiceOverviewParams,
   GetFp360DirectionOverviewParams,
+  GetFp360DocumentsOverviewParams,
+  GetFp360EmploymentCommunicationsParams,
   GetFp360HrOverviewParams,
   GetFp360PayrollOverviewParams,
+  GetFp360ProjectsOverviewParams,
   GetFp360SocialSecurityOverviewParams,
   GetFp360TaxOverviewParams,
   HealthStatus,
@@ -171,6 +231,7 @@ import type {
   IssuedInvitation,
   ListFp360DirectionEventsParams,
   ListFp360DirectionObjectivesParams,
+  LogFp360DocumentAccess201,
   ManagedUser,
   ManagedUserUpdate,
   PurchaseAwardInput,
@@ -1557,6 +1618,444 @@ export function useGetFp360Dashboard<TData = Awaited<ReturnType<typeof getFp360D
 
 
 
+
+export const getGetFp360SimulationsOverviewUrl = () => {
+
+
+
+
+  return `/api/redfp360/simulations/overview`
+}
+
+/**
+ * @summary List campaigns and scenario events visible to the actor
+ */
+export const getFp360SimulationsOverview = async ( options?: Parameters<typeof customFetch>[1]): Promise<Fp360SimulationsOverview> => {
+
+  return customFetch<Fp360SimulationsOverview>(getGetFp360SimulationsOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360SimulationsOverviewQueryKey = () => {
+    return [
+    `/api/redfp360/simulations/overview`
+    ] as const;
+    }
+
+
+export const getGetFp360SimulationsOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getFp360SimulationsOverview>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360SimulationsOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360SimulationsOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360SimulationsOverview>>> = ({ signal }) => getFp360SimulationsOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360SimulationsOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360SimulationsOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360SimulationsOverview>>>
+export type GetFp360SimulationsOverviewQueryError = ErrorType<unknown>
+
+
+export function useGetFp360SimulationsOverview<TData = Awaited<ReturnType<typeof getFp360SimulationsOverview>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360SimulationsOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360SimulationsOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360SimulationsOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360SimulationsOverview<TData = Awaited<ReturnType<typeof getFp360SimulationsOverview>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360SimulationsOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360SimulationsOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360SimulationsOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360SimulationsOverview<TData = Awaited<ReturnType<typeof getFp360SimulationsOverview>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360SimulationsOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List campaigns and scenario events visible to the actor
+ */
+
+export function useGetFp360SimulationsOverview<TData = Awaited<ReturnType<typeof getFp360SimulationsOverview>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360SimulationsOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360SimulationsOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360SimulationCampaignUrl = () => {
+
+
+
+
+  return `/api/redfp360/simulations/campaigns`
+}
+
+/**
+ * @summary Create a draft educational campaign
+ */
+export const createFp360SimulationCampaign = async (fp360SimulationCampaignInput: Fp360SimulationCampaignInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360SimulationCampaign> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360SimulationCampaign>(getCreateFp360SimulationCampaignUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360SimulationCampaignInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360SimulationCampaignMutationKey = () => ['createFp360SimulationCampaign'] as const;
+
+export const getCreateFp360SimulationCampaignMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360SimulationCampaign>>, TError,CreateFp360SimulationCampaignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360SimulationCampaign>>, TError,CreateFp360SimulationCampaignMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360SimulationCampaignMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360SimulationCampaign>>, CreateFp360SimulationCampaignMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360SimulationCampaign(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360SimulationCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360SimulationCampaign>>>
+    export type CreateFp360SimulationCampaignMutationBody = BodyType<Fp360SimulationCampaignInput>
+    export type CreateFp360SimulationCampaignMutationError = ErrorType<void>
+    export type CreateFp360SimulationCampaignMutationVariables = {data: BodyType<Fp360SimulationCampaignInput>}
+
+    /**
+ * @summary Create a draft educational campaign
+ */
+export const useCreateFp360SimulationCampaign = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360SimulationCampaign>>, TError,CreateFp360SimulationCampaignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360SimulationCampaign>>,
+        TError,
+        CreateFp360SimulationCampaignMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360SimulationCampaignMutationOptions(options), queryClient);
+    }
+
+export const getActOnFp360SimulationCampaignUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/simulations/campaigns/${id}/action`
+}
+
+export const actOnFp360SimulationCampaign = async (id: string,
+    fp360SimulationCampaignAction: Fp360SimulationCampaignAction, options?: Parameters<typeof customFetch>[1]): Promise<Fp360SimulationCampaign> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360SimulationCampaign>(getActOnFp360SimulationCampaignUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360SimulationCampaignAction)
+  }
+);}
+
+
+
+
+
+export const getActOnFp360SimulationCampaignMutationKey = () => ['actOnFp360SimulationCampaign'] as const;
+
+export const getActOnFp360SimulationCampaignMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360SimulationCampaign>>, TError,ActOnFp360SimulationCampaignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnFp360SimulationCampaign>>, TError,ActOnFp360SimulationCampaignMutationVariables, TContext> => {
+
+const mutationKey = getActOnFp360SimulationCampaignMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnFp360SimulationCampaign>>, ActOnFp360SimulationCampaignMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actOnFp360SimulationCampaign(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnFp360SimulationCampaignMutationResult = NonNullable<Awaited<ReturnType<typeof actOnFp360SimulationCampaign>>>
+    export type ActOnFp360SimulationCampaignMutationBody = BodyType<Fp360SimulationCampaignAction>
+    export type ActOnFp360SimulationCampaignMutationError = ErrorType<void>
+    export type ActOnFp360SimulationCampaignMutationVariables = {id: string;data: BodyType<Fp360SimulationCampaignAction>}
+
+    export const useActOnFp360SimulationCampaign = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360SimulationCampaign>>, TError,ActOnFp360SimulationCampaignMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnFp360SimulationCampaign>>,
+        TError,
+        ActOnFp360SimulationCampaignMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnFp360SimulationCampaignMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360SimulationEventUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/simulations/campaigns/${id}/events`
+}
+
+export const createFp360SimulationEvent = async (id: string,
+    fp360SimulationEventInput: Fp360SimulationEventInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360SimulationEvent> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360SimulationEvent>(getCreateFp360SimulationEventUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360SimulationEventInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360SimulationEventMutationKey = () => ['createFp360SimulationEvent'] as const;
+
+export const getCreateFp360SimulationEventMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360SimulationEvent>>, TError,CreateFp360SimulationEventMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360SimulationEvent>>, TError,CreateFp360SimulationEventMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360SimulationEventMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360SimulationEvent>>, CreateFp360SimulationEventMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createFp360SimulationEvent(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360SimulationEventMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360SimulationEvent>>>
+    export type CreateFp360SimulationEventMutationBody = BodyType<Fp360SimulationEventInput>
+    export type CreateFp360SimulationEventMutationError = ErrorType<void>
+    export type CreateFp360SimulationEventMutationVariables = {id: string;data: BodyType<Fp360SimulationEventInput>}
+
+    export const useCreateFp360SimulationEvent = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360SimulationEvent>>, TError,CreateFp360SimulationEventMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360SimulationEvent>>,
+        TError,
+        CreateFp360SimulationEventMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360SimulationEventMutationOptions(options), queryClient);
+    }
+
+export const getActOnFp360SimulationEventUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/simulations/events/${id}/action`
+}
+
+export const actOnFp360SimulationEvent = async (id: string,
+    fp360SimulationEventAction: Fp360SimulationEventAction, options?: Parameters<typeof customFetch>[1]): Promise<Fp360SimulationEvent> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360SimulationEvent>(getActOnFp360SimulationEventUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360SimulationEventAction)
+  }
+);}
+
+
+
+
+
+export const getActOnFp360SimulationEventMutationKey = () => ['actOnFp360SimulationEvent'] as const;
+
+export const getActOnFp360SimulationEventMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360SimulationEvent>>, TError,ActOnFp360SimulationEventMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnFp360SimulationEvent>>, TError,ActOnFp360SimulationEventMutationVariables, TContext> => {
+
+const mutationKey = getActOnFp360SimulationEventMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnFp360SimulationEvent>>, ActOnFp360SimulationEventMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actOnFp360SimulationEvent(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnFp360SimulationEventMutationResult = NonNullable<Awaited<ReturnType<typeof actOnFp360SimulationEvent>>>
+    export type ActOnFp360SimulationEventMutationBody = BodyType<Fp360SimulationEventAction>
+    export type ActOnFp360SimulationEventMutationError = ErrorType<void>
+    export type ActOnFp360SimulationEventMutationVariables = {id: string;data: BodyType<Fp360SimulationEventAction>}
+
+    export const useActOnFp360SimulationEvent = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360SimulationEvent>>, TError,ActOnFp360SimulationEventMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnFp360SimulationEvent>>,
+        TError,
+        ActOnFp360SimulationEventMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnFp360SimulationEventMutationOptions(options), queryClient);
+    }
 
 export const getGetFp360DirectionOverviewUrl = (params?: GetFp360DirectionOverviewParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -10299,6 +10798,1445 @@ export const useActOnFp360PayrollRun = <TError = ErrorType<void>,
       return useMutation(getActOnFp360PayrollRunMutationOptions(options), queryClient);
     }
 
+export const getGetFp360ProjectsOverviewUrl = (params: GetFp360ProjectsOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/projects/overview?${stringifiedParams}` : `/api/redfp360/projects/overview`
+}
+
+/**
+ * @summary Get projects, work, costs, deliverables, and billing status
+ */
+export const getFp360ProjectsOverview = async (params: GetFp360ProjectsOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectsOverview> => {
+
+  return customFetch<Fp360ProjectsOverview>(getGetFp360ProjectsOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360ProjectsOverviewQueryKey = (params?: GetFp360ProjectsOverviewParams,) => {
+    return [
+    `/api/redfp360/projects/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360ProjectsOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getFp360ProjectsOverview>>, TError = ErrorType<void>>(params: GetFp360ProjectsOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360ProjectsOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360ProjectsOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360ProjectsOverview>>> = ({ signal }) => getFp360ProjectsOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360ProjectsOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360ProjectsOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360ProjectsOverview>>>
+export type GetFp360ProjectsOverviewQueryError = ErrorType<void>
+
+
+export function useGetFp360ProjectsOverview<TData = Awaited<ReturnType<typeof getFp360ProjectsOverview>>, TError = ErrorType<void>>(
+ params: GetFp360ProjectsOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360ProjectsOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360ProjectsOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360ProjectsOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360ProjectsOverview<TData = Awaited<ReturnType<typeof getFp360ProjectsOverview>>, TError = ErrorType<void>>(
+ params: GetFp360ProjectsOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360ProjectsOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360ProjectsOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360ProjectsOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360ProjectsOverview<TData = Awaited<ReturnType<typeof getFp360ProjectsOverview>>, TError = ErrorType<void>>(
+ params: GetFp360ProjectsOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360ProjectsOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get projects, work, costs, deliverables, and billing status
+ */
+
+export function useGetFp360ProjectsOverview<TData = Awaited<ReturnType<typeof getFp360ProjectsOverview>>, TError = ErrorType<void>>(
+ params: GetFp360ProjectsOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360ProjectsOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360ProjectsOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360ProjectUrl = () => {
+
+
+
+
+  return `/api/redfp360/projects`
+}
+
+/**
+ * @summary Create an internal or customer project draft
+ */
+export const createFp360Project = async (fp360ProjectInput: Fp360ProjectInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360Project> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360Project>(getCreateFp360ProjectUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360ProjectMutationKey = () => ['createFp360Project'] as const;
+
+export const getCreateFp360ProjectMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360Project>>, TError,CreateFp360ProjectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360Project>>, TError,CreateFp360ProjectMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360ProjectMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360Project>>, CreateFp360ProjectMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360Project(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360ProjectMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360Project>>>
+    export type CreateFp360ProjectMutationBody = BodyType<Fp360ProjectInput>
+    export type CreateFp360ProjectMutationError = ErrorType<void>
+    export type CreateFp360ProjectMutationVariables = {data: BodyType<Fp360ProjectInput>}
+
+    /**
+ * @summary Create an internal or customer project draft
+ */
+export const useCreateFp360Project = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360Project>>, TError,CreateFp360ProjectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360Project>>,
+        TError,
+        CreateFp360ProjectMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360ProjectMutationOptions(options), queryClient);
+    }
+
+export const getActOnFp360ProjectUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/redfp360/projects/${projectId}/actions`
+}
+
+/**
+ * @summary Plan, start, pause, complete, close, or cancel a project
+ */
+export const actOnFp360Project = async (projectId: string,
+    fp360ProjectActionInput: Fp360ProjectActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360Project> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360Project>(getActOnFp360ProjectUrl(projectId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectActionInput)
+  }
+);}
+
+
+
+
+
+export const getActOnFp360ProjectMutationKey = () => ['actOnFp360Project'] as const;
+
+export const getActOnFp360ProjectMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360Project>>, TError,ActOnFp360ProjectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnFp360Project>>, TError,ActOnFp360ProjectMutationVariables, TContext> => {
+
+const mutationKey = getActOnFp360ProjectMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnFp360Project>>, ActOnFp360ProjectMutationVariables> = (props) => {
+          const {projectId,data} = props ?? {};
+
+          return  actOnFp360Project(projectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnFp360ProjectMutationResult = NonNullable<Awaited<ReturnType<typeof actOnFp360Project>>>
+    export type ActOnFp360ProjectMutationBody = BodyType<Fp360ProjectActionInput>
+    export type ActOnFp360ProjectMutationError = ErrorType<void>
+    export type ActOnFp360ProjectMutationVariables = {projectId: string;data: BodyType<Fp360ProjectActionInput>}
+
+    /**
+ * @summary Plan, start, pause, complete, close, or cancel a project
+ */
+export const useActOnFp360Project = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360Project>>, TError,ActOnFp360ProjectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnFp360Project>>,
+        TError,
+        ActOnFp360ProjectMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnFp360ProjectMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360ProjectRevisionUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/redfp360/projects/${projectId}/revisions`
+}
+
+/**
+ * @summary Propose a versioned scope or budget revision
+ */
+export const createFp360ProjectRevision = async (projectId: string,
+    fp360ProjectRevisionInput: Fp360ProjectRevisionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectRevision> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectRevision>(getCreateFp360ProjectRevisionUrl(projectId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectRevisionInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360ProjectRevisionMutationKey = () => ['createFp360ProjectRevision'] as const;
+
+export const getCreateFp360ProjectRevisionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectRevision>>, TError,CreateFp360ProjectRevisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectRevision>>, TError,CreateFp360ProjectRevisionMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360ProjectRevisionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360ProjectRevision>>, CreateFp360ProjectRevisionMutationVariables> = (props) => {
+          const {projectId,data} = props ?? {};
+
+          return  createFp360ProjectRevision(projectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360ProjectRevisionMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360ProjectRevision>>>
+    export type CreateFp360ProjectRevisionMutationBody = BodyType<Fp360ProjectRevisionInput>
+    export type CreateFp360ProjectRevisionMutationError = ErrorType<void>
+    export type CreateFp360ProjectRevisionMutationVariables = {projectId: string;data: BodyType<Fp360ProjectRevisionInput>}
+
+    /**
+ * @summary Propose a versioned scope or budget revision
+ */
+export const useCreateFp360ProjectRevision = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectRevision>>, TError,CreateFp360ProjectRevisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360ProjectRevision>>,
+        TError,
+        CreateFp360ProjectRevisionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360ProjectRevisionMutationOptions(options), queryClient);
+    }
+
+export const getReviewFp360ProjectRevisionUrl = (revisionId: string,) => {
+
+
+
+
+  return `/api/redfp360/project-revisions/${revisionId}/review`
+}
+
+/**
+ * @summary Approve or reject a proposed project revision
+ */
+export const reviewFp360ProjectRevision = async (revisionId: string,
+    fp360ProjectRevisionReviewInput: Fp360ProjectRevisionReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectRevision> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectRevision>(getReviewFp360ProjectRevisionUrl(revisionId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectRevisionReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewFp360ProjectRevisionMutationKey = () => ['reviewFp360ProjectRevision'] as const;
+
+export const getReviewFp360ProjectRevisionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360ProjectRevision>>, TError,ReviewFp360ProjectRevisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewFp360ProjectRevision>>, TError,ReviewFp360ProjectRevisionMutationVariables, TContext> => {
+
+const mutationKey = getReviewFp360ProjectRevisionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewFp360ProjectRevision>>, ReviewFp360ProjectRevisionMutationVariables> = (props) => {
+          const {revisionId,data} = props ?? {};
+
+          return  reviewFp360ProjectRevision(revisionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewFp360ProjectRevisionMutationResult = NonNullable<Awaited<ReturnType<typeof reviewFp360ProjectRevision>>>
+    export type ReviewFp360ProjectRevisionMutationBody = BodyType<Fp360ProjectRevisionReviewInput>
+    export type ReviewFp360ProjectRevisionMutationError = ErrorType<void>
+    export type ReviewFp360ProjectRevisionMutationVariables = {revisionId: string;data: BodyType<Fp360ProjectRevisionReviewInput>}
+
+    /**
+ * @summary Approve or reject a proposed project revision
+ */
+export const useReviewFp360ProjectRevision = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360ProjectRevision>>, TError,ReviewFp360ProjectRevisionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviewFp360ProjectRevision>>,
+        TError,
+        ReviewFp360ProjectRevisionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewFp360ProjectRevisionMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360ProjectWorkOrderUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/redfp360/projects/${projectId}/work-orders`
+}
+
+/**
+ * @summary Create a work order with a didactic cost rate
+ */
+export const createFp360ProjectWorkOrder = async (projectId: string,
+    fp360ProjectWorkOrderInput: Fp360ProjectWorkOrderInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectWorkOrder> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectWorkOrder>(getCreateFp360ProjectWorkOrderUrl(projectId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectWorkOrderInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360ProjectWorkOrderMutationKey = () => ['createFp360ProjectWorkOrder'] as const;
+
+export const getCreateFp360ProjectWorkOrderMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectWorkOrder>>, TError,CreateFp360ProjectWorkOrderMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectWorkOrder>>, TError,CreateFp360ProjectWorkOrderMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360ProjectWorkOrderMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360ProjectWorkOrder>>, CreateFp360ProjectWorkOrderMutationVariables> = (props) => {
+          const {projectId,data} = props ?? {};
+
+          return  createFp360ProjectWorkOrder(projectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360ProjectWorkOrderMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360ProjectWorkOrder>>>
+    export type CreateFp360ProjectWorkOrderMutationBody = BodyType<Fp360ProjectWorkOrderInput>
+    export type CreateFp360ProjectWorkOrderMutationError = ErrorType<void>
+    export type CreateFp360ProjectWorkOrderMutationVariables = {projectId: string;data: BodyType<Fp360ProjectWorkOrderInput>}
+
+    /**
+ * @summary Create a work order with a didactic cost rate
+ */
+export const useCreateFp360ProjectWorkOrder = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectWorkOrder>>, TError,CreateFp360ProjectWorkOrderMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360ProjectWorkOrder>>,
+        TError,
+        CreateFp360ProjectWorkOrderMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360ProjectWorkOrderMutationOptions(options), queryClient);
+    }
+
+export const getActOnFp360ProjectWorkOrderUrl = (workOrderId: string,) => {
+
+
+
+
+  return `/api/redfp360/project-work-orders/${workOrderId}/actions`
+}
+
+/**
+ * @summary Start, complete, review, or block a work order
+ */
+export const actOnFp360ProjectWorkOrder = async (workOrderId: string,
+    fp360ProjectWorkOrderActionInput: Fp360ProjectWorkOrderActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectWorkOrder> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectWorkOrder>(getActOnFp360ProjectWorkOrderUrl(workOrderId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectWorkOrderActionInput)
+  }
+);}
+
+
+
+
+
+export const getActOnFp360ProjectWorkOrderMutationKey = () => ['actOnFp360ProjectWorkOrder'] as const;
+
+export const getActOnFp360ProjectWorkOrderMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360ProjectWorkOrder>>, TError,ActOnFp360ProjectWorkOrderMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnFp360ProjectWorkOrder>>, TError,ActOnFp360ProjectWorkOrderMutationVariables, TContext> => {
+
+const mutationKey = getActOnFp360ProjectWorkOrderMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnFp360ProjectWorkOrder>>, ActOnFp360ProjectWorkOrderMutationVariables> = (props) => {
+          const {workOrderId,data} = props ?? {};
+
+          return  actOnFp360ProjectWorkOrder(workOrderId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnFp360ProjectWorkOrderMutationResult = NonNullable<Awaited<ReturnType<typeof actOnFp360ProjectWorkOrder>>>
+    export type ActOnFp360ProjectWorkOrderMutationBody = BodyType<Fp360ProjectWorkOrderActionInput>
+    export type ActOnFp360ProjectWorkOrderMutationError = ErrorType<void>
+    export type ActOnFp360ProjectWorkOrderMutationVariables = {workOrderId: string;data: BodyType<Fp360ProjectWorkOrderActionInput>}
+
+    /**
+ * @summary Start, complete, review, or block a work order
+ */
+export const useActOnFp360ProjectWorkOrder = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360ProjectWorkOrder>>, TError,ActOnFp360ProjectWorkOrderMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnFp360ProjectWorkOrder>>,
+        TError,
+        ActOnFp360ProjectWorkOrderMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnFp360ProjectWorkOrderMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360ProjectTimeEntryUrl = () => {
+
+
+
+
+  return `/api/redfp360/project-time-entries`
+}
+
+/**
+ * @summary Record a simulated time entry within the project calendar
+ */
+export const createFp360ProjectTimeEntry = async (fp360ProjectTimeEntryInput: Fp360ProjectTimeEntryInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectTimeEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectTimeEntry>(getCreateFp360ProjectTimeEntryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectTimeEntryInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360ProjectTimeEntryMutationKey = () => ['createFp360ProjectTimeEntry'] as const;
+
+export const getCreateFp360ProjectTimeEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectTimeEntry>>, TError,CreateFp360ProjectTimeEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectTimeEntry>>, TError,CreateFp360ProjectTimeEntryMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360ProjectTimeEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360ProjectTimeEntry>>, CreateFp360ProjectTimeEntryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360ProjectTimeEntry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360ProjectTimeEntryMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360ProjectTimeEntry>>>
+    export type CreateFp360ProjectTimeEntryMutationBody = BodyType<Fp360ProjectTimeEntryInput>
+    export type CreateFp360ProjectTimeEntryMutationError = ErrorType<void>
+    export type CreateFp360ProjectTimeEntryMutationVariables = {data: BodyType<Fp360ProjectTimeEntryInput>}
+
+    /**
+ * @summary Record a simulated time entry within the project calendar
+ */
+export const useCreateFp360ProjectTimeEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectTimeEntry>>, TError,CreateFp360ProjectTimeEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360ProjectTimeEntry>>,
+        TError,
+        CreateFp360ProjectTimeEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360ProjectTimeEntryMutationOptions(options), queryClient);
+    }
+
+export const getReviewFp360ProjectTimeEntryUrl = (entryId: string,) => {
+
+
+
+
+  return `/api/redfp360/project-time-entries/${entryId}/review`
+}
+
+/**
+ * @summary Approve or reject a submitted time entry
+ */
+export const reviewFp360ProjectTimeEntry = async (entryId: string,
+    fp360ProjectReviewInput: Fp360ProjectReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectTimeEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectTimeEntry>(getReviewFp360ProjectTimeEntryUrl(entryId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewFp360ProjectTimeEntryMutationKey = () => ['reviewFp360ProjectTimeEntry'] as const;
+
+export const getReviewFp360ProjectTimeEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360ProjectTimeEntry>>, TError,ReviewFp360ProjectTimeEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewFp360ProjectTimeEntry>>, TError,ReviewFp360ProjectTimeEntryMutationVariables, TContext> => {
+
+const mutationKey = getReviewFp360ProjectTimeEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewFp360ProjectTimeEntry>>, ReviewFp360ProjectTimeEntryMutationVariables> = (props) => {
+          const {entryId,data} = props ?? {};
+
+          return  reviewFp360ProjectTimeEntry(entryId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewFp360ProjectTimeEntryMutationResult = NonNullable<Awaited<ReturnType<typeof reviewFp360ProjectTimeEntry>>>
+    export type ReviewFp360ProjectTimeEntryMutationBody = BodyType<Fp360ProjectReviewInput>
+    export type ReviewFp360ProjectTimeEntryMutationError = ErrorType<void>
+    export type ReviewFp360ProjectTimeEntryMutationVariables = {entryId: string;data: BodyType<Fp360ProjectReviewInput>}
+
+    /**
+ * @summary Approve or reject a submitted time entry
+ */
+export const useReviewFp360ProjectTimeEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360ProjectTimeEntry>>, TError,ReviewFp360ProjectTimeEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviewFp360ProjectTimeEntry>>,
+        TError,
+        ReviewFp360ProjectTimeEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewFp360ProjectTimeEntryMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360ProjectResourceUrl = () => {
+
+
+
+
+  return `/api/redfp360/project-resources`
+}
+
+/**
+ * @summary Record a project material or external service cost
+ */
+export const createFp360ProjectResource = async (fp360ProjectResourceInput: Fp360ProjectResourceInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectResource> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectResource>(getCreateFp360ProjectResourceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectResourceInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360ProjectResourceMutationKey = () => ['createFp360ProjectResource'] as const;
+
+export const getCreateFp360ProjectResourceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectResource>>, TError,CreateFp360ProjectResourceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectResource>>, TError,CreateFp360ProjectResourceMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360ProjectResourceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360ProjectResource>>, CreateFp360ProjectResourceMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360ProjectResource(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360ProjectResourceMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360ProjectResource>>>
+    export type CreateFp360ProjectResourceMutationBody = BodyType<Fp360ProjectResourceInput>
+    export type CreateFp360ProjectResourceMutationError = ErrorType<void>
+    export type CreateFp360ProjectResourceMutationVariables = {data: BodyType<Fp360ProjectResourceInput>}
+
+    /**
+ * @summary Record a project material or external service cost
+ */
+export const useCreateFp360ProjectResource = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectResource>>, TError,CreateFp360ProjectResourceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360ProjectResource>>,
+        TError,
+        CreateFp360ProjectResourceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360ProjectResourceMutationOptions(options), queryClient);
+    }
+
+export const getReviewFp360ProjectResourceUrl = (resourceId: string,) => {
+
+
+
+
+  return `/api/redfp360/project-resources/${resourceId}/review`
+}
+
+/**
+ * @summary Approve or reject a project resource cost
+ */
+export const reviewFp360ProjectResource = async (resourceId: string,
+    fp360ProjectReviewInput: Fp360ProjectReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectResource> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectResource>(getReviewFp360ProjectResourceUrl(resourceId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewFp360ProjectResourceMutationKey = () => ['reviewFp360ProjectResource'] as const;
+
+export const getReviewFp360ProjectResourceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360ProjectResource>>, TError,ReviewFp360ProjectResourceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewFp360ProjectResource>>, TError,ReviewFp360ProjectResourceMutationVariables, TContext> => {
+
+const mutationKey = getReviewFp360ProjectResourceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewFp360ProjectResource>>, ReviewFp360ProjectResourceMutationVariables> = (props) => {
+          const {resourceId,data} = props ?? {};
+
+          return  reviewFp360ProjectResource(resourceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewFp360ProjectResourceMutationResult = NonNullable<Awaited<ReturnType<typeof reviewFp360ProjectResource>>>
+    export type ReviewFp360ProjectResourceMutationBody = BodyType<Fp360ProjectReviewInput>
+    export type ReviewFp360ProjectResourceMutationError = ErrorType<void>
+    export type ReviewFp360ProjectResourceMutationVariables = {resourceId: string;data: BodyType<Fp360ProjectReviewInput>}
+
+    /**
+ * @summary Approve or reject a project resource cost
+ */
+export const useReviewFp360ProjectResource = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFp360ProjectResource>>, TError,ReviewFp360ProjectResourceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviewFp360ProjectResource>>,
+        TError,
+        ReviewFp360ProjectResourceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewFp360ProjectResourceMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360ProjectMilestoneUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/redfp360/projects/${projectId}/milestones`
+}
+
+/**
+ * @summary Add a project milestone with an agreed didactic billing amount
+ */
+export const createFp360ProjectMilestone = async (projectId: string,
+    fp360ProjectMilestoneInput: Fp360ProjectMilestoneInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectMilestone> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectMilestone>(getCreateFp360ProjectMilestoneUrl(projectId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectMilestoneInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360ProjectMilestoneMutationKey = () => ['createFp360ProjectMilestone'] as const;
+
+export const getCreateFp360ProjectMilestoneMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectMilestone>>, TError,CreateFp360ProjectMilestoneMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectMilestone>>, TError,CreateFp360ProjectMilestoneMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360ProjectMilestoneMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360ProjectMilestone>>, CreateFp360ProjectMilestoneMutationVariables> = (props) => {
+          const {projectId,data} = props ?? {};
+
+          return  createFp360ProjectMilestone(projectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360ProjectMilestoneMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360ProjectMilestone>>>
+    export type CreateFp360ProjectMilestoneMutationBody = BodyType<Fp360ProjectMilestoneInput>
+    export type CreateFp360ProjectMilestoneMutationError = ErrorType<void>
+    export type CreateFp360ProjectMilestoneMutationVariables = {projectId: string;data: BodyType<Fp360ProjectMilestoneInput>}
+
+    /**
+ * @summary Add a project milestone with an agreed didactic billing amount
+ */
+export const useCreateFp360ProjectMilestone = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectMilestone>>, TError,CreateFp360ProjectMilestoneMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360ProjectMilestone>>,
+        TError,
+        CreateFp360ProjectMilestoneMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360ProjectMilestoneMutationOptions(options), queryClient);
+    }
+
+export const getActOnFp360ProjectMilestoneUrl = (milestoneId: string,) => {
+
+
+
+
+  return `/api/redfp360/project-milestones/${milestoneId}/actions`
+}
+
+/**
+ * @summary Start, submit, accept, or reject a milestone
+ */
+export const actOnFp360ProjectMilestone = async (milestoneId: string,
+    fp360ProjectMilestoneActionInput: Fp360ProjectMilestoneActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectMilestone> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectMilestone>(getActOnFp360ProjectMilestoneUrl(milestoneId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectMilestoneActionInput)
+  }
+);}
+
+
+
+
+
+export const getActOnFp360ProjectMilestoneMutationKey = () => ['actOnFp360ProjectMilestone'] as const;
+
+export const getActOnFp360ProjectMilestoneMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360ProjectMilestone>>, TError,ActOnFp360ProjectMilestoneMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnFp360ProjectMilestone>>, TError,ActOnFp360ProjectMilestoneMutationVariables, TContext> => {
+
+const mutationKey = getActOnFp360ProjectMilestoneMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnFp360ProjectMilestone>>, ActOnFp360ProjectMilestoneMutationVariables> = (props) => {
+          const {milestoneId,data} = props ?? {};
+
+          return  actOnFp360ProjectMilestone(milestoneId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnFp360ProjectMilestoneMutationResult = NonNullable<Awaited<ReturnType<typeof actOnFp360ProjectMilestone>>>
+    export type ActOnFp360ProjectMilestoneMutationBody = BodyType<Fp360ProjectMilestoneActionInput>
+    export type ActOnFp360ProjectMilestoneMutationError = ErrorType<void>
+    export type ActOnFp360ProjectMilestoneMutationVariables = {milestoneId: string;data: BodyType<Fp360ProjectMilestoneActionInput>}
+
+    /**
+ * @summary Start, submit, accept, or reject a milestone
+ */
+export const useActOnFp360ProjectMilestone = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360ProjectMilestone>>, TError,ActOnFp360ProjectMilestoneMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnFp360ProjectMilestone>>,
+        TError,
+        ActOnFp360ProjectMilestoneMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnFp360ProjectMilestoneMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360ProjectDeliverableUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/redfp360/projects/${projectId}/deliverables`
+}
+
+/**
+ * @summary Create a deliverable linked to the project or a milestone
+ */
+export const createFp360ProjectDeliverable = async (projectId: string,
+    fp360ProjectDeliverableInput: Fp360ProjectDeliverableInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectDeliverable> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectDeliverable>(getCreateFp360ProjectDeliverableUrl(projectId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectDeliverableInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360ProjectDeliverableMutationKey = () => ['createFp360ProjectDeliverable'] as const;
+
+export const getCreateFp360ProjectDeliverableMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectDeliverable>>, TError,CreateFp360ProjectDeliverableMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectDeliverable>>, TError,CreateFp360ProjectDeliverableMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360ProjectDeliverableMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360ProjectDeliverable>>, CreateFp360ProjectDeliverableMutationVariables> = (props) => {
+          const {projectId,data} = props ?? {};
+
+          return  createFp360ProjectDeliverable(projectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360ProjectDeliverableMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360ProjectDeliverable>>>
+    export type CreateFp360ProjectDeliverableMutationBody = BodyType<Fp360ProjectDeliverableInput>
+    export type CreateFp360ProjectDeliverableMutationError = ErrorType<void>
+    export type CreateFp360ProjectDeliverableMutationVariables = {projectId: string;data: BodyType<Fp360ProjectDeliverableInput>}
+
+    /**
+ * @summary Create a deliverable linked to the project or a milestone
+ */
+export const useCreateFp360ProjectDeliverable = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectDeliverable>>, TError,CreateFp360ProjectDeliverableMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360ProjectDeliverable>>,
+        TError,
+        CreateFp360ProjectDeliverableMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360ProjectDeliverableMutationOptions(options), queryClient);
+    }
+
+export const getActOnFp360ProjectDeliverableUrl = (deliverableId: string,) => {
+
+
+
+
+  return `/api/redfp360/project-deliverables/${deliverableId}/actions`
+}
+
+/**
+ * @summary Submit, accept, request changes, or reject a deliverable
+ */
+export const actOnFp360ProjectDeliverable = async (deliverableId: string,
+    fp360ProjectDeliverableActionInput: Fp360ProjectDeliverableActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectDeliverable> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectDeliverable>(getActOnFp360ProjectDeliverableUrl(deliverableId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectDeliverableActionInput)
+  }
+);}
+
+
+
+
+
+export const getActOnFp360ProjectDeliverableMutationKey = () => ['actOnFp360ProjectDeliverable'] as const;
+
+export const getActOnFp360ProjectDeliverableMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360ProjectDeliverable>>, TError,ActOnFp360ProjectDeliverableMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnFp360ProjectDeliverable>>, TError,ActOnFp360ProjectDeliverableMutationVariables, TContext> => {
+
+const mutationKey = getActOnFp360ProjectDeliverableMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnFp360ProjectDeliverable>>, ActOnFp360ProjectDeliverableMutationVariables> = (props) => {
+          const {deliverableId,data} = props ?? {};
+
+          return  actOnFp360ProjectDeliverable(deliverableId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnFp360ProjectDeliverableMutationResult = NonNullable<Awaited<ReturnType<typeof actOnFp360ProjectDeliverable>>>
+    export type ActOnFp360ProjectDeliverableMutationBody = BodyType<Fp360ProjectDeliverableActionInput>
+    export type ActOnFp360ProjectDeliverableMutationError = ErrorType<void>
+    export type ActOnFp360ProjectDeliverableMutationVariables = {deliverableId: string;data: BodyType<Fp360ProjectDeliverableActionInput>}
+
+    /**
+ * @summary Submit, accept, request changes, or reject a deliverable
+ */
+export const useActOnFp360ProjectDeliverable = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360ProjectDeliverable>>, TError,ActOnFp360ProjectDeliverableMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnFp360ProjectDeliverable>>,
+        TError,
+        ActOnFp360ProjectDeliverableMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnFp360ProjectDeliverableMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360ProjectBillingUrl = () => {
+
+
+
+
+  return `/api/redfp360/project-billing-requests`
+}
+
+/**
+ * @summary Create one service order for an accepted project milestone
+ */
+export const createFp360ProjectBilling = async (fp360ProjectBillingInput: Fp360ProjectBillingInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360ProjectBilling> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360ProjectBilling>(getCreateFp360ProjectBillingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360ProjectBillingInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360ProjectBillingMutationKey = () => ['createFp360ProjectBilling'] as const;
+
+export const getCreateFp360ProjectBillingMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectBilling>>, TError,CreateFp360ProjectBillingMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectBilling>>, TError,CreateFp360ProjectBillingMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360ProjectBillingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360ProjectBilling>>, CreateFp360ProjectBillingMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360ProjectBilling(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360ProjectBillingMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360ProjectBilling>>>
+    export type CreateFp360ProjectBillingMutationBody = BodyType<Fp360ProjectBillingInput>
+    export type CreateFp360ProjectBillingMutationError = ErrorType<void>
+    export type CreateFp360ProjectBillingMutationVariables = {data: BodyType<Fp360ProjectBillingInput>}
+
+    /**
+ * @summary Create one service order for an accepted project milestone
+ */
+export const useCreateFp360ProjectBilling = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360ProjectBilling>>, TError,CreateFp360ProjectBillingMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360ProjectBilling>>,
+        TError,
+        CreateFp360ProjectBillingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360ProjectBillingMutationOptions(options), queryClient);
+    }
+
 export const getGetFp360CustomerServiceOverviewUrl = (params: GetFp360CustomerServiceOverviewParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -10936,6 +12874,1021 @@ export const useActOnFp360CustomerAgreement = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getActOnFp360CustomerAgreementMutationOptions(options), queryClient);
+    }
+
+export const getGetFp360EmploymentCommunicationsUrl = (params: GetFp360EmploymentCommunicationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/employment/communications?${stringifiedParams}` : `/api/redfp360/employment/communications`
+}
+
+/**
+ * @summary Get simulated contract communications for one organization
+ */
+export const getFp360EmploymentCommunications = async (params: GetFp360EmploymentCommunicationsParams, options?: Parameters<typeof customFetch>[1]): Promise<Fp360EmploymentCommunicationsResponse> => {
+
+  return customFetch<Fp360EmploymentCommunicationsResponse>(getGetFp360EmploymentCommunicationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360EmploymentCommunicationsQueryKey = (params?: GetFp360EmploymentCommunicationsParams,) => {
+    return [
+    `/api/redfp360/employment/communications`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360EmploymentCommunicationsQueryOptions = <TData = Awaited<ReturnType<typeof getFp360EmploymentCommunications>>, TError = ErrorType<void>>(params: GetFp360EmploymentCommunicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360EmploymentCommunications>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360EmploymentCommunicationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360EmploymentCommunications>>> = ({ signal }) => getFp360EmploymentCommunications(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360EmploymentCommunications>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360EmploymentCommunicationsQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360EmploymentCommunications>>>
+export type GetFp360EmploymentCommunicationsQueryError = ErrorType<void>
+
+
+export function useGetFp360EmploymentCommunications<TData = Awaited<ReturnType<typeof getFp360EmploymentCommunications>>, TError = ErrorType<void>>(
+ params: GetFp360EmploymentCommunicationsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360EmploymentCommunications>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360EmploymentCommunications>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360EmploymentCommunications>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360EmploymentCommunications<TData = Awaited<ReturnType<typeof getFp360EmploymentCommunications>>, TError = ErrorType<void>>(
+ params: GetFp360EmploymentCommunicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360EmploymentCommunications>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360EmploymentCommunications>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360EmploymentCommunications>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360EmploymentCommunications<TData = Awaited<ReturnType<typeof getFp360EmploymentCommunications>>, TError = ErrorType<void>>(
+ params: GetFp360EmploymentCommunicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360EmploymentCommunications>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get simulated contract communications for one organization
+ */
+
+export function useGetFp360EmploymentCommunications<TData = Awaited<ReturnType<typeof getFp360EmploymentCommunications>>, TError = ErrorType<void>>(
+ params: GetFp360EmploymentCommunicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360EmploymentCommunications>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360EmploymentCommunicationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360EmploymentCommunicationUrl = () => {
+
+
+
+
+  return `/api/redfp360/employment/communications`
+}
+
+/**
+ * @summary Submit a fictional employment communication to the simulated portal
+ */
+export const createFp360EmploymentCommunication = async (fp360EmploymentCommunicationInput: Fp360EmploymentCommunicationInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360EmploymentCommunication> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360EmploymentCommunication>(getCreateFp360EmploymentCommunicationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360EmploymentCommunicationInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360EmploymentCommunicationMutationKey = () => ['createFp360EmploymentCommunication'] as const;
+
+export const getCreateFp360EmploymentCommunicationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360EmploymentCommunication>>, TError,CreateFp360EmploymentCommunicationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360EmploymentCommunication>>, TError,CreateFp360EmploymentCommunicationMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360EmploymentCommunicationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360EmploymentCommunication>>, CreateFp360EmploymentCommunicationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360EmploymentCommunication(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360EmploymentCommunicationMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360EmploymentCommunication>>>
+    export type CreateFp360EmploymentCommunicationMutationBody = BodyType<Fp360EmploymentCommunicationInput>
+    export type CreateFp360EmploymentCommunicationMutationError = ErrorType<void>
+    export type CreateFp360EmploymentCommunicationMutationVariables = {data: BodyType<Fp360EmploymentCommunicationInput>}
+
+    /**
+ * @summary Submit a fictional employment communication to the simulated portal
+ */
+export const useCreateFp360EmploymentCommunication = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360EmploymentCommunication>>, TError,CreateFp360EmploymentCommunicationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360EmploymentCommunication>>,
+        TError,
+        CreateFp360EmploymentCommunicationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360EmploymentCommunicationMutationOptions(options), queryClient);
+    }
+
+export const getResubmitFp360EmploymentCommunicationUrl = (communicationId: string,) => {
+
+
+
+
+  return `/api/redfp360/employment/communications/${communicationId}/resubmit`
+}
+
+/**
+ * @summary Resubmit an observed communication after simulated correction
+ */
+export const resubmitFp360EmploymentCommunication = async (communicationId: string,
+    fp360EmploymentCommunicationResubmitInput: Fp360EmploymentCommunicationResubmitInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360EmploymentCommunication> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360EmploymentCommunication>(getResubmitFp360EmploymentCommunicationUrl(communicationId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360EmploymentCommunicationResubmitInput)
+  }
+);}
+
+
+
+
+
+export const getResubmitFp360EmploymentCommunicationMutationKey = () => ['resubmitFp360EmploymentCommunication'] as const;
+
+export const getResubmitFp360EmploymentCommunicationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resubmitFp360EmploymentCommunication>>, TError,ResubmitFp360EmploymentCommunicationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resubmitFp360EmploymentCommunication>>, TError,ResubmitFp360EmploymentCommunicationMutationVariables, TContext> => {
+
+const mutationKey = getResubmitFp360EmploymentCommunicationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resubmitFp360EmploymentCommunication>>, ResubmitFp360EmploymentCommunicationMutationVariables> = (props) => {
+          const {communicationId,data} = props ?? {};
+
+          return  resubmitFp360EmploymentCommunication(communicationId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResubmitFp360EmploymentCommunicationMutationResult = NonNullable<Awaited<ReturnType<typeof resubmitFp360EmploymentCommunication>>>
+    export type ResubmitFp360EmploymentCommunicationMutationBody = BodyType<Fp360EmploymentCommunicationResubmitInput>
+    export type ResubmitFp360EmploymentCommunicationMutationError = ErrorType<void>
+    export type ResubmitFp360EmploymentCommunicationMutationVariables = {communicationId: string;data: BodyType<Fp360EmploymentCommunicationResubmitInput>}
+
+    /**
+ * @summary Resubmit an observed communication after simulated correction
+ */
+export const useResubmitFp360EmploymentCommunication = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resubmitFp360EmploymentCommunication>>, TError,ResubmitFp360EmploymentCommunicationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof resubmitFp360EmploymentCommunication>>,
+        TError,
+        ResubmitFp360EmploymentCommunicationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResubmitFp360EmploymentCommunicationMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360EmploymentCertificateUrl = (changeId: string,) => {
+
+
+
+
+  return `/api/redfp360/employment/terminations/${changeId}/certificate`
+}
+
+/**
+ * @summary Issue an educational-only employment closure certificate
+ */
+export const createFp360EmploymentCertificate = async (changeId: string,
+    fp360EmploymentCertificateInput: Fp360EmploymentCertificateInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360EmploymentCertificate> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360EmploymentCertificate>(getCreateFp360EmploymentCertificateUrl(changeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360EmploymentCertificateInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360EmploymentCertificateMutationKey = () => ['createFp360EmploymentCertificate'] as const;
+
+export const getCreateFp360EmploymentCertificateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360EmploymentCertificate>>, TError,CreateFp360EmploymentCertificateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360EmploymentCertificate>>, TError,CreateFp360EmploymentCertificateMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360EmploymentCertificateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360EmploymentCertificate>>, CreateFp360EmploymentCertificateMutationVariables> = (props) => {
+          const {changeId,data} = props ?? {};
+
+          return  createFp360EmploymentCertificate(changeId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360EmploymentCertificateMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360EmploymentCertificate>>>
+    export type CreateFp360EmploymentCertificateMutationBody = BodyType<Fp360EmploymentCertificateInput>
+    export type CreateFp360EmploymentCertificateMutationError = ErrorType<void>
+    export type CreateFp360EmploymentCertificateMutationVariables = {changeId: string;data: BodyType<Fp360EmploymentCertificateInput>}
+
+    /**
+ * @summary Issue an educational-only employment closure certificate
+ */
+export const useCreateFp360EmploymentCertificate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360EmploymentCertificate>>, TError,CreateFp360EmploymentCertificateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360EmploymentCertificate>>,
+        TError,
+        CreateFp360EmploymentCertificateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360EmploymentCertificateMutationOptions(options), queryClient);
+    }
+
+export const getGetFp360CommunicationsOverviewUrl = (params: GetFp360CommunicationsOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/communications?${stringifiedParams}` : `/api/redfp360/communications`
+}
+
+/**
+ * @summary Get organization-scoped simulated communications
+ */
+export const getFp360CommunicationsOverview = async (params: GetFp360CommunicationsOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<Fp360CommunicationsOverview> => {
+
+  return customFetch<Fp360CommunicationsOverview>(getGetFp360CommunicationsOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360CommunicationsOverviewQueryKey = (params?: GetFp360CommunicationsOverviewParams,) => {
+    return [
+    `/api/redfp360/communications`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360CommunicationsOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getFp360CommunicationsOverview>>, TError = ErrorType<void>>(params: GetFp360CommunicationsOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360CommunicationsOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360CommunicationsOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360CommunicationsOverview>>> = ({ signal }) => getFp360CommunicationsOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360CommunicationsOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360CommunicationsOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360CommunicationsOverview>>>
+export type GetFp360CommunicationsOverviewQueryError = ErrorType<void>
+
+
+export function useGetFp360CommunicationsOverview<TData = Awaited<ReturnType<typeof getFp360CommunicationsOverview>>, TError = ErrorType<void>>(
+ params: GetFp360CommunicationsOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360CommunicationsOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360CommunicationsOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360CommunicationsOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360CommunicationsOverview<TData = Awaited<ReturnType<typeof getFp360CommunicationsOverview>>, TError = ErrorType<void>>(
+ params: GetFp360CommunicationsOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360CommunicationsOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360CommunicationsOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360CommunicationsOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360CommunicationsOverview<TData = Awaited<ReturnType<typeof getFp360CommunicationsOverview>>, TError = ErrorType<void>>(
+ params: GetFp360CommunicationsOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360CommunicationsOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get organization-scoped simulated communications
+ */
+
+export function useGetFp360CommunicationsOverview<TData = Awaited<ReturnType<typeof getFp360CommunicationsOverview>>, TError = ErrorType<void>>(
+ params: GetFp360CommunicationsOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360CommunicationsOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360CommunicationsOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360CommunicationsThreadUrl = () => {
+
+
+
+
+  return `/api/redfp360/communications/threads`
+}
+
+/**
+ * @summary Create a fictional message draft or send a new internal thread
+ */
+export const createFp360CommunicationsThread = async (fp360CommunicationsCreateThreadInput: Fp360CommunicationsCreateThreadInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360CommunicationsThread> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360CommunicationsThread>(getCreateFp360CommunicationsThreadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360CommunicationsCreateThreadInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360CommunicationsThreadMutationKey = () => ['createFp360CommunicationsThread'] as const;
+
+export const getCreateFp360CommunicationsThreadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360CommunicationsThread>>, TError,CreateFp360CommunicationsThreadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360CommunicationsThread>>, TError,CreateFp360CommunicationsThreadMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360CommunicationsThreadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360CommunicationsThread>>, CreateFp360CommunicationsThreadMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360CommunicationsThread(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360CommunicationsThreadMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360CommunicationsThread>>>
+    export type CreateFp360CommunicationsThreadMutationBody = BodyType<Fp360CommunicationsCreateThreadInput>
+    export type CreateFp360CommunicationsThreadMutationError = ErrorType<void>
+    export type CreateFp360CommunicationsThreadMutationVariables = {data: BodyType<Fp360CommunicationsCreateThreadInput>}
+
+    /**
+ * @summary Create a fictional message draft or send a new internal thread
+ */
+export const useCreateFp360CommunicationsThread = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360CommunicationsThread>>, TError,CreateFp360CommunicationsThreadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360CommunicationsThread>>,
+        TError,
+        CreateFp360CommunicationsThreadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360CommunicationsThreadMutationOptions(options), queryClient);
+    }
+
+export const getSendFp360CommunicationsThreadUrl = (threadId: string,) => {
+
+
+
+
+  return `/api/redfp360/communications/threads/${threadId}/send`
+}
+
+/**
+ * @summary Send a saved draft inside the training network
+ */
+export const sendFp360CommunicationsThread = async (threadId: string,
+    fp360CommunicationsOperationInput: Fp360CommunicationsOperationInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360CommunicationsThread> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360CommunicationsThread>(getSendFp360CommunicationsThreadUrl(threadId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360CommunicationsOperationInput)
+  }
+);}
+
+
+
+
+
+export const getSendFp360CommunicationsThreadMutationKey = () => ['sendFp360CommunicationsThread'] as const;
+
+export const getSendFp360CommunicationsThreadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendFp360CommunicationsThread>>, TError,SendFp360CommunicationsThreadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendFp360CommunicationsThread>>, TError,SendFp360CommunicationsThreadMutationVariables, TContext> => {
+
+const mutationKey = getSendFp360CommunicationsThreadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendFp360CommunicationsThread>>, SendFp360CommunicationsThreadMutationVariables> = (props) => {
+          const {threadId,data} = props ?? {};
+
+          return  sendFp360CommunicationsThread(threadId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendFp360CommunicationsThreadMutationResult = NonNullable<Awaited<ReturnType<typeof sendFp360CommunicationsThread>>>
+    export type SendFp360CommunicationsThreadMutationBody = BodyType<Fp360CommunicationsOperationInput>
+    export type SendFp360CommunicationsThreadMutationError = ErrorType<void>
+    export type SendFp360CommunicationsThreadMutationVariables = {threadId: string;data: BodyType<Fp360CommunicationsOperationInput>}
+
+    /**
+ * @summary Send a saved draft inside the training network
+ */
+export const useSendFp360CommunicationsThread = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendFp360CommunicationsThread>>, TError,SendFp360CommunicationsThreadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof sendFp360CommunicationsThread>>,
+        TError,
+        SendFp360CommunicationsThreadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSendFp360CommunicationsThreadMutationOptions(options), queryClient);
+    }
+
+export const getReplyFp360CommunicationsThreadUrl = (threadId: string,) => {
+
+
+
+
+  return `/api/redfp360/communications/threads/${threadId}/messages`
+}
+
+/**
+ * @summary Add a simulated internal reply to a thread
+ */
+export const replyFp360CommunicationsThread = async (threadId: string,
+    fp360CommunicationsReplyInput: Fp360CommunicationsReplyInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360CommunicationsThread> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360CommunicationsThread>(getReplyFp360CommunicationsThreadUrl(threadId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360CommunicationsReplyInput)
+  }
+);}
+
+
+
+
+
+export const getReplyFp360CommunicationsThreadMutationKey = () => ['replyFp360CommunicationsThread'] as const;
+
+export const getReplyFp360CommunicationsThreadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replyFp360CommunicationsThread>>, TError,ReplyFp360CommunicationsThreadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof replyFp360CommunicationsThread>>, TError,ReplyFp360CommunicationsThreadMutationVariables, TContext> => {
+
+const mutationKey = getReplyFp360CommunicationsThreadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof replyFp360CommunicationsThread>>, ReplyFp360CommunicationsThreadMutationVariables> = (props) => {
+          const {threadId,data} = props ?? {};
+
+          return  replyFp360CommunicationsThread(threadId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReplyFp360CommunicationsThreadMutationResult = NonNullable<Awaited<ReturnType<typeof replyFp360CommunicationsThread>>>
+    export type ReplyFp360CommunicationsThreadMutationBody = BodyType<Fp360CommunicationsReplyInput>
+    export type ReplyFp360CommunicationsThreadMutationError = ErrorType<void>
+    export type ReplyFp360CommunicationsThreadMutationVariables = {threadId: string;data: BodyType<Fp360CommunicationsReplyInput>}
+
+    /**
+ * @summary Add a simulated internal reply to a thread
+ */
+export const useReplyFp360CommunicationsThread = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replyFp360CommunicationsThread>>, TError,ReplyFp360CommunicationsThreadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof replyFp360CommunicationsThread>>,
+        TError,
+        ReplyFp360CommunicationsThreadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReplyFp360CommunicationsThreadMutationOptions(options), queryClient);
+    }
+
+export const getUpdateFp360CommunicationsThreadStateUrl = (threadId: string,) => {
+
+
+
+
+  return `/api/redfp360/communications/threads/${threadId}/state`
+}
+
+/**
+ * @summary Mark a thread read, archive it, or assign a department
+ */
+export const updateFp360CommunicationsThreadState = async (threadId: string,
+    fp360CommunicationsThreadStateInput: Fp360CommunicationsThreadStateInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360CommunicationsThread> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360CommunicationsThread>(getUpdateFp360CommunicationsThreadStateUrl(threadId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360CommunicationsThreadStateInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateFp360CommunicationsThreadStateMutationKey = () => ['updateFp360CommunicationsThreadState'] as const;
+
+export const getUpdateFp360CommunicationsThreadStateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360CommunicationsThreadState>>, TError,UpdateFp360CommunicationsThreadStateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFp360CommunicationsThreadState>>, TError,UpdateFp360CommunicationsThreadStateMutationVariables, TContext> => {
+
+const mutationKey = getUpdateFp360CommunicationsThreadStateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFp360CommunicationsThreadState>>, UpdateFp360CommunicationsThreadStateMutationVariables> = (props) => {
+          const {threadId,data} = props ?? {};
+
+          return  updateFp360CommunicationsThreadState(threadId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFp360CommunicationsThreadStateMutationResult = NonNullable<Awaited<ReturnType<typeof updateFp360CommunicationsThreadState>>>
+    export type UpdateFp360CommunicationsThreadStateMutationBody = BodyType<Fp360CommunicationsThreadStateInput>
+    export type UpdateFp360CommunicationsThreadStateMutationError = ErrorType<void>
+    export type UpdateFp360CommunicationsThreadStateMutationVariables = {threadId: string;data: BodyType<Fp360CommunicationsThreadStateInput>}
+
+    /**
+ * @summary Mark a thread read, archive it, or assign a department
+ */
+export const useUpdateFp360CommunicationsThreadState = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360CommunicationsThreadState>>, TError,UpdateFp360CommunicationsThreadStateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateFp360CommunicationsThreadState>>,
+        TError,
+        UpdateFp360CommunicationsThreadStateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateFp360CommunicationsThreadStateMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360CommunicationsTaskUrl = (threadId: string,) => {
+
+
+
+
+  return `/api/redfp360/communications/threads/${threadId}/tasks`
+}
+
+/**
+ * @summary Create a separate departmental commitment with a due date
+ */
+export const createFp360CommunicationsTask = async (threadId: string,
+    fp360CommunicationsTaskInput: Fp360CommunicationsTaskInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360CommunicationsThread> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360CommunicationsThread>(getCreateFp360CommunicationsTaskUrl(threadId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360CommunicationsTaskInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360CommunicationsTaskMutationKey = () => ['createFp360CommunicationsTask'] as const;
+
+export const getCreateFp360CommunicationsTaskMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360CommunicationsTask>>, TError,CreateFp360CommunicationsTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360CommunicationsTask>>, TError,CreateFp360CommunicationsTaskMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360CommunicationsTaskMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360CommunicationsTask>>, CreateFp360CommunicationsTaskMutationVariables> = (props) => {
+          const {threadId,data} = props ?? {};
+
+          return  createFp360CommunicationsTask(threadId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360CommunicationsTaskMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360CommunicationsTask>>>
+    export type CreateFp360CommunicationsTaskMutationBody = BodyType<Fp360CommunicationsTaskInput>
+    export type CreateFp360CommunicationsTaskMutationError = ErrorType<void>
+    export type CreateFp360CommunicationsTaskMutationVariables = {threadId: string;data: BodyType<Fp360CommunicationsTaskInput>}
+
+    /**
+ * @summary Create a separate departmental commitment with a due date
+ */
+export const useCreateFp360CommunicationsTask = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360CommunicationsTask>>, TError,CreateFp360CommunicationsTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360CommunicationsTask>>,
+        TError,
+        CreateFp360CommunicationsTaskMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360CommunicationsTaskMutationOptions(options), queryClient);
+    }
+
+export const getCompleteFp360CommunicationsTaskUrl = (taskId: string,) => {
+
+
+
+
+  return `/api/redfp360/communications/tasks/${taskId}/complete`
+}
+
+/**
+ * @summary Complete a simulated communication commitment
+ */
+export const completeFp360CommunicationsTask = async (taskId: string,
+    fp360CommunicationsOperationInput: Fp360CommunicationsOperationInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360CommunicationsOverview> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360CommunicationsOverview>(getCompleteFp360CommunicationsTaskUrl(taskId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360CommunicationsOperationInput)
+  }
+);}
+
+
+
+
+
+export const getCompleteFp360CommunicationsTaskMutationKey = () => ['completeFp360CommunicationsTask'] as const;
+
+export const getCompleteFp360CommunicationsTaskMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeFp360CommunicationsTask>>, TError,CompleteFp360CommunicationsTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeFp360CommunicationsTask>>, TError,CompleteFp360CommunicationsTaskMutationVariables, TContext> => {
+
+const mutationKey = getCompleteFp360CommunicationsTaskMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeFp360CommunicationsTask>>, CompleteFp360CommunicationsTaskMutationVariables> = (props) => {
+          const {taskId,data} = props ?? {};
+
+          return  completeFp360CommunicationsTask(taskId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteFp360CommunicationsTaskMutationResult = NonNullable<Awaited<ReturnType<typeof completeFp360CommunicationsTask>>>
+    export type CompleteFp360CommunicationsTaskMutationBody = BodyType<Fp360CommunicationsOperationInput>
+    export type CompleteFp360CommunicationsTaskMutationError = ErrorType<void>
+    export type CompleteFp360CommunicationsTaskMutationVariables = {taskId: string;data: BodyType<Fp360CommunicationsOperationInput>}
+
+    /**
+ * @summary Complete a simulated communication commitment
+ */
+export const useCompleteFp360CommunicationsTask = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeFp360CommunicationsTask>>, TError,CompleteFp360CommunicationsTaskMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof completeFp360CommunicationsTask>>,
+        TError,
+        CompleteFp360CommunicationsTaskMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteFp360CommunicationsTaskMutationOptions(options), queryClient);
     }
 
 export const getGetFp360HrOverviewUrl = (params: GetFp360HrOverviewParams,) => {
@@ -12925,5 +15878,1170 @@ export const useActOnFp360TaxRequirement = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getActOnFp360TaxRequirementMutationOptions(options), queryClient);
+    }
+
+export const getGetFp360DocumentsOverviewUrl = (params: GetFp360DocumentsOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/documents/overview?${stringifiedParams}` : `/api/redfp360/documents/overview`
+}
+
+/**
+ * @summary List documents, dossiers, versions, templates, and audit events
+ */
+export const getFp360DocumentsOverview = async (params: GetFp360DocumentsOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<Fp360DocumentsOverview> => {
+
+  return customFetch<Fp360DocumentsOverview>(getGetFp360DocumentsOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360DocumentsOverviewQueryKey = (params?: GetFp360DocumentsOverviewParams,) => {
+    return [
+    `/api/redfp360/documents/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360DocumentsOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getFp360DocumentsOverview>>, TError = ErrorType<void>>(params: GetFp360DocumentsOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DocumentsOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360DocumentsOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360DocumentsOverview>>> = ({ signal }) => getFp360DocumentsOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360DocumentsOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360DocumentsOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360DocumentsOverview>>>
+export type GetFp360DocumentsOverviewQueryError = ErrorType<void>
+
+
+export function useGetFp360DocumentsOverview<TData = Awaited<ReturnType<typeof getFp360DocumentsOverview>>, TError = ErrorType<void>>(
+ params: GetFp360DocumentsOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DocumentsOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360DocumentsOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360DocumentsOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360DocumentsOverview<TData = Awaited<ReturnType<typeof getFp360DocumentsOverview>>, TError = ErrorType<void>>(
+ params: GetFp360DocumentsOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DocumentsOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360DocumentsOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360DocumentsOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360DocumentsOverview<TData = Awaited<ReturnType<typeof getFp360DocumentsOverview>>, TError = ErrorType<void>>(
+ params: GetFp360DocumentsOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DocumentsOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List documents, dossiers, versions, templates, and audit events
+ */
+
+export function useGetFp360DocumentsOverview<TData = Awaited<ReturnType<typeof getFp360DocumentsOverview>>, TError = ErrorType<void>>(
+ params: GetFp360DocumentsOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DocumentsOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360DocumentsOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFp360DocumentDossierUrl = () => {
+
+
+
+
+  return `/api/redfp360/documents/dossiers`
+}
+
+/**
+ * @summary Create a simulated document dossier
+ */
+export const createFp360DocumentDossier = async (fp360DocumentDossierInput: Fp360DocumentDossierInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360DocumentDossier> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360DocumentDossier>(getCreateFp360DocumentDossierUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360DocumentDossierInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360DocumentDossierMutationKey = () => ['createFp360DocumentDossier'] as const;
+
+export const getCreateFp360DocumentDossierMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360DocumentDossier>>, TError,CreateFp360DocumentDossierMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360DocumentDossier>>, TError,CreateFp360DocumentDossierMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360DocumentDossierMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360DocumentDossier>>, CreateFp360DocumentDossierMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360DocumentDossier(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360DocumentDossierMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360DocumentDossier>>>
+    export type CreateFp360DocumentDossierMutationBody = BodyType<Fp360DocumentDossierInput>
+    export type CreateFp360DocumentDossierMutationError = ErrorType<void>
+    export type CreateFp360DocumentDossierMutationVariables = {data: BodyType<Fp360DocumentDossierInput>}
+
+    /**
+ * @summary Create a simulated document dossier
+ */
+export const useCreateFp360DocumentDossier = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360DocumentDossier>>, TError,CreateFp360DocumentDossierMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360DocumentDossier>>,
+        TError,
+        CreateFp360DocumentDossierMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360DocumentDossierMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360DocumentUrl = () => {
+
+
+
+
+  return `/api/redfp360/documents`
+}
+
+/**
+ * @summary Create a simulated document record
+ */
+export const createFp360Document = async (fp360DocumentInput: Fp360DocumentInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360Document> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360Document>(getCreateFp360DocumentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360DocumentInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360DocumentMutationKey = () => ['createFp360Document'] as const;
+
+export const getCreateFp360DocumentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360Document>>, TError,CreateFp360DocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360Document>>, TError,CreateFp360DocumentMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360DocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360Document>>, CreateFp360DocumentMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360Document(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360DocumentMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360Document>>>
+    export type CreateFp360DocumentMutationBody = BodyType<Fp360DocumentInput>
+    export type CreateFp360DocumentMutationError = ErrorType<void>
+    export type CreateFp360DocumentMutationVariables = {data: BodyType<Fp360DocumentInput>}
+
+    /**
+ * @summary Create a simulated document record
+ */
+export const useCreateFp360Document = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360Document>>, TError,CreateFp360DocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360Document>>,
+        TError,
+        CreateFp360DocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360DocumentMutationOptions(options), queryClient);
+    }
+
+export const getUpdateFp360DocumentUrl = (documentId: string,) => {
+
+
+
+
+  return `/api/redfp360/documents/${documentId}`
+}
+
+/**
+ * @summary Update metadata on an editable document
+ */
+export const updateFp360Document = async (documentId: string,
+    fp360DocumentUpdateInput: Fp360DocumentUpdateInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360Document> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360Document>(getUpdateFp360DocumentUrl(documentId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360DocumentUpdateInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateFp360DocumentMutationKey = () => ['updateFp360Document'] as const;
+
+export const getUpdateFp360DocumentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360Document>>, TError,UpdateFp360DocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFp360Document>>, TError,UpdateFp360DocumentMutationVariables, TContext> => {
+
+const mutationKey = getUpdateFp360DocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFp360Document>>, UpdateFp360DocumentMutationVariables> = (props) => {
+          const {documentId,data} = props ?? {};
+
+          return  updateFp360Document(documentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFp360DocumentMutationResult = NonNullable<Awaited<ReturnType<typeof updateFp360Document>>>
+    export type UpdateFp360DocumentMutationBody = BodyType<Fp360DocumentUpdateInput>
+    export type UpdateFp360DocumentMutationError = ErrorType<void>
+    export type UpdateFp360DocumentMutationVariables = {documentId: string;data: BodyType<Fp360DocumentUpdateInput>}
+
+    /**
+ * @summary Update metadata on an editable document
+ */
+export const useUpdateFp360Document = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360Document>>, TError,UpdateFp360DocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateFp360Document>>,
+        TError,
+        UpdateFp360DocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateFp360DocumentMutationOptions(options), queryClient);
+    }
+
+export const getLogFp360DocumentAccessUrl = (documentId: string,) => {
+
+
+
+
+  return `/api/redfp360/documents/${documentId}/access-log`
+}
+
+/**
+ * @summary Record an authenticated document detail view
+ */
+export const logFp360DocumentAccess = async (documentId: string, options?: Parameters<typeof customFetch>[1]): Promise<LogFp360DocumentAccess201> => {
+
+  return customFetch<LogFp360DocumentAccess201>(getLogFp360DocumentAccessUrl(documentId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getLogFp360DocumentAccessMutationKey = () => ['logFp360DocumentAccess'] as const;
+
+export const getLogFp360DocumentAccessMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logFp360DocumentAccess>>, TError,LogFp360DocumentAccessMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logFp360DocumentAccess>>, TError,LogFp360DocumentAccessMutationVariables, TContext> => {
+
+const mutationKey = getLogFp360DocumentAccessMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logFp360DocumentAccess>>, LogFp360DocumentAccessMutationVariables> = (props) => {
+          const {documentId} = props ?? {};
+
+          return  logFp360DocumentAccess(documentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogFp360DocumentAccessMutationResult = NonNullable<Awaited<ReturnType<typeof logFp360DocumentAccess>>>
+
+    export type LogFp360DocumentAccessMutationError = ErrorType<void>
+    export type LogFp360DocumentAccessMutationVariables = {documentId: string}
+
+    /**
+ * @summary Record an authenticated document detail view
+ */
+export const useLogFp360DocumentAccess = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logFp360DocumentAccess>>, TError,LogFp360DocumentAccessMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof logFp360DocumentAccess>>,
+        TError,
+        LogFp360DocumentAccessMutationVariables,
+        TContext
+      > => {
+      return useMutation(getLogFp360DocumentAccessMutationOptions(options), queryClient);
+    }
+
+export const getActOnFp360DocumentDossierUrl = (dossierId: string,) => {
+
+
+
+
+  return `/api/redfp360/documents/dossiers/${dossierId}/actions`
+}
+
+/**
+ * @summary Archive or reopen a dossier with its audit history preserved
+ */
+export const actOnFp360DocumentDossier = async (dossierId: string,
+    fp360DocumentDossierActionInput: Fp360DocumentDossierActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360DocumentDossier> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360DocumentDossier>(getActOnFp360DocumentDossierUrl(dossierId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360DocumentDossierActionInput)
+  }
+);}
+
+
+
+
+
+export const getActOnFp360DocumentDossierMutationKey = () => ['actOnFp360DocumentDossier'] as const;
+
+export const getActOnFp360DocumentDossierMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360DocumentDossier>>, TError,ActOnFp360DocumentDossierMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnFp360DocumentDossier>>, TError,ActOnFp360DocumentDossierMutationVariables, TContext> => {
+
+const mutationKey = getActOnFp360DocumentDossierMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnFp360DocumentDossier>>, ActOnFp360DocumentDossierMutationVariables> = (props) => {
+          const {dossierId,data} = props ?? {};
+
+          return  actOnFp360DocumentDossier(dossierId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnFp360DocumentDossierMutationResult = NonNullable<Awaited<ReturnType<typeof actOnFp360DocumentDossier>>>
+    export type ActOnFp360DocumentDossierMutationBody = BodyType<Fp360DocumentDossierActionInput>
+    export type ActOnFp360DocumentDossierMutationError = ErrorType<void>
+    export type ActOnFp360DocumentDossierMutationVariables = {dossierId: string;data: BodyType<Fp360DocumentDossierActionInput>}
+
+    /**
+ * @summary Archive or reopen a dossier with its audit history preserved
+ */
+export const useActOnFp360DocumentDossier = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360DocumentDossier>>, TError,ActOnFp360DocumentDossierMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnFp360DocumentDossier>>,
+        TError,
+        ActOnFp360DocumentDossierMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnFp360DocumentDossierMutationOptions(options), queryClient);
+    }
+
+export const getDownloadFp360DocumentDossierPackageUrl = (dossierId: string,) => {
+
+
+
+
+  return `/api/redfp360/documents/dossiers/${dossierId}/package`
+}
+
+/**
+ * @summary Download an authenticated educational dossier package
+ */
+export const downloadFp360DocumentDossierPackage = async (dossierId: string, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadFp360DocumentDossierPackageUrl(dossierId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadFp360DocumentDossierPackageQueryKey = (dossierId: string,) => {
+    return [
+    `/api/redfp360/documents/dossiers/${dossierId}/package`
+    ] as const;
+    }
+
+
+export const getDownloadFp360DocumentDossierPackageQueryOptions = <TData = Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>, TError = ErrorType<void>>(dossierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadFp360DocumentDossierPackageQueryKey(dossierId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>> = ({ signal }) => downloadFp360DocumentDossierPackage(dossierId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: dossierId !== null && dossierId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DownloadFp360DocumentDossierPackageQueryResult = NonNullable<Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>>
+export type DownloadFp360DocumentDossierPackageQueryError = ErrorType<void>
+
+
+export function useDownloadFp360DocumentDossierPackage<TData = Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>, TError = ErrorType<void>>(
+ dossierId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>,
+          TError,
+          Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadFp360DocumentDossierPackage<TData = Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>, TError = ErrorType<void>>(
+ dossierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>,
+          TError,
+          Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadFp360DocumentDossierPackage<TData = Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>, TError = ErrorType<void>>(
+ dossierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Download an authenticated educational dossier package
+ */
+
+export function useDownloadFp360DocumentDossierPackage<TData = Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>, TError = ErrorType<void>>(
+ dossierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360DocumentDossierPackage>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDownloadFp360DocumentDossierPackageQueryOptions(dossierId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGenerateFp360DocumentFromTemplateUrl = (templateKey: string,) => {
+
+
+
+
+  return `/api/redfp360/documents/templates/${templateKey}/generate`
+}
+
+/**
+ * @summary Generate a clearly marked educational document from a template
+ */
+export const generateFp360DocumentFromTemplate = async (templateKey: string,
+    fp360DocumentTemplateInput: Fp360DocumentTemplateInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360Document> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360Document>(getGenerateFp360DocumentFromTemplateUrl(templateKey),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360DocumentTemplateInput)
+  }
+);}
+
+
+
+
+
+export const getGenerateFp360DocumentFromTemplateMutationKey = () => ['generateFp360DocumentFromTemplate'] as const;
+
+export const getGenerateFp360DocumentFromTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateFp360DocumentFromTemplate>>, TError,GenerateFp360DocumentFromTemplateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateFp360DocumentFromTemplate>>, TError,GenerateFp360DocumentFromTemplateMutationVariables, TContext> => {
+
+const mutationKey = getGenerateFp360DocumentFromTemplateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateFp360DocumentFromTemplate>>, GenerateFp360DocumentFromTemplateMutationVariables> = (props) => {
+          const {templateKey,data} = props ?? {};
+
+          return  generateFp360DocumentFromTemplate(templateKey,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateFp360DocumentFromTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof generateFp360DocumentFromTemplate>>>
+    export type GenerateFp360DocumentFromTemplateMutationBody = BodyType<Fp360DocumentTemplateInput>
+    export type GenerateFp360DocumentFromTemplateMutationError = ErrorType<void>
+    export type GenerateFp360DocumentFromTemplateMutationVariables = {templateKey: string;data: BodyType<Fp360DocumentTemplateInput>}
+
+    /**
+ * @summary Generate a clearly marked educational document from a template
+ */
+export const useGenerateFp360DocumentFromTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateFp360DocumentFromTemplate>>, TError,GenerateFp360DocumentFromTemplateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof generateFp360DocumentFromTemplate>>,
+        TError,
+        GenerateFp360DocumentFromTemplateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGenerateFp360DocumentFromTemplateMutationOptions(options), queryClient);
+    }
+
+export const getRequestFp360DocumentUploadUrlUrl = (documentId: string,) => {
+
+
+
+
+  return `/api/redfp360/documents/${documentId}/versions/upload-url`
+}
+
+/**
+ * @summary Create a new immutable document version and private upload URL
+ */
+export const requestFp360DocumentUploadUrl = async (documentId: string,
+    fp360DocumentUploadInput: Fp360DocumentUploadInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360DocumentUploadUrlResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360DocumentUploadUrlResponse>(getRequestFp360DocumentUploadUrlUrl(documentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360DocumentUploadInput)
+  }
+);}
+
+
+
+
+
+export const getRequestFp360DocumentUploadUrlMutationKey = () => ['requestFp360DocumentUploadUrl'] as const;
+
+export const getRequestFp360DocumentUploadUrlMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestFp360DocumentUploadUrl>>, TError,RequestFp360DocumentUploadUrlMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestFp360DocumentUploadUrl>>, TError,RequestFp360DocumentUploadUrlMutationVariables, TContext> => {
+
+const mutationKey = getRequestFp360DocumentUploadUrlMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestFp360DocumentUploadUrl>>, RequestFp360DocumentUploadUrlMutationVariables> = (props) => {
+          const {documentId,data} = props ?? {};
+
+          return  requestFp360DocumentUploadUrl(documentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestFp360DocumentUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestFp360DocumentUploadUrl>>>
+    export type RequestFp360DocumentUploadUrlMutationBody = BodyType<Fp360DocumentUploadInput>
+    export type RequestFp360DocumentUploadUrlMutationError = ErrorType<void>
+    export type RequestFp360DocumentUploadUrlMutationVariables = {documentId: string;data: BodyType<Fp360DocumentUploadInput>}
+
+    /**
+ * @summary Create a new immutable document version and private upload URL
+ */
+export const useRequestFp360DocumentUploadUrl = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestFp360DocumentUploadUrl>>, TError,RequestFp360DocumentUploadUrlMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof requestFp360DocumentUploadUrl>>,
+        TError,
+        RequestFp360DocumentUploadUrlMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestFp360DocumentUploadUrlMutationOptions(options), queryClient);
+    }
+
+export const getCompleteFp360DocumentUploadUrl = (documentId: string,
+    versionId: string,) => {
+
+
+
+
+  return `/api/redfp360/documents/${documentId}/versions/${versionId}/complete`
+}
+
+/**
+ * @summary Verify an uploaded file and finalize its version metadata
+ */
+export const completeFp360DocumentUpload = async (documentId: string,
+    versionId: string, options?: Parameters<typeof customFetch>[1]): Promise<Fp360DocumentVersion> => {
+
+  return customFetch<Fp360DocumentVersion>(getCompleteFp360DocumentUploadUrl(documentId,versionId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompleteFp360DocumentUploadMutationKey = () => ['completeFp360DocumentUpload'] as const;
+
+export const getCompleteFp360DocumentUploadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeFp360DocumentUpload>>, TError,CompleteFp360DocumentUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeFp360DocumentUpload>>, TError,CompleteFp360DocumentUploadMutationVariables, TContext> => {
+
+const mutationKey = getCompleteFp360DocumentUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeFp360DocumentUpload>>, CompleteFp360DocumentUploadMutationVariables> = (props) => {
+          const {documentId,versionId} = props ?? {};
+
+          return  completeFp360DocumentUpload(documentId,versionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteFp360DocumentUploadMutationResult = NonNullable<Awaited<ReturnType<typeof completeFp360DocumentUpload>>>
+
+    export type CompleteFp360DocumentUploadMutationError = ErrorType<void>
+    export type CompleteFp360DocumentUploadMutationVariables = {documentId: string;versionId: string}
+
+    /**
+ * @summary Verify an uploaded file and finalize its version metadata
+ */
+export const useCompleteFp360DocumentUpload = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeFp360DocumentUpload>>, TError,CompleteFp360DocumentUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof completeFp360DocumentUpload>>,
+        TError,
+        CompleteFp360DocumentUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteFp360DocumentUploadMutationOptions(options), queryClient);
+    }
+
+export const getAbandonFp360DocumentUploadUrl = (documentId: string,
+    versionId: string,) => {
+
+
+
+
+  return `/api/redfp360/documents/${documentId}/versions/${versionId}`
+}
+
+/**
+ * @summary Abandon an incomplete upload without deleting document history
+ */
+export const abandonFp360DocumentUpload = async (documentId: string,
+    versionId: string, options?: Parameters<typeof customFetch>[1]): Promise<Fp360DocumentDeleteResponse> => {
+
+  return customFetch<Fp360DocumentDeleteResponse>(getAbandonFp360DocumentUploadUrl(documentId,versionId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getAbandonFp360DocumentUploadMutationKey = () => ['abandonFp360DocumentUpload'] as const;
+
+export const getAbandonFp360DocumentUploadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof abandonFp360DocumentUpload>>, TError,AbandonFp360DocumentUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof abandonFp360DocumentUpload>>, TError,AbandonFp360DocumentUploadMutationVariables, TContext> => {
+
+const mutationKey = getAbandonFp360DocumentUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof abandonFp360DocumentUpload>>, AbandonFp360DocumentUploadMutationVariables> = (props) => {
+          const {documentId,versionId} = props ?? {};
+
+          return  abandonFp360DocumentUpload(documentId,versionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AbandonFp360DocumentUploadMutationResult = NonNullable<Awaited<ReturnType<typeof abandonFp360DocumentUpload>>>
+
+    export type AbandonFp360DocumentUploadMutationError = ErrorType<void>
+    export type AbandonFp360DocumentUploadMutationVariables = {documentId: string;versionId: string}
+
+    /**
+ * @summary Abandon an incomplete upload without deleting document history
+ */
+export const useAbandonFp360DocumentUpload = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof abandonFp360DocumentUpload>>, TError,AbandonFp360DocumentUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof abandonFp360DocumentUpload>>,
+        TError,
+        AbandonFp360DocumentUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAbandonFp360DocumentUploadMutationOptions(options), queryClient);
+    }
+
+export const getDownloadFp360DocumentVersionUrl = (documentId: string,
+    versionId: string,) => {
+
+
+
+
+  return `/api/redfp360/documents/${documentId}/versions/${versionId}/download`
+}
+
+/**
+ * @summary Download a document version through an access-controlled short-lived URL
+ */
+export const downloadFp360DocumentVersion = async (documentId: string,
+    versionId: string, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getDownloadFp360DocumentVersionUrl(documentId,versionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadFp360DocumentVersionQueryKey = (documentId: string,
+    versionId: string,) => {
+    return [
+    `/api/redfp360/documents/${documentId}/versions/${versionId}/download`
+    ] as const;
+    }
+
+
+export const getDownloadFp360DocumentVersionQueryOptions = <TData = Awaited<ReturnType<typeof downloadFp360DocumentVersion>>, TError = ErrorType<void>>(documentId: string,
+    versionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360DocumentVersion>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadFp360DocumentVersionQueryKey(documentId,versionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadFp360DocumentVersion>>> = ({ signal }) => downloadFp360DocumentVersion(documentId,versionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: documentId !== null && documentId !== undefined && versionId !== null && versionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadFp360DocumentVersion>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DownloadFp360DocumentVersionQueryResult = NonNullable<Awaited<ReturnType<typeof downloadFp360DocumentVersion>>>
+export type DownloadFp360DocumentVersionQueryError = ErrorType<void>
+
+
+export function useDownloadFp360DocumentVersion<TData = Awaited<ReturnType<typeof downloadFp360DocumentVersion>>, TError = ErrorType<void>>(
+ documentId: string,
+    versionId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360DocumentVersion>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadFp360DocumentVersion>>,
+          TError,
+          Awaited<ReturnType<typeof downloadFp360DocumentVersion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadFp360DocumentVersion<TData = Awaited<ReturnType<typeof downloadFp360DocumentVersion>>, TError = ErrorType<void>>(
+ documentId: string,
+    versionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360DocumentVersion>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadFp360DocumentVersion>>,
+          TError,
+          Awaited<ReturnType<typeof downloadFp360DocumentVersion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadFp360DocumentVersion<TData = Awaited<ReturnType<typeof downloadFp360DocumentVersion>>, TError = ErrorType<void>>(
+ documentId: string,
+    versionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360DocumentVersion>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Download a document version through an access-controlled short-lived URL
+ */
+
+export function useDownloadFp360DocumentVersion<TData = Awaited<ReturnType<typeof downloadFp360DocumentVersion>>, TError = ErrorType<void>>(
+ documentId: string,
+    versionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadFp360DocumentVersion>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDownloadFp360DocumentVersionQueryOptions(documentId,versionId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getActOnFp360DocumentUrl = (documentId: string,) => {
+
+
+
+
+  return `/api/redfp360/documents/${documentId}/actions`
+}
+
+/**
+ * @summary Submit, review, confirm, finalize, void, or restore a document version
+ */
+export const actOnFp360Document = async (documentId: string,
+    fp360DocumentActionInput: Fp360DocumentActionInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360Document> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360Document>(getActOnFp360DocumentUrl(documentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360DocumentActionInput)
+  }
+);}
+
+
+
+
+
+export const getActOnFp360DocumentMutationKey = () => ['actOnFp360Document'] as const;
+
+export const getActOnFp360DocumentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360Document>>, TError,ActOnFp360DocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnFp360Document>>, TError,ActOnFp360DocumentMutationVariables, TContext> => {
+
+const mutationKey = getActOnFp360DocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnFp360Document>>, ActOnFp360DocumentMutationVariables> = (props) => {
+          const {documentId,data} = props ?? {};
+
+          return  actOnFp360Document(documentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnFp360DocumentMutationResult = NonNullable<Awaited<ReturnType<typeof actOnFp360Document>>>
+    export type ActOnFp360DocumentMutationBody = BodyType<Fp360DocumentActionInput>
+    export type ActOnFp360DocumentMutationError = ErrorType<void>
+    export type ActOnFp360DocumentMutationVariables = {documentId: string;data: BodyType<Fp360DocumentActionInput>}
+
+    /**
+ * @summary Submit, review, confirm, finalize, void, or restore a document version
+ */
+export const useActOnFp360Document = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnFp360Document>>, TError,ActOnFp360DocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnFp360Document>>,
+        TError,
+        ActOnFp360DocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnFp360DocumentMutationOptions(options), queryClient);
     }
 
