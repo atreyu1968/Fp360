@@ -6765,6 +6765,58 @@ export const GetFp360BankOverviewResponse = zod.object({
 
 
 /**
+ * @summary Compare one organization's simulated bank movements with its posted 572 ledger lines
+ */
+
+
+
+export const GetFp360BankReconciliationQueryParams = zod.object({
+  "organizationId": zod.coerce.string().min(1),
+  "fromDate": zod.coerce.string().date(),
+  "toDate": zod.coerce.string().date()
+})
+
+
+
+export const getFp360BankReconciliationResponseLedgerLinesItemDebitCentsMin = 0;
+
+export const getFp360BankReconciliationResponseLedgerLinesItemCreditCentsMin = 0;
+
+
+
+export const GetFp360BankReconciliationResponse = zod.object({
+  "organizationId": zod.string(),
+  "fromDate": zod.string().date(),
+  "toDate": zod.string().date(),
+  "statementLines": zod.array(zod.object({
+  "id": zod.string(),
+  "date": zod.string().date(),
+  "accountName": zod.string(),
+  "direction": zod.enum(['debit', 'credit']),
+  "amountCents": zod.number().int().min(1),
+  "signedAmountCents": zod.number().int(),
+  "reference": zod.string(),
+  "description": zod.string()
+})),
+  "ledgerLines": zod.array(zod.object({
+  "entryId": zod.string(),
+  "entryNumber": zod.number().int().nullable(),
+  "entryDate": zod.string().date(),
+  "concept": zod.string(),
+  "status": zod.enum(['posted', 'reversed']),
+  "sourceReference": zod.string().nullable(),
+  "lineNumber": zod.number().int().min(1),
+  "accountCode": zod.string(),
+  "accountName": zod.string(),
+  "description": zod.string(),
+  "debitCents": zod.number().int().min(getFp360BankReconciliationResponseLedgerLinesItemDebitCentsMin),
+  "creditCents": zod.number().int().min(getFp360BankReconciliationResponseLedgerLinesItemCreditCentsMin),
+  "signedAmountCents": zod.number().int()
+}))
+})
+
+
+/**
  * @summary Create a synthetic bank account and record its opening balance
  */
 

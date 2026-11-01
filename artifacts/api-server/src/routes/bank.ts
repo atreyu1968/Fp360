@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, like, lte, or } from "drizzle-orm";
 import { Router, type IRouter, type NextFunction, type Request, type Response } from "express";
 import {
   ActOnFp360BankFinancingBody,
@@ -16,11 +16,16 @@ import {
   CreateFp360BankFinancingResponse,
   CreateFp360BankTransferBody,
   CreateFp360BankTransferResponse,
+  GetFp360BankReconciliationQueryParams,
+  GetFp360BankReconciliationResponse,
   GetFp360BankOverviewQueryParams,
   GetFp360BankOverviewResponse,
 } from "@workspace/api-zod";
 import {
   db,
+  fpAccountingAccounts,
+  fpAccountingEntries,
+  fpAccountingEntryLines,
   fpBankAccounts,
   fpBankEffects,
   fpBankEvents,
@@ -642,6 +647,91 @@ router.get("/redfp360/bank/overview", route(async (req, res) => {
   res.json(GetFp360BankOverviewResponse.parse(await loadOverview(actor.tenantId, organizationId)));
 }));
 
+router.get("/redfp360/bank/reconciliation", route(async (req, res) => {
+  const actor = req.auth!;
+  const query = GetFp360BankReconciliationQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const { fromDate, toDate } = query.data;
+  const rangeDays = (Date.parse(`${toDate}T00:00:00Z`) - Date.parse(`${fromDate}T00:00:00Z`)) / 86_400_000;
+  if (fromDate > toDate || rangeDays > 366) {
+    res.status(400).json({ error: "El intervalo debe estar ordenado y no superar 366 días." });
+    return;
+  }
+  const organizationId = await resolveOrganization(actor, query.data.organizationId);
+  if (!organizationId) {
+    res.status(403).json({ error: "La empresa solicitada no está disponible para este perfil." });
+    return;
+  }
+  const companyAccounts = await db.select({
+    id: fpBankAccounts.id,
+    name: fpBankAccounts.name,
+  }).from(fpBankAccounts).where(and(
+    eq(fpBankAccounts.tenantId, actor.tenantId),
+    eq(fpBankAccounts.organizationId, organizationId),
+    eq(fpBankAccounts.accountType, "company"),
+  ));
+  const accountIds = companyAccounts.map((account) => account.id);
+  const [movements, ledgerLines] = await Promise.all([
+    accountIds.length ? db.select().from(fpBankMovements).where(and(
+      eq(fpBankMovements.tenantId, actor.tenantId),
+      inArray(fpBankMovements.accountId, accountIds),
+      gte(fpBankMovements.simulatedDate, fromDate),
+      lte(fpBankMovements.simulatedDate, toDate),
+    )).orderBy(asc(fpBankMovements.simulatedDate), asc(fpBankMovements.createdAt)) : [],
+    db.select({
+      entryId: fpAccountingEntries.id,
+      entryNumber: fpAccountingEntries.entryNumber,
+      entryDate: fpAccountingEntries.entryDate,
+      concept: fpAccountingEntries.concept,
+      status: fpAccountingEntries.status,
+      sourceReference: fpAccountingEntries.sourceReference,
+      lineNumber: fpAccountingEntryLines.lineNumber,
+      accountCode: fpAccountingAccounts.code,
+      accountName: fpAccountingAccounts.name,
+      description: fpAccountingEntryLines.description,
+      debitCents: fpAccountingEntryLines.debitCents,
+      creditCents: fpAccountingEntryLines.creditCents,
+    }).from(fpAccountingEntryLines)
+      .innerJoin(fpAccountingEntries, eq(fpAccountingEntryLines.entryId, fpAccountingEntries.id))
+      .innerJoin(fpAccountingAccounts, eq(fpAccountingEntryLines.accountId, fpAccountingAccounts.id))
+      .where(and(
+        eq(fpAccountingEntryLines.tenantId, actor.tenantId),
+        eq(fpAccountingEntries.tenantId, actor.tenantId),
+        eq(fpAccountingEntries.organizationId, organizationId),
+        eq(fpAccountingAccounts.tenantId, actor.tenantId),
+        eq(fpAccountingAccounts.organizationId, organizationId),
+        like(fpAccountingAccounts.code, "572%"),
+        or(eq(fpAccountingEntries.status, "posted"), eq(fpAccountingEntries.status, "reversed")),
+        gte(fpAccountingEntries.entryDate, fromDate),
+        lte(fpAccountingEntries.entryDate, toDate),
+      )).orderBy(asc(fpAccountingEntries.entryDate), asc(fpAccountingEntries.entryNumber), asc(fpAccountingEntryLines.lineNumber)),
+  ]);
+  const accountNames = new Map(companyAccounts.map((account) => [account.id, account.name]));
+  res.json(GetFp360BankReconciliationResponse.parse({
+    organizationId,
+    fromDate,
+    toDate,
+    statementLines: movements.map((movement) => ({
+      id: movement.id,
+      date: movement.simulatedDate,
+      accountName: accountNames.get(movement.accountId) ?? "Cuenta",
+      direction: movement.direction,
+      amountCents: movement.amountCents,
+      signedAmountCents: movement.deltaCents,
+      reference: movement.reference,
+      description: movement.description,
+    })),
+    ledgerLines: ledgerLines.map((line) => ({
+      ...line,
+      status: line.status as "posted" | "reversed",
+      signedAmountCents: line.debitCents - line.creditCents,
+    })),
+  }));
+}));
+
 router.post("/redfp360/bank/accounts", route(async (req, res) => {
   const actor = req.auth!;
   const body = CreateFp360BankAccountBody.safeParse(req.body);
@@ -819,6 +909,15 @@ router.post("/redfp360/bank/transfers/:id/action", route(async (req, res) => {
     return;
   }
   const requestFingerprint = fingerprint({ transferId: params.data.id, ...body.data });
+  const [transfer] = await db.select().from(fpBankTransfers).where(and(
+    eq(fpBankTransfers.id, params.data.id),
+    eq(fpBankTransfers.tenantId, actor.tenantId),
+  )).limit(1);
+  if (!transfer || (actor.organizationId && actor.organizationId !== transfer.organizationId)
+    || (!actor.organizationId && !["teacher", "administrator"].includes(actor.role))) {
+    res.status(404).json({ error: "Transferencia no encontrada para esta empresa." });
+    return;
+  }
   const [existingEvent] = await db.select().from(fpBankEvents).where(and(
     eq(fpBankEvents.tenantId, actor.tenantId),
     eq(fpBankEvents.operationId, body.data.operationId),
@@ -835,15 +934,6 @@ router.post("/redfp360/bank/transfers/:id/action", route(async (req, res) => {
       res.json(ActOnFp360BankTransferResponse.parse(transfer));
       return;
     }
-  }
-  const [transfer] = await db.select().from(fpBankTransfers).where(and(
-    eq(fpBankTransfers.id, params.data.id),
-    eq(fpBankTransfers.tenantId, actor.tenantId),
-  )).limit(1);
-  if (!transfer || (actor.organizationId && actor.organizationId !== transfer.organizationId)
-    || (!actor.organizationId && !["teacher", "administrator"].includes(actor.role))) {
-    res.status(404).json({ error: "Transferencia no encontrada para esta empresa." });
-    return;
   }
   if (["authorize", "execute", "reject"].includes(body.data.action) && !canOperate(actor)) {
     res.status(403).json({ error: "Tu perfil no puede autorizar ni ejecutar transferencias." });

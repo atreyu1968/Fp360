@@ -659,7 +659,9 @@ router.post("/redfp360/accounting/entries/:id/post", async (req, res): Promise<v
       eq(fpAccountingEvents.operationId, body.data.operationId),
     )).limit(1);
     if (priorEvent) {
-      if (priorEvent.requestFingerprint !== requestFingerprint) return { error: "La clave de operación ya se utilizó con otros datos.", status: 409 as const };
+      if (priorEvent.actorUserId !== actor.userId || priorEvent.requestFingerprint !== requestFingerprint) {
+        return { error: "La clave de operación ya se utilizó con otros datos.", status: 409 as const };
+      }
       return { entryId: priorEvent.entryId! };
     }
     const [entry] = await tx.select().from(fpAccountingEntries).where(and(
@@ -728,7 +730,9 @@ router.post("/redfp360/accounting/entries/:id/reverse", async (req, res): Promis
       eq(fpAccountingEvents.operationId, body.data.operationId),
     )).limit(1);
     if (priorEvent) {
-      if (priorEvent.requestFingerprint !== requestFingerprint) return { error: "La clave de operación ya se utilizó con otros datos.", status: 409 as const };
+      if (priorEvent.actorUserId !== actor.userId || priorEvent.requestFingerprint !== requestFingerprint) {
+        return { error: "La clave de operación ya se utilizó con otros datos.", status: 409 as const };
+      }
       return { entryId: priorEvent.entryId! };
     }
     const [original] = await tx.select().from(fpAccountingEntries).where(and(
@@ -952,7 +956,9 @@ router.post("/redfp360/accounting/periods/:fiscalYear/:period/close", async (req
       eq(fpAccountingEvents.tenantId, actor.tenantId), eq(fpAccountingEvents.operationId, body.data.operationId),
     )).limit(1);
     if (priorEvent) {
-      if (priorEvent.requestFingerprint !== requestFingerprint) return { error: "La clave de operación ya se utilizó con otros datos.", status: 409 as const };
+      if (priorEvent.actorUserId !== actor.userId || priorEvent.requestFingerprint !== requestFingerprint) {
+        return { error: "La clave de operación ya se utilizó con otros datos.", status: 409 as const };
+      }
       return { period: await ensurePeriod(tx, actor.tenantId, organizationId, params.data.fiscalYear, params.data.period) };
     }
     const period = await ensurePeriod(tx, actor.tenantId, organizationId, params.data.fiscalYear, params.data.period);
@@ -1032,7 +1038,9 @@ router.post("/redfp360/accounting/periods/:fiscalYear/:period/reopen", async (re
       eq(fpAccountingEvents.tenantId, actor.tenantId), eq(fpAccountingEvents.operationId, body.data.operationId),
     )).limit(1);
     if (priorEvent) {
-      if (priorEvent.requestFingerprint !== requestFingerprint) return { error: "La clave de operación ya se utilizó con otros datos.", status: 409 as const };
+      if (priorEvent.actorUserId !== actor.userId || priorEvent.requestFingerprint !== requestFingerprint) {
+        return { error: "La clave de operación ya se utilizó con otros datos.", status: 409 as const };
+      }
       return { period: await ensurePeriod(tx, actor.tenantId, organizationId, params.data.fiscalYear, params.data.period) };
     }
     const period = await ensurePeriod(tx, actor.tenantId, organizationId, params.data.fiscalYear, params.data.period);

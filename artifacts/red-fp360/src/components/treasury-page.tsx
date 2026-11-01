@@ -6,17 +6,25 @@ import {
   Wallet, ArrowRight, LockKeyhole,
 } from 'lucide-react';
 import {
+  getGetFp360BankReconciliationQueryKey,
   getGetFp360AccountingOverviewQueryKey, getListFp360InvoicesQueryKey,
   getListPurchaseInvoicesQueryKey, useGetFp360AccountingOverview,
+  useGetFp360BankReconciliation,
   useListFp360Invoices, useListPurchaseInvoices, useRecordFp360Payment,
 } from '@workspace/api-client-react';
 import type {
-  AuthIdentity, Fp360AccountingOverview, Fp360Invoice, Fp360Organization, PurchaseInvoice,
+  AuthIdentity, Fp360AccountingOverview, Fp360BankReconciliation, Fp360Invoice,
+  Fp360Organization, PurchaseInvoice,
 } from '@workspace/api-client-react';
-import { Link } from 'wouter';
 
 type View = 'summary' | 'collections' | 'payments' | 'forecast' | 'reconciliation' | 'financing' | 'reports';
 type Props = { identity: AuthIdentity; organizations?: Fp360Organization[]; onNotice: (message: string) => void };
+type ReconciliationRow = {
+  statement: Fp360BankReconciliation['statementLines'][number];
+  status: 'matched' | 'candidate' | 'ambiguous' | 'unmatched';
+  ledger: Fp360BankReconciliation['ledgerLines'][number] | null;
+  candidateCount: number;
+};
 const views: Array<{ id: View; label: string }> = [
   { id: 'summary', label: 'Resumen' },
   { id: 'collections', label: 'Cobros' },
@@ -33,6 +41,45 @@ const date = (value?: string | null) => {
   const parsed = new Date(`${value.slice(0, 10)}T00:00:00.000Z`);
   return Number.isNaN(parsed.getTime()) ? value : new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(parsed);
 };
+const ledgerLineKey = (line: Fp360BankReconciliation['ledgerLines'][number]) => `${line.entryId}:${line.lineNumber}`;
+const normalizedReference = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+function dateDistanceDays(first: string, second: string) {
+  return Math.abs(Date.parse(`${first}T00:00:00Z`) - Date.parse(`${second}T00:00:00Z`)) / 86_400_000;
+}
+function reconcileStatement(data?: Fp360BankReconciliation): ReconciliationRow[] {
+  if (!data) return [];
+  const matchedLedger = new Set<string>();
+  return data.statementLines.map((statement): ReconciliationRow => {
+    const amountMatches = data.ledgerLines.filter((line) =>
+      !matchedLedger.has(ledgerLineKey(line)) && line.signedAmountCents === statement.signedAmountCents,
+    );
+    const reference = normalizedReference(statement.reference);
+    const referenceMatches = reference.length >= 4
+      ? amountMatches.filter((line) => normalizedReference(`${line.sourceReference ?? ''} ${line.concept} ${line.description}`).includes(reference))
+      : [];
+    if (referenceMatches.length === 1) {
+      const ledger = referenceMatches[0];
+      matchedLedger.add(ledgerLineKey(ledger));
+      return { statement, status: 'matched', ledger, candidateCount: 1 };
+    }
+    if (referenceMatches.length > 1) {
+      return { statement, status: 'ambiguous', ledger: referenceMatches[0], candidateCount: referenceMatches.length };
+    }
+    const nearby = amountMatches.filter((line) => dateDistanceDays(line.entryDate, statement.date) <= 3)
+      .sort((first, second) => dateDistanceDays(first.entryDate, statement.date) - dateDistanceDays(second.entryDate, statement.date));
+    if (nearby.length > 0) {
+      const closestDays = dateDistanceDays(nearby[0].entryDate, statement.date);
+      const closest = nearby.filter((line) => dateDistanceDays(line.entryDate, statement.date) === closestDays);
+      return {
+        statement,
+        status: closest.length === 1 ? 'candidate' : 'ambiguous',
+        ledger: closest[0],
+        candidateCount: closest.length,
+      };
+    }
+    return { statement, status: 'unmatched', ledger: null, candidateCount: 0 };
+  });
+}
 const isReadOnlyRole = (role: AuthIdentity['role']) => ['promoter', 'mentor'].includes(role);
 const operationKey = (invoiceId: string) => `redfp360:invoice-payment:${invoiceId}`;
 type StoredPaymentAttempt = { operationId: string; amountCents: number; attempted: boolean };
@@ -84,6 +131,7 @@ export function TreasuryPage({ identity, organizations = [], onNotice }: Props) 
   const [operationId, setOperationId] = useState('');
   const [paymentAttempted, setPaymentAttempted] = useState(false);
   const [days, setDays] = useState(30);
+  const [reconciliationMonth, setReconciliationMonth] = useState(SIMULATED_DATE.slice(0, 7));
   const [scenarioAmount, setScenarioAmount] = useState('');
   const [scenarioRate, setScenarioRate] = useState('6.2');
   const readOnly = isReadOnlyRole(identity.role);
@@ -97,6 +145,18 @@ export function TreasuryPage({ identity, organizations = [], onNotice }: Props) 
   const overviewQuery = useGetFp360AccountingOverview<Fp360AccountingOverview>(
     { organizationId },
     { query: { enabled: !!organizationId, queryKey: getGetFp360AccountingOverviewQueryKey({ organizationId }) } },
+  );
+  const selectedMonthEnd = new Date(`${reconciliationMonth}-01T00:00:00.000Z`);
+  selectedMonthEnd.setUTCMonth(selectedMonthEnd.getUTCMonth() + 1, 0);
+  const monthEnd = selectedMonthEnd.toISOString().slice(0, 10);
+  const reconciliationParams = {
+    organizationId,
+    fromDate: `${reconciliationMonth}-01`,
+    toDate: monthEnd > SIMULATED_DATE ? SIMULATED_DATE : monthEnd,
+  };
+  const reconciliationQuery = useGetFp360BankReconciliation<Fp360BankReconciliation>(
+    reconciliationParams,
+    { query: { enabled: !!organizationId && view === 'reconciliation', queryKey: getGetFp360BankReconciliationQueryKey(reconciliationParams) } },
   );
   const recordPayment = useRecordFp360Payment();
   const allInvoices = invoiceQuery.data ?? [];
@@ -112,6 +172,19 @@ export function TreasuryPage({ identity, organizations = [], onNotice }: Props) 
   const totalPayable = duePayables.reduce((sum, invoice) => sum + invoice.totalCents, 0);
   const postedEntries = (overviewQuery.data?.entries ?? []).filter((entry) => entry.status !== 'draft').length;
   const pendingEntries = (overviewQuery.data?.entries ?? []).filter((entry) => entry.status === 'draft').length;
+  const reconciliationRows = useMemo(() => reconcileStatement(reconciliationQuery.data), [reconciliationQuery.data]);
+  const matchedLedgerKeys = useMemo(() => new Set(
+    reconciliationRows.filter((row) => row.status === 'matched' && row.ledger).map((row) => ledgerLineKey(row.ledger!)),
+  ), [reconciliationRows]);
+  const unmatchedLedgerLines = useMemo(
+    () => (reconciliationQuery.data?.ledgerLines ?? []).filter((line) => !matchedLedgerKeys.has(ledgerLineKey(line))),
+    [reconciliationQuery.data, matchedLedgerKeys],
+  );
+  const statementNetCents = (reconciliationQuery.data?.statementLines ?? []).reduce((sum, line) => sum + line.signedAmountCents, 0);
+  const ledgerNetCents = (reconciliationQuery.data?.ledgerLines ?? []).reduce((sum, line) => sum + line.signedAmountCents, 0);
+  const exactMatches = reconciliationRows.filter((row) => row.status === 'matched').length;
+  const suggestedMatches = reconciliationRows.filter((row) => row.status === 'candidate').length;
+  const ambiguousMatches = reconciliationRows.filter((row) => row.status === 'ambiguous').length;
   const needle = search.trim().toLocaleLowerCase('es');
   const filteredInvoices = useMemo(() => outstanding.filter((invoice) => `${invoice.reference} ${invoice.buyerName} ${invoice.status}`.toLocaleLowerCase('es').includes(needle)), [outstanding, needle]);
   const filteredPayables = useMemo(() => payables.filter((invoice) => `${invoice.invoiceReference} ${invoice.supplierName} ${invoice.orderNumber}`.toLocaleLowerCase('es').includes(needle)), [payables, needle]);
@@ -119,6 +192,7 @@ export function TreasuryPage({ identity, organizations = [], onNotice }: Props) 
     void client.invalidateQueries({ queryKey: getListFp360InvoicesQueryKey() });
     void client.invalidateQueries({ queryKey: getListPurchaseInvoicesQueryKey() });
     if (organizationId) void client.invalidateQueries({ queryKey: getGetFp360AccountingOverviewQueryKey({ organizationId }) });
+    if (organizationId) void client.invalidateQueries({ queryKey: getGetFp360BankReconciliationQueryKey(reconciliationParams) });
   };
   const openPayment = (invoice: Fp360Invoice) => {
     setPaymentInvoice(invoice);
@@ -244,7 +318,54 @@ export function TreasuryPage({ identity, organizations = [], onNotice }: Props) 
         <section className="treasury-forecast-card"><div className="treasury-forecast-balance"><small>Saldo inicial contabilizado</small><strong data-testid="value-treasury-forecast-start">{organizationId ? eur(bankBalance) : '—'}</strong><span>Cuenta bancaria · hoy</span></div><div className="treasury-forecast-flow"><div><span><i className="inflow" /> Cobros con vencimiento dentro de {days} días</span><b>{eur(forecast.incoming)}</b></div><div><span><i className="outflow" /> Facturas conformadas con vencimiento</span><b>− {eur(forecast.outgoing)}</b></div><hr /><div className="projected"><span>Saldo proyectado orientativo</span><b data-testid="value-treasury-projected">{eur(forecast.projected)}</b></div></div></section>
         <div className="treasury-disclaimer"><CircleAlert size={16} /><span>Estimación basada solo en documentos consultados. No representa movimientos ejecutados ni un saldo futuro garantizado. Documentos sin vencimiento quedan fuera del cálculo.</span></div>
       </div>}
-      {view === 'reconciliation' && <section className="treasury-pending-view page-enter"><div className="pending-symbol"><Landmark size={22} /></div><span className="treasury-overline">EXTRACTO SINTÉTICO · SIN CONCILIACIÓN</span><h2>Conciliación bancaria</h2><p>Banco FP360 ya registra movimientos sintéticos para prácticas. Esta vista aún no compara automáticamente esos movimientos con los asientos del mayor ni permite confirmar conciliaciones.</p><div className="pending-checklist"><div><span>Saldo contabilizado (572)</span><b>{organizationId && !overviewQuery.isLoading ? eur(bankBalance) : 'No disponible'}</b></div><div><span>Extracto sintético</span><b><Link href="/banco">Consultar Banco FP360</Link></b></div><div><span>Conciliaciones confirmadas</span><b>No disponible</b></div></div><span className="pending-ribbon">CONCILIACIÓN NO CONFIGURADA</span></section>}
+      {view === 'reconciliation' && <div className="treasury-reconciliation-view page-enter">
+        <section className="treasury-forecast-hero">
+          <div><span className="treasury-overline">EXTRACTO SINTÉTICO · MAYOR 572</span><h2>Comparación bancaria</h2><p>Compara movimientos y líneas contables de la empresa seleccionada, sin crear asientos ni modificar saldos.</p></div>
+          <label>Mes<input type="month" value={reconciliationMonth} max={SIMULATED_DATE.slice(0, 7)} onChange={(event) => { if (event.target.value) setReconciliationMonth(event.target.value); }} data-testid="input-treasury-reconciliation-month" /></label>
+        </section>
+        {!organizationId && <div className="treasury-disclaimer"><CircleAlert size={16} /><span>Selecciona una empresa para consultar su extracto sintético y las líneas 572 publicadas.</span></div>}
+        {organizationId && <StateNotice loading={reconciliationQuery.isLoading} error={reconciliationQuery.isError} retry={() => void reconciliationQuery.refetch()} />}
+        {organizationId && !reconciliationQuery.isLoading && !reconciliationQuery.isError && reconciliationQuery.data && <>
+          <section className="treasury-recon-metrics">
+            <article><small>Movimientos del extracto</small><b>{reconciliationQuery.data.statementLines.length}</b></article>
+            <article><small>Líneas contables 572</small><b>{reconciliationQuery.data.ledgerLines.length}</b></article>
+            <article><small>Cruces por referencia e importe</small><b className="text-good">{exactMatches}</b></article>
+            <article><small>Candidatos por importe y fecha</small><b>{suggestedMatches + ambiguousMatches}</b></article>
+          </section>
+          <section className="treasury-recon-totals">
+            <div><span>Neto extracto</span><b>{eur(statementNetCents)}</b></div>
+            <div><span>Neto mayor 572</span><b>{eur(ledgerNetCents)}</b></div>
+            <div><span>Diferencia extracto − mayor</span><b className={statementNetCents === ledgerNetCents ? 'text-good' : 'text-warning'}>{eur(statementNetCents - ledgerNetCents)}</b></div>
+          </section>
+          <div className="treasury-disclaimer"><CircleAlert size={16} /><span>Solo se considera coincidencia automática cuando coinciden el importe, el sentido y la referencia. Los candidatos comparten importe y sentido y están a tres días o menos; requieren revisión y no se dan por conciliados.</span></div>
+          <section className="panel treasury-panel treasury-recon-panel">
+            <div className="treasury-section-head"><div><span className="treasury-overline">MOVIMIENTOS BANCARIOS</span><h2>Extracto del periodo</h2><p>{date(reconciliationParams.fromDate)} — {date(reconciliationParams.toDate)}</p></div></div>
+            <div className="treasury-table-wrap"><table className="treasury-table"><thead><tr><th>Fecha / cuenta</th><th>Referencia / concepto</th><th>Importe</th><th>Resultado</th><th>Línea 572 relacionada</th></tr></thead><tbody>
+              {reconciliationRows.map((row) => <tr key={row.statement.id} data-testid={`row-reconciliation-statement-${row.statement.id}`}>
+                <td><b>{date(row.statement.date)}</b><small className="table-subline">{row.statement.accountName}</small></td>
+                <td><b className="mono">{row.statement.reference}</b><small className="table-subline">{row.statement.description}</small></td>
+                <td className="treasury-amount-strong">{eur(row.statement.signedAmountCents)}</td>
+                <td><span className={`treasury-status ${row.status === 'matched' ? 'good' : row.status === 'unmatched' || row.status === 'ambiguous' ? 'warn' : ''}`} data-testid={`status-reconciliation-${row.status}`}>{row.status === 'matched' ? 'Cruce por referencia' : row.status === 'candidate' ? 'Candidato · revisar' : row.status === 'ambiguous' ? `Ambiguo · ${row.candidateCount}` : 'Sin cruce'}</span></td>
+                <td>{row.ledger ? <><b>{row.ledger.sourceReference ?? row.ledger.concept}</b><small className="table-subline">{date(row.ledger.entryDate)} · {eur(row.ledger.signedAmountCents)} · {row.ledger.accountCode}</small></> : '—'}</td>
+              </tr>)}
+              {!reconciliationRows.length && <tr><td colSpan={5}><Empty title="No hay movimientos en este periodo" detail="El extracto sintético de esta empresa no contiene movimientos para el mes seleccionado." /></td></tr>}
+            </tbody></table></div>
+          </section>
+          <section className="panel treasury-panel treasury-recon-panel">
+            <div className="treasury-section-head"><div><span className="treasury-overline">PARTIDAS CONTABLES</span><h2>Líneas 572 sin cruce confirmado</h2><p>Incluye también los posibles candidatos para que puedas revisarlos.</p></div><span className="treasury-local-tag">{unmatchedLedgerLines.length} líneas</span></div>
+            <div className="treasury-table-wrap"><table className="treasury-table"><thead><tr><th>Fecha / asiento</th><th>Referencia / concepto</th><th>Cuenta</th><th>Sentido e importe</th><th>Estado</th></tr></thead><tbody>
+              {unmatchedLedgerLines.map((line) => <tr key={ledgerLineKey(line)} data-testid={`row-reconciliation-ledger-${ledgerLineKey(line)}`}>
+                <td><b>{date(line.entryDate)}</b><small className="table-subline">{line.entryNumber ? `Asiento ${line.entryNumber}` : 'Sin numerar'}</small></td>
+                <td><b>{line.sourceReference ?? line.concept}</b><small className="table-subline">{line.description}</small></td>
+                <td>{line.accountCode} · {line.accountName}</td>
+                <td className="treasury-amount-strong">{eur(line.signedAmountCents)}</td>
+                <td><StatusPill status={line.status} /></td>
+              </tr>)}
+              {!unmatchedLedgerLines.length && <tr><td colSpan={5}><Empty title="Todas las líneas tienen cruce" detail="No quedan líneas 572 pendientes de revisión en este periodo." /></td></tr>}
+            </tbody></table></div>
+          </section>
+        </>}
+      </div>}
       {view === 'financing' && <div className="treasury-view page-enter">
         <section className="treasury-forecast-hero"><div><span className="treasury-overline">COMPARADOR DIDÁCTICO · CÁLCULO LOCAL</span><h2>Coste orientativo de financiación</h2><p>Introduce hipótesis propias para estudiar el efecto del plazo y el tipo anual. No son ofertas bancarias.</p></div><span className="treasury-local-tag">No modifica saldos</span></section>
         <section className="treasury-finance-layout"><div className="panel treasury-panel treasury-finance-form"><label>Principal (€)<input inputMode="decimal" value={scenarioAmount} onChange={(event) => setScenarioAmount(event.target.value)} placeholder="p. ej. 4.500,00" data-testid="input-treasury-finance-amount" /></label><label>Tipo anual hipotético (%)<input type="number" min="0" max="100" step="0.1" value={scenarioRate} onChange={(event) => setScenarioRate(event.target.value)} data-testid="input-treasury-finance-rate" /></label><label>Plazo didáctico<select defaultValue="90" disabled aria-label="Plazo del cálculo"><option value="90">90 días</option></select></label><p>Estimación simple de interés: principal × tipo anual × 90 / 365. Sin comisiones, impuestos ni condiciones comerciales.</p></div><div className="treasury-cost-card"><span className="treasury-overline">COSTE ESTIMADO PARA 90 DÍAS</span><strong data-testid="value-treasury-finance-cost">{eur(scenarioCost)}</strong><div><span>Principal hipotético</span><b>{eur(scenarioCents)}</b></div><div><span>Tipo anual introducido</span><b>{Number(scenarioRate || 0).toLocaleString('es-ES')}%</b></div><div><span>Saldo contabilizado actual</span><b>{organizationId ? eur(bankBalance) : '—'}</b></div><small>El resultado es educativo y no constituye recomendación ni oferta financiera.</small></div></section>

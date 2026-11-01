@@ -127,6 +127,7 @@ import type {
   Fp360BankFinancingActionInput,
   Fp360BankFinancingInput,
   Fp360BankOverview,
+  Fp360BankReconciliation,
   Fp360BankTransfer,
   Fp360BankTransferActionInput,
   Fp360BankTransferInput,
@@ -268,6 +269,7 @@ import type {
   GetEvaluationOverviewParams,
   GetFp360AccountingOverviewParams,
   GetFp360BankOverviewParams,
+  GetFp360BankReconciliationParams,
   GetFp360CommunicationsOverviewParams,
   GetFp360CustomerServiceOverviewParams,
   GetFp360DirectionOverviewParams,
@@ -14473,6 +14475,114 @@ export function useGetFp360BankOverview<TData = Awaited<ReturnType<typeof getFp3
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetFp360BankOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetFp360BankReconciliationUrl = (params: GetFp360BankReconciliationParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/bank/reconciliation?${stringifiedParams}` : `/api/redfp360/bank/reconciliation`
+}
+
+/**
+ * @summary Compare one organization's simulated bank movements with its posted 572 ledger lines
+ */
+export const getFp360BankReconciliation = async (params: GetFp360BankReconciliationParams, options?: Parameters<typeof customFetch>[1]): Promise<Fp360BankReconciliation> => {
+
+  return customFetch<Fp360BankReconciliation>(getGetFp360BankReconciliationUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360BankReconciliationQueryKey = (params?: GetFp360BankReconciliationParams,) => {
+    return [
+    `/api/redfp360/bank/reconciliation`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360BankReconciliationQueryOptions = <TData = Awaited<ReturnType<typeof getFp360BankReconciliation>>, TError = ErrorType<void>>(params: GetFp360BankReconciliationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360BankReconciliation>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360BankReconciliationQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360BankReconciliation>>> = ({ signal }) => getFp360BankReconciliation(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360BankReconciliation>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360BankReconciliationQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360BankReconciliation>>>
+export type GetFp360BankReconciliationQueryError = ErrorType<void>
+
+
+export function useGetFp360BankReconciliation<TData = Awaited<ReturnType<typeof getFp360BankReconciliation>>, TError = ErrorType<void>>(
+ params: GetFp360BankReconciliationParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360BankReconciliation>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360BankReconciliation>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360BankReconciliation>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360BankReconciliation<TData = Awaited<ReturnType<typeof getFp360BankReconciliation>>, TError = ErrorType<void>>(
+ params: GetFp360BankReconciliationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360BankReconciliation>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360BankReconciliation>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360BankReconciliation>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360BankReconciliation<TData = Awaited<ReturnType<typeof getFp360BankReconciliation>>, TError = ErrorType<void>>(
+ params: GetFp360BankReconciliationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360BankReconciliation>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Compare one organization's simulated bank movements with its posted 572 ledger lines
+ */
+
+export function useGetFp360BankReconciliation<TData = Awaited<ReturnType<typeof getFp360BankReconciliation>>, TError = ErrorType<void>>(
+ params: GetFp360BankReconciliationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360BankReconciliation>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360BankReconciliationQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

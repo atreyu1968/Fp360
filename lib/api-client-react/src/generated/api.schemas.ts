@@ -5906,6 +5906,63 @@ export interface Fp360BankOverview {
   summary: Fp360BankOverviewSummary;
 }
 
+export type Fp360BankReconciliationStatementLineDirection = typeof Fp360BankReconciliationStatementLineDirection[keyof typeof Fp360BankReconciliationStatementLineDirection];
+
+
+export const Fp360BankReconciliationStatementLineDirection = {
+  debit: 'debit',
+  credit: 'credit',
+} as const;
+
+export interface Fp360BankReconciliationStatementLine {
+  id: string;
+  date: string;
+  accountName: string;
+  direction: Fp360BankReconciliationStatementLineDirection;
+  /** @minimum 1 */
+  amountCents: number;
+  signedAmountCents: number;
+  reference: string;
+  description: string;
+}
+
+export type Fp360BankReconciliationLedgerLineStatus = typeof Fp360BankReconciliationLedgerLineStatus[keyof typeof Fp360BankReconciliationLedgerLineStatus];
+
+
+export const Fp360BankReconciliationLedgerLineStatus = {
+  posted: 'posted',
+  reversed: 'reversed',
+} as const;
+
+export interface Fp360BankReconciliationLedgerLine {
+  entryId: string;
+  /** @nullable */
+  entryNumber: number | null;
+  entryDate: string;
+  concept: string;
+  status: Fp360BankReconciliationLedgerLineStatus;
+  /** @nullable */
+  sourceReference: string | null;
+  /** @minimum 1 */
+  lineNumber: number;
+  accountCode: string;
+  accountName: string;
+  description: string;
+  /** @minimum 0 */
+  debitCents: number;
+  /** @minimum 0 */
+  creditCents: number;
+  signedAmountCents: number;
+}
+
+export interface Fp360BankReconciliation {
+  organizationId: string;
+  fromDate: string;
+  toDate: string;
+  statementLines: Fp360BankReconciliationStatementLine[];
+  ledgerLines: Fp360BankReconciliationLedgerLine[];
+}
+
 export interface Fp360BankAccountInput {
   /** @minLength 1 */
   organizationId: string;
@@ -8978,6 +9035,15 @@ export type GetFp360BankOverviewParams = {
  * @minLength 1
  */
 organizationId: string;
+};
+
+export type GetFp360BankReconciliationParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+fromDate: string;
+toDate: string;
 };
 
 export type GetFp360TaxOverviewParams = {

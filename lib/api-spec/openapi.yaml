@@ -2913,6 +2913,34 @@ paths:
               schema: { $ref: "#/components/schemas/Fp360BankOverview" }
         "403":
           description: Organization is outside the actor's access
+  /redfp360/bank/reconciliation:
+    get:
+      operationId: getFp360BankReconciliation
+      tags: [redfp360]
+      summary: Compare one organization's simulated bank movements with its posted 572 ledger lines
+      parameters:
+        - name: organizationId
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+        - name: fromDate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: toDate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Company-scoped statement movements and posted ledger lines for the selected date range
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankReconciliation" }
+        "400":
+          description: The selected date range is invalid
+        "403":
+          description: Organization is outside the actor's access
   /redfp360/bank/accounts:
     post:
       operationId: createFp360BankAccount
@@ -7559,6 +7587,48 @@ components:
             pendingFinancingCount: { type: integer, minimum: 0 }
             overdueInstallmentCount: { type: integer, minimum: 0 }
             riskLevel: { type: string, enum: [low, review, elevated] }
+    Fp360BankReconciliation:
+      type: object
+      required: [organizationId, fromDate, toDate, statementLines, ledgerLines]
+      properties:
+        organizationId: { type: string }
+        fromDate: { type: string, format: date }
+        toDate: { type: string, format: date }
+        statementLines:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360BankReconciliationStatementLine" }
+        ledgerLines:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360BankReconciliationLedgerLine" }
+    Fp360BankReconciliationStatementLine:
+      type: object
+      required: [id, date, accountName, direction, amountCents, signedAmountCents, reference, description]
+      properties:
+        id: { type: string }
+        date: { type: string, format: date }
+        accountName: { type: string }
+        direction: { type: string, enum: [debit, credit] }
+        amountCents: { type: integer, minimum: 1 }
+        signedAmountCents: { type: integer }
+        reference: { type: string }
+        description: { type: string }
+    Fp360BankReconciliationLedgerLine:
+      type: object
+      required: [entryId, entryNumber, entryDate, concept, status, sourceReference, lineNumber, accountCode, accountName, description, debitCents, creditCents, signedAmountCents]
+      properties:
+        entryId: { type: string }
+        entryNumber: { type: integer, nullable: true }
+        entryDate: { type: string, format: date }
+        concept: { type: string }
+        status: { type: string, enum: [posted, reversed] }
+        sourceReference: { type: string, nullable: true }
+        lineNumber: { type: integer, minimum: 1 }
+        accountCode: { type: string }
+        accountName: { type: string }
+        description: { type: string }
+        debitCents: { type: integer, minimum: 0 }
+        creditCents: { type: integer, minimum: 0 }
+        signedAmountCents: { type: integer }
     Fp360BankAccount:
       type: object
       required: [id, organizationId, accountType, name, syntheticReference, balanceCents, reservedCents, availableCents, status, isPrimary, createdAt]
