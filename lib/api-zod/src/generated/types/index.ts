@@ -178,6 +178,8 @@ export * from './evaluationRubric';
 export * from './evaluationRubricInput';
 export * from './evaluationRubricLevel';
 export * from './evaluationWeightValidation';
+export * from './exportFp360AccountingCsvBook';
+export * from './exportFp360AccountingCsvParams';
 export * from './fp360AccountingAccount';
 export * from './fp360AccountingAccountInput';
 export * from './fp360AccountingAccountInputNature';

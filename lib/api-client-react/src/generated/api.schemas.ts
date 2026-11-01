@@ -9030,6 +9030,27 @@ export type GetFp360AccountingOverviewParams = {
 organizationId: string;
 };
 
+export type ExportFp360AccountingCsvParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+/**
+ * @minimum 2000
+ * @maximum 2100
+ */
+fiscalYear: number;
+book: ExportFp360AccountingCsvBook;
+};
+
+export type ExportFp360AccountingCsvBook = typeof ExportFp360AccountingCsvBook[keyof typeof ExportFp360AccountingCsvBook];
+
+
+export const ExportFp360AccountingCsvBook = {
+  journal: 'journal',
+  ledger: 'ledger',
+} as const;
+
 export type GetFp360BankOverviewParams = {
 /**
  * @minLength 1

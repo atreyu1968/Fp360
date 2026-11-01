@@ -26,6 +26,7 @@ type Props = {
   onNotice: (message: string) => void;
 };
 type View = 'summary' | 'journal' | 'chart' | 'ledger' | 'reports' | 'close';
+type ExportBook = 'journal' | 'ledger';
 type DraftLine = { accountId: string; description: string; debit: string; credit: string };
 type Nature = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
 
@@ -82,6 +83,7 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
   const [sourceInProgress, setSourceInProgress] = useState('');
   const [actionInProgress, setActionInProgress] = useState('');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState(2027);
+  const [exportingBook, setExportingBook] = useState<ExportBook | null>(null);
 
   const overviewQuery = useGetFp360AccountingOverview<Fp360AccountingOverview>(
     { organizationId },
@@ -120,6 +122,38 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
   const resultCents = balances.filter((balance) => balance.nature === 'revenue').reduce((sum, balance) => sum + balance.balanceCents, 0)
     - balances.filter((balance) => balance.nature === 'expense').reduce((sum, balance) => sum + balance.balanceCents, 0);
   const refresh = () => void queryClient.invalidateQueries({ queryKey: getGetFp360AccountingOverviewQueryKey({ organizationId }) });
+  const exportBook = async (book: ExportBook) => {
+    if (!organizationId || !overview || exportingBook) return;
+    setExportingBook(book);
+    try {
+      const params = new URLSearchParams({
+        organizationId,
+        fiscalYear: String(selectedFiscalYear),
+        book,
+      });
+      const basePath = import.meta.env.BASE_URL.replace(/\/+$/, '');
+      const response = await fetch(`${basePath}/api/redfp360/accounting/export?${params.toString()}`, {
+        credentials: 'same-origin',
+        headers: { Accept: 'text/csv' },
+      });
+      if (!response.ok) throw new Error('No se pudo generar el archivo.');
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const disposition = response.headers.get('content-disposition') ?? '';
+      const filename = disposition.match(/filename="([^"]+)"/i)?.[1]
+        ?? `red-fp360-${book}-${selectedFiscalYear}.csv`;
+      link.href = objectUrl;
+      link.download = filename;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      onNotice(`${book === 'journal' ? 'Libro diario' : 'Mayor'} descargado · ${selectedOrganization?.name ?? organizationId} · ejercicio ${selectedFiscalYear}.`);
+    } catch {
+      onNotice(`No se pudo descargar el ${book === 'journal' ? 'diario' : 'mayor'}. Revisa el acceso e inténtalo de nuevo.`);
+    } finally {
+      setExportingBook(null);
+    }
+  };
 
   const openEntryForm = () => {
     setEntryDate('2027-09-15');
@@ -252,6 +286,18 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
       </div>
     </div>
     <div className="accounting-sim-note">Simulación educativa: estos asientos no constituyen contabilidad oficial ni generan obligaciones fiscales reales.</div>
+    {organizationId && <div className="accounting-export-toolbar" data-testid="accounting-export-toolbar">
+      <div className="accounting-export-scope"><small>DESCARGA CONTABLE · ÁMBITO VISIBLE</small><b>{selectedOrganization?.name ?? organizationId} · {selectedOrganization?.center ?? 'Centro no disponible'} · Ejercicio {selectedFiscalYear}</b></div>
+      <label>Ejercicio<select value={selectedFiscalYear} onChange={(event) => setSelectedFiscalYear(Number(event.target.value))} data-testid="select-accounting-export-year">
+        {[...new Set([selectedFiscalYear, ...periods.map((period) => period.fiscalYear)])].sort((a, b) => b - a).map((year) => <option key={year} value={year}>{year}</option>)}
+      </select></label>
+      <button className="button button-secondary" type="button" disabled={!overview || Boolean(exportingBook)} onClick={() => void exportBook('journal')} data-testid="button-export-journal-csv">
+        {exportingBook === 'journal' ? 'Generando diario…' : 'Descargar diario CSV'}
+      </button>
+      <button className="button button-secondary" type="button" disabled={!overview || Boolean(exportingBook)} onClick={() => void exportBook('ledger')} data-testid="button-export-ledger-csv">
+        {exportingBook === 'ledger' ? 'Generando mayor…' : 'Descargar mayor CSV'}
+      </button>
+    </div>}
     {!organizationId && <div className="accounting-empty">Selecciona una empresa para consultar sus cuentas y libros.</div>}
     {organizationId && overviewQuery.isLoading && <div className="accounting-empty">Cargando libros contables…</div>}
     {organizationId && overviewQuery.isError && <div className="accounting-empty accounting-error">No se pudo cargar la contabilidad. <button className="text-button" onClick={refresh}>Reintentar</button></div>}

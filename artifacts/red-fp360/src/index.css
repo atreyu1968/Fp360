@@ -1166,6 +1166,12 @@ tbody tr:hover:not(:has(.empty-state)) { background: #fbfdff; }
 .accounting-org-select, .accounting-inline-select { display: grid; gap: 5px; color: #7c8c99; font-size: 9px; font-weight: 700; }
 .accounting-org-select select, .accounting-inline-select select, .accounting-toolbar input { min-width: 175px; height: 34px; padding: 0 10px; border: 1px solid #dfe7ed; border-radius: 7px; color: #3d5b73; background: #fff; font: inherit; }
 .accounting-sim-note { padding: 9px 12px; border: 1px solid #dce9ef; border-radius: 7px; color: #597688; background: #f3f9fb; font-size: 9px; }
+.accounting-export-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border: 1px solid #e2eaf0; border-radius: 8px; background: #fff; }
+.accounting-export-scope { display: grid; flex: 1 1 220px; gap: 4px; min-width: 0; }
+.accounting-export-scope small { color: #16828b; font-size: 8px; font-weight: 800; letter-spacing: .1em; }
+.accounting-export-scope b { overflow-wrap: anywhere; color: #34536c; font-size: 9px; }
+.accounting-export-toolbar label { display: grid; gap: 4px; color: #7c8c99; font-size: 8px; font-weight: 700; }
+.accounting-export-toolbar select { height: 34px; min-width: 95px; padding: 0 9px; border: 1px solid #dfe7ed; border-radius: 7px; color: #3d5b73; background: #fff; font: inherit; }
 .accounting-tabs { display: flex; gap: 4px; overflow-x: auto; padding: 4px; border: 1px solid #e8edf1; border-radius: 9px; background: #fff; }
 .accounting-tab { flex: 0 0 auto; padding: 9px 13px; border: 0; border-radius: 6px; color: #6d7f8d; background: transparent; font: 600 9px var(--app-font-sans); cursor: pointer; }
 .accounting-tab:hover { background: #f4f8fb; }
@@ -1271,6 +1277,8 @@ tbody tr:hover:not(:has(.empty-state)) { background: #fbfdff; }
 @media (max-width: 640px) {
   .accounting-heading { align-items: stretch; }
   .accounting-heading-actions { align-items: stretch; flex-direction: column; }
+  .accounting-export-toolbar { align-items: stretch; flex-direction: column; }
+  .accounting-export-toolbar > button { width: 100%; }
   .accounting-org-select select { width: 100%; }
   .accounting-section-head { align-items: flex-start; flex-direction: column; }
   .accounting-toolbar { width: 100%; }

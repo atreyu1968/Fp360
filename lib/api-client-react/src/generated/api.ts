@@ -109,6 +109,7 @@ import type {
   EvaluationRubric,
   EvaluationRubricInput,
   EvaluationWeightValidation,
+  ExportFp360AccountingCsvParams,
   Fp360AccountingAccount,
   Fp360AccountingAccountInput,
   Fp360AccountingEntry,
@@ -13740,6 +13741,114 @@ export function useGetFp360AccountingOverview<TData = Awaited<ReturnType<typeof 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetFp360AccountingOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExportFp360AccountingCsvUrl = (params: ExportFp360AccountingCsvParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/accounting/export?${stringifiedParams}` : `/api/redfp360/accounting/export`
+}
+
+/**
+ * @summary Export one organization's journal or general ledger for a fiscal year
+ */
+export const exportFp360AccountingCsv = async (params: ExportFp360AccountingCsvParams, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getExportFp360AccountingCsvUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportFp360AccountingCsvQueryKey = (params?: ExportFp360AccountingCsvParams,) => {
+    return [
+    `/api/redfp360/accounting/export`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getExportFp360AccountingCsvQueryOptions = <TData = Awaited<ReturnType<typeof exportFp360AccountingCsv>>, TError = ErrorType<void>>(params: ExportFp360AccountingCsvParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportFp360AccountingCsv>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportFp360AccountingCsvQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportFp360AccountingCsv>>> = ({ signal }) => exportFp360AccountingCsv(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportFp360AccountingCsv>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ExportFp360AccountingCsvQueryResult = NonNullable<Awaited<ReturnType<typeof exportFp360AccountingCsv>>>
+export type ExportFp360AccountingCsvQueryError = ErrorType<void>
+
+
+export function useExportFp360AccountingCsv<TData = Awaited<ReturnType<typeof exportFp360AccountingCsv>>, TError = ErrorType<void>>(
+ params: ExportFp360AccountingCsvParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportFp360AccountingCsv>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof exportFp360AccountingCsv>>,
+          TError,
+          Awaited<ReturnType<typeof exportFp360AccountingCsv>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useExportFp360AccountingCsv<TData = Awaited<ReturnType<typeof exportFp360AccountingCsv>>, TError = ErrorType<void>>(
+ params: ExportFp360AccountingCsvParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportFp360AccountingCsv>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof exportFp360AccountingCsv>>,
+          TError,
+          Awaited<ReturnType<typeof exportFp360AccountingCsv>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useExportFp360AccountingCsv<TData = Awaited<ReturnType<typeof exportFp360AccountingCsv>>, TError = ErrorType<void>>(
+ params: ExportFp360AccountingCsvParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportFp360AccountingCsv>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Export one organization's journal or general ledger for a fiscal year
+ */
+
+export function useExportFp360AccountingCsv<TData = Awaited<ReturnType<typeof exportFp360AccountingCsv>>, TError = ErrorType<void>>(
+ params: ExportFp360AccountingCsvParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportFp360AccountingCsv>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getExportFp360AccountingCsvQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

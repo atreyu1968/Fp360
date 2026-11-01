@@ -2718,6 +2718,34 @@ paths:
                 $ref: "#/components/schemas/Fp360AccountingOverview"
         "403":
           description: Organization is outside the actor's access
+  /redfp360/accounting/export:
+    get:
+      operationId: exportFp360AccountingCsv
+      tags: [redfp360]
+      summary: Export one organization's journal or general ledger for a fiscal year
+      parameters:
+        - name: organizationId
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+        - name: fiscalYear
+          in: query
+          required: true
+          schema: { type: integer, minimum: 2000, maximum: 2100 }
+        - name: book
+          in: query
+          required: true
+          schema: { type: string, enum: [journal, ledger] }
+      responses:
+        "200":
+          description: UTF-8 CSV with the company and center scope in every row
+          content:
+            text/csv:
+              schema: { type: string }
+        "400":
+          description: Invalid export selection
+        "403":
+          description: Organization is outside the actor's access
   /redfp360/accounting/accounts:
     post:
       operationId: createFp360AccountingAccount

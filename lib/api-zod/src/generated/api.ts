@@ -6149,6 +6149,24 @@ export const GetFp360AccountingOverviewResponse = zod.object({
 
 
 /**
+ * @summary Export one organization's journal or general ledger for a fiscal year
+ */
+
+export const exportFp360AccountingCsvQueryFiscalYearMin = 2000;
+export const exportFp360AccountingCsvQueryFiscalYearMax = 2100;
+
+
+
+export const ExportFp360AccountingCsvQueryParams = zod.object({
+  "organizationId": zod.coerce.string().min(1),
+  "fiscalYear": zod.coerce.number().int().min(exportFp360AccountingCsvQueryFiscalYearMin).max(exportFp360AccountingCsvQueryFiscalYearMax),
+  "book": zod.enum(['journal', 'ledger'])
+})
+
+export const ExportFp360AccountingCsvResponse = zod.unknown()
+
+
+/**
  * @summary Add a company accounting account
  */
 
