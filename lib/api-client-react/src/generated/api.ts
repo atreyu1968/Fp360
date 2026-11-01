@@ -26,6 +26,10 @@ import type {
 
 import type {
   AccessAuditEvent,
+  AdminAiCoordinatorConnectionTestInput,
+  AdminAiCoordinatorConnectionTestResult,
+  AdminAiCoordinatorSettings,
+  AdminAiCoordinatorSettingsInput,
   AdminBackupExercise,
   AdminBackupExerciseInput,
   AdminIntegrationStatus,
@@ -121,6 +125,8 @@ import type {
   Fp360AccountingSourceDraftInput,
   Fp360AccountingYearEndSummary,
   Fp360Activity,
+  Fp360AiSimulationProposal,
+  Fp360AiSimulationProposalInput,
   Fp360BankAccount,
   Fp360BankAccountInput,
   Fp360BankEffect,
@@ -1786,6 +1792,170 @@ export function useGetAdminSystemOverview<TData = Awaited<ReturnType<typeof getA
 
 
 
+export const getUpdateAdminAiCoordinatorSettingsUrl = () => {
+
+
+
+
+  return `/api/admin/ai-coordinator/settings`
+}
+
+export const updateAdminAiCoordinatorSettings = async (adminAiCoordinatorSettingsInput: AdminAiCoordinatorSettingsInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminAiCoordinatorSettings> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminAiCoordinatorSettings>(getUpdateAdminAiCoordinatorSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminAiCoordinatorSettingsInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminAiCoordinatorSettingsMutationKey = () => ['updateAdminAiCoordinatorSettings'] as const;
+
+export const getUpdateAdminAiCoordinatorSettingsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminAiCoordinatorSettings>>, TError,UpdateAdminAiCoordinatorSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminAiCoordinatorSettings>>, TError,UpdateAdminAiCoordinatorSettingsMutationVariables, TContext> => {
+
+const mutationKey = getUpdateAdminAiCoordinatorSettingsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminAiCoordinatorSettings>>, UpdateAdminAiCoordinatorSettingsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateAdminAiCoordinatorSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminAiCoordinatorSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminAiCoordinatorSettings>>>
+    export type UpdateAdminAiCoordinatorSettingsMutationBody = BodyType<AdminAiCoordinatorSettingsInput>
+    export type UpdateAdminAiCoordinatorSettingsMutationError = ErrorType<void>
+    export type UpdateAdminAiCoordinatorSettingsMutationVariables = {data: BodyType<AdminAiCoordinatorSettingsInput>}
+
+    export const useUpdateAdminAiCoordinatorSettings = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminAiCoordinatorSettings>>, TError,UpdateAdminAiCoordinatorSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminAiCoordinatorSettings>>,
+        TError,
+        UpdateAdminAiCoordinatorSettingsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateAdminAiCoordinatorSettingsMutationOptions(options), queryClient);
+    }
+
+export const getTestAdminAiCoordinatorConnectionUrl = () => {
+
+
+
+
+  return `/api/admin/ai-coordinator/test`
+}
+
+export const testAdminAiCoordinatorConnection = async (adminAiCoordinatorConnectionTestInput: AdminAiCoordinatorConnectionTestInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminAiCoordinatorConnectionTestResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminAiCoordinatorConnectionTestResult>(getTestAdminAiCoordinatorConnectionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminAiCoordinatorConnectionTestInput)
+  }
+);}
+
+
+
+
+
+export const getTestAdminAiCoordinatorConnectionMutationKey = () => ['testAdminAiCoordinatorConnection'] as const;
+
+export const getTestAdminAiCoordinatorConnectionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testAdminAiCoordinatorConnection>>, TError,TestAdminAiCoordinatorConnectionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof testAdminAiCoordinatorConnection>>, TError,TestAdminAiCoordinatorConnectionMutationVariables, TContext> => {
+
+const mutationKey = getTestAdminAiCoordinatorConnectionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testAdminAiCoordinatorConnection>>, TestAdminAiCoordinatorConnectionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  testAdminAiCoordinatorConnection(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TestAdminAiCoordinatorConnectionMutationResult = NonNullable<Awaited<ReturnType<typeof testAdminAiCoordinatorConnection>>>
+    export type TestAdminAiCoordinatorConnectionMutationBody = BodyType<AdminAiCoordinatorConnectionTestInput>
+    export type TestAdminAiCoordinatorConnectionMutationError = ErrorType<void>
+    export type TestAdminAiCoordinatorConnectionMutationVariables = {data: BodyType<AdminAiCoordinatorConnectionTestInput>}
+
+    export const useTestAdminAiCoordinatorConnection = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testAdminAiCoordinatorConnection>>, TError,TestAdminAiCoordinatorConnectionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof testAdminAiCoordinatorConnection>>,
+        TError,
+        TestAdminAiCoordinatorConnectionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getTestAdminAiCoordinatorConnectionMutationOptions(options), queryClient);
+    }
+
 export const getCreateAdminOrganizationUrl = () => {
 
 
@@ -2905,6 +3075,94 @@ export function useGetFp360SimulationsOverview<TData = Awaited<ReturnType<typeof
 
 
 
+
+export const getGenerateFp360AiSimulationProposalUrl = () => {
+
+
+
+
+  return `/api/redfp360/simulations/ai-proposals`
+}
+
+/**
+ * @summary Generate a supervised intercompany simulation proposal using the network snapshot
+ */
+export const generateFp360AiSimulationProposal = async (fp360AiSimulationProposalInput: Fp360AiSimulationProposalInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360AiSimulationProposal> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360AiSimulationProposal>(getGenerateFp360AiSimulationProposalUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360AiSimulationProposalInput)
+  }
+);}
+
+
+
+
+
+export const getGenerateFp360AiSimulationProposalMutationKey = () => ['generateFp360AiSimulationProposal'] as const;
+
+export const getGenerateFp360AiSimulationProposalMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateFp360AiSimulationProposal>>, TError,GenerateFp360AiSimulationProposalMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateFp360AiSimulationProposal>>, TError,GenerateFp360AiSimulationProposalMutationVariables, TContext> => {
+
+const mutationKey = getGenerateFp360AiSimulationProposalMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateFp360AiSimulationProposal>>, GenerateFp360AiSimulationProposalMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateFp360AiSimulationProposal(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateFp360AiSimulationProposalMutationResult = NonNullable<Awaited<ReturnType<typeof generateFp360AiSimulationProposal>>>
+    export type GenerateFp360AiSimulationProposalMutationBody = BodyType<Fp360AiSimulationProposalInput>
+    export type GenerateFp360AiSimulationProposalMutationError = ErrorType<void>
+    export type GenerateFp360AiSimulationProposalMutationVariables = {data: BodyType<Fp360AiSimulationProposalInput>}
+
+    /**
+ * @summary Generate a supervised intercompany simulation proposal using the network snapshot
+ */
+export const useGenerateFp360AiSimulationProposal = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateFp360AiSimulationProposal>>, TError,GenerateFp360AiSimulationProposalMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof generateFp360AiSimulationProposal>>,
+        TError,
+        GenerateFp360AiSimulationProposalMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGenerateFp360AiSimulationProposalMutationOptions(options), queryClient);
+    }
 
 export const getCreateFp360SimulationCampaignUrl = () => {
 

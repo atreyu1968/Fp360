@@ -18,10 +18,11 @@ import {
 } from "@workspace/api-zod";
 import {
   db, fpAdminBackupExercises, fpAdminConfigVersions, fpAdminPrivilegeRequests,
-  fpAuthAudit, fpAuthInvitations, fpAuthMemberships, fpAuthSessions,
+  fpAdminAiCoordinatorSettings, fpAuthAudit, fpAuthInvitations, fpAuthMemberships, fpAuthSessions,
   fpAuthUsers, fpDocuments, fpOrganizations, fpSimulationCampaigns,
 } from "@workspace/db";
 import { hashPassword } from "../lib/passwords";
+import { checkLocalAiEndpoint, normalizeLocalAiBaseUrl } from "../lib/local-ai";
 import { hashSessionToken, issueAuthSession, requireAuth, requireSameOrigin, type AuthContext } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -129,7 +130,6 @@ const integrationCatalog = [
   { id: "smtp", name: "SMTP autorizado", description: "Correo de prueba. No se envían mensajes desde este panel." },
   { id: "public-api", name: "API de servicios", description: "Estado interno del servicio; no se muestran claves." },
   { id: "replit-export", name: "Exportación Replit", description: "Preparación de despliegue. No publica cambios." },
-  { id: "local-models", name: "Modelos locales", description: "Proveedor de IA no conectado en esta simulación." },
 ] as const;
 
 const policyMatrix = [
@@ -340,6 +340,7 @@ router.get("/admin/system/overview", async (req, res): Promise<void> => {
     scenarioRows,
     backupRows,
     requestRows,
+    aiSettings,
     databaseStatus,
     integrationChecks,
   ] = await Promise.all([
@@ -357,6 +358,7 @@ router.get("/admin/system/overview", async (req, res): Promise<void> => {
       .orderBy(desc(fpAdminBackupExercises.createdAt)).limit(20),
     db.select().from(fpAdminPrivilegeRequests).where(eq(fpAdminPrivilegeRequests.tenantId, tenantId))
       .orderBy(desc(fpAdminPrivilegeRequests.createdAt)).limit(50),
+    db.select().from(fpAdminAiCoordinatorSettings).where(eq(fpAdminAiCoordinatorSettings.tenantId, tenantId)).limit(1),
     adminDatabaseStatus(),
     Promise.all(integrationCatalog.map(async (integration) => {
       const [latest] = await db.select({ createdAt: fpAuthAudit.createdAt }).from(fpAuthAudit).where(and(
@@ -399,9 +401,98 @@ router.get("/admin/system/overview", async (req, res): Promise<void> => {
     backupExercises: backupRows.map(backupExerciseView),
     privilegeRequests: requestRows.map(privilegeRequestView),
     integrations,
+    aiCoordinator: {
+      configured: Boolean(aiSettings[0]?.baseUrl && aiSettings[0]?.model),
+      enabled: aiSettings[0]?.enabled ?? false,
+      baseUrl: aiSettings[0]?.baseUrl ?? "",
+      model: aiSettings[0]?.model ?? "",
+      updatedAt: aiSettings[0]?.updatedAt.toISOString() ?? null,
+    },
     policyMatrix,
     simulationOnly: true,
   }));
+
+router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => {
+  const body = api.UpdateAdminAiCoordinatorSettingsBody.safeParse(req.body);
+  if (!body.success) fail(400, "Revisa la URL, el modelo y el estado del coordinador.");
+  const actor = req.auth!;
+  let baseUrl = body.data.baseUrl.trim();
+  const model = body.data.model.trim();
+  if (body.data.enabled && (!baseUrl || !model)) fail(400, "Indica una URL local y un modelo antes de activar el coordinador.");
+  if (baseUrl) {
+    try {
+      baseUrl = normalizeLocalAiBaseUrl(baseUrl);
+    } catch (error) {
+      fail(400, error instanceof Error ? error.message : "La URL local no es válida.");
+    }
+  }
+  if (body.data.enabled && model.length < 1) fail(400, "Indica el nombre del modelo local.");
+  const action = "ai.coordinator.settings.updated";
+  const fingerprint = requestFingerprint({ enabled: body.data.enabled, baseUrl, model });
+  await db.transaction(async (tx) => {
+    await lockAdministration(tx, actor);
+    if (await priorAdminOperation(tx, actor, body.data.operationId, action, fingerprint)) return;
+    await tx.insert(fpAdminAiCoordinatorSettings).values({
+      id: randomUUID(),
+      tenantId: actor.tenantId,
+      baseUrl,
+      model,
+      enabled: body.data.enabled,
+      createdByUserId: actor.userId,
+      updatedByUserId: actor.userId,
+    }).onConflictDoUpdate({
+      target: fpAdminAiCoordinatorSettings.tenantId,
+      set: {
+        baseUrl,
+        model,
+        enabled: body.data.enabled,
+        updatedByUserId: actor.userId,
+        updatedAt: new Date(),
+      },
+    });
+    await audit(tx, actor.tenantId, actor.userId, action, "ai-coordinator", body.data.operationId, fingerprint);
+  });
+  const [saved] = await db.select().from(fpAdminAiCoordinatorSettings)
+    .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
+  res.json(api.UpdateAdminAiCoordinatorSettingsResponse.parse({
+    configured: Boolean(saved?.baseUrl && saved?.model),
+    enabled: saved?.enabled ?? false,
+    baseUrl: saved?.baseUrl ?? "",
+    model: saved?.model ?? "",
+    updatedAt: saved?.updatedAt.toISOString() ?? null,
+  }));
+});
+
+router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
+  const body = api.TestAdminAiCoordinatorConnectionBody.safeParse(req.body);
+  if (!body.success) fail(400, "La solicitud de prueba no es válida.");
+  const actor = req.auth!;
+  const [settings] = await db.select().from(fpAdminAiCoordinatorSettings)
+    .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
+  if (!settings?.enabled || !settings.baseUrl || !settings.model) {
+    fail(409, "Configura y activa primero un endpoint local de IA.");
+  }
+  try {
+    await checkLocalAiEndpoint({ baseUrl: settings.baseUrl, model: settings.model });
+  } catch {
+    req.log.warn({ tenantId: actor.tenantId }, "Local AI endpoint check failed");
+    fail(502, "No se pudo conectar con el endpoint local. Comprueba su disponibilidad y la ruta /models.");
+  }
+  const checkedAt = new Date().toISOString();
+  await db.transaction(async (tx) => {
+    await lockAdministration(tx, actor);
+    await audit(
+      tx, actor.tenantId, actor.userId, "ai.coordinator.connection.tested",
+      "ai-coordinator", body.data.operationId, requestFingerprint({ model: settings.model }),
+    );
+  });
+  res.json(api.TestAdminAiCoordinatorConnectionResponse.parse({
+    connected: true,
+    model: settings.model,
+    checkedAt,
+    message: "La API local respondió correctamente.",
+  }));
+});
 });
 
 router.post("/admin/organizations", async (req, res): Promise<void> => {

@@ -5,6 +5,7 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminAiCoordinatorSettings } from './adminAiCoordinatorSettings';
 import type { AdminBackupExercise } from './adminBackupExercise';
 import type { AdminHealthStatus } from './adminHealthStatus';
 import type { AdminIntegrationStatus } from './adminIntegrationStatus';
@@ -22,6 +23,7 @@ export interface AdminSystemOverview {
   backupExercises: AdminBackupExercise[];
   privilegeRequests: AdminPrivilegeRequest[];
   integrations: AdminIntegrationStatus[];
+  aiCoordinator: AdminAiCoordinatorSettings;
   policyMatrix: AdminPolicyMatrixEntry[];
   simulationOnly: true;
 }
