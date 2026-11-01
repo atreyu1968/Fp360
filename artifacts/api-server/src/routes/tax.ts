@@ -14,6 +14,8 @@ import {
   CreateFp360TaxRequirementResponse,
   GetFp360TaxOverviewQueryParams,
   GetFp360TaxOverviewResponse,
+  UpdateFp360TaxProfileBody,
+  UpdateFp360TaxProfileResponse,
 } from "@workspace/api-zod";
 import {
   db,
@@ -23,9 +25,16 @@ import {
   fpPurchaseOrders,
   fpTaxDeclarations,
   fpTaxEvents,
+  fpTaxProfiles,
   fpTaxRequirements,
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
+import {
+  buildModelCatalog,
+  getTaxModel,
+  modelMatchesPeriod,
+  type TaxProfile,
+} from "./tax-models";
 
 const router: IRouter = Router();
 router.use("/redfp360/tax", requireAuth, requireSimulationWriteAccess);
@@ -79,10 +88,30 @@ function parsePeriod(periodKey: string): Period | null {
   };
 }
 
-function modelMatches(taxType: string, modelCode: string, annual: boolean): boolean {
-  if (taxType === "igic") return annual ? modelCode === "425" : modelCode === "420";
-  if (taxType !== "withholding") return false;
-  return annual ? modelCode === "190" : ["111", "115"].includes(modelCode);
+function eurosToCents(value?: string): number {
+  if (!value?.trim()) return 0;
+  const normalized = value.trim().replace(",", ".");
+  if (!/^-?\d+(?:\.\d{1,2})?$/.test(normalized)) return 0;
+  const amount = Number(normalized);
+  return Number.isFinite(amount) && Math.abs(amount) <= 10_000_000 ? Math.round(amount * 100) : 0;
+}
+
+function validateFormData(modelCode: string, data: Record<string, string>): string | null {
+  const model = getTaxModel(modelCode);
+  if (!model) return "Selecciona un modelo oficial disponible.";
+  const allowed = new Set(model.formFields.map((field) => field.key));
+  if (Object.keys(data).some((key) => !allowed.has(key))) return "El formulario contiene campos que no pertenecen al modelo seleccionado.";
+  for (const field of model.formFields) {
+    const value = data[field.key]?.trim() ?? "";
+    if (field.required && !value) return `Completa el campo «${field.label}».`;
+    if (field.kind === "number" && value && !/^-?\d+(?:[.,]\d{1,2})?$/.test(value)) {
+      return `El campo «${field.label}» debe contener un importe o número válido.`;
+    }
+    if (field.kind === "checkbox" && field.required && value !== "true") {
+      return `Confirma el campo «${field.label}» para continuar.`;
+    }
+  }
+  return null;
 }
 
 async function resolveOrganization(actor: AuthContext, organizationId: string): Promise<string | null> {
@@ -183,23 +212,36 @@ async function calculateDeclaration(
       inputIgicCents: 0,
       withholdingBaseCents: declaration.withholdingBaseCents,
       withholdingCents: declaration.withholdingCents,
-      resultCents: declaration.withholdingCents,
+      resultCents: ["111", "115"].includes(declaration.modelCode) ? declaration.withholdingCents : 0,
       sourceInvoiceIds: [] as string[],
       sourcePurchaseInvoiceIds: [] as string[],
     };
   }
-  const docs = await sourceDocuments(tenantId, declaration.organizationId, period);
-  const outputIgicCents = docs.sales.reduce((sum, item) => sum + item.taxCents, 0);
-  const inputIgicCents = docs.purchases.reduce((sum, item) => sum + item.taxCents, 0);
+  if (["420", "425"].includes(declaration.modelCode)) {
+    const docs = await sourceDocuments(tenantId, declaration.organizationId, period);
+    const outputIgicCents = docs.sales.reduce((sum, item) => sum + item.taxCents, 0);
+    const inputIgicCents = docs.purchases.reduce((sum, item) => sum + item.taxCents, 0);
+    return {
+      taxableBaseCents: docs.sales.reduce((sum, item) => sum + item.baseCents, 0),
+      outputIgicCents,
+      inputIgicCents,
+      withholdingBaseCents: 0,
+      withholdingCents: 0,
+      resultCents: declaration.modelCode === "420" ? outputIgicCents - inputIgicCents : 0,
+      sourceInvoiceIds: docs.sales.map((item) => item.id),
+      sourcePurchaseInvoiceIds: docs.purchases.map((item) => item.id),
+    };
+  }
+  const formData = declaration.formData ?? {};
   return {
-    taxableBaseCents: docs.sales.reduce((sum, item) => sum + item.baseCents, 0),
-    outputIgicCents,
-    inputIgicCents,
-    withholdingBaseCents: 0,
-    withholdingCents: 0,
-    resultCents: outputIgicCents - inputIgicCents,
-    sourceInvoiceIds: docs.sales.map((item) => item.id),
-    sourcePurchaseInvoiceIds: docs.purchases.map((item) => item.id),
+    taxableBaseCents: eurosToCents(formData.taxableBaseEuros ?? formData.annualBaseEuros ?? formData.cumulativeIncomeEuros),
+    outputIgicCents: 0,
+    inputIgicCents: 0,
+    withholdingBaseCents: declaration.withholdingBaseCents,
+    withholdingCents: declaration.withholdingCents,
+    resultCents: eurosToCents(formData.resultEuros),
+    sourceInvoiceIds: [] as string[],
+    sourcePurchaseInvoiceIds: [] as string[],
   };
 }
 
@@ -240,13 +282,118 @@ async function loadDeclaration(id: string, tenantId: string) {
   return declaration ?? null;
 }
 
-const scenarioObligations = [
-  { taxType: "igic" as const, modelCode: "420", periodKey: "2027-Q3", simulatedDueDate: "2027-10-15" },
-  { taxType: "withholding" as const, modelCode: "111", periodKey: "2027-Q3", simulatedDueDate: "2027-10-15" },
-  { taxType: "withholding" as const, modelCode: "115", periodKey: "2027-Q3", simulatedDueDate: "2027-10-15" },
-  { taxType: "igic" as const, modelCode: "425", periodKey: "2027", simulatedDueDate: "2028-02-15" },
-  { taxType: "withholding" as const, modelCode: "190", periodKey: "2027", simulatedDueDate: "2028-02-15" },
-];
+function simulatedDueDate(modelCode: string): string {
+  if (["420", "421", "111", "115", "130", "131"].includes(modelCode)) return "2027-10-15";
+  if (modelCode === "100") return "2028-06-15";
+  if (modelCode === "200") return "2028-07-15";
+  if (["425", "180", "190"].includes(modelCode)) return "2028-01-31";
+  if (["415", "347"].includes(modelCode)) return "2028-02-15";
+  return "2027-09-15";
+}
+
+router.put("/redfp360/tax/profile", route(async (request, response) => {
+  const body = UpdateFp360TaxProfileBody.safeParse(request.body);
+  if (!body.success) {
+    response.status(400).json({ error: "Revisa la configuración fiscal de la organización." });
+    return;
+  }
+  const actor = request.auth as AuthContext;
+  if (!canReview(actor)) {
+    response.status(403).json({ error: "Solo el profesorado puede configurar el perfil fiscal." });
+    return;
+  }
+  const input = body.data;
+  const organizationId = await resolveOrganization(actor, input.organizationId);
+  if (!organizationId) {
+    response.status(403).json({ error: "No tienes acceso a la empresa seleccionada." });
+    return;
+  }
+  if ((input.entityType === "sociedad" && input.incomeTaxMethod !== "not_applicable")
+    || (input.entityType === "autonomo" && input.incomeTaxMethod === "not_applicable")) {
+    response.status(400).json({ error: "El método de IRPF debe coincidir con la forma jurídica seleccionada." });
+    return;
+  }
+  const requestFingerprint = fingerprint(input);
+  const [priorEvent] = await db.select().from(fpTaxEvents).where(and(
+    eq(fpTaxEvents.tenantId, actor.tenantId),
+    eq(fpTaxEvents.operationId, input.operationId),
+  )).limit(1);
+  if (priorEvent) {
+    if (priorEvent.requestFingerprint !== requestFingerprint) {
+      response.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
+      return;
+    }
+    const [savedProfile] = await db.select().from(fpTaxProfiles).where(and(
+      eq(fpTaxProfiles.tenantId, actor.tenantId),
+      eq(fpTaxProfiles.organizationId, organizationId),
+    )).limit(1);
+    if (savedProfile) {
+      response.json(UpdateFp360TaxProfileResponse.parse({
+        organizationId,
+        entityType: savedProfile.entityType,
+        igicRegime: savedProfile.igicRegime,
+        incomeTaxMethod: savedProfile.incomeTaxMethod,
+        hasEmployees: savedProfile.hasEmployees,
+        withholdsProfessionals: savedProfile.withholdsProfessionals,
+        paysBusinessRent: savedProfile.paysBusinessRent,
+        updatedByName: savedProfile.updatedByName,
+        updatedAt: savedProfile.updatedAt.toISOString(),
+      }));
+      return;
+    }
+  }
+  const now = new Date();
+  const saved = await db.transaction(async (tx) => {
+    const [profile] = await tx.insert(fpTaxProfiles).values({
+      id: randomUUID(),
+      tenantId: actor.tenantId,
+      organizationId,
+      entityType: input.entityType,
+      igicRegime: input.igicRegime,
+      incomeTaxMethod: input.incomeTaxMethod,
+      hasEmployees: input.hasEmployees,
+      withholdsProfessionals: input.withholdsProfessionals,
+      paysBusinessRent: input.paysBusinessRent,
+      updatedByUserId: actor.userId,
+      updatedByName: actor.displayName,
+      createdAt: now,
+      updatedAt: now,
+    }).onConflictDoUpdate({
+      target: [fpTaxProfiles.tenantId, fpTaxProfiles.organizationId],
+      set: {
+        entityType: input.entityType,
+        igicRegime: input.igicRegime,
+        incomeTaxMethod: input.incomeTaxMethod,
+        hasEmployees: input.hasEmployees,
+        withholdsProfessionals: input.withholdsProfessionals,
+        paysBusinessRent: input.paysBusinessRent,
+        updatedByUserId: actor.userId,
+        updatedByName: actor.displayName,
+        updatedAt: now,
+      },
+    }).returning();
+    if (!profile) throw new TaxError(500, "No se pudo guardar el perfil fiscal.");
+    await appendEvent(tx, actor, {
+      organizationId,
+      operationId: input.operationId,
+      requestFingerprint,
+      eventType: "tax_profile_updated",
+      description: `Perfil fiscal educativo actualizado: ${input.entityType}, IGIC ${input.igicRegime}.`,
+    });
+    return profile;
+  });
+  response.json(UpdateFp360TaxProfileResponse.parse({
+    organizationId,
+    entityType: saved.entityType,
+    igicRegime: saved.igicRegime,
+    incomeTaxMethod: saved.incomeTaxMethod,
+    hasEmployees: saved.hasEmployees,
+    withholdsProfessionals: saved.withholdsProfessionals,
+    paysBusinessRent: saved.paysBusinessRent,
+    updatedByName: saved.updatedByName,
+    updatedAt: saved.updatedAt.toISOString(),
+  }));
+}));
 
 router.get("/redfp360/tax/overview", route(async (request, response) => {
   const parsed = GetFp360TaxOverviewQueryParams.safeParse(request.query);
@@ -260,7 +407,11 @@ router.get("/redfp360/tax/overview", route(async (request, response) => {
     response.status(403).json({ error: "No tienes acceso a la empresa seleccionada." });
     return;
   }
-  const [declarations, requirements, events, documents] = await Promise.all([
+  const [profileRows, declarations, requirements, events, documents] = await Promise.all([
+    db.select().from(fpTaxProfiles).where(and(
+      eq(fpTaxProfiles.tenantId, actor.tenantId),
+      eq(fpTaxProfiles.organizationId, organizationId),
+    )).limit(1),
     db.select().from(fpTaxDeclarations).where(and(
       eq(fpTaxDeclarations.tenantId, actor.tenantId),
       eq(fpTaxDeclarations.organizationId, organizationId),
@@ -275,18 +426,40 @@ router.get("/redfp360/tax/overview", route(async (request, response) => {
     )).orderBy(desc(fpTaxEvents.createdAt)).limit(100),
     sourceDocuments(actor.tenantId, organizationId, { start: "2027-01-01", end: "2027-12-31", annual: true }),
   ]);
+  const savedProfile = profileRows[0];
+  const profile: TaxProfile | null = savedProfile ? {
+    organizationId,
+    entityType: savedProfile.entityType as TaxProfile["entityType"],
+    igicRegime: savedProfile.igicRegime as TaxProfile["igicRegime"],
+    incomeTaxMethod: savedProfile.incomeTaxMethod as TaxProfile["incomeTaxMethod"],
+    hasEmployees: savedProfile.hasEmployees,
+    withholdsProfessionals: savedProfile.withholdsProfessionals,
+    paysBusinessRent: savedProfile.paysBusinessRent,
+    updatedByName: savedProfile.updatedByName,
+    updatedAt: savedProfile.updatedAt,
+  } : null;
+  const totalsByCounterparty = new Map<string, number>();
+  for (const document of documents.documents) {
+    totalsByCounterparty.set(
+      document.counterparty,
+      (totalsByCounterparty.get(document.counterparty) ?? 0) + document.baseCents + document.taxCents,
+    );
+  }
+  const thirdPartyThresholdReached = [...totalsByCounterparty.values()].some((amount) => amount > 300_506);
+  const modelCatalog = buildModelCatalog(profile, thirdPartyThresholdReached);
   const active = declarations.filter((item) => item.status !== "rectified");
-  const declarationFor = (taxType: string, modelCode: string, periodKey: string) =>
-    active.find((item) => item.taxType === taxType && item.modelCode === modelCode && item.periodKey === periodKey);
-  const obligations = scenarioObligations.map((template, index) => {
-    const declaration = declarationFor(template.taxType, template.modelCode, template.periodKey);
-    const status = declaration?.status ?? (template.simulatedDueDate < SIMULATED_DATE ? "overdue" : "scheduled");
+  const obligations = modelCatalog.filter((model) => model.applicable && model.periodicity !== "census").map((model, index) => {
+    const periodKey = model.periodicity === "annual" ? "2027" : "2027-Q3";
+    const declaration = active.find((item) => item.modelCode === model.modelCode && item.periodKey === periodKey);
+    const dueDate = declaration?.simulatedDueDate ?? simulatedDueDate(model.modelCode);
+    const status = declaration?.status ?? (dueDate < SIMULATED_DATE ? "overdue" : "scheduled");
     return {
       id: declaration?.id ?? `scenario-tax-obligation-${index + 1}`,
-      taxType: template.taxType,
-      modelCode: template.modelCode,
-      periodKey: template.periodKey,
-      simulatedDueDate: declaration?.simulatedDueDate ?? template.simulatedDueDate,
+      agency: model.agency,
+      taxType: model.taxType,
+      modelCode: model.modelCode,
+      periodKey,
+      simulatedDueDate: dueDate,
       status,
       declarationId: declaration?.id ?? null,
     };
@@ -302,6 +475,8 @@ router.get("/redfp360/tax/overview", route(async (request, response) => {
   response.json(GetFp360TaxOverviewResponse.parse({
     organizationId,
     simulatedDate: SIMULATED_DATE,
+    taxProfile: profile ? { ...profile, updatedAt: profile.updatedAt.toISOString() } : null,
+    modelCatalog,
     summary,
     obligations,
     declarations,
@@ -325,8 +500,45 @@ router.post("/redfp360/tax/declarations", route(async (request, response) => {
     return;
   }
   const period = parsePeriod(input.periodKey);
-  if (!period || !modelMatches(input.taxType, input.modelCode, period.annual)) {
+  const model = getTaxModel(input.modelCode);
+  if (!period || !model || model.taxType !== input.taxType || !modelMatchesPeriod(input.modelCode, period.annual)) {
     response.status(400).json({ error: "El modelo educativo no corresponde al tipo y periodo seleccionado." });
+    return;
+  }
+  const [savedProfile] = await db.select().from(fpTaxProfiles).where(and(
+    eq(fpTaxProfiles.tenantId, actor.tenantId),
+    eq(fpTaxProfiles.organizationId, organizationId),
+  )).limit(1);
+  if (!savedProfile) {
+    response.status(409).json({ error: "El profesorado debe configurar primero el perfil fiscal de la organización." });
+    return;
+  }
+  const formData = input.formData ?? {};
+  const formValidation = validateFormData(input.modelCode, formData);
+  if (formValidation) {
+    response.status(400).json({ error: formValidation });
+    return;
+  }
+  const profile: TaxProfile = {
+    organizationId,
+    entityType: savedProfile.entityType as TaxProfile["entityType"],
+    igicRegime: savedProfile.igicRegime as TaxProfile["igicRegime"],
+    incomeTaxMethod: savedProfile.incomeTaxMethod as TaxProfile["incomeTaxMethod"],
+    hasEmployees: savedProfile.hasEmployees,
+    withholdsProfessionals: savedProfile.withholdsProfessionals,
+    paysBusinessRent: savedProfile.paysBusinessRent,
+    updatedByName: savedProfile.updatedByName,
+    updatedAt: savedProfile.updatedAt,
+  };
+  const annualDocuments = await sourceDocuments(actor.tenantId, organizationId, { start: "2027-01-01", end: "2027-12-31", annual: true });
+  const amountsByCounterparty = new Map<string, number>();
+  for (const document of annualDocuments.documents) {
+    amountsByCounterparty.set(document.counterparty, (amountsByCounterparty.get(document.counterparty) ?? 0) + document.baseCents + document.taxCents);
+  }
+  const applicableModel = buildModelCatalog(profile, [...amountsByCounterparty.values()].some((amount) => amount > 300_506))
+    .find((entry) => entry.modelCode === input.modelCode);
+  if (applicableModel && !applicableModel.applicable && !canReview(actor)) {
+    response.status(409).json({ error: `El modelo ${input.modelCode} no corresponde al perfil fiscal configurado: ${applicableModel.applicabilityNote}` });
     return;
   }
   if (input.simulatedDueDate && !validDate(input.simulatedDueDate)) {
@@ -346,10 +558,12 @@ router.post("/redfp360/tax/declarations", route(async (request, response) => {
     response.json(CreateFp360TaxDeclarationResponse.parse(prior));
     return;
   }
+  const withholdingBaseCents = input.withholdingBaseCents
+    ?? eurosToCents(formData.withholdingBaseEuros ?? formData.annualBaseEuros);
+  const withholdingCents = input.withholdingCents
+    ?? eurosToCents(formData.withholdingEuros ?? formData.annualWithholdingEuros);
   if (input.taxType === "withholding"
-    && ((input.withholdingBaseCents ?? 0) < 0
-      || (input.withholdingCents ?? 0) < 0
-      || (input.withholdingCents ?? 0) > (input.withholdingBaseCents ?? 0))) {
+    && (withholdingBaseCents < 0 || withholdingCents < 0 || withholdingCents > withholdingBaseCents)) {
     response.status(400).json({ error: "La retención didáctica debe ser positiva y no superar su base." });
     return;
   }
@@ -380,19 +594,19 @@ router.post("/redfp360/tax/declarations", route(async (request, response) => {
     periodKey: input.periodKey,
     periodStart: period.start,
     periodEnd: period.end,
-    simulatedDueDate: input.simulatedDueDate ?? scenarioObligations.find((item) =>
-      item.taxType === input.taxType && item.modelCode === input.modelCode && item.periodKey === input.periodKey)?.simulatedDueDate ?? null,
+    simulatedDueDate: input.simulatedDueDate ?? (model.periodicity === "census" ? null : simulatedDueDate(input.modelCode)),
     version: 1,
     status: "draft",
     paymentStatus: "not_due",
     sourceInvoiceIds: [] as string[],
     sourcePurchaseInvoiceIds: [] as string[],
+    formData,
     taxableBaseCents: 0,
     outputIgicCents: 0,
     inputIgicCents: 0,
-    withholdingBaseCents: input.withholdingBaseCents ?? 0,
-    withholdingCents: input.withholdingCents ?? 0,
-    resultCents: input.taxType === "withholding" ? input.withholdingCents ?? 0 : 0,
+    withholdingBaseCents,
+    withholdingCents,
+    resultCents: input.taxType === "withholding" ? withholdingCents : eurosToCents(formData.resultEuros),
     receiptReference: null,
     supersedesId: null,
     operationId: input.operationId,
@@ -404,10 +618,8 @@ router.post("/redfp360/tax/declarations", route(async (request, response) => {
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  const calculated = input.taxType === "igic"
-    ? await calculateDeclaration(actor.tenantId, { ...draftValues } as typeof fpTaxDeclarations.$inferSelect)
-    : null;
-  const values = calculated ? { ...draftValues, ...calculated } : draftValues;
+  const calculated = await calculateDeclaration(actor.tenantId, { ...draftValues } as typeof fpTaxDeclarations.$inferSelect);
+  const values = { ...draftValues, ...calculated };
   const declaration = await db.transaction(async (tx) => {
     const [created] = await tx.insert(fpTaxDeclarations).values(values).returning();
     if (!created) throw new TaxError(500, "No se pudo guardar el borrador.");
@@ -544,6 +756,9 @@ router.post("/redfp360/tax/declarations/:id/action", route(async (request, respo
         description = "Presentación registrada únicamente en la sede educativa simulada; no se envió a ningún organismo.";
       } else if (input.action === "request_payment") {
         if (current.status !== "presented") throw new TaxError(409, "Solo se puede generar una orden educativa desde un expediente presentado.");
+        if (!["420", "421", "111", "115", "130", "131", "100", "200"].includes(current.modelCode)) {
+          throw new TaxError(409, "Este modelo es censal o informativo y no crea una orden de pago.");
+        }
         if (current.resultCents === 0) throw new TaxError(409, "El resultado es cero; no se necesita una orden de pago ni devolución.");
         const paymentStatus = current.resultCents > 0 ? "pending" : "refund_pending";
         const status = current.resultCents > 0 ? "payment_pending" : "refund_pending";

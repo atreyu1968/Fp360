@@ -12,4 +12,10 @@ export type Fp360TaxObligationTaxType = typeof Fp360TaxObligationTaxType[keyof t
 export const Fp360TaxObligationTaxType = {
   igic: 'igic',
   withholding: 'withholding',
+  census_canary: 'census_canary',
+  census_state: 'census_state',
+  personal_income: 'personal_income',
+  corporate_tax: 'corporate_tax',
+  informative_canary: 'informative_canary',
+  informative_state: 'informative_state',
 } as const;

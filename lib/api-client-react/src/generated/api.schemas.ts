@@ -2019,12 +2019,128 @@ export type Fp360TaxOverviewSummary = {
   resultCents: number;
 };
 
+export type Fp360TaxProfileEntityType = typeof Fp360TaxProfileEntityType[keyof typeof Fp360TaxProfileEntityType];
+
+
+export const Fp360TaxProfileEntityType = {
+  autonomo: 'autonomo',
+  sociedad: 'sociedad',
+} as const;
+
+export type Fp360TaxProfileIgicRegime = typeof Fp360TaxProfileIgicRegime[keyof typeof Fp360TaxProfileIgicRegime];
+
+
+export const Fp360TaxProfileIgicRegime = {
+  general: 'general',
+  simplified: 'simplified',
+} as const;
+
+export type Fp360TaxProfileIncomeTaxMethod = typeof Fp360TaxProfileIncomeTaxMethod[keyof typeof Fp360TaxProfileIncomeTaxMethod];
+
+
+export const Fp360TaxProfileIncomeTaxMethod = {
+  direct: 'direct',
+  objective: 'objective',
+  not_applicable: 'not_applicable',
+} as const;
+
+export interface Fp360TaxProfile {
+  organizationId: string;
+  entityType: Fp360TaxProfileEntityType;
+  igicRegime: Fp360TaxProfileIgicRegime;
+  incomeTaxMethod: Fp360TaxProfileIncomeTaxMethod;
+  hasEmployees: boolean;
+  withholdsProfessionals: boolean;
+  paysBusinessRent: boolean;
+  updatedByName: string;
+  updatedAt: string;
+}
+
+export type Fp360TaxModelTemplateTaxType = typeof Fp360TaxModelTemplateTaxType[keyof typeof Fp360TaxModelTemplateTaxType];
+
+
+export const Fp360TaxModelTemplateTaxType = {
+  igic: 'igic',
+  withholding: 'withholding',
+  census_canary: 'census_canary',
+  census_state: 'census_state',
+  personal_income: 'personal_income',
+  corporate_tax: 'corporate_tax',
+  informative_canary: 'informative_canary',
+  informative_state: 'informative_state',
+} as const;
+
+export type Fp360TaxModelTemplateAgency = typeof Fp360TaxModelTemplateAgency[keyof typeof Fp360TaxModelTemplateAgency];
+
+
+export const Fp360TaxModelTemplateAgency = {
+  aeat: 'aeat',
+  atc: 'atc',
+} as const;
+
+export type Fp360TaxModelTemplatePeriodicity = typeof Fp360TaxModelTemplatePeriodicity[keyof typeof Fp360TaxModelTemplatePeriodicity];
+
+
+export const Fp360TaxModelTemplatePeriodicity = {
+  quarterly: 'quarterly',
+  annual: 'annual',
+  census: 'census',
+} as const;
+
+export type Fp360TaxModelFieldKind = typeof Fp360TaxModelFieldKind[keyof typeof Fp360TaxModelFieldKind];
+
+
+export const Fp360TaxModelFieldKind = {
+  text: 'text',
+  number: 'number',
+  date: 'date',
+  select: 'select',
+  checkbox: 'checkbox',
+} as const;
+
+export interface Fp360TaxModelField {
+  key: string;
+  label: string;
+  kind: Fp360TaxModelFieldKind;
+  required: boolean;
+  options?: string[];
+  note?: string;
+}
+
+export interface Fp360TaxModelTemplate {
+  modelCode: string;
+  taxType: Fp360TaxModelTemplateTaxType;
+  agency: Fp360TaxModelTemplateAgency;
+  label: string;
+  periodicity: Fp360TaxModelTemplatePeriodicity;
+  applicable: boolean;
+  applicabilityNote: string;
+  payable: boolean;
+  officialUrl: string;
+  referenceVersion: string;
+  formFields: Fp360TaxModelField[];
+}
+
+export type Fp360TaxObligationAgency = typeof Fp360TaxObligationAgency[keyof typeof Fp360TaxObligationAgency];
+
+
+export const Fp360TaxObligationAgency = {
+  aeat: 'aeat',
+  atc: 'atc',
+} as const;
+
 export type Fp360TaxObligationTaxType = typeof Fp360TaxObligationTaxType[keyof typeof Fp360TaxObligationTaxType];
 
 
 export const Fp360TaxObligationTaxType = {
   igic: 'igic',
   withholding: 'withholding',
+  census_canary: 'census_canary',
+  census_state: 'census_state',
+  personal_income: 'personal_income',
+  corporate_tax: 'corporate_tax',
+  informative_canary: 'informative_canary',
+  informative_state: 'informative_state',
 } as const;
 
 export type Fp360TaxObligationStatus = typeof Fp360TaxObligationStatus[keyof typeof Fp360TaxObligationStatus];
@@ -2047,6 +2163,7 @@ export const Fp360TaxObligationStatus = {
 
 export interface Fp360TaxObligation {
   id: string;
+  agency: Fp360TaxObligationAgency;
   taxType: Fp360TaxObligationTaxType;
   modelCode: string;
   periodKey: string;
@@ -2062,6 +2179,12 @@ export type Fp360TaxDeclarationTaxType = typeof Fp360TaxDeclarationTaxType[keyof
 export const Fp360TaxDeclarationTaxType = {
   igic: 'igic',
   withholding: 'withholding',
+  census_canary: 'census_canary',
+  census_state: 'census_state',
+  personal_income: 'personal_income',
+  corporate_tax: 'corporate_tax',
+  informative_canary: 'informative_canary',
+  informative_state: 'informative_state',
 } as const;
 
 export type Fp360TaxDeclarationStatus = typeof Fp360TaxDeclarationStatus[keyof typeof Fp360TaxDeclarationStatus];
@@ -2089,6 +2212,8 @@ export const Fp360TaxDeclarationPaymentStatus = {
   refund_requested: 'refund_requested',
 } as const;
 
+export type Fp360TaxDeclarationFormData = {[key: string]: string};
+
 export interface Fp360TaxDeclaration {
   id: string;
   organizationId: string;
@@ -2105,6 +2230,7 @@ export interface Fp360TaxDeclaration {
   paymentStatus: Fp360TaxDeclarationPaymentStatus;
   sourceInvoiceIds: string[];
   sourcePurchaseInvoiceIds: string[];
+  formData?: Fp360TaxDeclarationFormData;
   /** @minimum 0 */
   taxableBaseCents: number;
   /** @minimum 0 */
@@ -2187,6 +2313,8 @@ export interface Fp360TaxEvent {
 export interface Fp360TaxOverview {
   organizationId: string;
   simulatedDate: string;
+  taxProfile: Fp360TaxProfile | null;
+  modelCatalog: Fp360TaxModelTemplate[];
   summary: Fp360TaxOverviewSummary;
   obligations: Fp360TaxObligation[];
   declarations: Fp360TaxDeclaration[];
@@ -2201,18 +2329,36 @@ export type Fp360TaxDeclarationInputTaxType = typeof Fp360TaxDeclarationInputTax
 export const Fp360TaxDeclarationInputTaxType = {
   igic: 'igic',
   withholding: 'withholding',
+  census_canary: 'census_canary',
+  census_state: 'census_state',
+  personal_income: 'personal_income',
+  corporate_tax: 'corporate_tax',
+  informative_canary: 'informative_canary',
+  informative_state: 'informative_state',
 } as const;
 
 export type Fp360TaxDeclarationInputModelCode = typeof Fp360TaxDeclarationInputModelCode[keyof typeof Fp360TaxDeclarationInputModelCode];
 
 
 export const Fp360TaxDeclarationInputModelCode = {
+  NUMBER_400: '400',
+  NUMBER_415: '415',
   NUMBER_420: '420',
+  NUMBER_421: '421',
   NUMBER_425: '425',
+  NUMBER_036: '036',
   NUMBER_111: '111',
   NUMBER_190: '190',
   NUMBER_115: '115',
+  NUMBER_180: '180',
+  NUMBER_200: '200',
+  NUMBER_130: '130',
+  NUMBER_131: '131',
+  NUMBER_100: '100',
+  NUMBER_347: '347',
 } as const;
+
+export type Fp360TaxDeclarationInputFormData = {[key: string]: string};
 
 export interface Fp360TaxDeclarationInput {
   /** @minLength 1 */
@@ -2222,6 +2368,7 @@ export interface Fp360TaxDeclarationInput {
   /** @pattern ^\d{4}(-Q[1-4])?$ */
   periodKey: string;
   simulatedDueDate?: string;
+  formData?: Fp360TaxDeclarationInputFormData;
   /**
      * @minimum 0
      * @maximum 1000000000
@@ -2232,6 +2379,47 @@ export interface Fp360TaxDeclarationInput {
      * @maximum 1000000000
      */
   withholdingCents?: number;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360TaxProfileInputEntityType = typeof Fp360TaxProfileInputEntityType[keyof typeof Fp360TaxProfileInputEntityType];
+
+
+export const Fp360TaxProfileInputEntityType = {
+  autonomo: 'autonomo',
+  sociedad: 'sociedad',
+} as const;
+
+export type Fp360TaxProfileInputIgicRegime = typeof Fp360TaxProfileInputIgicRegime[keyof typeof Fp360TaxProfileInputIgicRegime];
+
+
+export const Fp360TaxProfileInputIgicRegime = {
+  general: 'general',
+  simplified: 'simplified',
+} as const;
+
+export type Fp360TaxProfileInputIncomeTaxMethod = typeof Fp360TaxProfileInputIncomeTaxMethod[keyof typeof Fp360TaxProfileInputIncomeTaxMethod];
+
+
+export const Fp360TaxProfileInputIncomeTaxMethod = {
+  direct: 'direct',
+  objective: 'objective',
+  not_applicable: 'not_applicable',
+} as const;
+
+export interface Fp360TaxProfileInput {
+  /** @minLength 1 */
+  organizationId: string;
+  entityType: Fp360TaxProfileInputEntityType;
+  igicRegime: Fp360TaxProfileInputIgicRegime;
+  incomeTaxMethod: Fp360TaxProfileInputIncomeTaxMethod;
+  hasEmployees: boolean;
+  withholdsProfessionals: boolean;
+  paysBusinessRent: boolean;
   /**
      * @minLength 8
      * @maxLength 120

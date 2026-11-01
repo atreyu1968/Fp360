@@ -5,11 +5,13 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+import type { Fp360TaxObligationAgency } from './fp360TaxObligationAgency';
 import type { Fp360TaxObligationStatus } from './fp360TaxObligationStatus';
 import type { Fp360TaxObligationTaxType } from './fp360TaxObligationTaxType';
 
 export interface Fp360TaxObligation {
   id: string;
+  agency: Fp360TaxObligationAgency;
   taxType: Fp360TaxObligationTaxType;
   modelCode: string;
   periodKey: string;

@@ -5,6 +5,7 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+import type { Fp360TaxDeclarationInputFormData } from './fp360TaxDeclarationInputFormData';
 import type { Fp360TaxDeclarationInputModelCode } from './fp360TaxDeclarationInputModelCode';
 import type { Fp360TaxDeclarationInputTaxType } from './fp360TaxDeclarationInputTaxType';
 
@@ -16,6 +17,7 @@ export interface Fp360TaxDeclarationInput {
   /** @pattern ^\d{4}(-Q[1-4])?$ */
   periodKey: string;
   simulatedDueDate?: string;
+  formData?: Fp360TaxDeclarationInputFormData;
   /**
      * @minimum 0
      * @maximum 1000000000

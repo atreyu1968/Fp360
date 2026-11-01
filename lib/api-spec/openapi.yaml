@@ -1979,6 +1979,24 @@ paths:
               schema: { $ref: "#/components/schemas/Fp360TaxOverview" }
         "401":
           description: Authentication required
+  /redfp360/tax/profile:
+    put:
+      operationId: updateFp360TaxProfile
+      tags: [redfp360]
+      summary: Update an organization's educational tax profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360TaxProfileInput" }
+      responses:
+        "200":
+          description: Saved educational tax profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360TaxProfile" }
+        "401":
+          description: Authentication required
   /redfp360/tax/declarations:
     post:
       operationId: createFp360TaxDeclaration
@@ -3186,10 +3204,14 @@ components:
         reason: { type: string, minLength: 5, maxLength: 500 }
     Fp360TaxOverview:
       type: object
-      required: [organizationId, simulatedDate, summary, obligations, declarations, sourceDocuments, requirements, events]
+      required: [organizationId, simulatedDate, summary, obligations, declarations, sourceDocuments, requirements, events, taxProfile, modelCatalog]
       properties:
         organizationId: { type: string }
         simulatedDate: { type: string, format: date }
+        taxProfile: { allOf: [{ $ref: "#/components/schemas/Fp360TaxProfile" }], nullable: true }
+        modelCatalog:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360TaxModelTemplate" }
         summary:
           type: object
           required: [pendingCount, presentedCount, openRequirementCount, outputIgicCents, inputIgicCents, resultCents]
@@ -3217,10 +3239,11 @@ components:
           items: { $ref: "#/components/schemas/Fp360TaxEvent" }
     Fp360TaxObligation:
       type: object
-      required: [id, taxType, modelCode, periodKey, simulatedDueDate, status, declarationId]
+      required: [id, agency, taxType, modelCode, periodKey, simulatedDueDate, status, declarationId]
       properties:
         id: { type: string }
-        taxType: { type: string, enum: [igic, withholding] }
+        agency: { type: string, enum: [aeat, atc] }
+        taxType: { type: string, enum: [igic, withholding, census_canary, census_state, personal_income, corporate_tax, informative_canary, informative_state] }
         modelCode: { type: string }
         periodKey: { type: string }
         simulatedDueDate: { type: string, format: date }
@@ -3247,7 +3270,7 @@ components:
       properties:
         id: { type: string }
         organizationId: { type: string }
-        taxType: { type: string, enum: [igic, withholding] }
+        taxType: { type: string, enum: [igic, withholding, census_canary, census_state, personal_income, corporate_tax, informative_canary, informative_state] }
         modelCode: { type: string }
         periodKey: { type: string }
         periodStart: { type: string, format: date }
@@ -3258,6 +3281,9 @@ components:
         paymentStatus: { type: string, enum: [not_due, pending, paid, refund_pending, refund_requested] }
         sourceInvoiceIds: { type: array, items: { type: string } }
         sourcePurchaseInvoiceIds: { type: array, items: { type: string } }
+        formData:
+          type: object
+          additionalProperties: { type: string }
         taxableBaseCents: { type: integer, minimum: 0 }
         outputIgicCents: { type: integer, minimum: 0 }
         inputIgicCents: { type: integer, minimum: 0 }
@@ -3301,13 +3327,70 @@ components:
       required: [organizationId, taxType, modelCode, periodKey, operationId]
       properties:
         organizationId: { type: string, minLength: 1 }
-        taxType: { type: string, enum: [igic, withholding] }
-        modelCode: { type: string, enum: ["420", "425", "111", "190", "115"] }
+        taxType: { type: string, enum: [igic, withholding, census_canary, census_state, personal_income, corporate_tax, informative_canary, informative_state] }
+        modelCode: { type: string, enum: ["400", "415", "420", "421", "425", "036", "111", "190", "115", "180", "200", "130", "131", "100", "347"] }
         periodKey: { type: string, pattern: '^\d{4}(-Q[1-4])?$' }
         simulatedDueDate: { type: string, format: date }
+        formData:
+          type: object
+          additionalProperties: { type: string }
         withholdingBaseCents: { type: integer, minimum: 0, maximum: 1000000000 }
         withholdingCents: { type: integer, minimum: 0, maximum: 1000000000 }
         operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360TaxProfile:
+      type: object
+      required: [organizationId, entityType, igicRegime, incomeTaxMethod, hasEmployees, withholdsProfessionals, paysBusinessRent, updatedByName, updatedAt]
+      properties:
+        organizationId: { type: string }
+        entityType: { type: string, enum: [autonomo, sociedad] }
+        igicRegime: { type: string, enum: [general, simplified] }
+        incomeTaxMethod: { type: string, enum: [direct, objective, not_applicable] }
+        hasEmployees: { type: boolean }
+        withholdsProfessionals: { type: boolean }
+        paysBusinessRent: { type: boolean }
+        updatedByName: { type: string }
+        updatedAt: { type: string, format: date-time }
+    Fp360TaxProfileInput:
+      type: object
+      required: [organizationId, entityType, igicRegime, incomeTaxMethod, hasEmployees, withholdsProfessionals, paysBusinessRent, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        entityType: { type: string, enum: [autonomo, sociedad] }
+        igicRegime: { type: string, enum: [general, simplified] }
+        incomeTaxMethod: { type: string, enum: [direct, objective, not_applicable] }
+        hasEmployees: { type: boolean }
+        withholdsProfessionals: { type: boolean }
+        paysBusinessRent: { type: boolean }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360TaxModelField:
+      type: object
+      required: [key, label, kind, required]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        kind: { type: string, enum: [text, number, date, select, checkbox] }
+        required: { type: boolean }
+        options:
+          type: array
+          items: { type: string }
+        note: { type: string }
+    Fp360TaxModelTemplate:
+      type: object
+      required: [modelCode, taxType, agency, label, periodicity, applicable, applicabilityNote, payable, officialUrl, referenceVersion, formFields]
+      properties:
+        modelCode: { type: string }
+        taxType: { type: string, enum: [igic, withholding, census_canary, census_state, personal_income, corporate_tax, informative_canary, informative_state] }
+        agency: { type: string, enum: [aeat, atc] }
+        label: { type: string }
+        periodicity: { type: string, enum: [quarterly, annual, census] }
+        applicable: { type: boolean }
+        applicabilityNote: { type: string }
+        payable: { type: boolean }
+        officialUrl: { type: string, format: uri }
+        referenceVersion: { type: string }
+        formFields:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360TaxModelField" }
     Fp360TaxDeclarationActionInput:
       type: object
       required: [action, operationId]

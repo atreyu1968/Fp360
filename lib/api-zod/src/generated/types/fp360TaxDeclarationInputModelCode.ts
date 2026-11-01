@@ -10,9 +10,19 @@ export type Fp360TaxDeclarationInputModelCode = typeof Fp360TaxDeclarationInputM
 
 
 export const Fp360TaxDeclarationInputModelCode = {
+  NUMBER_400: '400',
+  NUMBER_415: '415',
   NUMBER_420: '420',
+  NUMBER_421: '421',
   NUMBER_425: '425',
+  NUMBER_036: '036',
   NUMBER_111: '111',
   NUMBER_190: '190',
   NUMBER_115: '115',
+  NUMBER_180: '180',
+  NUMBER_200: '200',
+  NUMBER_130: '130',
+  NUMBER_131: '131',
+  NUMBER_100: '100',
+  NUMBER_347: '347',
 } as const;

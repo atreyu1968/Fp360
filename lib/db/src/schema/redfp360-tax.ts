@@ -1,4 +1,5 @@
 import {
+  boolean,
   date,
   index,
   integer,
@@ -27,6 +28,7 @@ export const fpTaxDeclarations = pgTable(
     paymentStatus: text("payment_status").notNull().default("not_due"),
     sourceInvoiceIds: jsonb("source_invoice_ids").$type<string[]>().notNull().default([]),
     sourcePurchaseInvoiceIds: jsonb("source_purchase_invoice_ids").$type<string[]>().notNull().default([]),
+    formData: jsonb("form_data").$type<Record<string, string>>().notNull().default({}),
     taxableBaseCents: integer("taxable_base_cents").notNull().default(0),
     outputIgicCents: integer("output_igic_cents").notNull().default(0),
     inputIgicCents: integer("input_igic_cents").notNull().default(0),
@@ -56,6 +58,28 @@ export const fpTaxDeclarations = pgTable(
     ),
     index("fp360_tax_declaration_org_idx").on(table.tenantId, table.organizationId, table.status),
     index("fp360_tax_declaration_period_idx").on(table.tenantId, table.organizationId, table.periodKey),
+  ],
+);
+
+export const fpTaxProfiles = pgTable(
+  "fp360_tax_profiles",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    organizationId: text("organization_id").notNull().references(() => fpOrganizations.id),
+    entityType: text("entity_type").notNull(),
+    igicRegime: text("igic_regime").notNull(),
+    incomeTaxMethod: text("income_tax_method").notNull(),
+    hasEmployees: boolean("has_employees").notNull().default(false),
+    withholdsProfessionals: boolean("withholds_professionals").notNull().default(false),
+    paysBusinessRent: boolean("pays_business_rent").notNull().default(false),
+    updatedByUserId: text("updated_by_user_id").notNull(),
+    updatedByName: text("updated_by_name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("fp360_tax_profile_org_idx").on(table.tenantId, table.organizationId),
   ],
 );
 

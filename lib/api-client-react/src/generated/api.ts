@@ -108,6 +108,8 @@ import type {
   Fp360TaxDeclarationActionInput,
   Fp360TaxDeclarationInput,
   Fp360TaxOverview,
+  Fp360TaxProfile,
+  Fp360TaxProfileInput,
   Fp360TaxRequirement,
   Fp360TaxRequirementActionInput,
   Fp360TaxRequirementInput,
@@ -9787,6 +9789,94 @@ export function useGetFp360TaxOverview<TData = Awaited<ReturnType<typeof getFp36
 
 
 
+
+export const getUpdateFp360TaxProfileUrl = () => {
+
+
+
+
+  return `/api/redfp360/tax/profile`
+}
+
+/**
+ * @summary Update an organization's educational tax profile
+ */
+export const updateFp360TaxProfile = async (fp360TaxProfileInput: Fp360TaxProfileInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360TaxProfile> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360TaxProfile>(getUpdateFp360TaxProfileUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360TaxProfileInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateFp360TaxProfileMutationKey = () => ['updateFp360TaxProfile'] as const;
+
+export const getUpdateFp360TaxProfileMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360TaxProfile>>, TError,UpdateFp360TaxProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFp360TaxProfile>>, TError,UpdateFp360TaxProfileMutationVariables, TContext> => {
+
+const mutationKey = getUpdateFp360TaxProfileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFp360TaxProfile>>, UpdateFp360TaxProfileMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateFp360TaxProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFp360TaxProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateFp360TaxProfile>>>
+    export type UpdateFp360TaxProfileMutationBody = BodyType<Fp360TaxProfileInput>
+    export type UpdateFp360TaxProfileMutationError = ErrorType<void>
+    export type UpdateFp360TaxProfileMutationVariables = {data: BodyType<Fp360TaxProfileInput>}
+
+    /**
+ * @summary Update an organization's educational tax profile
+ */
+export const useUpdateFp360TaxProfile = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360TaxProfile>>, TError,UpdateFp360TaxProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateFp360TaxProfile>>,
+        TError,
+        UpdateFp360TaxProfileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateFp360TaxProfileMutationOptions(options), queryClient);
+    }
 
 export const getCreateFp360TaxDeclarationUrl = () => {
 

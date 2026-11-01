@@ -2,3 +2,4 @@
 - [Catalog approval](catalog-approval.md) — New B2B references need approval; preserve historical prices and reuse adjustment IDs on retries.
 - [CRM contact safety](crm-contact-safety.md) — Store fictional reference contacts without personal channels; CRM follow-ups are logs, never messages.
 - [RED FP360 financial controls](red-fp360-financial-controls.md) — Keep dispatch, receipt, invoicing, collection, accounting, and reconciliation as separate auditable simulation stages.
+- [Hacienda official-form scope](tax-forms-scope.md) — Keep separate AEAT and ATC sections, profile-based applicability, and official templates educational-only.

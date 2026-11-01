@@ -85,3 +85,63 @@
 @media(max-width:1050px) { .hacienda-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }.hacienda-calendar-grid { grid-template-columns:minmax(0,1.2fr) minmax(230px,.8fr); }.hacienda-draft-layout { grid-template-columns:minmax(230px,.75fr) minmax(0,1.25fr); }.hacienda-table { min-width:780px; } }
 @media(max-width:760px) { .hacienda-heading { align-items:flex-start; flex-direction:column; gap:12px; }.hacienda-tools { flex-wrap:wrap; }.hacienda-calendar-grid,.hacienda-draft-layout { grid-template-columns:1fr; }.hacienda-section-head { align-items:flex-start; flex-direction:column; }.hacienda-panel { padding:16px 13px 12px; }.hacienda-tabs { margin-right:-4px; }.hacienda-panel-foot { align-items:flex-start; flex-direction:column; }.hacienda-legal { align-items:flex-start; }.hacienda-legal > b { display:none; }.hacienda-declaration-values { grid-template-columns:repeat(2,minmax(0,1fr)); }.hacienda-payment-banner { align-items:flex-start; }.hacienda-search { width:100%; }.hacienda-response-form { align-items:stretch; flex-direction:column; }.hacienda-event-list article { grid-template-columns:27px minmax(0,1fr); padding:8px 0; }.hacienda-event-type { grid-column:2; }.hacienda-obligation { grid-template-columns:39px minmax(0,1fr) auto; }.hacienda-obligation > .hacienda-status { grid-column:2; }.hacienda-row-link { grid-column:3; grid-row:1; } }
 @media(max-width:460px) { .hacienda-metrics { gap:7px; }.hacienda-metric { min-height:110px; padding:11px 10px; }.hacienda-metric strong { font-size:14px; }.hacienda-metric small,.hacienda-metric em { font-size:7px; }.hacienda-date { font-size:8px; }.hacienda-declaration-top { flex-wrap:wrap; }.hacienda-declaration-top > div { min-width:calc(100% - 50px); }.hacienda-declaration-top > .hacienda-status { margin-left:40px; }.hacienda-declaration-foot { align-items:flex-start; flex-direction:column; }.hacienda-receipt { align-items:flex-start; flex-wrap:wrap; }.hacienda-receipt small { width:100%; }.hacienda-modal { padding:17px; }.hacienda-payment-banner { padding:16px; }.hacienda-payment-mark { width:39px; height:39px; }.hacienda-obligation-copy > small { font-size:6px; } }
+
+.hacienda-agency-switch { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 12px; }
+.hacienda-agency-switch button { min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:5px; padding:13px 16px; border:1px solid #dce7e4; border-radius:7px; text-align:left; color:#58716e; background:#fff; cursor:pointer; transition:background .16s ease,border-color .16s ease,transform .16s ease; }
+.hacienda-agency-switch button:hover { transform:translateY(-1px); border-color:#a9cbc2; }
+.hacienda-agency-switch button.active { border-color:#237f78; background:#eef7f3; box-shadow:inset 3px 0 #237f78; }
+.hacienda-agency-switch button > span { color:#8da09a; font-size:7px; font-weight:800; letter-spacing:.15em; }
+.hacienda-agency-switch button > b { color:#294e55; font-family:var(--app-font-serif); font-size:15px; letter-spacing:-.025em; }
+.hacienda-agency-switch button > small { color:#81928d; font-size:8px; line-height:1.5; }
+.hacienda-agency-section { margin:0 0 11px; border:1px solid #dfe8e5; border-radius:8px; background:#fff; overflow:hidden; }
+.hacienda-agency-section.atc { border-top:3px solid #34877a; }
+.hacienda-agency-section.aeat { border-top:3px solid #547a9a; }
+.hacienda-agency-heading { display:flex; align-items:center; justify-content:space-between; gap:15px; padding:14px 17px 11px; }
+.hacienda-agency-heading h2 { margin:4px 0; color:#274858; font-family:var(--app-font-serif); font-size:20px; letter-spacing:-.04em; }
+.hacienda-agency-heading p { margin:0; color:#81908f; font-size:9px; }
+.hacienda-agency-code { display:grid; width:41px; height:41px; flex:0 0 auto; place-items:center; border:1px solid #dce8e4; border-radius:50%; color:#347f75; background:#f3f8f5; font-family:var(--app-font-mono); font-size:10px; font-weight:700; }
+.hacienda-agency-section .hacienda-tabs { margin:0 10px 10px; }
+.hacienda-profile-panel { margin-bottom:12px; background:linear-gradient(135deg,#fff 0%,#fbfdfb 100%); }
+.hacienda-profile-form { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:end; gap:10px; }
+.hacienda-profile-form > label,.hacienda-form > label { display:flex; flex-direction:column; gap:6px; color:#627b7d; font-size:9px; font-weight:700; }
+.hacienda-profile-form select,.hacienda-form select,.hacienda-form input:not([type="checkbox"]) { width:100%; min-height:37px; padding:8px 10px; border:1px solid #d9e5e1; border-radius:5px; color:#36566a; background:#fbfdfc; font-size:10px; }
+.hacienda-profile-form .hacienda-form-error { grid-column:1/-1; }
+.hacienda-profile-form .hacienda-button { justify-self:start; }
+.hacienda-profile-summary { margin:13px 0 0; padding-top:10px; border-top:1px solid #e8efeb; color:#768a85; font-size:9px; line-height:1.6; }
+.hacienda-profile-summary b { color:#456960; }
+.hacienda-profile-missing { display:flex; align-items:flex-start; gap:8px; padding:11px 12px; margin:8px 0 12px; border:1px solid #eadfc6; border-radius:5px; color:#876c38; background:#fffaf0; font-size:9px; line-height:1.55; }
+.hacienda-profile-missing svg { flex:0 0 auto; }
+.hacienda-applicability { padding:9px 10px; margin:2px 0 4px; border:1px solid #d7e9df; border-radius:5px; background:#f3faf5; }
+.hacienda-applicability > span { color:#37785d; font-size:7px; font-weight:850; letter-spacing:.1em; }
+.hacienda-applicability p { margin:4px 0 0; color:#71877a; font-size:8px; line-height:1.5; }
+.hacienda-applicability.does-not-apply { border-color:#ecd8bc; background:#fff8ed; }
+.hacienda-applicability.does-not-apply > span { color:#9b6730; }
+.hacienda-applicability.does-not-apply p { color:#8d7656; }
+.hacienda-applicability.compact { margin:10px 0 0; padding:7px 9px; }
+.hacienda-applicability.compact p { margin-top:3px; }
+.hacienda-model-meta { display:flex; flex-wrap:wrap; justify-content:space-between; gap:7px; padding:2px 0 5px; color:#8a9994; font-size:8px; }
+.hacienda-official-warning { display:flex; align-items:center; flex-wrap:wrap; gap:7px; padding:8px 9px; border:1px solid #eadfc6; border-radius:5px; color:#876c38; background:#fffaf0; font-size:8px; line-height:1.45; }
+.hacienda-official-warning > svg { flex:0 0 auto; }
+.hacienda-official-warning > span { flex:1; }
+.hacienda-official-warning a { display:inline-flex; align-items:center; gap:4px; color:#28766e; font-weight:800; text-decoration:none; white-space:nowrap; }
+.hacienda-official-warning a:hover { text-decoration:underline; }
+.hacienda-fields-title { display:flex; flex-direction:column; gap:4px; padding-top:8px; border-top:1px solid #e9efec; }
+.hacienda-fields-title b { color:#3d5c63; font-size:9px; }
+.hacienda-fields-title small,.hacienda-form > label > small { color:#929f99; font-size:8px; line-height:1.45; font-weight:500; }
+.hacienda-check-field { display:grid; grid-template-columns:16px 1fr; align-items:start; gap:7px; padding:9px; border:1px solid #e1eae5; border-radius:5px; color:#627b7d; background:#fbfdfc; font-size:9px; line-height:1.5; }
+.hacienda-check-field input { margin:2px 0 0; accent-color:#237f78; }
+.hacienda-check-field small { grid-column:2; color:#929f99; font-size:8px; }
+.hacienda-formdata { margin:9px 0; border:1px solid #e5ece8; border-radius:5px; color:#667d78; background:#f9fbf9; font-size:8px; }
+.hacienda-formdata summary { padding:8px 10px; cursor:pointer; font-weight:750; }
+.hacienda-formdata dl { display:grid; gap:5px; padding:0 10px 10px; margin:0; }
+.hacienda-formdata dl > div { display:flex; justify-content:space-between; gap:10px; border-top:1px solid #e9efec; padding-top:5px; }
+.hacienda-formdata dt { color:#899893; }
+.hacienda-formdata dd { margin:0; color:#405d62; font-family:var(--app-font-mono); overflow-wrap:anywhere; text-align:right; }
+.hacienda-profile-form select:focus,.hacienda-form select:focus,.hacienda-form input:focus { outline:2px solid #72b7aa; outline-offset:1px; }
+@media(max-width:760px) {
+  .hacienda-agency-switch { grid-template-columns:1fr; }
+  .hacienda-agency-heading { padding:12px; }
+  .hacienda-agency-heading h2 { font-size:17px; }
+  .hacienda-profile-form { grid-template-columns:1fr; }
+  .hacienda-profile-form .hacienda-form-error { grid-column:auto; }
+}
