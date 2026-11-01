@@ -7,16 +7,10 @@
  */
 
 export type GetFp360DocumentsOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
-/**
- * @minLength 1
- */
-documentId?: string;
-/**
- * @maxLength 120
- */
-search?: string;
+  /** @minLength 1 */
+  organizationId: string;
+  /** @minLength 1 */
+  documentId?: string;
+  /** @maxLength 120 */
+  search?: string;
 };

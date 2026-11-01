@@ -7,6 +7,6 @@
  */
 
 export type GetFp360DirectionOverviewParams = {
-periodStart?: string;
-periodEnd?: string;
+  periodStart?: string;
+  periodEnd?: string;
 };

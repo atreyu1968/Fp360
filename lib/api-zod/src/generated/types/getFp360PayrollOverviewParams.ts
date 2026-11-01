@@ -7,8 +7,6 @@
  */
 
 export type GetFp360PayrollOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
+  /** @minLength 1 */
+  organizationId: string;
 };

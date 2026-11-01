@@ -7,5 +7,5 @@
  */
 
 export type GetEvaluationOverviewParams = {
-campaignId?: string;
+  campaignId?: string;
 };

@@ -7,12 +7,8 @@
  */
 
 export type GetFp360CommunicationsOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
-/**
- * @maxLength 100
- */
-search?: string;
+  /** @minLength 1 */
+  organizationId: string;
+  /** @maxLength 100 */
+  search?: string;
 };

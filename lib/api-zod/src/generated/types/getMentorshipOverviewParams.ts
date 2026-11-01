@@ -7,5 +7,5 @@
  */
 
 export type GetMentorshipOverviewParams = {
-campaignId?: string;
+  campaignId?: string;
 };

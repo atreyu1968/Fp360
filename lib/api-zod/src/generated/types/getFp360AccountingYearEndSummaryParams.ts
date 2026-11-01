@@ -7,13 +7,11 @@
  */
 
 export type GetFp360AccountingYearEndSummaryParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
-/**
- * @minimum 2000
- * @maximum 2100
- */
-fiscalYear: number;
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+   * @minimum 2000
+   * @maximum 2100
+   */
+  fiscalYear: number;
 };

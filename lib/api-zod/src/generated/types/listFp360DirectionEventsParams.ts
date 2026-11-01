@@ -8,6 +8,6 @@
 import type { ListFp360DirectionEventsEntityType } from './listFp360DirectionEventsEntityType';
 
 export type ListFp360DirectionEventsParams = {
-entityType?: ListFp360DirectionEventsEntityType;
-entityId?: string;
+  entityType?: ListFp360DirectionEventsEntityType;
+  entityId?: string;
 };

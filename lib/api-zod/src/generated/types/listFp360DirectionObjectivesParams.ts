@@ -7,6 +7,6 @@
  */
 
 export type ListFp360DirectionObjectivesParams = {
-periodStart?: string;
-periodEnd?: string;
+  periodStart?: string;
+  periodEnd?: string;
 };
