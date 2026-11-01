@@ -18,6 +18,7 @@ import {
   fpAuthSessions,
   fpAuthSetupState,
   fpAuthUsers,
+  fpOrganizations,
 } from "@workspace/db";
 import {
   clearAuthCookie,
@@ -279,6 +280,23 @@ router.post(
       if (!AUTH_ROLES.includes(membership.role as AuthRole)) {
         response.status(403).json({ message: "Account role is not configured" });
         return;
+      }
+
+      if (membership.organizationId) {
+        const [organization] = await db
+          .select({ isActive: fpOrganizations.isActive })
+          .from(fpOrganizations)
+          .where(
+            and(
+              eq(fpOrganizations.id, membership.organizationId),
+              eq(fpOrganizations.tenantId, membership.tenantId),
+            ),
+          )
+          .limit(1);
+        if (!organization?.isActive) {
+          response.status(401).json({ message: "La organización de esta cuenta está suspendida." });
+          return;
+        }
       }
 
       await issueAuthSession(user.id, membership.id, response);

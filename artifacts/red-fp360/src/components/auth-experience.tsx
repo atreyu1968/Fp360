@@ -15,9 +15,21 @@ function statusOf(error: unknown) {
   return 0;
 }
 
+function responseMessage(error: unknown) {
+  if (!error || typeof error !== 'object' || !('data' in error)) return undefined;
+  const data = (error as { data: unknown }).data;
+  if (!data || typeof data !== 'object' || !('message' in data)) return undefined;
+  const message = (data as { message: unknown }).message;
+  return typeof message === 'string' ? message : undefined;
+}
+
 function authError(error: unknown, setup = false) {
   const status = statusOf(error);
-  if (status === 401) return setup ? 'El token de configuración o los datos no son válidos. Comprueba la información e inténtalo de nuevo.' : 'El correo o la contraseña no coinciden. Revisa los datos e inténtalo de nuevo.';
+  if (status === 401) {
+    const serverMessage = responseMessage(error);
+    if (!setup && serverMessage === 'La organización de esta cuenta está suspendida.') return serverMessage;
+    return setup ? 'El token de configuración o los datos no son válidos. Comprueba la información e inténtalo de nuevo.' : 'El correo o la contraseña no coinciden. Revisa los datos e inténtalo de nuevo.';
+  }
   if (status === 403) return setup ? 'El token de configuración no es válido o la solicitud no está permitida. Revisa el token e inténtalo de nuevo.' : 'El acceso no está permitido. Contacta con la persona responsable del centro.';
   if (status === 404 || (setup && status === 503)) return 'El servidor no ha habilitado la configuración inicial. Contacta con la persona responsable del centro.';
   if (status === 409) return setup ? 'La configuración inicial ya se completó. Inicia sesión con la cuenta de administración existente.' : 'No se pudo iniciar sesión con esos datos. Revisa el correo y la contraseña.';
