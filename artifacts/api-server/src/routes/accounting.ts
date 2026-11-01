@@ -45,6 +45,7 @@ import {
   buildAccountingSources,
   canAccessAccountingOrganization,
 } from "./accounting-scope.mjs";
+import { buildAccountingLedger } from "./accounting-ledger.mjs";
 
 const router: IRouter = Router();
 router.use("/redfp360/accounting", requireAuth, requireSimulationWriteAccess);
@@ -572,7 +573,7 @@ router.get("/redfp360/accounting/export", async (req, res): Promise<void> => {
       ? eq(fpAccountingEntries.fiscalYear, fiscalYear)
       : lte(fpAccountingEntries.fiscalYear, fiscalYear),
   )).orderBy(asc(fpAccountingEntries.entryDate), asc(fpAccountingEntries.entryNumber), asc(fpAccountingEntries.createdAt));
-  const exportEntries = book === "ledger" ? entries.filter((entry) => entry.status !== "draft") : entries;
+  const exportEntries = entries;
   const entryLines = exportEntries.length ? await db.select().from(fpAccountingEntryLines).where(and(
     eq(fpAccountingEntryLines.tenantId, actor.tenantId),
     inArray(fpAccountingEntryLines.entryId, exportEntries.map((entry) => entry.id)),
@@ -615,52 +616,25 @@ router.get("/redfp360/accounting/export", async (req, res): Promise<void> => {
       "cuenta_nombre", "fecha", "asiento", "estado", "referencia_origen", "concepto",
       "descripcion", "debe_eur", "haber_eur", "saldo_acumulado_eur",
     ]));
-    const ledgerItems: Array<{
-      entry: (typeof exportEntries)[number];
-      line: (typeof entryLines)[number];
-      account: (typeof accounts)[number];
-    }> = [];
-    for (const entry of exportEntries) {
-      for (const line of linesByEntry.get(entry.id) ?? []) {
-        const account = accountsById.get(line.accountId);
-        if (account) ledgerItems.push({ entry, line, account });
-      }
-    }
-    ledgerItems.sort((a, b) =>
-      a.account.code.localeCompare(b.account.code, "es")
-      || a.entry.entryDate.localeCompare(b.entry.entryDate)
-      || (a.entry.entryNumber ?? 0) - (b.entry.entryNumber ?? 0)
-      || a.line.lineNumber - b.line.lineNumber,
-    );
-    const runningBalances = new Map(accounts.map((account) => [account.id, 0]));
-    for (const item of ledgerItems) {
-      if (item.entry.fiscalYear >= fiscalYear) continue;
-      const delta = item.account.normalBalance === "debit"
-        ? item.line.debitCents - item.line.creditCents
-        : item.line.creditCents - item.line.debitCents;
-      runningBalances.set(item.account.id, (runningBalances.get(item.account.id) ?? 0) + delta);
-    }
-    for (const account of accounts) {
-      const openingBalance = runningBalances.get(account.id) ?? 0;
-      if (!openingBalance) continue;
+    const ledger = buildAccountingLedger({
+      accounts,
+      entries: exportEntries,
+      lines: entryLines,
+      fiscalYear,
+    });
+    for (const { account, balanceCents } of ledger.openingBalances) {
       rows.push(csvRow([
         ...scopedValues, "saldo_inicial", account.code, account.name, `${fiscalYear}-01-01`, "",
         "saldo_inicial", "", "Saldo acumulado de ejercicios anteriores", "Saldo de apertura",
-        "0,00", "0,00", csvEuro(openingBalance),
+        "0,00", "0,00", csvEuro(balanceCents),
       ]));
     }
-    for (const item of ledgerItems) {
-      if (item.entry.fiscalYear !== fiscalYear) continue;
-      const delta = item.account.normalBalance === "debit"
-        ? item.line.debitCents - item.line.creditCents
-        : item.line.creditCents - item.line.debitCents;
-      const balance = (runningBalances.get(item.account.id) ?? 0) + delta;
-      runningBalances.set(item.account.id, balance);
+    for (const { entry, line, account, balanceCents } of ledger.movements) {
       rows.push(csvRow([
-        ...scopedValues, "movimiento", item.account.code, item.account.name,
-        item.entry.entryDate, item.entry.entryNumber, item.entry.status, item.entry.sourceReference,
-        item.entry.concept, item.line.description, csvEuro(item.line.debitCents),
-        csvEuro(item.line.creditCents), csvEuro(balance),
+        ...scopedValues, "movimiento", account.code, account.name,
+        entry.entryDate, entry.entryNumber, entry.status, entry.sourceReference,
+        entry.concept, line.description, csvEuro(line.debitCents),
+        csvEuro(line.creditCents), csvEuro(balanceCents),
       ]));
     }
   }
