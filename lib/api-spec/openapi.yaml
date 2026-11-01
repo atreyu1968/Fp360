@@ -538,6 +538,20 @@ paths:
         "401": { description: Sign-in required }
         "403": { description: Invitation belongs to a different account }
         "410": { description: "Invitation invalid, expired or already used" }
+  /auth/invitations/reject:
+    post:
+      security: []
+      operationId: rejectInvitation
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvitationTokenInput" }
+      responses:
+        "204": { description: Invitation declined without creating an account or changing memberships }
+        "400": { description: Invalid invitation token }
+        "410": { description: "Invitation invalid, expired or already used" }
   /redfp360/dashboard:
     get:
       operationId: getFp360Dashboard

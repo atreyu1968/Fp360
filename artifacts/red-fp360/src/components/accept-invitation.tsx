@@ -4,7 +4,7 @@ import { ArrowRight, CircleAlert, MailCheck, ShieldCheck, X } from 'lucide-react
 import {
   getGetCurrentIdentityQueryKey, useAcceptExistingAccountInvitation, useAcceptInvitation,
   useGetCurrentIdentity, useInspectInvitation, useLogin, useLogout,
-  useRejectExistingAccountInvitation,
+  useRejectExistingAccountInvitation, useRejectInvitation,
 } from '@workspace/api-client-react';
 import type { AuthIdentity, InvitationPreview } from '@workspace/api-client-react';
 import { Link } from 'wouter';
@@ -55,6 +55,7 @@ export function AcceptInvitation({ onAuthenticated }: { onAuthenticated: (identi
   const accept = useAcceptInvitation();
   const acceptExisting = useAcceptExistingAccountInvitation();
   const rejectExisting = useRejectExistingAccountInvitation();
+  const reject = useRejectInvitation();
   const login = useLogin();
   const logout = useLogout();
   const [preview, setPreview] = useState<InvitationPreview | null>(null);
@@ -85,7 +86,7 @@ export function AcceptInvitation({ onAuthenticated }: { onAuthenticated: (identi
 
   const identity = identityQuery.data;
   const emailMatches = Boolean(identity && preview && identity.email.trim().toLowerCase() === preview.email.trim().toLowerCase());
-  const busy = accept.isPending || acceptExisting.isPending || rejectExisting.isPending || login.isPending || logout.isPending;
+  const busy = accept.isPending || acceptExisting.isPending || rejectExisting.isPending || reject.isPending || login.isPending || logout.isPending;
 
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault(); setError('');
@@ -145,6 +146,23 @@ export function AcceptInvitation({ onAuthenticated }: { onAuthenticated: (identi
     });
   };
 
+  const rejectWithoutAccount = () => {
+    setError('');
+    reject.mutate({ data: { token } }, {
+      onSuccess: () => {
+        tokenRef.current = '';
+        clearPendingInvitation();
+        setPassword('');
+        setConfirm('');
+        setOutcome('rejected');
+      },
+      onError: (err) => {
+        if (httpStatus(err) === 410) { tokenRef.current = ''; clearPendingInvitation(); setFatal(inviteError(err)); }
+        else setError(inviteError(err));
+      },
+    });
+  };
+
   const signOutOtherAccount = () => {
     logout.mutate(undefined, {
       onSuccess: () => {
@@ -183,7 +201,7 @@ export function AcceptInvitation({ onAuthenticated }: { onAuthenticated: (identi
         <div className="auth-switch"><Link href="/sign-in" data-testid="link-invite-sign-in">Ir a iniciar sesión</Link></div>
       </> : outcome === 'rejected' ? <>
         <h2>Invitación rechazada</h2>
-        <p className="auth-intro">La invitación se ha rechazado. Tus accesos actuales no han cambiado.</p>
+        <p className="auth-intro">La invitación se ha rechazado. No se ha creado ninguna cuenta a partir de esta invitación ni se han cambiado accesos existentes.</p>
         <div className="auth-switch"><Link href="/">Volver al acceso</Link></div>
       </> : !preview ? <>
         <h2>Comprobando la invitación</h2>
@@ -221,7 +239,8 @@ export function AcceptInvitation({ onAuthenticated }: { onAuthenticated: (identi
           <label className="auth-field"><span>Contraseña</span><input type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Al menos 12 caracteres" data-testid="input-invite-password" /></label>
           <label className="auth-field"><span>Repite la contraseña</span><input type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={confirm} onChange={(e) => setConfirm(e.target.value)} data-testid="input-invite-confirm" /></label>
           {error && <div className="auth-error" role="alert"><CircleAlert size={17} /><span>{error}</span></div>}
-          <button className="auth-submit" type="submit" disabled={accept.isPending} data-testid="button-accept-invitation">{accept.isPending ? 'Creando cuenta…' : 'Crear cuenta y entrar'} {!accept.isPending && <ArrowRight size={16} />}</button>
+          <button className="auth-submit" type="submit" disabled={busy} data-testid="button-accept-invitation">{accept.isPending ? 'Creando cuenta…' : 'Crear cuenta y entrar'} {!accept.isPending && <ArrowRight size={16} />}</button>
+          <button className="auth-submit" type="button" disabled={busy} onClick={rejectWithoutAccount} data-testid="button-reject-invitation">{reject.isPending ? 'Registrando rechazo…' : 'Rechazar invitación'}</button>
           <div className="auth-trust"><ShieldCheck size={16} /><span>La sesión se mantiene con una cookie segura del servidor. No guardamos credenciales en este dispositivo.</span></div>
         </form>
         <div className="auth-switch"><span>La cuenta para esta invitación aún no existe. Si ya tienes cuenta con otro correo, inicia sesión primero.</span></div>
