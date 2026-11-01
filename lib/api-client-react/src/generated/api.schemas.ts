@@ -2007,6 +2007,469 @@ export interface Fp360AccountingPeriodActionInput {
   reason: string;
 }
 
+export type Fp360BankOverviewSummaryRiskLevel = typeof Fp360BankOverviewSummaryRiskLevel[keyof typeof Fp360BankOverviewSummaryRiskLevel];
+
+
+export const Fp360BankOverviewSummaryRiskLevel = {
+  low: 'low',
+  review: 'review',
+  elevated: 'elevated',
+} as const;
+
+export type Fp360BankOverviewSummary = {
+  accountBalanceCents: number;
+  /** @minimum 0 */
+  reservedCents: number;
+  availableCents: number;
+  /** @minimum 0 */
+  monthlyInflowCents: number;
+  /** @minimum 0 */
+  monthlyOutflowCents: number;
+  /** @minimum 0 */
+  pendingTransferCount: number;
+  /** @minimum 0 */
+  pendingFinancingCount: number;
+  /** @minimum 0 */
+  overdueInstallmentCount: number;
+  riskLevel: Fp360BankOverviewSummaryRiskLevel;
+};
+
+export type Fp360BankAccountAccountType = typeof Fp360BankAccountAccountType[keyof typeof Fp360BankAccountAccountType];
+
+
+export const Fp360BankAccountAccountType = {
+  company: 'company',
+  clearing: 'clearing',
+} as const;
+
+export type Fp360BankAccountStatus = typeof Fp360BankAccountStatus[keyof typeof Fp360BankAccountStatus];
+
+
+export const Fp360BankAccountStatus = {
+  active: 'active',
+  blocked: 'blocked',
+  closed: 'closed',
+} as const;
+
+export interface Fp360BankAccount {
+  id: string;
+  /** @nullable */
+  organizationId: string | null;
+  accountType: Fp360BankAccountAccountType;
+  name: string;
+  syntheticReference: string;
+  balanceCents: number;
+  /** @minimum 0 */
+  reservedCents: number;
+  availableCents: number;
+  status: Fp360BankAccountStatus;
+  isPrimary: boolean;
+  createdAt: string;
+}
+
+export interface Fp360BankBeneficiary {
+  organizationId: string;
+  organizationName: string;
+  center: string;
+  accountId: string;
+  accountName: string;
+  syntheticReference: string;
+}
+
+export type Fp360BankTransferStatus = typeof Fp360BankTransferStatus[keyof typeof Fp360BankTransferStatus];
+
+
+export const Fp360BankTransferStatus = {
+  draft: 'draft',
+  pending_review: 'pending_review',
+  authorized: 'authorized',
+  scheduled: 'scheduled',
+  executed: 'executed',
+  rejected: 'rejected',
+  cancelled: 'cancelled',
+} as const;
+
+export interface Fp360BankTransfer {
+  id: string;
+  organizationId: string;
+  sourceAccountId: string;
+  beneficiaryAccountId: string;
+  sourceReference: string;
+  beneficiaryReference: string;
+  beneficiaryName: string;
+  /** @minimum 1 */
+  amountCents: number;
+  concept: string;
+  /** @nullable */
+  scheduledDate: string | null;
+  status: Fp360BankTransferStatus;
+  operationId: string;
+  createdByName: string;
+  /** @nullable */
+  executedAt: string | null;
+  createdAt: string;
+}
+
+export type Fp360BankMovementDirection = typeof Fp360BankMovementDirection[keyof typeof Fp360BankMovementDirection];
+
+
+export const Fp360BankMovementDirection = {
+  debit: 'debit',
+  credit: 'credit',
+} as const;
+
+export interface Fp360BankMovement {
+  id: string;
+  accountId: string;
+  /** @nullable */
+  counterpartyAccountId: string | null;
+  /** @nullable */
+  transferId: string | null;
+  /** @nullable */
+  financingId: string | null;
+  accountName: string;
+  counterpartyName: string;
+  direction: Fp360BankMovementDirection;
+  /** @minimum 1 */
+  amountCents: number;
+  deltaCents: number;
+  balanceAfterCents: number;
+  reference: string;
+  description: string;
+  simulatedDate: string;
+  createdAt: string;
+}
+
+export type Fp360BankEffectStatus = typeof Fp360BankEffectStatus[keyof typeof Fp360BankEffectStatus];
+
+
+export const Fp360BankEffectStatus = {
+  presented: 'presented',
+  discounted: 'discounted',
+  settled: 'settled',
+  rejected: 'rejected',
+} as const;
+
+export interface Fp360BankEffect {
+  id: string;
+  organizationId: string;
+  invoiceId: string;
+  invoiceReference: string;
+  /** @minimum 0 */
+  invoiceBalanceCents: number;
+  reference: string;
+  /** @minimum 1 */
+  nominalCents: number;
+  maturityDate: string;
+  status: Fp360BankEffectStatus;
+  createdByName: string;
+  createdAt: string;
+}
+
+export type Fp360BankFinancingProductType = typeof Fp360BankFinancingProductType[keyof typeof Fp360BankFinancingProductType];
+
+
+export const Fp360BankFinancingProductType = {
+  loan: 'loan',
+  credit_line: 'credit_line',
+  discount: 'discount',
+} as const;
+
+export type Fp360BankFinancingStatus = typeof Fp360BankFinancingStatus[keyof typeof Fp360BankFinancingStatus];
+
+
+export const Fp360BankFinancingStatus = {
+  pending_review: 'pending_review',
+  offered: 'offered',
+  rejected: 'rejected',
+  active: 'active',
+  closed: 'closed',
+} as const;
+
+export interface Fp360BankFinancing {
+  id: string;
+  organizationId: string;
+  accountId: string;
+  productType: Fp360BankFinancingProductType;
+  /** @nullable */
+  effectId: string | null;
+  /** @nullable */
+  effectReference: string | null;
+  /** @minimum 1 */
+  requestedAmountCents: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  offeredAmountCents: number | null;
+  /** @minimum 0 */
+  termMonths: number;
+  /** @minimum 0 */
+  annualRateBps: number;
+  /** @minimum 0 */
+  commissionBps: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  installmentCents: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  totalInterestCents: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  totalCostCents: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  netDisbursementCents: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  creditLimitCents: number | null;
+  /** @minimum 0 */
+  drawnCents: number;
+  /** @nullable */
+  maturityDate: string | null;
+  status: Fp360BankFinancingStatus;
+  /** @nullable */
+  decisionReason: string | null;
+  createdByName: string;
+  /** @nullable */
+  offeredByName: string | null;
+  /** @nullable */
+  acceptedAt: string | null;
+  /** @nullable */
+  closedAt: string | null;
+  createdAt: string;
+}
+
+export type Fp360BankInstallmentStatus = typeof Fp360BankInstallmentStatus[keyof typeof Fp360BankInstallmentStatus];
+
+
+export const Fp360BankInstallmentStatus = {
+  pending: 'pending',
+  paid: 'paid',
+  overdue: 'overdue',
+} as const;
+
+export interface Fp360BankInstallment {
+  id: string;
+  financingId: string;
+  /** @minimum 1 */
+  installmentNumber: number;
+  dueDate: string;
+  /** @minimum 0 */
+  principalCents: number;
+  /** @minimum 0 */
+  interestCents: number;
+  /** @minimum 1 */
+  totalCents: number;
+  status: Fp360BankInstallmentStatus;
+  /** @nullable */
+  paidAt: string | null;
+}
+
+export interface Fp360BankEvent {
+  id: string;
+  eventType: string;
+  description: string;
+  actorName: string;
+  createdAt: string;
+}
+
+export interface Fp360BankOverview {
+  organizationId: string;
+  accounts: Fp360BankAccount[];
+  beneficiaries: Fp360BankBeneficiary[];
+  transfers: Fp360BankTransfer[];
+  movements: Fp360BankMovement[];
+  effects: Fp360BankEffect[];
+  financing: Fp360BankFinancing[];
+  installments: Fp360BankInstallment[];
+  events: Fp360BankEvent[];
+  summary: Fp360BankOverviewSummary;
+}
+
+export interface Fp360BankAccountInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  name: string;
+  /**
+     * @minimum 0
+     * @maximum 50000000
+     */
+  initialBalanceCents: number;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360BankTransferInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /** @minLength 1 */
+  sourceAccountId: string;
+  /** @minLength 1 */
+  beneficiaryAccountId: string;
+  /**
+     * @minimum 1
+     * @maximum 50000000
+     */
+  amountCents: number;
+  /**
+     * @minLength 3
+     * @maxLength 200
+     */
+  concept: string;
+  /** @nullable */
+  scheduledDate: string | null;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360BankTransferActionInputAction = typeof Fp360BankTransferActionInputAction[keyof typeof Fp360BankTransferActionInputAction];
+
+
+export const Fp360BankTransferActionInputAction = {
+  validate: 'validate',
+  authorize: 'authorize',
+  execute: 'execute',
+  reject: 'reject',
+  cancel: 'cancel',
+} as const;
+
+export interface Fp360BankTransferActionInput {
+  action: Fp360BankTransferActionInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+  /** @maxLength 500 */
+  reason?: string;
+}
+
+export interface Fp360BankEffectInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /** @minLength 1 */
+  invoiceId: string;
+  /** @minimum 1 */
+  nominalCents: number;
+  maturityDate: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360BankFinancingInputProductType = typeof Fp360BankFinancingInputProductType[keyof typeof Fp360BankFinancingInputProductType];
+
+
+export const Fp360BankFinancingInputProductType = {
+  loan: 'loan',
+  credit_line: 'credit_line',
+  discount: 'discount',
+} as const;
+
+export interface Fp360BankFinancingInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /** @minLength 1 */
+  accountId: string;
+  productType: Fp360BankFinancingInputProductType;
+  /**
+     * @minimum 1
+     * @maximum 50000000
+     */
+  requestedAmountCents: number;
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  termMonths: number;
+  /**
+     * @minimum 0
+     * @maximum 5000
+     */
+  annualRateBps: number;
+  /**
+     * @minimum 0
+     * @maximum 1000
+     */
+  commissionBps: number;
+  /** @nullable */
+  effectId: string | null;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360BankFinancingActionInputAction = typeof Fp360BankFinancingActionInputAction[keyof typeof Fp360BankFinancingActionInputAction];
+
+
+export const Fp360BankFinancingActionInputAction = {
+  offer: 'offer',
+  reject: 'reject',
+  accept: 'accept',
+  draw: 'draw',
+  repay: 'repay',
+  pay_installment: 'pay_installment',
+  close: 'close',
+} as const;
+
+export interface Fp360BankFinancingActionInput {
+  action: Fp360BankFinancingActionInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  amountCents: number | null;
+  /**
+     * @minimum 0
+     * @maximum 5000
+     * @nullable
+     */
+  annualRateBps: number | null;
+  /**
+     * @minimum 1
+     * @maximum 60
+     * @nullable
+     */
+  termMonths: number | null;
+  /** @nullable */
+  installmentId: string | null;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  reason: string | null;
+}
+
 export interface Fp360InvoiceLine {
   productName: string;
   /** @minimum 1 */
@@ -2558,6 +3021,13 @@ export const ListFp360DirectionEventsEntityType = {
 } as const;
 
 export type GetFp360AccountingOverviewParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+};
+
+export type GetFp360BankOverviewParams = {
 /**
  * @minLength 1
  */

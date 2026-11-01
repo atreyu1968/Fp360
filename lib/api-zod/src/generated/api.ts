@@ -3845,6 +3845,530 @@ export const ReopenFp360AccountingPeriodResponse = zod.object({
 
 
 /**
+ * @summary Get simulated bank accounts and operations for one organization
+ */
+
+
+
+export const GetFp360BankOverviewQueryParams = zod.object({
+  "organizationId": zod.coerce.string().min(1)
+})
+
+export const getFp360BankOverviewResponseAccountsItemReservedCentsMin = 0;
+
+
+
+export const getFp360BankOverviewResponseEffectsItemInvoiceBalanceCentsMin = 0;
+
+
+
+export const getFp360BankOverviewResponseFinancingItemOfferedAmountCentsMin = 0;
+
+export const getFp360BankOverviewResponseFinancingItemTermMonthsMin = 0;
+
+export const getFp360BankOverviewResponseFinancingItemAnnualRateBpsMin = 0;
+
+export const getFp360BankOverviewResponseFinancingItemCommissionBpsMin = 0;
+
+export const getFp360BankOverviewResponseFinancingItemInstallmentCentsMin = 0;
+
+export const getFp360BankOverviewResponseFinancingItemTotalInterestCentsMin = 0;
+
+export const getFp360BankOverviewResponseFinancingItemTotalCostCentsMin = 0;
+
+export const getFp360BankOverviewResponseFinancingItemNetDisbursementCentsMin = 0;
+
+export const getFp360BankOverviewResponseFinancingItemCreditLimitCentsMin = 0;
+
+export const getFp360BankOverviewResponseFinancingItemDrawnCentsMin = 0;
+
+
+export const getFp360BankOverviewResponseInstallmentsItemPrincipalCentsMin = 0;
+
+export const getFp360BankOverviewResponseInstallmentsItemInterestCentsMin = 0;
+
+
+export const getFp360BankOverviewResponseSummaryReservedCentsMin = 0;
+
+export const getFp360BankOverviewResponseSummaryMonthlyInflowCentsMin = 0;
+
+export const getFp360BankOverviewResponseSummaryMonthlyOutflowCentsMin = 0;
+
+export const getFp360BankOverviewResponseSummaryPendingTransferCountMin = 0;
+
+export const getFp360BankOverviewResponseSummaryPendingFinancingCountMin = 0;
+
+export const getFp360BankOverviewResponseSummaryOverdueInstallmentCountMin = 0;
+
+
+
+export const GetFp360BankOverviewResponse = zod.object({
+  "organizationId": zod.string(),
+  "accounts": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string().nullable(),
+  "accountType": zod.enum(['company', 'clearing']),
+  "name": zod.string(),
+  "syntheticReference": zod.string(),
+  "balanceCents": zod.number().int(),
+  "reservedCents": zod.number().int().min(getFp360BankOverviewResponseAccountsItemReservedCentsMin),
+  "availableCents": zod.number().int(),
+  "status": zod.enum(['active', 'blocked', 'closed']),
+  "isPrimary": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "beneficiaries": zod.array(zod.object({
+  "organizationId": zod.string(),
+  "organizationName": zod.string(),
+  "center": zod.string(),
+  "accountId": zod.string(),
+  "accountName": zod.string(),
+  "syntheticReference": zod.string()
+})),
+  "transfers": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "sourceAccountId": zod.string(),
+  "beneficiaryAccountId": zod.string(),
+  "sourceReference": zod.string(),
+  "beneficiaryReference": zod.string(),
+  "beneficiaryName": zod.string(),
+  "amountCents": zod.number().int().min(1),
+  "concept": zod.string(),
+  "scheduledDate": zod.string().date().nullable(),
+  "status": zod.enum(['draft', 'pending_review', 'authorized', 'scheduled', 'executed', 'rejected', 'cancelled']),
+  "operationId": zod.string(),
+  "createdByName": zod.string(),
+  "executedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "movements": zod.array(zod.object({
+  "id": zod.string(),
+  "accountId": zod.string(),
+  "counterpartyAccountId": zod.string().nullable(),
+  "transferId": zod.string().nullable(),
+  "financingId": zod.string().nullable(),
+  "accountName": zod.string(),
+  "counterpartyName": zod.string(),
+  "direction": zod.enum(['debit', 'credit']),
+  "amountCents": zod.number().int().min(1),
+  "deltaCents": zod.number().int(),
+  "balanceAfterCents": zod.number().int(),
+  "reference": zod.string(),
+  "description": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "effects": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "invoiceId": zod.string(),
+  "invoiceReference": zod.string(),
+  "invoiceBalanceCents": zod.number().int().min(getFp360BankOverviewResponseEffectsItemInvoiceBalanceCentsMin),
+  "reference": zod.string(),
+  "nominalCents": zod.number().int().min(1),
+  "maturityDate": zod.string().date(),
+  "status": zod.enum(['presented', 'discounted', 'settled', 'rejected']),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "financing": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "accountId": zod.string(),
+  "productType": zod.enum(['loan', 'credit_line', 'discount']),
+  "effectId": zod.string().nullable(),
+  "effectReference": zod.string().nullable(),
+  "requestedAmountCents": zod.number().int().min(1),
+  "offeredAmountCents": zod.number().int().min(getFp360BankOverviewResponseFinancingItemOfferedAmountCentsMin).nullable(),
+  "termMonths": zod.number().int().min(getFp360BankOverviewResponseFinancingItemTermMonthsMin),
+  "annualRateBps": zod.number().int().min(getFp360BankOverviewResponseFinancingItemAnnualRateBpsMin),
+  "commissionBps": zod.number().int().min(getFp360BankOverviewResponseFinancingItemCommissionBpsMin),
+  "installmentCents": zod.number().int().min(getFp360BankOverviewResponseFinancingItemInstallmentCentsMin).nullable(),
+  "totalInterestCents": zod.number().int().min(getFp360BankOverviewResponseFinancingItemTotalInterestCentsMin).nullable(),
+  "totalCostCents": zod.number().int().min(getFp360BankOverviewResponseFinancingItemTotalCostCentsMin).nullable(),
+  "netDisbursementCents": zod.number().int().min(getFp360BankOverviewResponseFinancingItemNetDisbursementCentsMin).nullable(),
+  "creditLimitCents": zod.number().int().min(getFp360BankOverviewResponseFinancingItemCreditLimitCentsMin).nullable(),
+  "drawnCents": zod.number().int().min(getFp360BankOverviewResponseFinancingItemDrawnCentsMin),
+  "maturityDate": zod.string().date().nullable(),
+  "status": zod.enum(['pending_review', 'offered', 'rejected', 'active', 'closed']),
+  "decisionReason": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "offeredByName": zod.string().nullable(),
+  "acceptedAt": zod.string().datetime({"offset":true}).nullable(),
+  "closedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "installments": zod.array(zod.object({
+  "id": zod.string(),
+  "financingId": zod.string(),
+  "installmentNumber": zod.number().int().min(1),
+  "dueDate": zod.string().date(),
+  "principalCents": zod.number().int().min(getFp360BankOverviewResponseInstallmentsItemPrincipalCentsMin),
+  "interestCents": zod.number().int().min(getFp360BankOverviewResponseInstallmentsItemInterestCentsMin),
+  "totalCents": zod.number().int().min(1),
+  "status": zod.enum(['pending', 'paid', 'overdue']),
+  "paidAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "eventType": zod.string(),
+  "description": zod.string(),
+  "actorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "summary": zod.object({
+  "accountBalanceCents": zod.number().int(),
+  "reservedCents": zod.number().int().min(getFp360BankOverviewResponseSummaryReservedCentsMin),
+  "availableCents": zod.number().int(),
+  "monthlyInflowCents": zod.number().int().min(getFp360BankOverviewResponseSummaryMonthlyInflowCentsMin),
+  "monthlyOutflowCents": zod.number().int().min(getFp360BankOverviewResponseSummaryMonthlyOutflowCentsMin),
+  "pendingTransferCount": zod.number().int().min(getFp360BankOverviewResponseSummaryPendingTransferCountMin),
+  "pendingFinancingCount": zod.number().int().min(getFp360BankOverviewResponseSummaryPendingFinancingCountMin),
+  "overdueInstallmentCount": zod.number().int().min(getFp360BankOverviewResponseSummaryOverdueInstallmentCountMin),
+  "riskLevel": zod.enum(['low', 'review', 'elevated'])
+})
+})
+
+
+/**
+ * @summary Create a synthetic bank account and record its opening balance
+ */
+
+export const createFp360BankAccountBodyNameMin = 2;
+export const createFp360BankAccountBodyNameMax = 100;
+
+export const createFp360BankAccountBodyInitialBalanceCentsMin = 0;
+export const createFp360BankAccountBodyInitialBalanceCentsMax = 50000000;
+
+export const createFp360BankAccountBodyOperationIdMin = 8;
+export const createFp360BankAccountBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360BankAccountBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "name": zod.string().min(createFp360BankAccountBodyNameMin).max(createFp360BankAccountBodyNameMax),
+  "initialBalanceCents": zod.number().int().min(createFp360BankAccountBodyInitialBalanceCentsMin).max(createFp360BankAccountBodyInitialBalanceCentsMax),
+  "operationId": zod.string().min(createFp360BankAccountBodyOperationIdMin).max(createFp360BankAccountBodyOperationIdMax)
+})
+
+export const createFp360BankAccountResponseReservedCentsMin = 0;
+
+
+
+export const CreateFp360BankAccountResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string().nullable(),
+  "accountType": zod.enum(['company', 'clearing']),
+  "name": zod.string(),
+  "syntheticReference": zod.string(),
+  "balanceCents": zod.number().int(),
+  "reservedCents": zod.number().int().min(createFp360BankAccountResponseReservedCentsMin),
+  "availableCents": zod.number().int(),
+  "status": zod.enum(['active', 'blocked', 'closed']),
+  "isPrimary": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Create a simulated transfer draft
+ */
+
+
+
+export const createFp360BankTransferBodyAmountCentsMax = 50000000;
+
+export const createFp360BankTransferBodyConceptMin = 3;
+export const createFp360BankTransferBodyConceptMax = 200;
+
+export const createFp360BankTransferBodyOperationIdMin = 8;
+export const createFp360BankTransferBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360BankTransferBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "sourceAccountId": zod.string().min(1),
+  "beneficiaryAccountId": zod.string().min(1),
+  "amountCents": zod.number().int().min(1).max(createFp360BankTransferBodyAmountCentsMax),
+  "concept": zod.string().min(createFp360BankTransferBodyConceptMin).max(createFp360BankTransferBodyConceptMax),
+  "scheduledDate": zod.string().date().nullable(),
+  "operationId": zod.string().min(createFp360BankTransferBodyOperationIdMin).max(createFp360BankTransferBodyOperationIdMax)
+})
+
+
+
+
+export const CreateFp360BankTransferResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "sourceAccountId": zod.string(),
+  "beneficiaryAccountId": zod.string(),
+  "sourceReference": zod.string(),
+  "beneficiaryReference": zod.string(),
+  "beneficiaryName": zod.string(),
+  "amountCents": zod.number().int().min(1),
+  "concept": zod.string(),
+  "scheduledDate": zod.string().date().nullable(),
+  "status": zod.enum(['draft', 'pending_review', 'authorized', 'scheduled', 'executed', 'rejected', 'cancelled']),
+  "operationId": zod.string(),
+  "createdByName": zod.string(),
+  "executedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Validate, authorize, execute, reject, or cancel a transfer
+ */
+export const ActOnFp360BankTransferParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const actOnFp360BankTransferBodyOperationIdMin = 8;
+export const actOnFp360BankTransferBodyOperationIdMax = 120;
+
+export const actOnFp360BankTransferBodyReasonMax = 500;
+
+
+
+export const ActOnFp360BankTransferBody = zod.object({
+  "action": zod.enum(['validate', 'authorize', 'execute', 'reject', 'cancel']),
+  "operationId": zod.string().min(actOnFp360BankTransferBodyOperationIdMin).max(actOnFp360BankTransferBodyOperationIdMax),
+  "reason": zod.string().max(actOnFp360BankTransferBodyReasonMax).optional()
+})
+
+
+
+
+export const ActOnFp360BankTransferResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "sourceAccountId": zod.string(),
+  "beneficiaryAccountId": zod.string(),
+  "sourceReference": zod.string(),
+  "beneficiaryReference": zod.string(),
+  "beneficiaryName": zod.string(),
+  "amountCents": zod.number().int().min(1),
+  "concept": zod.string(),
+  "scheduledDate": zod.string().date().nullable(),
+  "status": zod.enum(['draft', 'pending_review', 'authorized', 'scheduled', 'executed', 'rejected', 'cancelled']),
+  "operationId": zod.string(),
+  "createdByName": zod.string(),
+  "executedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Present a simulated bill of exchange backed by an open invoice
+ */
+
+
+
+export const createFp360BankEffectBodyOperationIdMin = 8;
+export const createFp360BankEffectBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360BankEffectBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "invoiceId": zod.string().min(1),
+  "nominalCents": zod.number().int().min(1),
+  "maturityDate": zod.string().date(),
+  "operationId": zod.string().min(createFp360BankEffectBodyOperationIdMin).max(createFp360BankEffectBodyOperationIdMax)
+})
+
+export const createFp360BankEffectResponseInvoiceBalanceCentsMin = 0;
+
+
+
+
+export const CreateFp360BankEffectResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "invoiceId": zod.string(),
+  "invoiceReference": zod.string(),
+  "invoiceBalanceCents": zod.number().int().min(createFp360BankEffectResponseInvoiceBalanceCentsMin),
+  "reference": zod.string(),
+  "nominalCents": zod.number().int().min(1),
+  "maturityDate": zod.string().date(),
+  "status": zod.enum(['presented', 'discounted', 'settled', 'rejected']),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Request a simulated loan, credit line, or effect discount
+ */
+
+
+export const createFp360BankFinancingBodyRequestedAmountCentsMax = 50000000;
+
+export const createFp360BankFinancingBodyTermMonthsMin = 0;
+export const createFp360BankFinancingBodyTermMonthsMax = 60;
+
+export const createFp360BankFinancingBodyAnnualRateBpsMin = 0;
+export const createFp360BankFinancingBodyAnnualRateBpsMax = 5000;
+
+export const createFp360BankFinancingBodyCommissionBpsMin = 0;
+export const createFp360BankFinancingBodyCommissionBpsMax = 1000;
+
+export const createFp360BankFinancingBodyOperationIdMin = 8;
+export const createFp360BankFinancingBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360BankFinancingBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "accountId": zod.string().min(1),
+  "productType": zod.enum(['loan', 'credit_line', 'discount']),
+  "requestedAmountCents": zod.number().int().min(1).max(createFp360BankFinancingBodyRequestedAmountCentsMax),
+  "termMonths": zod.number().int().min(createFp360BankFinancingBodyTermMonthsMin).max(createFp360BankFinancingBodyTermMonthsMax),
+  "annualRateBps": zod.number().int().min(createFp360BankFinancingBodyAnnualRateBpsMin).max(createFp360BankFinancingBodyAnnualRateBpsMax),
+  "commissionBps": zod.number().int().min(createFp360BankFinancingBodyCommissionBpsMin).max(createFp360BankFinancingBodyCommissionBpsMax),
+  "effectId": zod.string().nullable(),
+  "operationId": zod.string().min(createFp360BankFinancingBodyOperationIdMin).max(createFp360BankFinancingBodyOperationIdMax)
+})
+
+
+export const createFp360BankFinancingResponseOfferedAmountCentsMin = 0;
+
+export const createFp360BankFinancingResponseTermMonthsMin = 0;
+
+export const createFp360BankFinancingResponseAnnualRateBpsMin = 0;
+
+export const createFp360BankFinancingResponseCommissionBpsMin = 0;
+
+export const createFp360BankFinancingResponseInstallmentCentsMin = 0;
+
+export const createFp360BankFinancingResponseTotalInterestCentsMin = 0;
+
+export const createFp360BankFinancingResponseTotalCostCentsMin = 0;
+
+export const createFp360BankFinancingResponseNetDisbursementCentsMin = 0;
+
+export const createFp360BankFinancingResponseCreditLimitCentsMin = 0;
+
+export const createFp360BankFinancingResponseDrawnCentsMin = 0;
+
+
+
+export const CreateFp360BankFinancingResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "accountId": zod.string(),
+  "productType": zod.enum(['loan', 'credit_line', 'discount']),
+  "effectId": zod.string().nullable(),
+  "effectReference": zod.string().nullable(),
+  "requestedAmountCents": zod.number().int().min(1),
+  "offeredAmountCents": zod.number().int().min(createFp360BankFinancingResponseOfferedAmountCentsMin).nullable(),
+  "termMonths": zod.number().int().min(createFp360BankFinancingResponseTermMonthsMin),
+  "annualRateBps": zod.number().int().min(createFp360BankFinancingResponseAnnualRateBpsMin),
+  "commissionBps": zod.number().int().min(createFp360BankFinancingResponseCommissionBpsMin),
+  "installmentCents": zod.number().int().min(createFp360BankFinancingResponseInstallmentCentsMin).nullable(),
+  "totalInterestCents": zod.number().int().min(createFp360BankFinancingResponseTotalInterestCentsMin).nullable(),
+  "totalCostCents": zod.number().int().min(createFp360BankFinancingResponseTotalCostCentsMin).nullable(),
+  "netDisbursementCents": zod.number().int().min(createFp360BankFinancingResponseNetDisbursementCentsMin).nullable(),
+  "creditLimitCents": zod.number().int().min(createFp360BankFinancingResponseCreditLimitCentsMin).nullable(),
+  "drawnCents": zod.number().int().min(createFp360BankFinancingResponseDrawnCentsMin),
+  "maturityDate": zod.string().date().nullable(),
+  "status": zod.enum(['pending_review', 'offered', 'rejected', 'active', 'closed']),
+  "decisionReason": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "offeredByName": zod.string().nullable(),
+  "acceptedAt": zod.string().datetime({"offset":true}).nullable(),
+  "closedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Offer, reject, accept, draw, repay, pay, or close financing
+ */
+export const ActOnFp360BankFinancingParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const actOnFp360BankFinancingBodyOperationIdMin = 8;
+export const actOnFp360BankFinancingBodyOperationIdMax = 120;
+
+
+export const actOnFp360BankFinancingBodyAnnualRateBpsMin = 0;
+export const actOnFp360BankFinancingBodyAnnualRateBpsMax = 5000;
+
+export const actOnFp360BankFinancingBodyTermMonthsMax = 60;
+
+export const actOnFp360BankFinancingBodyReasonMax = 500;
+
+
+
+export const ActOnFp360BankFinancingBody = zod.object({
+  "action": zod.enum(['offer', 'reject', 'accept', 'draw', 'repay', 'pay_installment', 'close']),
+  "operationId": zod.string().min(actOnFp360BankFinancingBodyOperationIdMin).max(actOnFp360BankFinancingBodyOperationIdMax),
+  "amountCents": zod.number().int().min(1).nullable(),
+  "annualRateBps": zod.number().int().min(actOnFp360BankFinancingBodyAnnualRateBpsMin).max(actOnFp360BankFinancingBodyAnnualRateBpsMax).nullable(),
+  "termMonths": zod.number().int().min(1).max(actOnFp360BankFinancingBodyTermMonthsMax).nullable(),
+  "installmentId": zod.string().nullable(),
+  "reason": zod.string().max(actOnFp360BankFinancingBodyReasonMax).nullable()
+})
+
+
+export const actOnFp360BankFinancingResponseOfferedAmountCentsMin = 0;
+
+export const actOnFp360BankFinancingResponseTermMonthsMin = 0;
+
+export const actOnFp360BankFinancingResponseAnnualRateBpsMin = 0;
+
+export const actOnFp360BankFinancingResponseCommissionBpsMin = 0;
+
+export const actOnFp360BankFinancingResponseInstallmentCentsMin = 0;
+
+export const actOnFp360BankFinancingResponseTotalInterestCentsMin = 0;
+
+export const actOnFp360BankFinancingResponseTotalCostCentsMin = 0;
+
+export const actOnFp360BankFinancingResponseNetDisbursementCentsMin = 0;
+
+export const actOnFp360BankFinancingResponseCreditLimitCentsMin = 0;
+
+export const actOnFp360BankFinancingResponseDrawnCentsMin = 0;
+
+
+
+export const ActOnFp360BankFinancingResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "accountId": zod.string(),
+  "productType": zod.enum(['loan', 'credit_line', 'discount']),
+  "effectId": zod.string().nullable(),
+  "effectReference": zod.string().nullable(),
+  "requestedAmountCents": zod.number().int().min(1),
+  "offeredAmountCents": zod.number().int().min(actOnFp360BankFinancingResponseOfferedAmountCentsMin).nullable(),
+  "termMonths": zod.number().int().min(actOnFp360BankFinancingResponseTermMonthsMin),
+  "annualRateBps": zod.number().int().min(actOnFp360BankFinancingResponseAnnualRateBpsMin),
+  "commissionBps": zod.number().int().min(actOnFp360BankFinancingResponseCommissionBpsMin),
+  "installmentCents": zod.number().int().min(actOnFp360BankFinancingResponseInstallmentCentsMin).nullable(),
+  "totalInterestCents": zod.number().int().min(actOnFp360BankFinancingResponseTotalInterestCentsMin).nullable(),
+  "totalCostCents": zod.number().int().min(actOnFp360BankFinancingResponseTotalCostCentsMin).nullable(),
+  "netDisbursementCents": zod.number().int().min(actOnFp360BankFinancingResponseNetDisbursementCentsMin).nullable(),
+  "creditLimitCents": zod.number().int().min(actOnFp360BankFinancingResponseCreditLimitCentsMin).nullable(),
+  "drawnCents": zod.number().int().min(actOnFp360BankFinancingResponseDrawnCentsMin),
+  "maturityDate": zod.string().date().nullable(),
+  "status": zod.enum(['pending_review', 'offered', 'rejected', 'active', 'closed']),
+  "decisionReason": zod.string().nullable(),
+  "createdByName": zod.string(),
+  "offeredByName": zod.string().nullable(),
+  "acceptedAt": zod.string().datetime({"offset":true}).nullable(),
+  "closedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
  * @summary Record a simulated bank payment
  */
 export const RecordFp360PaymentParams = zod.object({

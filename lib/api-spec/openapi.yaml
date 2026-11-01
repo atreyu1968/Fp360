@@ -1753,6 +1753,172 @@ paths:
                 $ref: "#/components/schemas/Fp360AccountingPeriod"
         "403":
           description: Only a teacher or administrator can reopen a period
+  /redfp360/bank/overview:
+    get:
+      operationId: getFp360BankOverview
+      tags: [redfp360]
+      summary: Get simulated bank accounts and operations for one organization
+      parameters:
+        - name: organizationId
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Accounts, transfers, movements, financing and risk indicators
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankOverview" }
+        "403":
+          description: Organization is outside the actor's access
+  /redfp360/bank/accounts:
+    post:
+      operationId: createFp360BankAccount
+      tags: [redfp360]
+      summary: Create a synthetic bank account and record its opening balance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360BankAccountInput" }
+      responses:
+        "200":
+          description: Previously created synthetic account returned after an idempotent retry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankAccount" }
+        "201":
+          description: Synthetic account created with balanced opening movements
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankAccount" }
+        "400":
+          description: Invalid account or opening balance
+  /redfp360/bank/transfers:
+    post:
+      operationId: createFp360BankTransfer
+      tags: [redfp360]
+      summary: Create a simulated transfer draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360BankTransferInput" }
+      responses:
+        "200":
+          description: Previously created transfer returned after an idempotent retry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankTransfer" }
+        "201":
+          description: Transfer draft created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankTransfer" }
+        "400":
+          description: Invalid transfer details
+        "409":
+          description: Operation identifier was reused with different data
+  /redfp360/bank/transfers/{id}/action:
+    post:
+      operationId: actOnFp360BankTransfer
+      tags: [redfp360]
+      summary: Validate, authorize, execute, reject, or cancel a transfer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360BankTransferActionInput" }
+      responses:
+        "200":
+          description: Transfer state updated with an audit event
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankTransfer" }
+        "404":
+          description: Transfer not found in the actor's organization
+        "409":
+          description: Transfer validation, available balance, or state transition failed
+  /redfp360/bank/effects:
+    post:
+      operationId: createFp360BankEffect
+      tags: [redfp360]
+      summary: Present a simulated bill of exchange backed by an open invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360BankEffectInput" }
+      responses:
+        "200":
+          description: Previously presented effect returned after an idempotent retry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankEffect" }
+        "201":
+          description: Effect presented and linked to its source invoice
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankEffect" }
+        "400":
+          description: Source invoice is not eligible for an effect
+        "409":
+          description: Operation identifier was reused with different data
+  /redfp360/bank/financing:
+    post:
+      operationId: createFp360BankFinancing
+      tags: [redfp360]
+      summary: Request a simulated loan, credit line, or effect discount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360BankFinancingInput" }
+      responses:
+        "200":
+          description: Previously created financing request returned after an idempotent retry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankFinancing" }
+        "201":
+          description: Financing request saved for review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankFinancing" }
+        "400":
+          description: Invalid request or ineligible effect
+        "409":
+          description: Operation identifier was reused with different data
+  /redfp360/bank/financing/{id}/action:
+    post:
+      operationId: actOnFp360BankFinancing
+      tags: [redfp360]
+      summary: Offer, reject, accept, draw, repay, pay, or close financing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360BankFinancingActionInput" }
+      responses:
+        "200":
+          description: Financing state, ledger movements, or repayment schedule updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankFinancing" }
+        "404":
+          description: Financing request not found in the actor's organization
+        "409":
+          description: Financing state or repayment conditions are not valid
   /redfp360/invoices/{id}/payments:
     post:
       operationId: recordFp360Payment
@@ -2906,6 +3072,236 @@ components:
         organizationId: { type: string, minLength: 1 }
         operationId: { type: string, minLength: 1, maxLength: 100 }
         reason: { type: string, minLength: 5, maxLength: 500 }
+    Fp360BankOverview:
+      type: object
+      required: [organizationId, accounts, beneficiaries, transfers, movements, effects, financing, installments, events, summary]
+      properties:
+        organizationId: { type: string }
+        accounts:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360BankAccount" }
+        beneficiaries:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360BankBeneficiary" }
+        transfers:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360BankTransfer" }
+        movements:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360BankMovement" }
+        effects:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360BankEffect" }
+        financing:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360BankFinancing" }
+        installments:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360BankInstallment" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360BankEvent" }
+        summary:
+          type: object
+          required: [accountBalanceCents, reservedCents, availableCents, monthlyInflowCents, monthlyOutflowCents, pendingTransferCount, pendingFinancingCount, overdueInstallmentCount, riskLevel]
+          properties:
+            accountBalanceCents: { type: integer }
+            reservedCents: { type: integer, minimum: 0 }
+            availableCents: { type: integer }
+            monthlyInflowCents: { type: integer, minimum: 0 }
+            monthlyOutflowCents: { type: integer, minimum: 0 }
+            pendingTransferCount: { type: integer, minimum: 0 }
+            pendingFinancingCount: { type: integer, minimum: 0 }
+            overdueInstallmentCount: { type: integer, minimum: 0 }
+            riskLevel: { type: string, enum: [low, review, elevated] }
+    Fp360BankAccount:
+      type: object
+      required: [id, organizationId, accountType, name, syntheticReference, balanceCents, reservedCents, availableCents, status, isPrimary, createdAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: ["string", "null"] }
+        accountType: { type: string, enum: [company, clearing] }
+        name: { type: string }
+        syntheticReference: { type: string }
+        balanceCents: { type: integer }
+        reservedCents: { type: integer, minimum: 0 }
+        availableCents: { type: integer }
+        status: { type: string, enum: [active, blocked, closed] }
+        isPrimary: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    Fp360BankAccountInput:
+      type: object
+      required: [organizationId, name, initialBalanceCents, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        name: { type: string, minLength: 2, maxLength: 100 }
+        initialBalanceCents: { type: integer, minimum: 0, maximum: 50000000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360BankBeneficiary:
+      type: object
+      required: [organizationId, organizationName, center, accountId, accountName, syntheticReference]
+      properties:
+        organizationId: { type: string }
+        organizationName: { type: string }
+        center: { type: string }
+        accountId: { type: string }
+        accountName: { type: string }
+        syntheticReference: { type: string }
+    Fp360BankTransfer:
+      type: object
+      required: [id, organizationId, sourceAccountId, beneficiaryAccountId, sourceReference, beneficiaryReference, beneficiaryName, amountCents, concept, scheduledDate, status, operationId, createdByName, executedAt, createdAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        sourceAccountId: { type: string }
+        beneficiaryAccountId: { type: string }
+        sourceReference: { type: string }
+        beneficiaryReference: { type: string }
+        beneficiaryName: { type: string }
+        amountCents: { type: integer, minimum: 1 }
+        concept: { type: string }
+        scheduledDate: { type: ["string", "null"], format: date }
+        status: { type: string, enum: [draft, pending_review, authorized, scheduled, executed, rejected, cancelled] }
+        operationId: { type: string }
+        createdByName: { type: string }
+        executedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    Fp360BankTransferInput:
+      type: object
+      required: [organizationId, sourceAccountId, beneficiaryAccountId, amountCents, concept, scheduledDate, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        sourceAccountId: { type: string, minLength: 1 }
+        beneficiaryAccountId: { type: string, minLength: 1 }
+        amountCents: { type: integer, minimum: 1, maximum: 50000000 }
+        concept: { type: string, minLength: 3, maxLength: 200 }
+        scheduledDate: { type: ["string", "null"], format: date }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360BankTransferActionInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [validate, authorize, execute, reject, cancel] }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+        reason: { type: string, maxLength: 500 }
+    Fp360BankMovement:
+      type: object
+      required: [id, accountId, counterpartyAccountId, transferId, financingId, accountName, counterpartyName, direction, amountCents, deltaCents, balanceAfterCents, reference, description, simulatedDate, createdAt]
+      properties:
+        id: { type: string }
+        accountId: { type: string }
+        counterpartyAccountId: { type: ["string", "null"] }
+        transferId: { type: ["string", "null"] }
+        financingId: { type: ["string", "null"] }
+        accountName: { type: string }
+        counterpartyName: { type: string }
+        direction: { type: string, enum: [debit, credit] }
+        amountCents: { type: integer, minimum: 1 }
+        deltaCents: { type: integer }
+        balanceAfterCents: { type: integer }
+        reference: { type: string }
+        description: { type: string }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    Fp360BankEffect:
+      type: object
+      required: [id, organizationId, invoiceId, invoiceReference, invoiceBalanceCents, reference, nominalCents, maturityDate, status, createdByName, createdAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        invoiceId: { type: string }
+        invoiceReference: { type: string }
+        invoiceBalanceCents: { type: integer, minimum: 0 }
+        reference: { type: string }
+        nominalCents: { type: integer, minimum: 1 }
+        maturityDate: { type: string, format: date }
+        status: { type: string, enum: [presented, discounted, settled, rejected] }
+        createdByName: { type: string }
+        createdAt: { type: string, format: date-time }
+    Fp360BankEffectInput:
+      type: object
+      required: [organizationId, invoiceId, nominalCents, maturityDate, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        invoiceId: { type: string, minLength: 1 }
+        nominalCents: { type: integer, minimum: 1 }
+        maturityDate: { type: string, format: date }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360BankFinancing:
+      type: object
+      required: [id, organizationId, accountId, productType, effectId, effectReference, requestedAmountCents, offeredAmountCents, termMonths, annualRateBps, commissionBps, installmentCents, totalInterestCents, totalCostCents, netDisbursementCents, creditLimitCents, drawnCents, maturityDate, status, decisionReason, createdByName, offeredByName, acceptedAt, closedAt, createdAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        accountId: { type: string }
+        productType: { type: string, enum: [loan, credit_line, discount] }
+        effectId: { type: ["string", "null"] }
+        effectReference: { type: ["string", "null"] }
+        requestedAmountCents: { type: integer, minimum: 1 }
+        offeredAmountCents: { type: ["integer", "null"], minimum: 0 }
+        termMonths: { type: integer, minimum: 0 }
+        annualRateBps: { type: integer, minimum: 0 }
+        commissionBps: { type: integer, minimum: 0 }
+        installmentCents: { type: ["integer", "null"], minimum: 0 }
+        totalInterestCents: { type: ["integer", "null"], minimum: 0 }
+        totalCostCents: { type: ["integer", "null"], minimum: 0 }
+        netDisbursementCents: { type: ["integer", "null"], minimum: 0 }
+        creditLimitCents: { type: ["integer", "null"], minimum: 0 }
+        drawnCents: { type: integer, minimum: 0 }
+        maturityDate: { type: ["string", "null"], format: date }
+        status: { type: string, enum: [pending_review, offered, rejected, active, closed] }
+        decisionReason: { type: ["string", "null"] }
+        createdByName: { type: string }
+        offeredByName: { type: ["string", "null"] }
+        acceptedAt: { type: ["string", "null"], format: date-time }
+        closedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    Fp360BankFinancingInput:
+      type: object
+      required: [organizationId, accountId, productType, requestedAmountCents, termMonths, annualRateBps, commissionBps, effectId, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        accountId: { type: string, minLength: 1 }
+        productType: { type: string, enum: [loan, credit_line, discount] }
+        requestedAmountCents: { type: integer, minimum: 1, maximum: 50000000 }
+        termMonths: { type: integer, minimum: 0, maximum: 60 }
+        annualRateBps: { type: integer, minimum: 0, maximum: 5000 }
+        commissionBps: { type: integer, minimum: 0, maximum: 1000 }
+        effectId: { type: ["string", "null"] }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360BankFinancingActionInput:
+      type: object
+      required: [action, operationId, amountCents, annualRateBps, termMonths, installmentId, reason]
+      properties:
+        action: { type: string, enum: [offer, reject, accept, draw, repay, pay_installment, close] }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+        amountCents: { type: ["integer", "null"], minimum: 1 }
+        annualRateBps: { type: ["integer", "null"], minimum: 0, maximum: 5000 }
+        termMonths: { type: ["integer", "null"], minimum: 1, maximum: 60 }
+        installmentId: { type: ["string", "null"] }
+        reason: { type: ["string", "null"], maxLength: 500 }
+    Fp360BankInstallment:
+      type: object
+      required: [id, financingId, installmentNumber, dueDate, principalCents, interestCents, totalCents, status, paidAt]
+      properties:
+        id: { type: string }
+        financingId: { type: string }
+        installmentNumber: { type: integer, minimum: 1 }
+        dueDate: { type: string, format: date }
+        principalCents: { type: integer, minimum: 0 }
+        interestCents: { type: integer, minimum: 0 }
+        totalCents: { type: integer, minimum: 1 }
+        status: { type: string, enum: [pending, paid, overdue] }
+        paidAt: { type: ["string", "null"], format: date-time }
+    Fp360BankEvent:
+      type: object
+      required: [id, eventType, description, actorName, createdAt]
+      properties:
+        id: { type: string }
+        eventType: { type: string }
+        description: { type: string }
+        actorName: { type: string }
+        createdAt: { type: string, format: date-time }
     Fp360InvoiceLine:
       type: object
       required: [productName, quantity, unitPriceCents, baseCents, igicBasisPoints, igicCents, totalCents]
