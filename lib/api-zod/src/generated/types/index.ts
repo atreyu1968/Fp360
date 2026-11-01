@@ -192,6 +192,7 @@ export * from './fp360TaxModelField';
 export * from './fp360TaxModelFieldKind';
 export * from './fp360TaxModelTemplate';
 export * from './fp360TaxModelTemplateAgency';
+export * from './fp360TaxModelTemplateApplicabilityStatus';
 export * from './fp360TaxModelTemplatePeriodicity';
 export * from './fp360TaxModelTemplateTaxType';
 export * from './fp360TaxObligation';

@@ -12,6 +12,7 @@ export type TaxEntityType = "autonomo" | "sociedad";
 export type IgicRegime = "general" | "simplified";
 export type IncomeTaxMethod = "direct" | "objective" | "not_applicable";
 export type TaxPeriodicity = "quarterly" | "annual" | "census";
+export type TaxApplicabilityStatus = "applies" | "not_applicable" | "review_required";
 
 export type TaxProfile = {
   organizationId: string;
@@ -234,57 +235,62 @@ export function modelMatchesPeriod(modelCode: string, annual: boolean): boolean 
 
 export function buildModelCatalog(
   profile: TaxProfile | null,
-  thirdPartyThresholdReached: boolean,
+  atc415ThresholdReached: boolean,
 ) {
   return TAX_MODEL_CATALOG.map((model) => {
     const payable = ["420", "421", "111", "115", "130", "131", "100", "200"].includes(model.modelCode);
-    const result = (applicable: boolean, applicabilityNote: string) => ({
-      ...model, applicable, applicabilityNote, payable,
+    const result = (applicabilityStatus: TaxApplicabilityStatus, applicabilityNote: string) => ({
+      ...model,
+      applicable: applicabilityStatus === "applies",
+      applicabilityStatus,
+      applicabilityNote,
+      payable,
     });
     if (!profile) {
-      return result(false, "Configura el perfil fiscal antes de determinar si corresponde.");
+      return result("review_required", "Configura el perfil fiscal antes de determinar si corresponde.");
     }
     switch (model.modelCode) {
       case "400":
       case "036":
-        return result(true, "Trámite censal disponible para altas, modificaciones o bajas; no es periódico.");
+        return result("applies", "Trámite censal disponible para altas, modificaciones o bajas; no es periódico.");
       case "420":
-        return result(profile.igicRegime === "general", profile.igicRegime === "general" ? "Corresponde al régimen general seleccionado." : "No corresponde al régimen IGIC simplificado seleccionado.");
+        return result(profile.igicRegime === "general" ? "applies" : "not_applicable", profile.igicRegime === "general" ? "Corresponde al régimen general seleccionado." : "No corresponde al régimen IGIC simplificado seleccionado.");
       case "421":
-        return result(profile.igicRegime === "simplified", profile.igicRegime === "simplified" ? "Corresponde al régimen simplificado seleccionado." : "No corresponde al régimen IGIC general seleccionado.");
+        return result(profile.igicRegime === "simplified" ? "applies" : "not_applicable", profile.igicRegime === "simplified" ? "Corresponde al régimen simplificado seleccionado." : "No corresponde al régimen IGIC general seleccionado.");
       case "415":
+        return result(atc415ThresholdReached ? "review_required" : "not_applicable", atc415ThresholdReached
+          ? "Los registros de facturas con IGIC superan 3.005,06 € por contraparte. Revisa las operaciones y exclusiones propias del modelo ATC 415."
+          : "Los registros educativos de IGIC no alcanzan 3.005,06 € por contraparte.");
       case "347":
-        return result(thirdPartyThresholdReached, thirdPartyThresholdReached
-          ? "Los registros educativos superan 3.005,06 € por contraparte; revisa exclusiones antes de usar el modelo."
-          : "Disponible para práctica; los registros revisados no alcanzan 3.005,06 € por contraparte.");
+        return result("review_required", "Obligación estatal AEAT. No se determina con facturas IGIC ni con el umbral del ATC 415; revisa las operaciones declarables del modelo 347.");
       case "425":
-        return result(true, "Resumen anual para entidades con obligaciones periódicas de IGIC.");
+        return result("applies", "Resumen anual ATC para sujetos pasivos obligados a presentar autoliquidaciones periódicas de IGIC.");
       case "111":
       case "190":
-        return result(profile.hasEmployees || profile.withholdsProfessionals, profile.hasEmployees || profile.withholdsProfessionals
+        return result(profile.hasEmployees || profile.withholdsProfessionals ? "applies" : "not_applicable", profile.hasEmployees || profile.withholdsProfessionals
           ? "El perfil declara personal o profesionales con retención."
           : "Solo corresponde si se satisfacen rentas sujetas a retención.");
       case "115":
       case "180":
-        return result(profile.paysBusinessRent, profile.paysBusinessRent
+        return result(profile.paysBusinessRent ? "applies" : "not_applicable", profile.paysBusinessRent
           ? "El perfil declara arrendamiento de inmueble urbano sujeto a retención."
           : "Solo corresponde si se pagan rentas sujetas por arrendamiento de inmueble urbano.");
       case "200":
-        return result(profile.entityType === "sociedad", profile.entityType === "sociedad" ? "Impuesto sobre Sociedades para la forma jurídica seleccionada." : "No corresponde al perfil de persona física.");
+        return result(profile.entityType === "sociedad" ? "applies" : "not_applicable", profile.entityType === "sociedad" ? "Impuesto sobre Sociedades para la forma jurídica seleccionada." : "No corresponde al perfil de persona física.");
       case "130":
-        return result(profile.entityType === "autonomo" && profile.incomeTaxMethod === "direct", profile.entityType === "autonomo" && profile.incomeTaxMethod === "direct"
+        return result(profile.entityType === "autonomo" && profile.incomeTaxMethod === "direct" ? "applies" : "not_applicable", profile.entityType === "autonomo" && profile.incomeTaxMethod === "direct"
           ? "Estimación directa seleccionada para la persona física."
           : "Solo para personas físicas en estimación directa.");
       case "131":
-        return result(profile.entityType === "autonomo" && profile.incomeTaxMethod === "objective", profile.entityType === "autonomo" && profile.incomeTaxMethod === "objective"
+        return result(profile.entityType === "autonomo" && profile.incomeTaxMethod === "objective" ? "applies" : "not_applicable", profile.entityType === "autonomo" && profile.incomeTaxMethod === "objective"
           ? "Estimación objetiva seleccionada para la persona física."
           : "Solo para personas físicas en estimación objetiva.");
       case "100":
-        return result(profile.entityType === "autonomo", profile.entityType === "autonomo"
+        return result(profile.entityType === "autonomo" ? "applies" : "not_applicable", profile.entityType === "autonomo"
           ? "Declaración anual de IRPF para persona física."
           : "No corresponde a una sociedad mercantil.");
       default:
-        return result(false, "Revisa el perfil fiscal y las circunstancias del ejercicio.");
+        return result("review_required", "Revisa las circunstancias del ejercicio y las obligaciones específicas del modelo.");
     }
   });
 }

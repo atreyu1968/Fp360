@@ -69,6 +69,9 @@ function SectionHead({ eyebrow, title, description, action }: { eyebrow: string;
   return <header className="hacienda-section-head"><div><span className="hacienda-overline">{eyebrow}</span><h2>{title}</h2>{description && <p>{description}</p>}</div>{action}</header>;
 }
 const modelTitle = (model?: Fp360TaxModelTemplate) => model?.label ?? `Modelo ${model?.modelCode ?? ''}`;
+const applicabilityLabel = (model: Fp360TaxModelTemplate) => model.applicabilityStatus === 'applies'
+  ? 'APLICA AL PERFIL GUARDADO'
+  : model.applicabilityStatus === 'review_required' ? 'REVISIÓN DE OBLIGACIÓN NECESARIA' : 'NO APLICA AL PERFIL GUARDADO';
 
 export function HaciendaPage({ identity, organizations = [], onNotice }: Props) {
   const client = useQueryClient();
@@ -121,7 +124,7 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
   const invalidate = () => { if (organizationId) void client.invalidateQueries({ queryKey }); };
   const errorText = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
   const declarationsFor = (modelCode: string) => declarations.filter((entry) => entry.modelCode === modelCode);
-  const availableTabs = tabs.filter(({ id }) => !(agency === 'atc' && id === 'igic') && !(agency === 'aeat' && id === 'retentions'));
+  const availableTabs = tabs.filter(({ id }) => !(agency === 'atc' && id === 'retentions') && !(agency === 'aeat' && id === 'igic'));
   const switchAgency = (next: Agency) => {
     setAgency(next);
     setView('calendar');
@@ -162,7 +165,12 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
     if (readOnly) { setFormError('Tu perfil tiene acceso de solo lectura.'); return; }
     if (!data?.taxProfile) { setFormError('El equipo docente debe configurar el perfil fiscal antes de crear modelos.'); return; }
     if (!selectedModel) { setFormError('No hay modelos disponibles para esta sección.'); return; }
-    if (!selectedModel.applicable && !canTeach) { setFormError('Este modelo no aplica al perfil fiscal guardado. Solicita revisión docente.'); return; }
+    if (selectedModel.applicabilityStatus !== 'applies' && !canTeach) {
+      setFormError(selectedModel.applicabilityStatus === 'review_required'
+        ? 'La obligación debe revisarse con el organismo competente antes de preparar este modelo.'
+        : 'Este modelo no aplica al perfil fiscal guardado. Solicita revisión docente.');
+      return;
+    }
     const fd = new FormData(event.currentTarget);
     const periodKey = String(fd.get('periodKey') ?? '').trim();
     if (!/^\d{4}(-Q[1-4])?$/.test(periodKey)) { setFormError('Usa un ejercicio (2027) o un trimestre (2027-Q3).'); return; }
@@ -308,14 +316,27 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
               })}</div> : <Empty title="Sin obligaciones de este organismo" detail="No hay obligaciones fiscales para la administración seleccionada en el escenario." />}
             </section>
             <aside className="hacienda-side-stack"><section className="hacienda-panel hacienda-focus"><span className="hacienda-overline">FOCO DE APRENDIZAJE</span><h3>Lee el modelo antes de completar el expediente.</h3><p>Revisa la estructura educativa, la aplicabilidad del perfil y los documentos de origen. Toda acción queda en simulación.</p><button type="button" onClick={() => setView('draft')}>Explorar modelos <ArrowRight size={14} /></button><div className="hacienda-focus-mark"><FileCheck2 size={22} /></div></section>
-              <section className="hacienda-panel hacienda-quick"><SectionHead eyebrow="SEGUIMIENTO" title="Este organismo" /><div><span>Modelos disponibles</span><b>{models.length}</b></div><div><span>Documentos origen</span><b>{sources.length}</b></div><div><span>Actividad registrada</span><b>{events.length}</b></div><p>Cifras del escenario educativo, sin efectos tributarios.</p></section>
+               <section className="hacienda-panel hacienda-quick"><SectionHead eyebrow="SEGUIMIENTO" title="Este organismo" /><div><span>Modelos disponibles</span><b>{models.length}</b></div><div><span>{agency === 'atc' ? 'Facturas con IGIC' : 'Fuentes AEAT de retenciones'}</span><b>{agency === 'atc' ? sources.length : 'No integradas'}</b></div><div><span>Actividad registrada</span><b>{events.length}</b></div><p>Cifras del escenario educativo, sin efectos tributarios.</p></section>
             </aside>
           </div>}
-          {(view === 'igic' || view === 'retentions') && <section className="hacienda-panel">
-            <SectionHead eyebrow={view === 'igic' ? 'FACTURAS DE ORIGEN' : 'RETENCIONES EDUCATIVAS'} title={view === 'igic' ? 'Documentos para IGIC' : 'Base de trabajo de retenciones'} description={view === 'igic' ? 'Consulta los registros disponibles para el aprendizaje. No se calculan cuotas legales.' : 'La fuente de nóminas no está integrada. No introduzcas datos identificativos ni personales.'} />
-            {view === 'retentions' && <div className="hacienda-manual-note"><ShieldAlert size={15} /><span>Usa únicamente escenarios ficticios. No incluyas NIF real, datos de empleados ni canales personales.</span></div>}
-            <label className="hacienda-search"><span>Buscar</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Referencia, contraparte o estado" aria-label="Buscar documentos fiscales" data-testid="input-hacienda-source-search" /></label>
-            <div className="hacienda-table-scroll"><table className="hacienda-table"><thead><tr><th>Documento</th><th>Tipo</th><th>Fecha</th><th>Contraparte ficticia</th><th>Base</th><th>Impuesto origen</th><th>Estado origen</th></tr></thead><tbody>{filteredSources.map((item) => <tr key={item.id} data-testid={`row-hacienda-source-${item.id}`}><td><b className="mono">{item.reference}</b></td><td>{item.sourceType === 'sales_invoice' ? 'Factura emitida' : 'Factura recibida'}</td><td>{dateLabel(item.date)}</td><td>{item.counterparty}</td><td>{euro(item.baseCents)}</td><td>{euro(item.taxCents)}</td><td><Status value={item.status} /></td></tr>)}{!filteredSources.length && <tr><td colSpan={7}><Empty title={term ? 'Sin coincidencias' : 'No hay documentos de origen'} detail={term ? 'Prueba con otra referencia o contraparte.' : 'No hay registros de escenario disponibles para esta organización.'} /></td></tr>}</tbody></table></div>
+          {view === 'igic' && <section className="hacienda-panel">
+            <SectionHead eyebrow="FACTURAS CON IGIC" title="Documentos de origen ATC" description="Solo se muestran facturas del escenario con IGIC devengado o soportado; estos registros alimentan la práctica de modelos ATC." />
+            <label className="hacienda-search"><span>Buscar</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Referencia, contraparte o estado" aria-label="Buscar documentos con IGIC" data-testid="input-hacienda-source-search" /></label>
+            <div className="hacienda-table-scroll"><table className="hacienda-table"><thead><tr><th>Documento</th><th>Tipo</th><th>Fecha</th><th>Contraparte ficticia</th><th>Base</th><th>IGIC</th><th>Estado origen</th></tr></thead><tbody>{filteredSources.map((item) => <tr key={item.id} data-testid={`row-hacienda-source-${item.id}`}><td><b className="mono">{item.reference}</b></td><td>{item.sourceType === 'sales_invoice' ? 'Factura emitida' : 'Factura recibida'}</td><td>{dateLabel(item.date)}</td><td>{item.counterparty}</td><td>{euro(item.baseCents)}</td><td>{euro(item.taxCents)}</td><td><Status value={item.status} /></td></tr>)}{!filteredSources.length && <tr><td colSpan={7}><Empty title={term ? 'Sin coincidencias' : 'No hay facturas con IGIC'} detail={term ? 'Prueba con otra referencia o contraparte.' : 'No hay registros de IGIC disponibles para esta organización.'} /></td></tr>}</tbody></table></div>
+          </section>}
+          {view === 'retentions' && <section className="hacienda-panel">
+            <SectionHead eyebrow="AEAT · RETENCIONES" title="Obligaciones estatales de retención" description="111/190 corresponden a trabajo y actividades económicas; 115/180 a arrendamientos urbanos. Ninguna se calcula a partir del IGIC." />
+            <div className="hacienda-manual-note"><ShieldAlert size={15} /><span>La fuente de nóminas y alquileres no está integrada. Usa datos ficticios y revisa cada obligación estatal; no se muestran aquí facturas ni cuotas de IGIC.</span></div>
+            <div className="hacienda-retention-grid">{models.filter((model) => ['111', '190', '115', '180'].includes(model.modelCode)).map((model) => {
+              const records = declarationsFor(model.modelCode);
+              const canOpen = model.applicabilityStatus === 'applies' || canTeach;
+              return <article className="hacienda-retention-card" key={model.modelCode}>
+                <div className="hacienda-retention-title"><span>AEAT · {model.modelCode}</span><b>{model.label}</b></div>
+                <span className={`hacienda-applicability compact ${model.applicabilityStatus === 'applies' ? 'applies' : model.applicabilityStatus === 'review_required' ? 'review-required' : 'does-not-apply'}`}><span>{applicabilityLabel(model)}</span><p>{model.applicabilityNote}</p></span>
+                <small>{records.length ? `${records.length} expediente(s) educativo(s)` : model.periodicity === 'annual' ? 'Resumen anual informativo' : 'Autoliquidación trimestral'}</small>
+                <button type="button" className="hacienda-button small" onClick={() => { setSelectedModelCode(model.modelCode); setView('draft'); }} disabled={!canOpen || readOnly}>Abrir modelo estatal</button>
+              </article>;
+            })}</div>
           </section>}
           {view === 'draft' && <div className="hacienda-draft-layout">
             <section className="hacienda-panel"><SectionHead eyebrow="PREPARACIÓN EDUCATIVA" title="Crear un borrador" description="Campos según la estructura de referencia del catálogo oficial, con datos ficticios únicamente." />
@@ -324,14 +345,14 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
                 {!models.length && <Empty title="Catálogo no disponible" detail={`La API no ha devuelto modelos educativos para ${agencyNames[agency]}. No se pueden crear modelos sin su estructura oficial de referencia.`} />}
                 <label>Modelo<select value={selectedModel?.modelCode ?? ''} onChange={(event) => { setSelectedModelCode(event.target.value); setFormError(''); }} required data-testid="select-hacienda-model">{models.map((model) => <option key={model.modelCode} value={model.modelCode}>{model.modelCode} · {model.label}</option>)}</select></label>
                 {selectedModel && <>
-                  <div className={`hacienda-applicability ${selectedModel.applicable ? 'applies' : 'does-not-apply'}`}><span>{selectedModel.applicable ? 'APLICA AL PERFIL GUARDADO' : 'NO APLICA AL PERFIL GUARDADO'}</span><p>{selectedModel.applicabilityNote}</p></div>
+                   <div className={`hacienda-applicability ${selectedModel.applicabilityStatus === 'applies' ? 'applies' : selectedModel.applicabilityStatus === 'review_required' ? 'review-required' : 'does-not-apply'}`}><span>{applicabilityLabel(selectedModel)}</span><p>{selectedModel.applicabilityNote}</p></div>
                   <div className="hacienda-model-meta"><span>{selectedModel.periodicity === 'quarterly' ? 'Periodicidad trimestral' : selectedModel.periodicity === 'annual' ? 'Periodicidad anual' : 'Modelo censal'}</span><span>Referencia {selectedModel.referenceVersion}</span></div>
                   <div className="hacienda-official-warning"><ShieldAlert size={14} /><span>Enlace externo a RED FP360. No presentes datos de simulación ante la agencia.</span><a href={selectedModel.officialUrl} target="_blank" rel="noreferrer">Fuente oficial <ExternalLink size={12} /></a></div>
                   <label>Periodo<select name="periodKey" defaultValue={selectedModel.periodicity === 'quarterly' ? '2027-Q3' : '2027'}>{selectedModel.periodicity === 'quarterly' && <><option value="2027-Q1">2027 · 1.er trimestre</option><option value="2027-Q2">2027 · 2.º trimestre</option><option value="2027-Q3">2027 · 3.er trimestre</option><option value="2027-Q4">2027 · 4.º trimestre</option></>}<option value="2027">Ejercicio 2027</option></select></label>
                   <div className="hacienda-fields-title"><b>Estructura educativa del modelo {selectedModel.modelCode}</b><small>Referencia publicada hasta 01/11/2026 · campos sin validez oficial</small></div>
                   {selectedModel.formFields.map((field) => renderModelField(selectedModel, field))}
                   {!selectedModel.applicable && canTeach && <p className="hacienda-form-hint"><ShieldAlert size={14} /> Uso docente de práctica permitido; se distinguirá como no aplicable al perfil guardado.</p>}
-                  {!selectedModel.applicable && !canTeach && <p className="hacienda-form-error"><LockKeyhole size={14} /> El alumnado no puede crear modelos no aplicables.</p>}
+                   {!selectedModel.applicable && !canTeach && <p className="hacienda-form-error"><LockKeyhole size={14} /> El alumnado no puede crear modelos no aplicables o con obligación pendiente de revisión.</p>}
                 </>}
                 {formError && <p className="hacienda-form-error" role="alert"><CircleAlert size={14} />{formError}</p>}
                 {readOnly && <p className="hacienda-form-error"><LockKeyhole size={14} />Perfil de solo lectura: no puedes crear modelos.</p>}
@@ -344,7 +365,7 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
                 const model = models.find((entry) => entry.modelCode === item.modelCode);
                 return <article className="hacienda-declaration" key={item.id} data-testid={`card-hacienda-declaration-${item.id}`}>
                   <div className="hacienda-declaration-top"><span className="hacienda-model-icon"><FileText size={17} /></span><div><small>{agency.toUpperCase()} · MODELO {item.modelCode} · {item.periodKey} · VERSIÓN {item.version}</small><b>{modelTitle(model)}</b></div><Status value={item.status} /></div>
-                  {model && <div className={`hacienda-applicability compact ${model.applicable ? 'applies' : 'does-not-apply'}`}><span>{model.applicable ? 'APLICA' : 'NO APLICA'}</span><p>{model.applicabilityNote}</p></div>}
+                   {model && <div className={`hacienda-applicability compact ${model.applicabilityStatus === 'applies' ? 'applies' : model.applicabilityStatus === 'review_required' ? 'review-required' : 'does-not-apply'}`}><span>{applicabilityLabel(model)}</span><p>{model.applicabilityNote}</p></div>}
                   {item.formData && Object.keys(item.formData).length > 0 && <details className="hacienda-formdata"><summary>Campos educativos cumplimentados</summary><dl>{Object.entries(item.formData).map(([key, value]) => <div key={key}><dt>{model?.formFields.find((field) => field.key === key)?.label ?? key}</dt><dd>{value || '—'}</dd></div>)}</dl></details>}
                   <div className="hacienda-declaration-values"><span>Base imponible <b>{euro(item.taxableBaseCents)}</b></span><span>IGIC repercutido <b>{euro(item.outputIgicCents)}</b></span><span>IGIC soportado <b>{euro(item.inputIgicCents)}</b></span><span>Retenciones <b>{euro(item.withholdingCents)}</b></span><span>Resultado provisional <b className={item.resultCents < 0 ? 'hacienda-negative' : ''}>{euro(item.resultCents)}</b></span></div>
                   <div className="hacienda-declaration-foot"><span><Clock3 size={13} /> Vencimiento educativo · {dateLabel(item.simulatedDueDate)}</span><span>Pago · {statuses[item.paymentStatus] ?? item.paymentStatus}</span></div>

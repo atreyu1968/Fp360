@@ -117,8 +117,18 @@
 .hacienda-applicability.does-not-apply { border-color:#ecd8bc; background:#fff8ed; }
 .hacienda-applicability.does-not-apply > span { color:#9b6730; }
 .hacienda-applicability.does-not-apply p { color:#8d7656; }
+.hacienda-applicability.review-required { border-color:#e8d4a3; background:#fff9e9; }
+.hacienda-applicability.review-required > span { color:#8b6a22; }
+.hacienda-applicability.review-required p { color:#7f6c48; }
 .hacienda-applicability.compact { margin:10px 0 0; padding:7px 9px; }
 .hacienda-applicability.compact p { margin-top:3px; }
+.hacienda-retention-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.hacienda-retention-card { display:flex; flex-direction:column; align-items:flex-start; gap:9px; padding:12px; border:1px solid #e3ece8; border-radius:6px; background:#fcfefd; }
+.hacienda-retention-title { display:flex; flex-direction:column; gap:4px; }
+.hacienda-retention-title > span { color:#387f76; font-size:7px; font-weight:850; letter-spacing:.09em; }
+.hacienda-retention-title > b { color:#284640; font-size:10px; line-height:1.4; }
+.hacienda-retention-card > small { color:#7b8f89; font-size:8px; }
+.hacienda-retention-card .hacienda-button { margin-top:auto; }
 .hacienda-model-meta { display:flex; flex-wrap:wrap; justify-content:space-between; gap:7px; padding:2px 0 5px; color:#8a9994; font-size:8px; }
 .hacienda-official-warning { display:flex; align-items:center; flex-wrap:wrap; gap:7px; padding:8px 9px; border:1px solid #eadfc6; border-radius:5px; color:#876c38; background:#fffaf0; font-size:8px; line-height:1.45; }
 .hacienda-official-warning > svg { flex:0 0 auto; }
@@ -144,4 +154,5 @@
   .hacienda-agency-heading h2 { font-size:17px; }
   .hacienda-profile-form { grid-template-columns:1fr; }
   .hacienda-profile-form .hacienda-form-error { grid-column:auto; }
+  .hacienda-retention-grid { grid-template-columns:1fr; }
 }

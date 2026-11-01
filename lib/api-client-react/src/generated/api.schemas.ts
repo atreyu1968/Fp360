@@ -2087,6 +2087,15 @@ export const Fp360TaxModelTemplatePeriodicity = {
   census: 'census',
 } as const;
 
+export type Fp360TaxModelTemplateApplicabilityStatus = typeof Fp360TaxModelTemplateApplicabilityStatus[keyof typeof Fp360TaxModelTemplateApplicabilityStatus];
+
+
+export const Fp360TaxModelTemplateApplicabilityStatus = {
+  applies: 'applies',
+  not_applicable: 'not_applicable',
+  review_required: 'review_required',
+} as const;
+
 export type Fp360TaxModelFieldKind = typeof Fp360TaxModelFieldKind[keyof typeof Fp360TaxModelFieldKind];
 
 
@@ -2114,6 +2123,7 @@ export interface Fp360TaxModelTemplate {
   label: string;
   periodicity: Fp360TaxModelTemplatePeriodicity;
   applicable: boolean;
+  applicabilityStatus: Fp360TaxModelTemplateApplicabilityStatus;
   applicabilityNote: string;
   payable: boolean;
   officialUrl: string;

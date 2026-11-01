@@ -7,6 +7,7 @@
  */
 import type { Fp360TaxModelField } from './fp360TaxModelField';
 import type { Fp360TaxModelTemplateAgency } from './fp360TaxModelTemplateAgency';
+import type { Fp360TaxModelTemplateApplicabilityStatus } from './fp360TaxModelTemplateApplicabilityStatus';
 import type { Fp360TaxModelTemplatePeriodicity } from './fp360TaxModelTemplatePeriodicity';
 import type { Fp360TaxModelTemplateTaxType } from './fp360TaxModelTemplateTaxType';
 
@@ -17,6 +18,7 @@ export interface Fp360TaxModelTemplate {
   label: string;
   periodicity: Fp360TaxModelTemplatePeriodicity;
   applicable: boolean;
+  applicabilityStatus: Fp360TaxModelTemplateApplicabilityStatus;
   applicabilityNote: string;
   payable: boolean;
   officialUrl: string;

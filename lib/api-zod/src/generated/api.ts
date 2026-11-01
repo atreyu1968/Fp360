@@ -4511,6 +4511,7 @@ export const GetFp360TaxOverviewResponse = zod.object({
   "label": zod.string(),
   "periodicity": zod.enum(['quarterly', 'annual', 'census']),
   "applicable": zod.boolean(),
+  "applicabilityStatus": zod.enum(['applies', 'not_applicable', 'review_required']),
   "applicabilityNote": zod.string(),
   "payable": zod.boolean(),
   "officialUrl": zod.string().url(),

@@ -3376,7 +3376,7 @@ components:
         note: { type: string }
     Fp360TaxModelTemplate:
       type: object
-      required: [modelCode, taxType, agency, label, periodicity, applicable, applicabilityNote, payable, officialUrl, referenceVersion, formFields]
+      required: [modelCode, taxType, agency, label, periodicity, applicable, applicabilityStatus, applicabilityNote, payable, officialUrl, referenceVersion, formFields]
       properties:
         modelCode: { type: string }
         taxType: { type: string, enum: [igic, withholding, census_canary, census_state, personal_income, corporate_tax, informative_canary, informative_state] }
@@ -3384,6 +3384,7 @@ components:
         label: { type: string }
         periodicity: { type: string, enum: [quarterly, annual, census] }
         applicable: { type: boolean }
+        applicabilityStatus: { type: string, enum: [applies, not_applicable, review_required] }
         applicabilityNote: { type: string }
         payable: { type: boolean }
         officialUrl: { type: string, format: uri }

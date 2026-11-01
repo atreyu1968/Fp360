@@ -445,8 +445,8 @@ router.get("/redfp360/tax/overview", route(async (request, response) => {
       (totalsByCounterparty.get(document.counterparty) ?? 0) + document.baseCents + document.taxCents,
     );
   }
-  const thirdPartyThresholdReached = [...totalsByCounterparty.values()].some((amount) => amount > 300_506);
-  const modelCatalog = buildModelCatalog(profile, thirdPartyThresholdReached);
+  const atc415ThresholdReached = [...totalsByCounterparty.values()].some((amount) => amount > 300_506);
+  const modelCatalog = buildModelCatalog(profile, atc415ThresholdReached);
   const active = declarations.filter((item) => item.status !== "rectified");
   const obligations = modelCatalog.filter((model) => model.applicable && model.periodicity !== "census").map((model, index) => {
     const periodKey = model.periodicity === "annual" ? "2027" : "2027-Q3";
@@ -537,8 +537,8 @@ router.post("/redfp360/tax/declarations", route(async (request, response) => {
   }
   const applicableModel = buildModelCatalog(profile, [...amountsByCounterparty.values()].some((amount) => amount > 300_506))
     .find((entry) => entry.modelCode === input.modelCode);
-  if (applicableModel && !applicableModel.applicable && !canReview(actor)) {
-    response.status(409).json({ error: `El modelo ${input.modelCode} no corresponde al perfil fiscal configurado: ${applicableModel.applicabilityNote}` });
+  if (applicableModel && applicableModel.applicabilityStatus !== "applies" && !canReview(actor)) {
+    response.status(409).json({ error: `${applicableModel.applicabilityStatus === "review_required" ? "Un docente debe revisar" : "El modelo no corresponde al perfil fiscal"}: ${applicableModel.applicabilityNote}` });
     return;
   }
   if (input.simulatedDueDate && !validDate(input.simulatedDueDate)) {

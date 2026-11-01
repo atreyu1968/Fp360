@@ -7,6 +7,8 @@ RED FP360 Hacienda must separate state taxes (AEAT) from Canary Islands taxes (A
 
 The AEAT suppressed model 037 effective 2025-02-03; use model 036 instead. Tax forms, dates, calculations, receipts, and payments remain educational: never submit them to a real agency or claim legal validity.
 
-**Why:** The user explicitly required official forms, separate state and Canary sections, and profile-based obligations; the 037 correction is verified in the official BOE and AEAT materials.
+Do not infer AEAT model 347 or state withholding obligations from invoice records whose tax amounts are IGIC. If the state reporting data is not available, mark those obligations for review rather than treating an ATC threshold as an AEAT decision. Keep the ATC IGIC source table separate from AEAT payroll/rent withholding views.
 
-**How to apply:** Preserve AEAT/ATC separation, refresh official references for future exercises, mark the UI and outputs as non-official, and keep all submission/payment actions inside the simulation.
+**Why:** The user explicitly required official forms and jurisdiction separation, then identified that ATC and AEAT obligations had been mixed. IGIC invoice records do not establish the separate AEAT reporting scope.
+
+**How to apply:** Preserve AEAT/ATC separation in model catalog, obligation derivation, source data and tabs; mark uncertain applicability for review; refresh official references for future exercises; keep outputs non-official and all submission/payment actions inside the simulation.
