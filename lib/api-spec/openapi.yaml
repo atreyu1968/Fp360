@@ -29,6 +29,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+        "503":
+          description: API dependencies are unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
   /auth/status:
     get:
       security: []
@@ -459,7 +465,7 @@ paths:
               schema: { $ref: "#/components/schemas/AdminPrivilegeRequest" }
         "400": { description: Invalid request }
         "403": { description: Administrator required }
-        "409": { description: Duplicate or ineligible target account, or an existing pending request }
+        "409": { description: "Duplicate or ineligible target account, or an existing pending request" }
   /admin/privilege-requests/{id}/action:
     post:
       operationId: actOnAdminPrivilegeRequest
@@ -479,7 +485,7 @@ paths:
               schema: { $ref: "#/components/schemas/AdminPrivilegeRequestActionResult" }
         "403": { description: Administrator required }
         "404": { description: Request not found in the authenticated administrator's network }
-        "409": { description: Requester cannot approve their own request, request is no longer pending, or approval would remove the last active administrator }
+        "409": { description: "Requester cannot approve their own request, request is no longer pending, or approval would remove the last active administrator" }
   /auth/invitations/inspect:
     post:
       security: []

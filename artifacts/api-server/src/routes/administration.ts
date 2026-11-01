@@ -21,7 +21,6 @@ import {
   RevokeAdminInvitationParams, UpdateAdminUserBody, UpdateAdminUserParams,
   UpdateAdminUserResponse,
 } from "@workspace/api-zod";
-import * as api from "@workspace/api-zod";
 import {
   db, fpAdminBackupExercises, fpAdminConfigVersions, fpAdminPrivilegeRequests,
   fpAdminAiCoordinatorSettings, fpAuthAudit, fpAuthInvitations, fpAuthMemberships, fpAuthSessions,

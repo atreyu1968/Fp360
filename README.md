@@ -139,8 +139,8 @@ Comandos habituales:
 # Comprobación de tipos del workspace
 pnpm run typecheck
 
-# Compilar todos los paquetes; Vite necesita PORT y BASE_PATH
-PORT=5173 BASE_PATH=/ pnpm run build
+# Compilar y validar todos los paquetes
+pnpm run build
 
 # Compilar únicamente la interfaz web
 PORT=5173 BASE_PATH=/ pnpm --filter @workspace/red-fp360 run build
@@ -162,11 +162,12 @@ Los valores secretos deben guardarse en Replit Secrets o en un gestor seguro equ
 | `RED_FP360_SETUP_TOKEN` | Autoriza el endpoint de configuración inicial `/auth/setup`. No es una contraseña de uso diario; limita su exposición y guárdalo como secreto. |
 | `PUBLIC_OBJECT_SEARCH_PATHS` | Rutas públicas separadas por comas para el servicio de almacenamiento de objetos, cuando se habiliten recursos públicos. |
 | `PRIVATE_OBJECT_DIR` | Directorio o prefijo privado usado por las cargas de documentos. |
-| `PORT` | Puerto del proceso. La API y las configuraciones Vite lo requieren; Replit lo proporciona en los workflows. |
-| `BASE_PATH` | Prefijo de publicación de las aplicaciones Vite, incluida la web y la sandbox de maquetas. Replit lo proporciona en los workflows. |
+| `PORT` | Puerto del proceso API. Vite recibe el puerto de los workflows y usa valores propios para compilaciones fuera de Replit. |
+| `BASE_PATH` | Prefijo de publicación de Vite. Replit lo establece en los workflows; las compilaciones usan `/` para la web y `/__mockup` para la sandbox si no se indica otro valor. |
 | `NODE_ENV` | Distingue desarrollo y producción; en producción activa, entre otros controles, cookies seguras. |
 | `LOG_LEVEL` | Nivel de logging del API; por defecto se utiliza `info`. |
 | `API_BASE_URL` | Solo para pruebas de integración de `lib/db`; por defecto apunta a `http://127.0.0.1:8080/api`. |
+| `DEFAULT_OBJECT_STORAGE_BUCKET_ID` | Identificador del bucket privado de App Storage que usa el servicio de documentos. |
 
 El endpoint de configuración inicial falla de forma cerrada si `RED_FP360_SETUP_TOKEN` no está configurado. No compartas su valor ni lo incluyas en una URL pública.
 
@@ -225,8 +226,11 @@ El servidor llama a `POST /chat/completions` para generar propuestas. La configu
 # Tipos de librerías y artefactos
 pnpm run typecheck
 
-# Pruebas unitarias del API
-pnpm --filter @workspace/api-server run test
+# Pruebas de rutas del API (requieren PostgreSQL de desarrollo)
+pnpm run test:api
+
+# Pruebas de base de datos (requieren PostgreSQL de desarrollo y el API en PORT=8080)
+pnpm run test:db-integration
 
 # Prueba de límites de acceso entre empresas
 pnpm --filter @workspace/db run test:catalog-access
@@ -235,9 +239,25 @@ pnpm --filter @workspace/db run test:catalog-access
 pnpm --filter @workspace/db run test:accounting-export
 ```
 
-Las pruebas de `lib/db` que acceden a PostgreSQL requieren `DATABASE_URL`. Las pruebas HTTP de integración necesitan además que el API de desarrollo esté levantado; se puede cambiar su base con `API_BASE_URL`. Los tests se protegen para no ejecutarse con `NODE_ENV=production`.
+Las pruebas de `lib/db` que acceden a PostgreSQL requieren `DATABASE_URL`. Las pruebas HTTP de integración necesitan además que el API esté levantado en `PORT=8080`; se puede cambiar su base con `API_BASE_URL`. Los tests se protegen para no ejecutarse con `NODE_ENV=production`.
 
 Hay pruebas adicionales en `lib/db/tests/` para catálogo, compras, CRM y administración. Antes de ejecutarlas, revisa sus requisitos y confirma que apuntan a una base de desarrollo.
+
+El flujo de GitHub Actions `.github/workflows/quality.yml` crea una base PostgreSQL temporal y ejecuta compilación, pruebas del API e integraciones de base de datos en cada push y pull request. Nunca reutiliza la base de datos del entorno de desarrollo o producción.
+
+## Preparación para producción educativa
+
+Antes de publicar una versión para uso formativo:
+
+1. Exige que GitHub Actions termine correctamente; no publiques si falla el chequeo de tipos, la compilación o una prueba.
+2. Configura una base de datos de producción separada de desarrollo y pruebas. Revisa el esquema antes de aplicarlo; este repositorio todavía no contiene migraciones versionadas. No ejecutes `push-force` en producción.
+3. Configura `DATABASE_URL`, `SESSION_SECRET` y las variables de App Storage en los secretos del entorno de producción. Verifica que los documentos privados no tengan rutas públicas.
+4. Completa la configuración inicial con `RED_FP360_SETUP_TOKEN`, comprueba el acceso del administrador y MFA, y retira ese token de producción después del alta inicial.
+5. Confirma que `/api/healthz` responde correctamente: comprueba tanto el servidor como la conexión a PostgreSQL.
+6. Si se habilita el coordinador de IA, usa un endpoint privado accesible desde el servidor publicado; verifica el contexto de red y operaciones antes de activarlo. La IA solo debe modificar datos del simulador.
+7. Prueba autenticación, selección de empresa, invitaciones, permisos, documentos y los flujos económicos con cuentas de cada rol y datos ficticios antes de abrir el acceso al alumnado.
+
+La IA genera actualmente propuestas supervisadas. La autonomía simulada por empresa que active un administrador está definida como requisito de producto, pero aún requiere una implementación específica y pruebas de límites antes de habilitarla para usuarios.
 
 ## Cambios de esquema de base de datos
 
