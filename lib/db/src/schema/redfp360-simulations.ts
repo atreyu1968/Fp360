@@ -2,6 +2,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { date, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { fpOrganizations } from "./redfp360";
+import { fpDocuments } from "./redfp360-documents";
 
 export const fpSimulationCampaigns = pgTable(
   "fp360_simulation_campaigns",
@@ -52,6 +53,9 @@ export const fpSimulationEvents = pgTable(
     preconditions: jsonb("preconditions").$type<string[]>().notNull().default([]),
     requiredDocumentType: text("required_document_type"),
     simulatedDate: date("simulated_date", { mode: "string" }).notNull(),
+    evidenceDocumentId: text("evidence_document_id").references(() => fpDocuments.id),
+    completedByUserId: text("completed_by_user_id"),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
     operationId: text("operation_id").notNull(),
     createdByUserId: text("created_by_user_id").notNull(),
     reviewedByUserId: text("reviewed_by_user_id"),
@@ -62,6 +66,7 @@ export const fpSimulationEvents = pgTable(
     uniqueIndex("fp360_simulation_event_operation_unique").on(table.tenantId, table.operationId),
     index("fp360_simulation_event_campaign_idx").on(table.tenantId, table.campaignId, table.status),
     index("fp360_simulation_event_org_idx").on(table.tenantId, table.organizationId, table.simulatedDate),
+    index("fp360_simulation_event_evidence_idx").on(table.evidenceDocumentId),
   ],
 );
 

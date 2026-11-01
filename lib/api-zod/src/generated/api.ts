@@ -303,11 +303,14 @@ export const GetFp360SimulationsOverviewResponse = zod.object({
   "organizationId": zod.string(),
   "title": zod.string(),
   "eventType": zod.enum(['offer', 'late_payment', 'stock_break', 'claim', 'financing', 'service_incident', 'other']),
-  "status": zod.enum(['draft', 'proposed', 'approved', 'published', 'cancelled']),
+  "status": zod.enum(['draft', 'proposed', 'approved', 'published', 'completed', 'cancelled']),
   "description": zod.string(),
   "preconditions": zod.array(zod.string()),
   "requiredDocumentType": zod.string().nullable(),
   "simulatedDate": zod.string().date(),
+  "evidenceDocumentId": zod.string().nullable(),
+  "evidenceDocumentReference": zod.string().nullable(),
+  "completedAt": zod.string().datetime({"offset":true}).nullable(),
   "createdAt": zod.string().datetime({"offset":true}),
   "updatedAt": zod.string().datetime({"offset":true})
 })),
@@ -459,11 +462,14 @@ export const CreateFp360SimulationEventResponse = zod.object({
   "organizationId": zod.string(),
   "title": zod.string(),
   "eventType": zod.enum(['offer', 'late_payment', 'stock_break', 'claim', 'financing', 'service_incident', 'other']),
-  "status": zod.enum(['draft', 'proposed', 'approved', 'published', 'cancelled']),
+  "status": zod.enum(['draft', 'proposed', 'approved', 'published', 'completed', 'cancelled']),
   "description": zod.string(),
   "preconditions": zod.array(zod.string()),
   "requiredDocumentType": zod.string().nullable(),
   "simulatedDate": zod.string().date(),
+  "evidenceDocumentId": zod.string().nullable(),
+  "evidenceDocumentReference": zod.string().nullable(),
+  "completedAt": zod.string().datetime({"offset":true}).nullable(),
   "createdAt": zod.string().datetime({"offset":true}),
   "updatedAt": zod.string().datetime({"offset":true})
 })
@@ -485,7 +491,7 @@ export const actOnFp360SimulationEventBodyOperationIdMax = 100;
 
 export const ActOnFp360SimulationEventBody = zod.object({
   "organizationId": zod.string(),
-  "action": zod.enum(['approve', 'publish', 'cancel', 'return']),
+  "action": zod.enum(['submit', 'approve', 'publish', 'cancel', 'return']),
   "note": zod.string().max(actOnFp360SimulationEventBodyNoteMax).optional(),
   "operationId": zod.string().min(actOnFp360SimulationEventBodyOperationIdMin).max(actOnFp360SimulationEventBodyOperationIdMax)
 })
@@ -496,13 +502,1476 @@ export const ActOnFp360SimulationEventResponse = zod.object({
   "organizationId": zod.string(),
   "title": zod.string(),
   "eventType": zod.enum(['offer', 'late_payment', 'stock_break', 'claim', 'financing', 'service_incident', 'other']),
-  "status": zod.enum(['draft', 'proposed', 'approved', 'published', 'cancelled']),
+  "status": zod.enum(['draft', 'proposed', 'approved', 'published', 'completed', 'cancelled']),
   "description": zod.string(),
   "preconditions": zod.array(zod.string()),
   "requiredDocumentType": zod.string().nullable(),
   "simulatedDate": zod.string().date(),
+  "evidenceDocumentId": zod.string().nullable(),
+  "evidenceDocumentReference": zod.string().nullable(),
+  "completedAt": zod.string().datetime({"offset":true}).nullable(),
   "createdAt": zod.string().datetime({"offset":true}),
   "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Edit a returned event draft before resubmission
+ */
+
+
+
+export const UpdateFp360SimulationEventParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const updateFp360SimulationEventBodyTitleMin = 3;
+export const updateFp360SimulationEventBodyTitleMax = 120;
+
+export const updateFp360SimulationEventBodyDescriptionMin = 10;
+export const updateFp360SimulationEventBodyDescriptionMax = 2000;
+
+export const updateFp360SimulationEventBodyPreconditionsItemMin = 2;
+export const updateFp360SimulationEventBodyPreconditionsItemMax = 160;
+
+export const updateFp360SimulationEventBodyPreconditionsMax = 10;
+
+export const updateFp360SimulationEventBodyOperationIdMin = 8;
+export const updateFp360SimulationEventBodyOperationIdMax = 100;
+
+
+
+export const UpdateFp360SimulationEventBody = zod.object({
+  "organizationId": zod.string(),
+  "title": zod.string().min(updateFp360SimulationEventBodyTitleMin).max(updateFp360SimulationEventBodyTitleMax),
+  "eventType": zod.enum(['offer', 'late_payment', 'stock_break', 'claim', 'financing', 'service_incident', 'other']),
+  "description": zod.string().min(updateFp360SimulationEventBodyDescriptionMin).max(updateFp360SimulationEventBodyDescriptionMax),
+  "preconditions": zod.array(zod.string().min(updateFp360SimulationEventBodyPreconditionsItemMin).max(updateFp360SimulationEventBodyPreconditionsItemMax)).max(updateFp360SimulationEventBodyPreconditionsMax),
+  "requiredDocumentType": zod.string().nullish(),
+  "simulatedDate": zod.string().date(),
+  "operationId": zod.string().min(updateFp360SimulationEventBodyOperationIdMin).max(updateFp360SimulationEventBodyOperationIdMax)
+})
+
+export const UpdateFp360SimulationEventResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "organizationId": zod.string(),
+  "title": zod.string(),
+  "eventType": zod.enum(['offer', 'late_payment', 'stock_break', 'claim', 'financing', 'service_incident', 'other']),
+  "status": zod.enum(['draft', 'proposed', 'approved', 'published', 'completed', 'cancelled']),
+  "description": zod.string(),
+  "preconditions": zod.array(zod.string()),
+  "requiredDocumentType": zod.string().nullable(),
+  "simulatedDate": zod.string().date(),
+  "evidenceDocumentId": zod.string().nullable(),
+  "evidenceDocumentReference": zod.string().nullable(),
+  "completedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Complete a published educational event using a confirmed synthetic document
+ */
+
+
+
+export const LinkFp360SimulationEventEvidenceParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const linkFp360SimulationEventEvidenceBodyNoteMax = 500;
+
+export const linkFp360SimulationEventEvidenceBodyOperationIdMin = 8;
+export const linkFp360SimulationEventEvidenceBodyOperationIdMax = 100;
+
+
+
+export const LinkFp360SimulationEventEvidenceBody = zod.object({
+  "organizationId": zod.string(),
+  "documentId": zod.string(),
+  "note": zod.string().max(linkFp360SimulationEventEvidenceBodyNoteMax).optional(),
+  "operationId": zod.string().min(linkFp360SimulationEventEvidenceBodyOperationIdMin).max(linkFp360SimulationEventEvidenceBodyOperationIdMax)
+})
+
+export const LinkFp360SimulationEventEvidenceResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "organizationId": zod.string(),
+  "title": zod.string(),
+  "eventType": zod.enum(['offer', 'late_payment', 'stock_break', 'claim', 'financing', 'service_incident', 'other']),
+  "status": zod.enum(['draft', 'proposed', 'approved', 'published', 'completed', 'cancelled']),
+  "description": zod.string(),
+  "preconditions": zod.array(zod.string()),
+  "requiredDocumentType": zod.string().nullable(),
+  "simulatedDate": zod.string().date(),
+  "evidenceDocumentId": zod.string().nullable(),
+  "evidenceDocumentReference": zod.string().nullable(),
+  "completedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Read the authenticated user's scoped portfolio
+ */
+export const GetPortfolioOverviewQueryParams = zod.object({
+  "campaignId": zod.coerce.string().optional()
+})
+
+export const GetPortfolioOverviewResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "campaignTitle": zod.string(),
+  "organizationId": zod.string(),
+  "eventId": zod.string(),
+  "activityTitle": zod.string(),
+  "eventType": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "evidenceDocumentId": zod.string(),
+  "evidenceDocumentReference": zod.string().nullable(),
+  "studentUserId": zod.string(),
+  "studentName": zod.string(),
+  "canViewPrivateDetails": zod.boolean(),
+  "status": zod.enum(['draft', 'submitted', 'returned', 'validated']),
+  "reflection": zod.string(),
+  "contribution": zod.string(),
+  "selfAssessment": zod.string(),
+  "version": zod.number().int(),
+  "criteria": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "code": zod.string().nullable(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "isRequired": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "submittedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reviewerName": zod.string().nullable(),
+  "feedback": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})),
+  "activities": zod.array(zod.object({
+  "eventId": zod.string(),
+  "campaignId": zod.string(),
+  "campaignTitle": zod.string(),
+  "organizationId": zod.string(),
+  "title": zod.string(),
+  "eventType": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "evidenceDocumentId": zod.string(),
+  "evidenceDocumentReference": zod.string().nullable(),
+  "completedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "criteria": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "code": zod.string().nullable(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "isRequired": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "canReview": zod.boolean(),
+  "canManageCriteria": zod.boolean()
+})
+
+
+/**
+ * @summary Add a learning criterion to a campaign
+ */
+export const createPortfolioCriterionBodyCodeMax = 40;
+
+export const createPortfolioCriterionBodyTitleMin = 3;
+export const createPortfolioCriterionBodyTitleMax = 120;
+
+export const createPortfolioCriterionBodyDescriptionMax = 500;
+
+
+
+export const CreatePortfolioCriterionBody = zod.object({
+  "campaignId": zod.string(),
+  "code": zod.string().max(createPortfolioCriterionBodyCodeMax).optional(),
+  "title": zod.string().min(createPortfolioCriterionBodyTitleMin).max(createPortfolioCriterionBodyTitleMax),
+  "description": zod.string().max(createPortfolioCriterionBodyDescriptionMax),
+  "isRequired": zod.boolean()
+})
+
+export const CreatePortfolioCriterionResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "code": zod.string().nullable(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "isRequired": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Create an evidence entry from a completed simulation event
+ */
+export const createPortfolioEntryBodyCriterionIdsMax = 20;
+
+export const createPortfolioEntryBodyReflectionMin = 20;
+export const createPortfolioEntryBodyReflectionMax = 2000;
+
+export const createPortfolioEntryBodyContributionMin = 10;
+export const createPortfolioEntryBodyContributionMax = 1000;
+
+export const createPortfolioEntryBodySelfAssessmentMax = 1000;
+
+
+
+export const CreatePortfolioEntryBody = zod.object({
+  "eventId": zod.string(),
+  "criterionIds": zod.array(zod.string()).min(1).max(createPortfolioEntryBodyCriterionIdsMax),
+  "reflection": zod.string().min(createPortfolioEntryBodyReflectionMin).max(createPortfolioEntryBodyReflectionMax),
+  "contribution": zod.string().min(createPortfolioEntryBodyContributionMin).max(createPortfolioEntryBodyContributionMax),
+  "selfAssessment": zod.string().max(createPortfolioEntryBodySelfAssessmentMax)
+})
+
+export const CreatePortfolioEntryResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "campaignTitle": zod.string(),
+  "organizationId": zod.string(),
+  "eventId": zod.string(),
+  "activityTitle": zod.string(),
+  "eventType": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "evidenceDocumentId": zod.string(),
+  "evidenceDocumentReference": zod.string().nullable(),
+  "studentUserId": zod.string(),
+  "studentName": zod.string(),
+  "canViewPrivateDetails": zod.boolean(),
+  "status": zod.enum(['draft', 'submitted', 'returned', 'validated']),
+  "reflection": zod.string(),
+  "contribution": zod.string(),
+  "selfAssessment": zod.string(),
+  "version": zod.number().int(),
+  "criteria": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "code": zod.string().nullable(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "isRequired": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "submittedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reviewerName": zod.string().nullable(),
+  "feedback": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Save a new version of a draft or returned entry
+ */
+
+
+
+export const UpdatePortfolioEntryParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const updatePortfolioEntryBodyCriterionIdsMax = 20;
+
+export const updatePortfolioEntryBodyReflectionMin = 20;
+export const updatePortfolioEntryBodyReflectionMax = 2000;
+
+export const updatePortfolioEntryBodyContributionMin = 10;
+export const updatePortfolioEntryBodyContributionMax = 1000;
+
+export const updatePortfolioEntryBodySelfAssessmentMax = 1000;
+
+
+
+export const UpdatePortfolioEntryBody = zod.object({
+  "criterionIds": zod.array(zod.string()).min(1).max(updatePortfolioEntryBodyCriterionIdsMax),
+  "reflection": zod.string().min(updatePortfolioEntryBodyReflectionMin).max(updatePortfolioEntryBodyReflectionMax),
+  "contribution": zod.string().min(updatePortfolioEntryBodyContributionMin).max(updatePortfolioEntryBodyContributionMax),
+  "selfAssessment": zod.string().max(updatePortfolioEntryBodySelfAssessmentMax)
+})
+
+export const UpdatePortfolioEntryResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "campaignTitle": zod.string(),
+  "organizationId": zod.string(),
+  "eventId": zod.string(),
+  "activityTitle": zod.string(),
+  "eventType": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "evidenceDocumentId": zod.string(),
+  "evidenceDocumentReference": zod.string().nullable(),
+  "studentUserId": zod.string(),
+  "studentName": zod.string(),
+  "canViewPrivateDetails": zod.boolean(),
+  "status": zod.enum(['draft', 'submitted', 'returned', 'validated']),
+  "reflection": zod.string(),
+  "contribution": zod.string(),
+  "selfAssessment": zod.string(),
+  "version": zod.number().int(),
+  "criteria": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "code": zod.string().nullable(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "isRequired": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "submittedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reviewerName": zod.string().nullable(),
+  "feedback": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Submit an entry for educator review
+ */
+
+
+
+export const SubmitPortfolioEntryParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const submitPortfolioEntryBodyOperationIdMin = 8;
+export const submitPortfolioEntryBodyOperationIdMax = 100;
+
+
+
+export const SubmitPortfolioEntryBody = zod.object({
+  "operationId": zod.string().min(submitPortfolioEntryBodyOperationIdMin).max(submitPortfolioEntryBodyOperationIdMax)
+})
+
+export const SubmitPortfolioEntryResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "campaignTitle": zod.string(),
+  "organizationId": zod.string(),
+  "eventId": zod.string(),
+  "activityTitle": zod.string(),
+  "eventType": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "evidenceDocumentId": zod.string(),
+  "evidenceDocumentReference": zod.string().nullable(),
+  "studentUserId": zod.string(),
+  "studentName": zod.string(),
+  "canViewPrivateDetails": zod.boolean(),
+  "status": zod.enum(['draft', 'submitted', 'returned', 'validated']),
+  "reflection": zod.string(),
+  "contribution": zod.string(),
+  "selfAssessment": zod.string(),
+  "version": zod.number().int(),
+  "criteria": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "code": zod.string().nullable(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "isRequired": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "submittedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reviewerName": zod.string().nullable(),
+  "feedback": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Validate or return a submitted entry with educator feedback
+ */
+
+
+
+export const ReviewPortfolioEntryParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const reviewPortfolioEntryBodyFeedbackMin = 10;
+export const reviewPortfolioEntryBodyFeedbackMax = 1000;
+
+
+
+export const ReviewPortfolioEntryBody = zod.object({
+  "outcome": zod.enum(['validated', 'returned']),
+  "feedback": zod.string().min(reviewPortfolioEntryBodyFeedbackMin).max(reviewPortfolioEntryBodyFeedbackMax)
+})
+
+export const ReviewPortfolioEntryResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "campaignTitle": zod.string(),
+  "organizationId": zod.string(),
+  "eventId": zod.string(),
+  "activityTitle": zod.string(),
+  "eventType": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "evidenceDocumentId": zod.string(),
+  "evidenceDocumentReference": zod.string().nullable(),
+  "studentUserId": zod.string(),
+  "studentName": zod.string(),
+  "canViewPrivateDetails": zod.boolean(),
+  "status": zod.enum(['draft', 'submitted', 'returned', 'validated']),
+  "reflection": zod.string(),
+  "contribution": zod.string(),
+  "selfAssessment": zod.string(),
+  "version": zod.number().int(),
+  "criteria": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "code": zod.string().nullable(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "isRequired": zod.boolean(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "submittedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reviewedAt": zod.string().datetime({"offset":true}).nullable(),
+  "reviewerName": zod.string().nullable(),
+  "feedback": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Read version and review history for an authorized entry
+ */
+
+
+
+export const GetPortfolioEntryHistoryParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const GetPortfolioEntryHistoryResponse = zod.object({
+  "revisions": zod.array(zod.object({
+  "version": zod.number().int(),
+  "reflection": zod.string(),
+  "contribution": zod.string(),
+  "selfAssessment": zod.string(),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "reviews": zod.array(zod.object({
+  "version": zod.number().int(),
+  "outcome": zod.enum(['validated', 'returned']),
+  "feedback": zod.string(),
+  "reviewerName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+}))
+})
+
+
+/**
+ * @summary Read campaign evaluation data within the authenticated user's scope
+ */
+export const GetEvaluationOverviewQueryParams = zod.object({
+  "campaignId": zod.coerce.string().optional()
+})
+
+export const getEvaluationOverviewResponseCriteriaItemWeightMin = 0;
+export const getEvaluationOverviewResponseCriteriaItemWeightMax = 100;
+
+export const getEvaluationOverviewResponseCriteriaItemMinimumScoreMin = 0;
+export const getEvaluationOverviewResponseCriteriaItemMinimumScoreMax = 100;
+
+export const getEvaluationOverviewResponseCriteriaItemMinimumEvidenceCountMax = 50;
+
+export const getEvaluationOverviewResponseRubricsItemLevelsItemIdMax = 40;
+
+export const getEvaluationOverviewResponseRubricsItemLevelsItemLabelMax = 80;
+
+export const getEvaluationOverviewResponseRubricsItemLevelsItemScoreMin = 0;
+export const getEvaluationOverviewResponseRubricsItemLevelsItemScoreMax = 100;
+
+export const getEvaluationOverviewResponseRubricsItemLevelsItemDescriptorMax = 500;
+
+export const getEvaluationOverviewResponseRubricsItemLevelsMin = 2;
+export const getEvaluationOverviewResponseRubricsItemLevelsMax = 6;
+
+
+
+export const GetEvaluationOverviewResponse = zod.object({
+  "campaigns": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "status": zod.string()
+})),
+  "groups": zod.array(zod.object({
+  "campaignId": zod.string(),
+  "scoreScale": zod.union([zod.literal(10),zod.literal(100)]),
+  "status": zod.enum(['draft', 'in_progress', 'closed']),
+  "closedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "criteria": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "learningOutcomeCode": zod.string(),
+  "learningOutcomeTitle": zod.string(),
+  "code": zod.string(),
+  "title": zod.string(),
+  "weight": zod.number().min(getEvaluationOverviewResponseCriteriaItemWeightMin).max(getEvaluationOverviewResponseCriteriaItemWeightMax),
+  "minimumScore": zod.number().min(getEvaluationOverviewResponseCriteriaItemMinimumScoreMin).max(getEvaluationOverviewResponseCriteriaItemMinimumScoreMax),
+  "minimumEvidenceCount": zod.number().int().min(1).max(getEvaluationOverviewResponseCriteriaItemMinimumEvidenceCountMax),
+  "version": zod.number().int(),
+  "isCurrent": zod.boolean()
+})),
+  "rubrics": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "criterionId": zod.string(),
+  "title": zod.string(),
+  "version": zod.number().int(),
+  "levels": zod.array(zod.object({
+  "id": zod.string().min(1).max(getEvaluationOverviewResponseRubricsItemLevelsItemIdMax),
+  "label": zod.string().min(1).max(getEvaluationOverviewResponseRubricsItemLevelsItemLabelMax),
+  "score": zod.number().min(getEvaluationOverviewResponseRubricsItemLevelsItemScoreMin).max(getEvaluationOverviewResponseRubricsItemLevelsItemScoreMax),
+  "descriptor": zod.string().min(1).max(getEvaluationOverviewResponseRubricsItemLevelsItemDescriptorMax)
+})).min(getEvaluationOverviewResponseRubricsItemLevelsMin).max(getEvaluationOverviewResponseRubricsItemLevelsMax),
+  "isPublished": zod.boolean(),
+  "publishedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "activities": zod.array(zod.object({
+  "eventId": zod.string(),
+  "campaignId": zod.string(),
+  "title": zod.string(),
+  "eventType": zod.string(),
+  "completedAt": zod.string().datetime({"offset":true}).nullable(),
+  "criterionIds": zod.array(zod.string())
+})),
+  "entries": zod.array(zod.object({
+  "portfolioEntryId": zod.string(),
+  "campaignId": zod.string(),
+  "eventId": zod.string(),
+  "activityTitle": zod.string(),
+  "studentUserId": zod.string(),
+  "studentName": zod.string(),
+  "evidenceDocumentReference": zod.string(),
+  "entryStatus": zod.string(),
+  "assessments": zod.array(zod.object({
+  "id": zod.string(),
+  "portfolioEntryId": zod.string(),
+  "criterionId": zod.string(),
+  "criterionTitle": zod.string(),
+  "rubricId": zod.string(),
+  "rubricVersion": zod.number().int(),
+  "rubricLevelId": zod.string(),
+  "rubricLevelLabel": zod.string(),
+  "score": zod.number(),
+  "scoreScale": zod.union([zod.literal(10),zod.literal(100)]),
+  "attemptNumber": zod.number().int(),
+  "status": zod.enum(['achieved', 'recovery_required']),
+  "feedback": zod.string(),
+  "reason": zod.string(),
+  "evaluatorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+}))
+})),
+  "audit": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "entityType": zod.string(),
+  "entityId": zod.string(),
+  "action": zod.string(),
+  "summary": zod.string(),
+  "actorName": zod.string(),
+  "reason": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "capabilities": zod.object({
+  "canConfigure": zod.boolean(),
+  "canEvaluate": zod.boolean(),
+  "canViewAudit": zod.boolean(),
+  "canClose": zod.boolean()
+})
+})
+
+
+/**
+ * @summary Add a versioned curriculum criterion to a campaign
+ */
+export const createEvaluationCriterionBodyLearningOutcomeCodeMax = 40;
+
+export const createEvaluationCriterionBodyLearningOutcomeTitleMin = 2;
+export const createEvaluationCriterionBodyLearningOutcomeTitleMax = 160;
+
+export const createEvaluationCriterionBodyCodeMax = 40;
+
+export const createEvaluationCriterionBodyTitleMin = 2;
+export const createEvaluationCriterionBodyTitleMax = 160;
+
+export const createEvaluationCriterionBodyWeightMin = 0;
+export const createEvaluationCriterionBodyWeightMax = 100;
+
+export const createEvaluationCriterionBodyMinimumScoreMin = 0;
+export const createEvaluationCriterionBodyMinimumScoreMax = 100;
+
+export const createEvaluationCriterionBodyMinimumEvidenceCountMax = 50;
+
+
+
+export const CreateEvaluationCriterionBody = zod.object({
+  "campaignId": zod.string(),
+  "learningOutcomeCode": zod.string().min(1).max(createEvaluationCriterionBodyLearningOutcomeCodeMax),
+  "learningOutcomeTitle": zod.string().min(createEvaluationCriterionBodyLearningOutcomeTitleMin).max(createEvaluationCriterionBodyLearningOutcomeTitleMax),
+  "code": zod.string().min(1).max(createEvaluationCriterionBodyCodeMax),
+  "title": zod.string().min(createEvaluationCriterionBodyTitleMin).max(createEvaluationCriterionBodyTitleMax),
+  "weight": zod.number().min(createEvaluationCriterionBodyWeightMin).max(createEvaluationCriterionBodyWeightMax),
+  "minimumScore": zod.number().min(createEvaluationCriterionBodyMinimumScoreMin).max(createEvaluationCriterionBodyMinimumScoreMax),
+  "minimumEvidenceCount": zod.number().int().min(1).max(createEvaluationCriterionBodyMinimumEvidenceCountMax)
+})
+
+export const createEvaluationCriterionResponseWeightMin = 0;
+export const createEvaluationCriterionResponseWeightMax = 100;
+
+export const createEvaluationCriterionResponseMinimumScoreMin = 0;
+export const createEvaluationCriterionResponseMinimumScoreMax = 100;
+
+export const createEvaluationCriterionResponseMinimumEvidenceCountMax = 50;
+
+
+
+export const CreateEvaluationCriterionResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "learningOutcomeCode": zod.string(),
+  "learningOutcomeTitle": zod.string(),
+  "code": zod.string(),
+  "title": zod.string(),
+  "weight": zod.number().min(createEvaluationCriterionResponseWeightMin).max(createEvaluationCriterionResponseWeightMax),
+  "minimumScore": zod.number().min(createEvaluationCriterionResponseMinimumScoreMin).max(createEvaluationCriterionResponseMinimumScoreMax),
+  "minimumEvidenceCount": zod.number().int().min(1).max(createEvaluationCriterionResponseMinimumEvidenceCountMax),
+  "version": zod.number().int(),
+  "isCurrent": zod.boolean()
+})
+
+
+/**
+ * @summary Create an immutable new version of a curriculum criterion
+ */
+
+
+
+export const ReviseEvaluationCriterionParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const reviseEvaluationCriterionBodyLearningOutcomeCodeMax = 40;
+
+export const reviseEvaluationCriterionBodyLearningOutcomeTitleMin = 2;
+export const reviseEvaluationCriterionBodyLearningOutcomeTitleMax = 160;
+
+export const reviseEvaluationCriterionBodyCodeMax = 40;
+
+export const reviseEvaluationCriterionBodyTitleMin = 2;
+export const reviseEvaluationCriterionBodyTitleMax = 160;
+
+export const reviseEvaluationCriterionBodyWeightMin = 0;
+export const reviseEvaluationCriterionBodyWeightMax = 100;
+
+export const reviseEvaluationCriterionBodyMinimumScoreMin = 0;
+export const reviseEvaluationCriterionBodyMinimumScoreMax = 100;
+
+export const reviseEvaluationCriterionBodyMinimumEvidenceCountMax = 50;
+
+
+
+export const ReviseEvaluationCriterionBody = zod.object({
+  "campaignId": zod.string(),
+  "learningOutcomeCode": zod.string().min(1).max(reviseEvaluationCriterionBodyLearningOutcomeCodeMax),
+  "learningOutcomeTitle": zod.string().min(reviseEvaluationCriterionBodyLearningOutcomeTitleMin).max(reviseEvaluationCriterionBodyLearningOutcomeTitleMax),
+  "code": zod.string().min(1).max(reviseEvaluationCriterionBodyCodeMax),
+  "title": zod.string().min(reviseEvaluationCriterionBodyTitleMin).max(reviseEvaluationCriterionBodyTitleMax),
+  "weight": zod.number().min(reviseEvaluationCriterionBodyWeightMin).max(reviseEvaluationCriterionBodyWeightMax),
+  "minimumScore": zod.number().min(reviseEvaluationCriterionBodyMinimumScoreMin).max(reviseEvaluationCriterionBodyMinimumScoreMax),
+  "minimumEvidenceCount": zod.number().int().min(1).max(reviseEvaluationCriterionBodyMinimumEvidenceCountMax)
+})
+
+export const reviseEvaluationCriterionResponseWeightMin = 0;
+export const reviseEvaluationCriterionResponseWeightMax = 100;
+
+export const reviseEvaluationCriterionResponseMinimumScoreMin = 0;
+export const reviseEvaluationCriterionResponseMinimumScoreMax = 100;
+
+export const reviseEvaluationCriterionResponseMinimumEvidenceCountMax = 50;
+
+
+
+export const ReviseEvaluationCriterionResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "learningOutcomeCode": zod.string(),
+  "learningOutcomeTitle": zod.string(),
+  "code": zod.string(),
+  "title": zod.string(),
+  "weight": zod.number().min(reviseEvaluationCriterionResponseWeightMin).max(reviseEvaluationCriterionResponseWeightMax),
+  "minimumScore": zod.number().min(reviseEvaluationCriterionResponseMinimumScoreMin).max(reviseEvaluationCriterionResponseMinimumScoreMax),
+  "minimumEvidenceCount": zod.number().int().min(1).max(reviseEvaluationCriterionResponseMinimumEvidenceCountMax),
+  "version": zod.number().int(),
+  "isCurrent": zod.boolean()
+})
+
+
+/**
+ * @summary Check that current criterion weights total 100 percent
+ */
+export const ValidateEvaluationWeightsBody = zod.object({
+  "campaignId": zod.string()
+})
+
+export const ValidateEvaluationWeightsResponse = zod.object({
+  "campaignId": zod.string(),
+  "criterionCount": zod.number().int(),
+  "totalWeight": zod.number(),
+  "valid": zod.boolean()
+})
+
+
+/**
+ * @summary Configure the simulated scoring scale before assessment
+ */
+
+
+
+export const UpdateEvaluationGroupSettingsParams = zod.object({
+  "campaignId": zod.coerce.string().min(1)
+})
+
+export const UpdateEvaluationGroupSettingsBody = zod.object({
+  "scoreScale": zod.union([zod.literal(10),zod.literal(100)])
+})
+
+export const UpdateEvaluationGroupSettingsResponse = zod.object({
+  "campaignId": zod.string(),
+  "scoreScale": zod.union([zod.literal(10),zod.literal(100)]),
+  "status": zod.enum(['draft', 'in_progress', 'closed']),
+  "closedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Create a draft rubric version for a curriculum criterion
+ */
+export const createEvaluationRubricBodyTitleMin = 2;
+export const createEvaluationRubricBodyTitleMax = 120;
+
+export const createEvaluationRubricBodyLevelsItemIdMax = 40;
+
+export const createEvaluationRubricBodyLevelsItemLabelMax = 80;
+
+export const createEvaluationRubricBodyLevelsItemScoreMin = 0;
+export const createEvaluationRubricBodyLevelsItemScoreMax = 100;
+
+export const createEvaluationRubricBodyLevelsItemDescriptorMax = 500;
+
+export const createEvaluationRubricBodyLevelsMin = 2;
+export const createEvaluationRubricBodyLevelsMax = 6;
+
+
+
+export const CreateEvaluationRubricBody = zod.object({
+  "criterionId": zod.string(),
+  "title": zod.string().min(createEvaluationRubricBodyTitleMin).max(createEvaluationRubricBodyTitleMax),
+  "levels": zod.array(zod.object({
+  "id": zod.string().min(1).max(createEvaluationRubricBodyLevelsItemIdMax),
+  "label": zod.string().min(1).max(createEvaluationRubricBodyLevelsItemLabelMax),
+  "score": zod.number().min(createEvaluationRubricBodyLevelsItemScoreMin).max(createEvaluationRubricBodyLevelsItemScoreMax),
+  "descriptor": zod.string().min(1).max(createEvaluationRubricBodyLevelsItemDescriptorMax)
+})).min(createEvaluationRubricBodyLevelsMin).max(createEvaluationRubricBodyLevelsMax)
+})
+
+export const createEvaluationRubricResponseLevelsItemIdMax = 40;
+
+export const createEvaluationRubricResponseLevelsItemLabelMax = 80;
+
+export const createEvaluationRubricResponseLevelsItemScoreMin = 0;
+export const createEvaluationRubricResponseLevelsItemScoreMax = 100;
+
+export const createEvaluationRubricResponseLevelsItemDescriptorMax = 500;
+
+export const createEvaluationRubricResponseLevelsMin = 2;
+export const createEvaluationRubricResponseLevelsMax = 6;
+
+
+
+export const CreateEvaluationRubricResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "criterionId": zod.string(),
+  "title": zod.string(),
+  "version": zod.number().int(),
+  "levels": zod.array(zod.object({
+  "id": zod.string().min(1).max(createEvaluationRubricResponseLevelsItemIdMax),
+  "label": zod.string().min(1).max(createEvaluationRubricResponseLevelsItemLabelMax),
+  "score": zod.number().min(createEvaluationRubricResponseLevelsItemScoreMin).max(createEvaluationRubricResponseLevelsItemScoreMax),
+  "descriptor": zod.string().min(1).max(createEvaluationRubricResponseLevelsItemDescriptorMax)
+})).min(createEvaluationRubricResponseLevelsMin).max(createEvaluationRubricResponseLevelsMax),
+  "isPublished": zod.boolean(),
+  "publishedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Freeze a rubric version before it is used for assessment
+ */
+
+
+
+export const PublishEvaluationRubricParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const publishEvaluationRubricResponseLevelsItemIdMax = 40;
+
+export const publishEvaluationRubricResponseLevelsItemLabelMax = 80;
+
+export const publishEvaluationRubricResponseLevelsItemScoreMin = 0;
+export const publishEvaluationRubricResponseLevelsItemScoreMax = 100;
+
+export const publishEvaluationRubricResponseLevelsItemDescriptorMax = 500;
+
+export const publishEvaluationRubricResponseLevelsMin = 2;
+export const publishEvaluationRubricResponseLevelsMax = 6;
+
+
+
+export const PublishEvaluationRubricResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "criterionId": zod.string(),
+  "title": zod.string(),
+  "version": zod.number().int(),
+  "levels": zod.array(zod.object({
+  "id": zod.string().min(1).max(publishEvaluationRubricResponseLevelsItemIdMax),
+  "label": zod.string().min(1).max(publishEvaluationRubricResponseLevelsItemLabelMax),
+  "score": zod.number().min(publishEvaluationRubricResponseLevelsItemScoreMin).max(publishEvaluationRubricResponseLevelsItemScoreMax),
+  "descriptor": zod.string().min(1).max(publishEvaluationRubricResponseLevelsItemDescriptorMax)
+})).min(publishEvaluationRubricResponseLevelsMin).max(publishEvaluationRubricResponseLevelsMax),
+  "isPublished": zod.boolean(),
+  "publishedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Link a simulation activity to current evaluation criteria
+ */
+
+
+
+export const AssignEvaluationActivityCriteriaParams = zod.object({
+  "eventId": zod.coerce.string().min(1)
+})
+
+export const assignEvaluationActivityCriteriaBodyCriterionIdsMax = 30;
+
+
+
+export const AssignEvaluationActivityCriteriaBody = zod.object({
+  "criterionIds": zod.array(zod.string()).min(1).max(assignEvaluationActivityCriteriaBodyCriterionIdsMax)
+})
+
+export const AssignEvaluationActivityCriteriaResponse = zod.object({
+  "eventId": zod.string(),
+  "campaignId": zod.string(),
+  "title": zod.string(),
+  "eventType": zod.string(),
+  "completedAt": zod.string().datetime({"offset":true}).nullable(),
+  "criterionIds": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Record a rubric-based criterion result or recovery attempt
+ */
+export const createEvaluationAssessmentBodyFeedbackMin = 5;
+export const createEvaluationAssessmentBodyFeedbackMax = 1000;
+
+export const createEvaluationAssessmentBodyReasonMin = 5;
+export const createEvaluationAssessmentBodyReasonMax = 500;
+
+
+
+export const CreateEvaluationAssessmentBody = zod.object({
+  "portfolioEntryId": zod.string(),
+  "criterionId": zod.string(),
+  "rubricId": zod.string(),
+  "rubricLevelId": zod.string(),
+  "feedback": zod.string().min(createEvaluationAssessmentBodyFeedbackMin).max(createEvaluationAssessmentBodyFeedbackMax),
+  "reason": zod.string().min(createEvaluationAssessmentBodyReasonMin).max(createEvaluationAssessmentBodyReasonMax),
+  "isRecovery": zod.boolean()
+})
+
+export const CreateEvaluationAssessmentResponse = zod.object({
+  "id": zod.string(),
+  "portfolioEntryId": zod.string(),
+  "criterionId": zod.string(),
+  "criterionTitle": zod.string(),
+  "rubricId": zod.string(),
+  "rubricVersion": zod.number().int(),
+  "rubricLevelId": zod.string(),
+  "rubricLevelLabel": zod.string(),
+  "score": zod.number(),
+  "scoreScale": zod.union([zod.literal(10),zod.literal(100)]),
+  "attemptNumber": zod.number().int(),
+  "status": zod.enum(['achieved', 'recovery_required']),
+  "feedback": zod.string(),
+  "reason": zod.string(),
+  "evaluatorName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Close a didactic evaluation record after validation
+ */
+
+
+
+export const CloseEvaluationGroupParams = zod.object({
+  "campaignId": zod.coerce.string().min(1)
+})
+
+export const closeEvaluationGroupBodyReasonMin = 10;
+export const closeEvaluationGroupBodyReasonMax = 500;
+
+
+
+export const CloseEvaluationGroupBody = zod.object({
+  "confirmationPhrase": zod.enum(['CERRAR EVALUACIÓN']),
+  "reason": zod.string().min(closeEvaluationGroupBodyReasonMin).max(closeEvaluationGroupBodyReasonMax)
+})
+
+export const CloseEvaluationGroupResponse = zod.object({
+  "campaignId": zod.string(),
+  "scoreScale": zod.union([zod.literal(10),zod.literal(100)]),
+  "status": zod.enum(['draft', 'in_progress', 'closed']),
+  "closedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Read the authenticated user's scoped mentorship workspace
+ */
+export const GetMentorshipOverviewQueryParams = zod.object({
+  "campaignId": zod.coerce.string().optional()
+})
+
+export const GetMentorshipOverviewResponse = zod.object({
+  "campaigns": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "ownerOrganizationId": zod.string(),
+  "participantOrganizationIds": zod.array(zod.string())
+})),
+  "organizations": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "center": zod.string(),
+  "island": zod.string(),
+  "role": zod.string()
+})),
+  "eligibleDocuments": zod.array(zod.object({
+  "id": zod.string(),
+  "reference": zod.string(),
+  "title": zod.string(),
+  "organizationId": zod.string()
+})),
+  "entities": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "kind": zod.enum(['company', 'professional_association', 'institution', 'other']),
+  "linkedOrganizationId": zod.string().nullable(),
+  "areas": zod.array(zod.string()),
+  "agreementStatus": zod.enum(['draft', 'pending_review', 'approved', 'revoked']),
+  "agreementReference": zod.string(),
+  "contactName": zod.string(),
+  "contactRole": zod.string(),
+  "publishNameAuthorized": zod.boolean(),
+  "validFrom": zod.string().date().nullable(),
+  "validUntil": zod.string().date().nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "sessions": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "organizationId": zod.string(),
+  "entityId": zod.string(),
+  "entityName": zod.string(),
+  "objective": zod.string(),
+  "modality": zod.enum(['in_person', 'remote', 'document_review']),
+  "scheduledDate": zod.string().date(),
+  "scheduledTime": zod.string(),
+  "status": zod.enum(['proposed', 'confirmed', 'rescheduled', 'completed', 'cancelled']),
+  "groupLabel": zod.string(),
+  "participantCount": zod.number().int(),
+  "materialSummary": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "challenges": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "entityId": zod.string(),
+  "entityName": zod.string(),
+  "organizationId": zod.string().nullable(),
+  "simulationEventId": zod.string().nullable(),
+  "title": zod.string(),
+  "sector": zod.string(),
+  "level": zod.enum(['basic', 'intermediate', 'advanced']),
+  "anonymizedSummary": zod.string(),
+  "status": zod.enum(['proposed', 'validated', 'returned', 'assigned', 'closed']),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "reviews": zod.array(zod.object({
+  "id": zod.string(),
+  "challengeId": zod.string(),
+  "entityId": zod.string(),
+  "reviewerLabel": zod.string(),
+  "decision": zod.enum(['approved', 'returned']),
+  "observation": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "evidence": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "sessionId": zod.string().nullable(),
+  "challengeId": zod.string().nullable(),
+  "kind": zod.enum(['minutes', 'materials', 'attendance_aggregate', 'deliverable']),
+  "summary": zod.string(),
+  "participantCount": zod.number().int(),
+  "documentReference": zod.string().nullable(),
+  "simulatedDate": zod.string().date(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "recommendations": zod.array(zod.object({
+  "id": zod.string(),
+  "reviewId": zod.string(),
+  "text": zod.string(),
+  "status": zod.enum(['proposed', 'accepted', 'implemented', 'rejected']),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "audit": zod.array(zod.object({
+  "id": zod.string(),
+  "resourceType": zod.string(),
+  "resourceId": zod.string(),
+  "action": zod.string(),
+  "summary": zod.string(),
+  "actorLabel": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "impact": zod.object({
+  "sessionsPlanned": zod.number().int(),
+  "sessionsCompleted": zod.number().int(),
+  "challengesValidated": zod.number().int(),
+  "recommendationsImplemented": zod.number().int(),
+  "transferRate": zod.number()
+}),
+  "capabilities": zod.object({
+  "canManageEntities": zod.boolean(),
+  "canSchedule": zod.boolean(),
+  "canProposeChallenges": zod.boolean(),
+  "canReview": zod.boolean(),
+  "canRecordEvidence": zod.boolean(),
+  "canManageTransfer": zod.boolean(),
+  "canViewAudit": zod.boolean()
+})
+})
+
+
+/**
+ * @summary Register a fictional or authorized mentoring collaborator
+ */
+export const createMentorEntityBodyNameMin = 2;
+export const createMentorEntityBodyNameMax = 140;
+
+export const createMentorEntityBodyAreasItemMin = 2;
+export const createMentorEntityBodyAreasItemMax = 80;
+
+export const createMentorEntityBodyAreasMax = 8;
+
+export const createMentorEntityBodyAgreementReferenceMin = 2;
+export const createMentorEntityBodyAgreementReferenceMax = 100;
+
+export const createMentorEntityBodyContactNameMin = 2;
+export const createMentorEntityBodyContactNameMax = 100;
+
+export const createMentorEntityBodyContactRoleMin = 2;
+export const createMentorEntityBodyContactRoleMax = 100;
+
+
+
+export const CreateMentorEntityBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "name": zod.string().min(createMentorEntityBodyNameMin).max(createMentorEntityBodyNameMax),
+  "kind": zod.enum(['company', 'professional_association', 'institution', 'other']),
+  "linkedOrganizationId": zod.string().nullable(),
+  "areas": zod.array(zod.string().min(createMentorEntityBodyAreasItemMin).max(createMentorEntityBodyAreasItemMax)).min(1).max(createMentorEntityBodyAreasMax),
+  "agreementReference": zod.string().min(createMentorEntityBodyAgreementReferenceMin).max(createMentorEntityBodyAgreementReferenceMax),
+  "contactName": zod.string().min(createMentorEntityBodyContactNameMin).max(createMentorEntityBodyContactNameMax),
+  "contactRole": zod.string().min(createMentorEntityBodyContactRoleMin).max(createMentorEntityBodyContactRoleMax),
+  "publishNameAuthorized": zod.boolean(),
+  "validFrom": zod.string().date().nullish(),
+  "validUntil": zod.string().date().nullish()
+})
+
+export const CreateMentorEntityResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "kind": zod.enum(['company', 'professional_association', 'institution', 'other']),
+  "linkedOrganizationId": zod.string().nullable(),
+  "areas": zod.array(zod.string()),
+  "agreementStatus": zod.enum(['draft', 'pending_review', 'approved', 'revoked']),
+  "agreementReference": zod.string(),
+  "contactName": zod.string(),
+  "contactRole": zod.string(),
+  "publishNameAuthorized": zod.boolean(),
+  "validFrom": zod.string().date().nullable(),
+  "validUntil": zod.string().date().nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Update the documented agreement state for a collaborator
+ */
+
+
+
+export const UpdateMentorAgreementParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const updateMentorAgreementBodyReasonMin = 5;
+export const updateMentorAgreementBodyReasonMax = 400;
+
+
+
+export const UpdateMentorAgreementBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "agreementStatus": zod.enum(['pending_review', 'approved', 'revoked']),
+  "reason": zod.string().min(updateMentorAgreementBodyReasonMin).max(updateMentorAgreementBodyReasonMax)
+})
+
+export const UpdateMentorAgreementResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "kind": zod.enum(['company', 'professional_association', 'institution', 'other']),
+  "linkedOrganizationId": zod.string().nullable(),
+  "areas": zod.array(zod.string()),
+  "agreementStatus": zod.enum(['draft', 'pending_review', 'approved', 'revoked']),
+  "agreementReference": zod.string(),
+  "contactName": zod.string(),
+  "contactRole": zod.string(),
+  "publishNameAuthorized": zod.boolean(),
+  "validFrom": zod.string().date().nullable(),
+  "validUntil": zod.string().date().nullable(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Schedule a mentorship session in a simulation campaign
+ */
+export const createMentorSessionBodyObjectiveMin = 5;
+export const createMentorSessionBodyObjectiveMax = 240;
+
+export const createMentorSessionBodyScheduledTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const createMentorSessionBodyGroupLabelMin = 2;
+export const createMentorSessionBodyGroupLabelMax = 80;
+
+export const createMentorSessionBodyParticipantCountMax = 200;
+
+export const createMentorSessionBodyMaterialSummaryMax = 1000;
+
+
+
+export const CreateMentorSessionBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "campaignId": zod.string(),
+  "organizationId": zod.string(),
+  "entityId": zod.string(),
+  "objective": zod.string().min(createMentorSessionBodyObjectiveMin).max(createMentorSessionBodyObjectiveMax),
+  "modality": zod.enum(['in_person', 'remote', 'document_review']),
+  "scheduledDate": zod.string().date(),
+  "scheduledTime": zod.string().regex(createMentorSessionBodyScheduledTimeRegExp),
+  "groupLabel": zod.string().min(createMentorSessionBodyGroupLabelMin).max(createMentorSessionBodyGroupLabelMax),
+  "participantCount": zod.number().int().min(1).max(createMentorSessionBodyParticipantCountMax),
+  "materialSummary": zod.string().max(createMentorSessionBodyMaterialSummaryMax)
+})
+
+export const CreateMentorSessionResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "organizationId": zod.string(),
+  "entityId": zod.string(),
+  "entityName": zod.string(),
+  "objective": zod.string(),
+  "modality": zod.enum(['in_person', 'remote', 'document_review']),
+  "scheduledDate": zod.string().date(),
+  "scheduledTime": zod.string(),
+  "status": zod.enum(['proposed', 'confirmed', 'rescheduled', 'completed', 'cancelled']),
+  "groupLabel": zod.string(),
+  "participantCount": zod.number().int(),
+  "materialSummary": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Confirm, reschedule, complete, or cancel a session
+ */
+
+
+
+export const ActOnMentorSessionParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const actOnMentorSessionBodyScheduledTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const actOnMentorSessionBodyReasonMin = 5;
+export const actOnMentorSessionBodyReasonMax = 400;
+
+
+
+export const ActOnMentorSessionBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "action": zod.enum(['confirm', 'reschedule', 'complete', 'cancel']),
+  "scheduledDate": zod.string().date().nullish(),
+  "scheduledTime": zod.string().regex(actOnMentorSessionBodyScheduledTimeRegExp).nullish(),
+  "reason": zod.string().min(actOnMentorSessionBodyReasonMin).max(actOnMentorSessionBodyReasonMax)
+})
+
+export const ActOnMentorSessionResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "organizationId": zod.string(),
+  "entityId": zod.string(),
+  "entityName": zod.string(),
+  "objective": zod.string(),
+  "modality": zod.enum(['in_person', 'remote', 'document_review']),
+  "scheduledDate": zod.string().date(),
+  "scheduledTime": zod.string(),
+  "status": zod.enum(['proposed', 'confirmed', 'rescheduled', 'completed', 'cancelled']),
+  "groupLabel": zod.string(),
+  "participantCount": zod.number().int(),
+  "materialSummary": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Propose an anonymized professional challenge
+ */
+export const createMentorChallengeBodyTitleMin = 5;
+export const createMentorChallengeBodyTitleMax = 140;
+
+export const createMentorChallengeBodySectorMin = 2;
+export const createMentorChallengeBodySectorMax = 80;
+
+export const createMentorChallengeBodyAnonymizedSummaryMin = 30;
+export const createMentorChallengeBodyAnonymizedSummaryMax = 2400;
+
+
+
+export const CreateMentorChallengeBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "campaignId": zod.string(),
+  "entityId": zod.string(),
+  "organizationId": zod.string().nullable(),
+  "simulationEventId": zod.string().nullable(),
+  "title": zod.string().min(createMentorChallengeBodyTitleMin).max(createMentorChallengeBodyTitleMax),
+  "sector": zod.string().min(createMentorChallengeBodySectorMin).max(createMentorChallengeBodySectorMax),
+  "level": zod.enum(['basic', 'intermediate', 'advanced']),
+  "anonymizedSummary": zod.string().min(createMentorChallengeBodyAnonymizedSummaryMin).max(createMentorChallengeBodyAnonymizedSummaryMax),
+  "isAnonymized": zod.literal(true)
+})
+
+export const CreateMentorChallengeResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "entityId": zod.string(),
+  "entityName": zod.string(),
+  "organizationId": zod.string().nullable(),
+  "simulationEventId": zod.string().nullable(),
+  "title": zod.string(),
+  "sector": zod.string(),
+  "level": zod.enum(['basic', 'intermediate', 'advanced']),
+  "anonymizedSummary": zod.string(),
+  "status": zod.enum(['proposed', 'validated', 'returned', 'assigned', 'closed']),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Validate, return, assign, or close a professional challenge
+ */
+
+
+
+export const ActOnMentorChallengeParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const actOnMentorChallengeBodyReasonMin = 5;
+export const actOnMentorChallengeBodyReasonMax = 400;
+
+
+
+export const ActOnMentorChallengeBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "action": zod.enum(['validate', 'return', 'assign', 'close']),
+  "targetOrganizationId": zod.string().nullish(),
+  "reason": zod.string().min(actOnMentorChallengeBodyReasonMin).max(actOnMentorChallengeBodyReasonMax)
+})
+
+export const ActOnMentorChallengeResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "entityId": zod.string(),
+  "entityName": zod.string(),
+  "organizationId": zod.string().nullable(),
+  "simulationEventId": zod.string().nullable(),
+  "title": zod.string(),
+  "sector": zod.string(),
+  "level": zod.enum(['basic', 'intermediate', 'advanced']),
+  "anonymizedSummary": zod.string(),
+  "status": zod.enum(['proposed', 'validated', 'returned', 'assigned', 'closed']),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Record a professional review without grading students
+ */
+export const createMentorReviewBodyObservationMin = 10;
+export const createMentorReviewBodyObservationMax = 1800;
+
+
+
+export const CreateMentorReviewBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "challengeId": zod.string(),
+  "decision": zod.enum(['approved', 'returned']),
+  "observation": zod.string().min(createMentorReviewBodyObservationMin).max(createMentorReviewBodyObservationMax)
+})
+
+export const CreateMentorReviewResponse = zod.object({
+  "id": zod.string(),
+  "challengeId": zod.string(),
+  "entityId": zod.string(),
+  "reviewerLabel": zod.string(),
+  "decision": zod.enum(['approved', 'returned']),
+  "observation": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Record aggregate participation evidence and an optional confirmed document
+ */
+export const createMentorEvidenceBodySummaryMin = 5;
+export const createMentorEvidenceBodySummaryMax = 1000;
+
+export const createMentorEvidenceBodyParticipantCountMin = 0;
+export const createMentorEvidenceBodyParticipantCountMax = 200;
+
+
+
+export const CreateMentorEvidenceBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "campaignId": zod.string(),
+  "sessionId": zod.string().nullable(),
+  "challengeId": zod.string().nullable(),
+  "kind": zod.enum(['minutes', 'materials', 'attendance_aggregate', 'deliverable']),
+  "summary": zod.string().min(createMentorEvidenceBodySummaryMin).max(createMentorEvidenceBodySummaryMax),
+  "participantCount": zod.number().int().min(createMentorEvidenceBodyParticipantCountMin).max(createMentorEvidenceBodyParticipantCountMax),
+  "documentId": zod.string().nullable(),
+  "simulatedDate": zod.string().date()
+})
+
+export const CreateMentorEvidenceResponse = zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "sessionId": zod.string().nullable(),
+  "challengeId": zod.string().nullable(),
+  "kind": zod.enum(['minutes', 'materials', 'attendance_aggregate', 'deliverable']),
+  "summary": zod.string(),
+  "participantCount": zod.number().int(),
+  "documentReference": zod.string().nullable(),
+  "simulatedDate": zod.string().date(),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Record a recommendation from a professional review
+ */
+export const createMentorRecommendationBodyTextMin = 10;
+export const createMentorRecommendationBodyTextMax = 1200;
+
+
+
+export const CreateMentorRecommendationBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "reviewId": zod.string(),
+  "text": zod.string().min(createMentorRecommendationBodyTextMin).max(createMentorRecommendationBodyTextMax)
+})
+
+export const CreateMentorRecommendationResponse = zod.object({
+  "id": zod.string(),
+  "reviewId": zod.string(),
+  "text": zod.string(),
+  "status": zod.enum(['proposed', 'accepted', 'implemented', 'rejected']),
+  "createdAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Record whether a recommendation was accepted or implemented
+ */
+
+
+
+export const UpdateMentorRecommendationParams = zod.object({
+  "id": zod.coerce.string().min(1)
+})
+
+export const updateMentorRecommendationBodyReasonMin = 5;
+export const updateMentorRecommendationBodyReasonMax = 400;
+
+
+
+export const UpdateMentorRecommendationBody = zod.object({
+  "operationId": zod.string().uuid(),
+  "status": zod.enum(['accepted', 'implemented', 'rejected']),
+  "reason": zod.string().min(updateMentorRecommendationBodyReasonMin).max(updateMentorRecommendationBodyReasonMax)
+})
+
+export const UpdateMentorRecommendationResponse = zod.object({
+  "id": zod.string(),
+  "reviewId": zod.string(),
+  "text": zod.string(),
+  "status": zod.enum(['proposed', 'accepted', 'implemented', 'rejected']),
+  "createdAt": zod.string().datetime({"offset":true})
 })
 
 

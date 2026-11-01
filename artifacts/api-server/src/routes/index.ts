@@ -20,6 +20,9 @@ import projectsRouter from "./projects";
 import documentsRouter from "./documents";
 import communicationsRouter from "./communications";
 import simulationsRouter from "./simulations";
+import portfoliosRouter from "./portfolios";
+import evaluationsRouter from "./evaluations";
+import mentorshipRouter from "./mentorship";
 
 const router: IRouter = Router();
 
@@ -43,6 +46,9 @@ router.use(projectsRouter);
 router.use(documentsRouter);
 router.use(communicationsRouter);
 router.use(simulationsRouter);
+router.use(portfoliosRouter);
+router.use(evaluationsRouter);
+router.use(mentorshipRouter);
 router.use(redfp360Router);
 
 export default router;

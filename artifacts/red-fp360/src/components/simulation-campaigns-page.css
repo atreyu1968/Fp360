@@ -73,3 +73,16 @@
 @media (max-width: 450px) {
   .sc-hero-top { align-items: flex-start; flex-direction: column; }.sc-hero-body { flex-direction: column; }.sc-hero-stamp { align-self: flex-start; }.sc-metrics { grid-template-columns: 1fr 1fr; gap: 7px; }.sc-metrics article { min-height: 105px; padding: 11px; }.sc-metrics strong { font-size: 22px; }.sc-network-tools { flex-direction: column; }.sc-network-tools select { width: 100%; }.sc-analytics-grid { grid-template-columns: 1fr; }.sc-form-actions { flex-wrap: wrap; }.sc-queue-toolbar { align-items: flex-start; flex-direction: column; }.sc-queue-toolbar label { width: 100%; align-items: flex-start; flex-direction: column; }.sc-queue-toolbar select { max-width: none; }
 }
+
+.sc-student-evidence { display: flex; align-items: flex-end; gap: 8px; margin-top: 11px; padding: 10px; border: 1px solid #dce8ec; border-radius: 7px; background: #f8fbfc; }
+.sc-student-evidence .sc-field { flex: 1; min-width: 0; }
+.sc-student-evidence .sc-field select { width: 100%; min-height: 34px; padding: 0 9px; border: 1px solid #dce7eb; border-radius: 6px; color: #335264; background: #fff; font-size: 10px; }
+.sc-student-evidence-confirmed { display: flex; align-items: center; gap: 7px; margin-top: 10px; padding: 8px 10px; border-radius: 6px; color: #16745e; background: #edf8f4; font-size: 10px; font-weight: 650; }
+.sc-student-evidence-confirmed svg { flex: 0 0 auto; }
+.sc-evidence-help { margin: 10px 0 0; color: #6a8291; font-size: 10px; line-height: 1.5; }
+.sc-evidence-error { display: flex; align-items: center; gap: 8px; margin-top: 9px; color: #a24538; font-size: 10px; }
+.sc-evidence-error button { border: 0; color: #1d6fc7; background: transparent; font: inherit; font-weight: 700; cursor: pointer; }
+@media (max-width: 767px) { .sc-student-evidence { align-items: stretch; flex-direction: column; } }
+.sc-analytics-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1050px) { .sc-analytics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 450px) { .sc-analytics-grid { grid-template-columns: 1fr; } }

@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { Router, type ErrorRequestHandler, type Request, type RequestHandler, type Response } from "express";
 import * as api from "@workspace/api-zod";
 import {
   db,
+  fpDocuments,
   fpOrganizations,
   fpSimulationAuditEvents,
   fpSimulationCampaigns,
@@ -83,6 +84,13 @@ async function getCampaign(actor: AuthContext, id: string) {
 }
 
 async function eventOutput(event: typeof fpSimulationEvents.$inferSelect) {
+  const [evidence] = event.evidenceDocumentId ? await db.select({
+    reference: fpDocuments.documentRef,
+  }).from(fpDocuments).where(and(
+    eq(fpDocuments.id, event.evidenceDocumentId),
+    eq(fpDocuments.tenantId, event.tenantId),
+    eq(fpDocuments.organizationId, event.organizationId),
+  )).limit(1) : [];
   return api.CreateFp360SimulationEventResponse.parse({
     id: event.id,
     campaignId: event.campaignId,
@@ -94,6 +102,9 @@ async function eventOutput(event: typeof fpSimulationEvents.$inferSelect) {
     preconditions: event.preconditions,
     requiredDocumentType: event.requiredDocumentType,
     simulatedDate: event.simulatedDate,
+    evidenceDocumentId: event.evidenceDocumentId,
+    evidenceDocumentReference: evidence?.reference ?? null,
+    completedAt: event.completedAt?.toISOString() ?? null,
     createdAt: event.createdAt.toISOString(),
     updatedAt: event.updatedAt.toISOString(),
   });
@@ -190,6 +201,7 @@ router.get("/redfp360/simulations/overview", route(async (req, res) => {
     eq(fpSimulationEvents.tenantId, actor.tenantId),
     inArray(fpSimulationEvents.campaignId, campaignIds),
     ...(!canViewAcrossOrganizations(actor.role) && actor.organizationId ? [eq(fpSimulationEvents.organizationId, actor.organizationId)] : []),
+    ...(actor.role === "student" ? [inArray(fpSimulationEvents.status, ["published", "completed"])] : []),
   )).orderBy(asc(fpSimulationEvents.simulatedDate)) : [];
   res.json(api.GetFp360SimulationsOverviewResponse.parse({
     campaigns: await Promise.all(campaigns.map(campaignOutput)),
@@ -284,6 +296,14 @@ router.post("/redfp360/simulations/campaigns/:id/action", requireSimulationWrite
   if (action === "start" && (current.status !== "approved" || current.startDate > SIMULATION_TODAY || current.endDate < SIMULATION_TODAY)) fail(409, "La campaña debe estar aprobada y dentro de su periodo simulado.");
   if (action === "pause" && (current.status !== "active" || !isManager(actor.role))) fail(409, "Solo se puede pausar una campaña activa.");
   if (action === "close" && !["active", "paused"].includes(current.status)) fail(409, "Solo se puede cerrar una campaña activa o pausada.");
+  if (action === "close") {
+    const unfinished = await db.select({ id: fpSimulationEvents.id }).from(fpSimulationEvents).where(and(
+      eq(fpSimulationEvents.tenantId, actor.tenantId),
+      eq(fpSimulationEvents.campaignId, current.id),
+      inArray(fpSimulationEvents.status, ["draft", "proposed", "approved", "published"]),
+    ));
+    if (unfinished.length) fail(409, "Completa o cancela todas las actividades pendientes antes de cerrar la campaña.");
+  }
   {
     const nextStatus = {
       submit: "review",
@@ -363,6 +383,74 @@ router.post("/redfp360/simulations/campaigns/:id/events", requireSimulationWrite
   res.status(201).json(await eventOutput(event));
 }));
 
+router.put("/redfp360/simulations/events/:id", requireSimulationWriteAccess, route(async (req, res) => {
+  const actor = req.auth as AuthContext;
+  if (!isManager(actor.role)) fail(403, "Solo perfiles responsables pueden corregir propuestas.");
+  const params = api.UpdateFp360SimulationEventParams.safeParse(req.params);
+  const body = api.UpdateFp360SimulationEventBody.safeParse(req.body);
+  if (!params.success || !body.success) fail(400, "Revisa los datos del evento.");
+  const [event] = await db.select().from(fpSimulationEvents).where(and(
+    eq(fpSimulationEvents.id, params.data.id),
+    eq(fpSimulationEvents.tenantId, actor.tenantId),
+  )).limit(1);
+  if (!event) fail(404, "No se encontró el evento.");
+  const campaign = await getCampaign(actor, event.campaignId);
+  const data = body.data;
+  if (data.organizationId !== event.organizationId || !campaign.participantOrganizationIds.includes(data.organizationId)) {
+    fail(403, "La empresa no corresponde a este evento.");
+  }
+  if (!canViewAcrossOrganizations(actor.role) && actor.organizationId !== event.organizationId) {
+    fail(403, "Solo puedes corregir eventos de tu organización.");
+  }
+  if (data.simulatedDate < campaign.startDate || data.simulatedDate > campaign.endDate) {
+    fail(400, "La fecha del evento debe quedar dentro del periodo de campaña.");
+  }
+  safeScenarioText(data.title, data.description, ...data.preconditions);
+  if (data.requiredDocumentType && personalChannel.test(data.requiredDocumentType)) fail(400, "El tipo documental no puede contener datos de contacto.");
+  const detail = JSON.stringify({
+    organizationId: data.organizationId,
+    title: data.title.trim(),
+    eventType: data.eventType,
+    description: data.description.trim(),
+    preconditions: data.preconditions,
+    requiredDocumentType: data.requiredDocumentType ?? null,
+    simulatedDate: data.simulatedDate,
+  });
+  if (personalChannel.test(data.operationId)) fail(400, "El identificador no puede contener datos de contacto.");
+  const [prior] = await db.select().from(fpSimulationAuditEvents).where(and(
+    eq(fpSimulationAuditEvents.tenantId, actor.tenantId),
+    eq(fpSimulationAuditEvents.operationId, data.operationId),
+  )).limit(1);
+  if (prior) {
+    if (prior.campaignId !== campaign.id || prior.eventId !== event.id || prior.action !== "event:edited" || prior.detail !== detail) {
+      fail(409, "El identificador ya se utilizó para otra operación.");
+    }
+    res.json(await eventOutput(event));
+    return;
+  }
+  if (event.status !== "draft" || !["approved", "active", "paused"].includes(campaign.status)) {
+    fail(409, "Solo se pueden corregir borradores devueltos de una campaña abierta.");
+  }
+  const updated = await db.transaction(async (tx) => {
+    const [result] = await tx.update(fpSimulationEvents).set({
+      title: data.title.trim(),
+      eventType: data.eventType,
+      description: data.description.trim(),
+      preconditions: data.preconditions,
+      requiredDocumentType: data.requiredDocumentType ?? null,
+      simulatedDate: data.simulatedDate,
+    }).where(and(
+      eq(fpSimulationEvents.id, event.id),
+      eq(fpSimulationEvents.tenantId, actor.tenantId),
+      eq(fpSimulationEvents.status, "draft"),
+    )).returning();
+    if (!result) fail(409, "El evento cambió en otra sesión. Actualiza la vista y vuelve a intentarlo.");
+    await appendAudit(tx, actor, campaign.id, event.organizationId, event.id, "event:edited", data.operationId, detail);
+    return result;
+  });
+  res.json(await eventOutput(updated));
+}));
+
 router.post("/redfp360/simulations/events/:id/action", requireSimulationWriteAccess, route(async (req, res) => {
   const actor = req.auth as AuthContext;
   const params = api.ActOnFp360SimulationEventParams.safeParse(req.params);
@@ -382,15 +470,20 @@ router.post("/redfp360/simulations/events/:id/action", requireSimulationWriteAcc
     res.json(await eventOutput(event));
     return;
   }
+  if (event.status === "completed") fail(409, "La actividad ya se completó con evidencia documental.");
+  if (action === "submit" && actor.role !== "team_manager") fail(403, "Solo la empresa responsable puede volver a proponer el evento.");
   if (["approve", "publish"].includes(action) && !canReview(actor.role)) fail(403, "Esta acción requiere revisión docente.");
-  if (["cancel", "return"].includes(action) && !isManager(actor.role)) fail(403, "Solo un perfil responsable puede cambiar esta propuesta.");
+  if (["cancel", "return", "submit"].includes(action) && !isManager(actor.role)) fail(403, "Solo un perfil responsable puede cambiar esta propuesta.");
+  if (action === "submit" && event.status !== "draft") fail(409, "Solo se pueden volver a proponer borradores devueltos.");
+  if (action === "submit" && !["approved", "active", "paused"].includes(campaign.status)) fail(409, "La campaña debe seguir abierta para reenviar el evento.");
   if (action === "approve" && event.status !== "proposed") fail(409, "El evento debe estar propuesto para aprobarlo.");
   if (action === "approve" && !["approved", "active", "paused"].includes(campaign.status)) fail(409, "No se puede revisar un evento de una campaña cerrada.");
   if (action === "publish" && (event.status !== "approved" || campaign.status !== "active")) fail(409, "Solo se publica un evento aprobado dentro de una campaña activa.");
-  if (action === "cancel" && event.status === "published") fail(409, "Un evento publicado no se cancela; solicita una actuación docente.");
+  if (action === "cancel" && event.status === "published" && !canReview(actor.role)) fail(403, "Solo docentes o administradores pueden cancelar una actividad publicada.");
+  if (action === "cancel" && event.status === "published" && !body.data.note?.trim()) fail(400, "Indica el motivo para cancelar una actividad publicada.");
   if (action === "return" && !["proposed", "approved"].includes(event.status)) fail(409, "Solo se pueden devolver eventos propuestos o aprobados.");
   {
-    const nextStatus = { approve: "approved", publish: "published", cancel: "cancelled", return: "draft" }[action];
+    const nextStatus = { submit: "proposed", approve: "approved", publish: "published", cancel: "cancelled", return: "draft" }[action];
     await db.transaction(async (tx) => {
       const [updatedEvent] = await tx.update(fpSimulationEvents).set({
         status: nextStatus,
@@ -410,6 +503,65 @@ router.post("/redfp360/simulations/events/:id/action", requireSimulationWriteAcc
   )).limit(1);
   if (!updated) fail(404, "El evento ya no está disponible.");
   res.json(await eventOutput(updated));
+}));
+
+router.post("/redfp360/simulations/events/:id/evidence", requireSimulationWriteAccess, route(async (req, res) => {
+  const actor = req.auth as AuthContext;
+  if (!["student", "team_manager"].includes(actor.role)) fail(403, "Solo el alumnado o la empresa responsable pueden registrar la evidencia.");
+  const params = api.LinkFp360SimulationEventEvidenceParams.safeParse(req.params);
+  const body = api.LinkFp360SimulationEventEvidenceBody.safeParse(req.body);
+  if (!params.success || !body.success) fail(400, "Revisa la empresa, el documento y el identificador de operación.");
+  const [event] = await db.select().from(fpSimulationEvents).where(and(
+    eq(fpSimulationEvents.id, params.data.id),
+    eq(fpSimulationEvents.tenantId, actor.tenantId),
+  )).limit(1);
+  if (!event) fail(404, "No se encontró la actividad.");
+  const campaign = await getCampaign(actor, event.campaignId);
+  const { organizationId, documentId, operationId } = body.data;
+  if (!actor.organizationId || actor.organizationId !== organizationId || event.organizationId !== organizationId) {
+    fail(403, "Solo puedes registrar evidencia para tu propia organización.");
+  }
+  if (await priorOperation(actor, operationId, campaign.id, event.id, "event:evidence_linked")) {
+    if (event.evidenceDocumentId !== documentId) fail(409, "El identificador ya se utilizó con otra evidencia.");
+    res.json(await eventOutput(event));
+    return;
+  }
+  if (event.status !== "published" || campaign.status !== "active") {
+    fail(409, "La actividad debe estar publicada dentro de una campaña activa.");
+  }
+  if (body.data.note) safeScenarioText(body.data.note);
+  if (event.evidenceDocumentId) fail(409, "La actividad ya tiene una evidencia vinculada.");
+  const [document] = await db.select().from(fpDocuments).where(and(
+    eq(fpDocuments.id, documentId),
+    eq(fpDocuments.tenantId, actor.tenantId),
+    eq(fpDocuments.organizationId, organizationId),
+    eq(fpDocuments.status, "confirmed"),
+    eq(fpDocuments.visibility, "organization"),
+    eq(fpDocuments.isSynthetic, true),
+    isNull(fpDocuments.archivedAt),
+  )).limit(1);
+  if (!document) fail(404, "Solo se pueden vincular documentos ficticios, confirmados y visibles para la organización.");
+  if (event.requiredDocumentType && document.documentType !== event.requiredDocumentType) {
+    fail(400, "El documento confirmado no coincide con el tipo requerido por la actividad.");
+  }
+  const updatedEvent = await db.transaction(async (tx) => {
+    const [updated] = await tx.update(fpSimulationEvents).set({
+      status: "completed",
+      evidenceDocumentId: document.id,
+      completedByUserId: actor.userId,
+      completedAt: new Date(),
+    }).where(and(
+      eq(fpSimulationEvents.id, event.id),
+      eq(fpSimulationEvents.tenantId, actor.tenantId),
+      eq(fpSimulationEvents.status, "published"),
+      isNull(fpSimulationEvents.evidenceDocumentId),
+    )).returning();
+    if (!updated) fail(409, "La actividad cambió en otra sesión. Actualiza la vista y vuelve a intentarlo.");
+    const detail = `Evidencia ficticia confirmada: ${document.documentRef}.${body.data.note ? ` ${body.data.note.trim()}` : ""}`;
+    await appendAudit(tx, actor, campaign.id, organizationId, event.id, "event:evidence_linked", operationId, detail);
+    return updated;
+  });
+  res.json(await eventOutput(updatedEvent));
 }));
 
 const errorHandler: ErrorRequestHandler = (error, _req, res, next) => {

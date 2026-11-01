@@ -20,6 +20,12 @@ export interface Fp360SimulationEvent {
   /** @nullable */
   requiredDocumentType: string | null;
   simulatedDate: string;
+  /** @nullable */
+  evidenceDocumentId: string | null;
+  /** @nullable */
+  evidenceDocumentReference: string | null;
+  /** @nullable */
+  completedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -49,6 +49,8 @@ import { HumanResourcesPage } from '@/components/human-resources-page';
 import { EmploymentPage } from '@/components/employment-page';
 import { CommunicationsPage } from '@/components/communications-page';
 import SimulationCampaignsPage from '@/components/simulation-campaigns-page';
+import PortfolioPage from '@/components/portfolio-page';
+import EvaluationPage from '@/components/evaluation-page';
 import { PayrollPage } from '@/components/payroll-page';
 import { CustomerServicePage } from '@/components/customer-service-page';
 import { ProjectsServicesPage } from '@/components/projects-services-page';
@@ -97,7 +99,7 @@ const appModules = [
   'Portafolio profesional', 'Evaluación docente', 'Mentoría empresarial',
   'Coordinación intercentros', 'Administración del sistema',
 ];
-const implemented = new Set([1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]);
+const implemented = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
 const navItems = [
   { href: '/', label: 'Inicio', icon: LayoutDashboard },
   { href: '/mercado', label: 'Mercado', icon: Globe2 },
@@ -114,6 +116,8 @@ const navItems = [
   { href: '/empleo', label: 'Empleo FP360', icon: BriefcaseBusiness },
   { href: '/comunicaciones', label: 'Centro de comunicaciones', icon: Mail },
   { href: '/simulaciones', label: 'FP360 SIM', icon: Activity },
+  { href: '/portafolio', label: 'Portafolio profesional', icon: GraduationCap },
+  { href: '/evaluacion-docente', label: 'Evaluación docente', icon: GraduationCap },
   { href: '/nominas', label: 'Nóminas', icon: FileCheck2 },
   { href: '/seguridad-social', label: 'Seguridad Social', icon: Users },
   { href: '/facturas', label: 'Facturas', icon: ReceiptText },
@@ -140,6 +144,8 @@ const titles: Record<string, { title: string; kicker: string; description: strin
   '/empleo': { title: 'Empleo FP360 · Contratación', kicker: 'PROCESOS LABORALES · SIMULACIÓN EDUCATIVA', description: 'Practica ofertas, comunicaciones contractuales, subsanaciones y finalizaciones con datos ficticios.' },
   '/comunicaciones': { title: 'Centro de comunicaciones FP360', kicker: 'BUZONES INTERNOS · RED SIMULADA', description: 'Coordina conversaciones, tareas y avisos entre empresas sin enviar mensajes a personas reales.' },
   '/simulaciones': { title: 'FP360 SIM · Dirección inteligente', kicker: 'CAMPAÑAS FORMATIVAS · CANARIAS', description: 'Diseña campañas, revisa propuestas y publica eventos educativos sin modificar operaciones del ERP.' },
+  '/portafolio': { title: 'Portafolio profesional', kicker: 'EVIDENCIAS · APRENDIZAJE · CANARIAS', description: 'Recoge evidencias verificables de las operaciones simuladas y documenta la contribución individual del alumnado.' },
+  '/evaluacion-docente': { title: 'Evaluación docente', kicker: 'CRITERIOS · RÚBRICAS · TRAZABILIDAD', description: 'Configura criterios curriculares por centro, valora evidencias verificadas y conserva cada intento de evaluación.' },
   '/nominas': { title: 'Nóminas FP360', kicker: 'RECIBOS EDUCATIVOS · IMPORTES DIDÁCTICOS', description: 'Calcula nóminas con parámetros configurables; no se envían pagos, retenciones ni cotizaciones reales.' },
   '/atencion-cliente': { title: 'Atención al cliente', kicker: 'CASOS, DEVOLUCIONES Y ACUERDOS EDUCATIVOS', description: 'Gestiona reclamaciones y su trazabilidad; las comunicaciones y los efectos comerciales permanecen simulados.' },
   '/proyectos-servicios': { title: 'Proyectos y servicios', kicker: 'ÓRDENES · ENTREGABLES · COSTES DIDÁCTICOS', description: 'Planifica servicios simulados, valida entregables y controla costes e hitos sin operar fuera del ERP educativo.' },
@@ -1221,6 +1227,8 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       case '/empleo': return <EmploymentPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/comunicaciones': return <CommunicationsPage identity={identity} organizationId={identity.organizationId ?? null} organizations={organizationsQuery.data ?? []} onNotice={setNotice} />;
       case '/simulaciones': return <SimulationCampaignsPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
+      case '/portafolio': return <PortfolioPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
+      case '/evaluacion-docente': return <EvaluationPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
       case '/nominas': return <PayrollPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/atencion-cliente': return <CustomerServicePage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/proyectos-servicios': return <ProjectsServicesPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
@@ -1270,6 +1278,8 @@ function Shell({ identity }: { identity: AuthIdentity }) {
         <Route path="/empleo">{page}</Route>
         <Route path="/comunicaciones">{page}</Route>
         <Route path="/simulaciones">{page}</Route>
+        <Route path="/portafolio">{page}</Route>
+        <Route path="/evaluacion-docente">{page}</Route>
         <Route path="/nominas">{page}</Route>
         <Route path="/atencion-cliente">{page}</Route>
         <Route path="/proyectos-servicios">{page}</Route>

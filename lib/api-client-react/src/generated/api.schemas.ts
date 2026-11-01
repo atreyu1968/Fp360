@@ -6768,6 +6768,7 @@ export const Fp360SimulationEventStatus = {
   proposed: 'proposed',
   approved: 'approved',
   published: 'published',
+  completed: 'completed',
   cancelled: 'cancelled',
 } as const;
 
@@ -6783,6 +6784,12 @@ export interface Fp360SimulationEvent {
   /** @nullable */
   requiredDocumentType: string | null;
   simulatedDate: string;
+  /** @nullable */
+  evidenceDocumentId: string | null;
+  /** @nullable */
+  evidenceDocumentReference: string | null;
+  /** @nullable */
+  completedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -6918,6 +6925,7 @@ export type Fp360SimulationEventActionAction = typeof Fp360SimulationEventAction
 
 
 export const Fp360SimulationEventActionAction = {
+  submit: 'submit',
   approve: 'approve',
   publish: 'publish',
   cancel: 'cancel',
@@ -6935,6 +6943,1028 @@ export interface Fp360SimulationEventAction {
      */
   operationId: string;
 }
+
+export interface Fp360SimulationEvidenceInput {
+  organizationId: string;
+  documentId: string;
+  /** @maxLength 500 */
+  note?: string;
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export interface PortfolioCriterion {
+  id: string;
+  campaignId: string;
+  /** @nullable */
+  code: string | null;
+  title: string;
+  description: string;
+  isRequired: boolean;
+  createdAt: string;
+}
+
+export interface PortfolioCriterionInput {
+  campaignId: string;
+  /** @maxLength 40 */
+  code?: string;
+  /**
+     * @minLength 3
+     * @maxLength 120
+     */
+  title: string;
+  /** @maxLength 500 */
+  description: string;
+  isRequired: boolean;
+}
+
+export interface PortfolioActivity {
+  eventId: string;
+  campaignId: string;
+  campaignTitle: string;
+  organizationId: string;
+  title: string;
+  eventType: string;
+  simulatedDate: string;
+  evidenceDocumentId: string;
+  /** @nullable */
+  evidenceDocumentReference: string | null;
+  /** @nullable */
+  completedAt: string | null;
+}
+
+export type PortfolioEntryStatus = typeof PortfolioEntryStatus[keyof typeof PortfolioEntryStatus];
+
+
+export const PortfolioEntryStatus = {
+  draft: 'draft',
+  submitted: 'submitted',
+  returned: 'returned',
+  validated: 'validated',
+} as const;
+
+export interface PortfolioEntry {
+  id: string;
+  campaignId: string;
+  campaignTitle: string;
+  organizationId: string;
+  eventId: string;
+  activityTitle: string;
+  eventType: string;
+  simulatedDate: string;
+  evidenceDocumentId: string;
+  /** @nullable */
+  evidenceDocumentReference: string | null;
+  studentUserId: string;
+  studentName: string;
+  canViewPrivateDetails: boolean;
+  status: PortfolioEntryStatus;
+  reflection: string;
+  contribution: string;
+  selfAssessment: string;
+  version: number;
+  criteria: PortfolioCriterion[];
+  /** @nullable */
+  submittedAt: string | null;
+  /** @nullable */
+  reviewedAt: string | null;
+  /** @nullable */
+  reviewerName: string | null;
+  feedback: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PortfolioOverview {
+  entries: PortfolioEntry[];
+  activities: PortfolioActivity[];
+  criteria: PortfolioCriterion[];
+  canReview: boolean;
+  canManageCriteria: boolean;
+}
+
+export interface PortfolioEntryInput {
+  eventId: string;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  criterionIds: string[];
+  /**
+     * @minLength 20
+     * @maxLength 2000
+     */
+  reflection: string;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  contribution: string;
+  /** @maxLength 1000 */
+  selfAssessment: string;
+}
+
+export interface PortfolioEntryUpdate {
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  criterionIds: string[];
+  /**
+     * @minLength 20
+     * @maxLength 2000
+     */
+  reflection: string;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  contribution: string;
+  /** @maxLength 1000 */
+  selfAssessment: string;
+}
+
+export interface PortfolioActionInput {
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export type PortfolioReviewInputOutcome = typeof PortfolioReviewInputOutcome[keyof typeof PortfolioReviewInputOutcome];
+
+
+export const PortfolioReviewInputOutcome = {
+  validated: 'validated',
+  returned: 'returned',
+} as const;
+
+export interface PortfolioReviewInput {
+  outcome: PortfolioReviewInputOutcome;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  feedback: string;
+}
+
+export interface PortfolioRevision {
+  version: number;
+  reflection: string;
+  contribution: string;
+  selfAssessment: string;
+  createdByName: string;
+  createdAt: string;
+}
+
+export type PortfolioReviewOutcome = typeof PortfolioReviewOutcome[keyof typeof PortfolioReviewOutcome];
+
+
+export const PortfolioReviewOutcome = {
+  validated: 'validated',
+  returned: 'returned',
+} as const;
+
+export interface PortfolioReview {
+  version: number;
+  outcome: PortfolioReviewOutcome;
+  feedback: string;
+  reviewerName: string;
+  createdAt: string;
+}
+
+export interface PortfolioHistory {
+  revisions: PortfolioRevision[];
+  reviews: PortfolioReview[];
+}
+
+export interface EvaluationCampaign {
+  id: string;
+  title: string;
+  status: string;
+}
+
+export type EvaluationGroupScoreScale = typeof EvaluationGroupScoreScale[keyof typeof EvaluationGroupScoreScale];
+
+
+export const EvaluationGroupScoreScale = {
+  NUMBER_10: 10,
+  NUMBER_100: 100,
+} as const;
+
+export type EvaluationGroupStatus = typeof EvaluationGroupStatus[keyof typeof EvaluationGroupStatus];
+
+
+export const EvaluationGroupStatus = {
+  draft: 'draft',
+  in_progress: 'in_progress',
+  closed: 'closed',
+} as const;
+
+export interface EvaluationGroup {
+  campaignId: string;
+  scoreScale: EvaluationGroupScoreScale;
+  status: EvaluationGroupStatus;
+  /** @nullable */
+  closedAt: string | null;
+}
+
+export interface EvaluationCriterion {
+  id: string;
+  campaignId: string;
+  learningOutcomeCode: string;
+  learningOutcomeTitle: string;
+  code: string;
+  title: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  weight: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  minimumScore: number;
+  /**
+     * @minimum 1
+     * @maximum 50
+     */
+  minimumEvidenceCount: number;
+  version: number;
+  isCurrent: boolean;
+}
+
+export interface EvaluationCriterionInput {
+  campaignId: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  learningOutcomeCode: string;
+  /**
+     * @minLength 2
+     * @maxLength 160
+     */
+  learningOutcomeTitle: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  code: string;
+  /**
+     * @minLength 2
+     * @maxLength 160
+     */
+  title: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  weight: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  minimumScore: number;
+  /**
+     * @minimum 1
+     * @maximum 50
+     */
+  minimumEvidenceCount: number;
+}
+
+export interface EvaluationCampaignInput {
+  campaignId: string;
+}
+
+export interface EvaluationWeightValidation {
+  campaignId: string;
+  criterionCount: number;
+  totalWeight: number;
+  valid: boolean;
+}
+
+export type EvaluationGroupSettingsInputScoreScale = typeof EvaluationGroupSettingsInputScoreScale[keyof typeof EvaluationGroupSettingsInputScoreScale];
+
+
+export const EvaluationGroupSettingsInputScoreScale = {
+  NUMBER_10: 10,
+  NUMBER_100: 100,
+} as const;
+
+export interface EvaluationGroupSettingsInput {
+  scoreScale: EvaluationGroupSettingsInputScoreScale;
+}
+
+export interface EvaluationRubricLevel {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  id: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  label: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  score: number;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  descriptor: string;
+}
+
+export interface EvaluationRubric {
+  id: string;
+  campaignId: string;
+  criterionId: string;
+  title: string;
+  version: number;
+  /**
+     * @minItems 2
+     * @maxItems 6
+     */
+  levels: EvaluationRubricLevel[];
+  isPublished: boolean;
+  /** @nullable */
+  publishedAt: string | null;
+}
+
+export interface EvaluationRubricInput {
+  criterionId: string;
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  title: string;
+  /**
+     * @minItems 2
+     * @maxItems 6
+     */
+  levels: EvaluationRubricLevel[];
+}
+
+export interface EvaluationActivityCriteriaInput {
+  /**
+     * @minItems 1
+     * @maxItems 30
+     */
+  criterionIds: string[];
+}
+
+export interface EvaluationActivity {
+  eventId: string;
+  campaignId: string;
+  title: string;
+  eventType: string;
+  /** @nullable */
+  completedAt: string | null;
+  criterionIds: string[];
+}
+
+export interface EvaluationAssessmentInput {
+  portfolioEntryId: string;
+  criterionId: string;
+  rubricId: string;
+  rubricLevelId: string;
+  /**
+     * @minLength 5
+     * @maxLength 1000
+     */
+  feedback: string;
+  /**
+     * @minLength 5
+     * @maxLength 500
+     */
+  reason: string;
+  isRecovery: boolean;
+}
+
+export type EvaluationAssessmentScoreScale = typeof EvaluationAssessmentScoreScale[keyof typeof EvaluationAssessmentScoreScale];
+
+
+export const EvaluationAssessmentScoreScale = {
+  NUMBER_10: 10,
+  NUMBER_100: 100,
+} as const;
+
+export type EvaluationAssessmentStatus = typeof EvaluationAssessmentStatus[keyof typeof EvaluationAssessmentStatus];
+
+
+export const EvaluationAssessmentStatus = {
+  achieved: 'achieved',
+  recovery_required: 'recovery_required',
+} as const;
+
+export interface EvaluationAssessment {
+  id: string;
+  portfolioEntryId: string;
+  criterionId: string;
+  criterionTitle: string;
+  rubricId: string;
+  rubricVersion: number;
+  rubricLevelId: string;
+  rubricLevelLabel: string;
+  score: number;
+  scoreScale: EvaluationAssessmentScoreScale;
+  attemptNumber: number;
+  status: EvaluationAssessmentStatus;
+  feedback: string;
+  reason: string;
+  evaluatorName: string;
+  createdAt: string;
+}
+
+export interface EvaluationEntry {
+  portfolioEntryId: string;
+  campaignId: string;
+  eventId: string;
+  activityTitle: string;
+  studentUserId: string;
+  studentName: string;
+  evidenceDocumentReference: string;
+  entryStatus: string;
+  assessments: EvaluationAssessment[];
+}
+
+export interface EvaluationAudit {
+  id: string;
+  campaignId: string;
+  entityType: string;
+  entityId: string;
+  action: string;
+  summary: string;
+  actorName: string;
+  reason: string;
+  createdAt: string;
+}
+
+export interface EvaluationCapabilities {
+  canConfigure: boolean;
+  canEvaluate: boolean;
+  canViewAudit: boolean;
+  canClose: boolean;
+}
+
+export interface EvaluationOverview {
+  campaigns: EvaluationCampaign[];
+  groups: EvaluationGroup[];
+  criteria: EvaluationCriterion[];
+  rubrics: EvaluationRubric[];
+  activities: EvaluationActivity[];
+  entries: EvaluationEntry[];
+  audit: EvaluationAudit[];
+  capabilities: EvaluationCapabilities;
+}
+
+export type EvaluationCloseInputConfirmationPhrase = typeof EvaluationCloseInputConfirmationPhrase[keyof typeof EvaluationCloseInputConfirmationPhrase];
+
+
+export const EvaluationCloseInputConfirmationPhrase = {
+  CERRAR_EVALUACIÓN: 'CERRAR EVALUACIÓN',
+} as const;
+
+export interface EvaluationCloseInput {
+  confirmationPhrase: EvaluationCloseInputConfirmationPhrase;
+  /**
+     * @minLength 10
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export type MentorEntityKind = typeof MentorEntityKind[keyof typeof MentorEntityKind];
+
+
+export const MentorEntityKind = {
+  company: 'company',
+  professional_association: 'professional_association',
+  institution: 'institution',
+  other: 'other',
+} as const;
+
+export type MentorEntityAgreementStatus = typeof MentorEntityAgreementStatus[keyof typeof MentorEntityAgreementStatus];
+
+
+export const MentorEntityAgreementStatus = {
+  draft: 'draft',
+  pending_review: 'pending_review',
+  approved: 'approved',
+  revoked: 'revoked',
+} as const;
+
+export interface MentorEntity {
+  id: string;
+  name: string;
+  kind: MentorEntityKind;
+  /** @nullable */
+  linkedOrganizationId: string | null;
+  areas: string[];
+  agreementStatus: MentorEntityAgreementStatus;
+  agreementReference: string;
+  contactName: string;
+  contactRole: string;
+  publishNameAuthorized: boolean;
+  /** @nullable */
+  validFrom: string | null;
+  /** @nullable */
+  validUntil: string | null;
+  createdAt: string;
+}
+
+export type MentorEntityInputKind = typeof MentorEntityInputKind[keyof typeof MentorEntityInputKind];
+
+
+export const MentorEntityInputKind = {
+  company: 'company',
+  professional_association: 'professional_association',
+  institution: 'institution',
+  other: 'other',
+} as const;
+
+export interface MentorEntityInput {
+  operationId: string;
+  /**
+     * @minLength 2
+     * @maxLength 140
+     */
+  name: string;
+  kind: MentorEntityInputKind;
+  /** @nullable */
+  linkedOrganizationId: string | null;
+  /**
+     * @minItems 1
+     * @maxItems 8
+     * @items.minLength 2
+     * @items.maxLength 80
+     */
+  areas: string[];
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  agreementReference: string;
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  contactName: string;
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  contactRole: string;
+  publishNameAuthorized: boolean;
+  /** @nullable */
+  validFrom?: string | null;
+  /** @nullable */
+  validUntil?: string | null;
+}
+
+export type MentorAgreementInputAgreementStatus = typeof MentorAgreementInputAgreementStatus[keyof typeof MentorAgreementInputAgreementStatus];
+
+
+export const MentorAgreementInputAgreementStatus = {
+  pending_review: 'pending_review',
+  approved: 'approved',
+  revoked: 'revoked',
+} as const;
+
+export interface MentorAgreementInput {
+  operationId: string;
+  agreementStatus: MentorAgreementInputAgreementStatus;
+  /**
+     * @minLength 5
+     * @maxLength 400
+     */
+  reason: string;
+}
+
+export type MentorSessionModality = typeof MentorSessionModality[keyof typeof MentorSessionModality];
+
+
+export const MentorSessionModality = {
+  in_person: 'in_person',
+  remote: 'remote',
+  document_review: 'document_review',
+} as const;
+
+export type MentorSessionStatus = typeof MentorSessionStatus[keyof typeof MentorSessionStatus];
+
+
+export const MentorSessionStatus = {
+  proposed: 'proposed',
+  confirmed: 'confirmed',
+  rescheduled: 'rescheduled',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface MentorSession {
+  id: string;
+  campaignId: string;
+  organizationId: string;
+  entityId: string;
+  entityName: string;
+  objective: string;
+  modality: MentorSessionModality;
+  scheduledDate: string;
+  scheduledTime: string;
+  status: MentorSessionStatus;
+  groupLabel: string;
+  participantCount: number;
+  materialSummary: string;
+  createdAt: string;
+}
+
+export type MentorSessionInputModality = typeof MentorSessionInputModality[keyof typeof MentorSessionInputModality];
+
+
+export const MentorSessionInputModality = {
+  in_person: 'in_person',
+  remote: 'remote',
+  document_review: 'document_review',
+} as const;
+
+export interface MentorSessionInput {
+  operationId: string;
+  campaignId: string;
+  organizationId: string;
+  entityId: string;
+  /**
+     * @minLength 5
+     * @maxLength 240
+     */
+  objective: string;
+  modality: MentorSessionInputModality;
+  scheduledDate: string;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  scheduledTime: string;
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  groupLabel: string;
+  /**
+     * @minimum 1
+     * @maximum 200
+     */
+  participantCount: number;
+  /** @maxLength 1000 */
+  materialSummary: string;
+}
+
+export type MentorSessionActionAction = typeof MentorSessionActionAction[keyof typeof MentorSessionActionAction];
+
+
+export const MentorSessionActionAction = {
+  confirm: 'confirm',
+  reschedule: 'reschedule',
+  complete: 'complete',
+  cancel: 'cancel',
+} as const;
+
+export interface MentorSessionAction {
+  operationId: string;
+  action: MentorSessionActionAction;
+  /** @nullable */
+  scheduledDate?: string | null;
+  /**
+     * @nullable
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  scheduledTime?: string | null;
+  /**
+     * @minLength 5
+     * @maxLength 400
+     */
+  reason: string;
+}
+
+export type MentorChallengeLevel = typeof MentorChallengeLevel[keyof typeof MentorChallengeLevel];
+
+
+export const MentorChallengeLevel = {
+  basic: 'basic',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export type MentorChallengeStatus = typeof MentorChallengeStatus[keyof typeof MentorChallengeStatus];
+
+
+export const MentorChallengeStatus = {
+  proposed: 'proposed',
+  validated: 'validated',
+  returned: 'returned',
+  assigned: 'assigned',
+  closed: 'closed',
+} as const;
+
+export interface MentorChallenge {
+  id: string;
+  campaignId: string;
+  entityId: string;
+  entityName: string;
+  /** @nullable */
+  organizationId: string | null;
+  /** @nullable */
+  simulationEventId: string | null;
+  title: string;
+  sector: string;
+  level: MentorChallengeLevel;
+  anonymizedSummary: string;
+  status: MentorChallengeStatus;
+  createdAt: string;
+}
+
+export type MentorChallengeInputLevel = typeof MentorChallengeInputLevel[keyof typeof MentorChallengeInputLevel];
+
+
+export const MentorChallengeInputLevel = {
+  basic: 'basic',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export interface MentorChallengeInput {
+  operationId: string;
+  campaignId: string;
+  entityId: string;
+  /** @nullable */
+  organizationId: string | null;
+  /** @nullable */
+  simulationEventId: string | null;
+  /**
+     * @minLength 5
+     * @maxLength 140
+     */
+  title: string;
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  sector: string;
+  level: MentorChallengeInputLevel;
+  /**
+     * @minLength 30
+     * @maxLength 2400
+     */
+  anonymizedSummary: string;
+  isAnonymized: true;
+}
+
+export type MentorChallengeActionAction = typeof MentorChallengeActionAction[keyof typeof MentorChallengeActionAction];
+
+
+export const MentorChallengeActionAction = {
+  validate: 'validate',
+  return: 'return',
+  assign: 'assign',
+  close: 'close',
+} as const;
+
+export interface MentorChallengeAction {
+  operationId: string;
+  action: MentorChallengeActionAction;
+  /** @nullable */
+  targetOrganizationId?: string | null;
+  /**
+     * @minLength 5
+     * @maxLength 400
+     */
+  reason: string;
+}
+
+export type MentorReviewDecision = typeof MentorReviewDecision[keyof typeof MentorReviewDecision];
+
+
+export const MentorReviewDecision = {
+  approved: 'approved',
+  returned: 'returned',
+} as const;
+
+export interface MentorReview {
+  id: string;
+  challengeId: string;
+  entityId: string;
+  reviewerLabel: string;
+  decision: MentorReviewDecision;
+  observation: string;
+  createdAt: string;
+}
+
+export type MentorReviewInputDecision = typeof MentorReviewInputDecision[keyof typeof MentorReviewInputDecision];
+
+
+export const MentorReviewInputDecision = {
+  approved: 'approved',
+  returned: 'returned',
+} as const;
+
+export interface MentorReviewInput {
+  operationId: string;
+  challengeId: string;
+  decision: MentorReviewInputDecision;
+  /**
+     * @minLength 10
+     * @maxLength 1800
+     */
+  observation: string;
+}
+
+export type MentorEvidenceKind = typeof MentorEvidenceKind[keyof typeof MentorEvidenceKind];
+
+
+export const MentorEvidenceKind = {
+  minutes: 'minutes',
+  materials: 'materials',
+  attendance_aggregate: 'attendance_aggregate',
+  deliverable: 'deliverable',
+} as const;
+
+export interface MentorEvidence {
+  id: string;
+  campaignId: string;
+  /** @nullable */
+  sessionId: string | null;
+  /** @nullable */
+  challengeId: string | null;
+  kind: MentorEvidenceKind;
+  summary: string;
+  participantCount: number;
+  /** @nullable */
+  documentReference: string | null;
+  simulatedDate: string;
+  createdAt: string;
+}
+
+export type MentorEvidenceInputKind = typeof MentorEvidenceInputKind[keyof typeof MentorEvidenceInputKind];
+
+
+export const MentorEvidenceInputKind = {
+  minutes: 'minutes',
+  materials: 'materials',
+  attendance_aggregate: 'attendance_aggregate',
+  deliverable: 'deliverable',
+} as const;
+
+export interface MentorEvidenceInput {
+  operationId: string;
+  campaignId: string;
+  /** @nullable */
+  sessionId: string | null;
+  /** @nullable */
+  challengeId: string | null;
+  kind: MentorEvidenceInputKind;
+  /**
+     * @minLength 5
+     * @maxLength 1000
+     */
+  summary: string;
+  /**
+     * @minimum 0
+     * @maximum 200
+     */
+  participantCount: number;
+  /** @nullable */
+  documentId: string | null;
+  simulatedDate: string;
+}
+
+export type MentorRecommendationStatus = typeof MentorRecommendationStatus[keyof typeof MentorRecommendationStatus];
+
+
+export const MentorRecommendationStatus = {
+  proposed: 'proposed',
+  accepted: 'accepted',
+  implemented: 'implemented',
+  rejected: 'rejected',
+} as const;
+
+export interface MentorRecommendation {
+  id: string;
+  reviewId: string;
+  text: string;
+  status: MentorRecommendationStatus;
+  createdAt: string;
+}
+
+export interface MentorRecommendationInput {
+  operationId: string;
+  reviewId: string;
+  /**
+     * @minLength 10
+     * @maxLength 1200
+     */
+  text: string;
+}
+
+export type MentorRecommendationUpdateStatus = typeof MentorRecommendationUpdateStatus[keyof typeof MentorRecommendationUpdateStatus];
+
+
+export const MentorRecommendationUpdateStatus = {
+  accepted: 'accepted',
+  implemented: 'implemented',
+  rejected: 'rejected',
+} as const;
+
+export interface MentorRecommendationUpdate {
+  operationId: string;
+  status: MentorRecommendationUpdateStatus;
+  /**
+     * @minLength 5
+     * @maxLength 400
+     */
+  reason: string;
+}
+
+export interface MentorAudit {
+  id: string;
+  resourceType: string;
+  resourceId: string;
+  action: string;
+  summary: string;
+  actorLabel: string;
+  createdAt: string;
+}
+
+export interface MentorCapabilities {
+  canManageEntities: boolean;
+  canSchedule: boolean;
+  canProposeChallenges: boolean;
+  canReview: boolean;
+  canRecordEvidence: boolean;
+  canManageTransfer: boolean;
+  canViewAudit: boolean;
+}
+
+export interface MentorshipCampaign {
+  id: string;
+  title: string;
+  ownerOrganizationId: string;
+  participantOrganizationIds: string[];
+}
+
+export interface MentorshipOrganization {
+  id: string;
+  name: string;
+  center: string;
+  island: string;
+  role: string;
+}
+
+export interface MentorDocument {
+  id: string;
+  reference: string;
+  title: string;
+  organizationId: string;
+}
+
+export type MentorshipOverviewImpact = {
+  sessionsPlanned: number;
+  sessionsCompleted: number;
+  challengesValidated: number;
+  recommendationsImplemented: number;
+  transferRate: number;
+};
+
+export interface MentorshipOverview {
+  campaigns: MentorshipCampaign[];
+  organizations: MentorshipOrganization[];
+  eligibleDocuments: MentorDocument[];
+  entities: MentorEntity[];
+  sessions: MentorSession[];
+  challenges: MentorChallenge[];
+  reviews: MentorReview[];
+  evidence: MentorEvidence[];
+  recommendations: MentorRecommendation[];
+  audit: MentorAudit[];
+  impact: MentorshipOverviewImpact;
+  capabilities: MentorCapabilities;
+}
+
+export type GetPortfolioOverviewParams = {
+campaignId?: string;
+};
+
+export type GetEvaluationOverviewParams = {
+campaignId?: string;
+};
+
+export type GetMentorshipOverviewParams = {
+campaignId?: string;
+};
 
 export type GetFp360DirectionOverviewParams = {
 periodStart?: string;

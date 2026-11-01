@@ -345,6 +345,589 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Fp360SimulationEvent" }
         "400": { description: Invalid event transition }
+  /redfp360/simulations/events/{id}:
+    put:
+      operationId: updateFp360SimulationEvent
+      tags: [redfp360]
+      summary: Edit a returned event draft before resubmission
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360SimulationEventInput" }
+      responses:
+        "200":
+          description: Updated draft event
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360SimulationEvent" }
+        "400": { description: Invalid event content }
+  /redfp360/simulations/events/{id}/evidence:
+    post:
+      operationId: linkFp360SimulationEventEvidence
+      tags: [redfp360]
+      summary: Complete a published educational event using a confirmed synthetic document
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360SimulationEvidenceInput" }
+      responses:
+        "200":
+          description: Completed event with linked evidence
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360SimulationEvent" }
+        "400": { description: Invalid evidence document }
+  /redfp360/portfolio/overview:
+    get:
+      operationId: getPortfolioOverview
+      tags: [redfp360]
+      summary: Read the authenticated user's scoped portfolio
+      parameters:
+        - in: query
+          name: campaignId
+          schema: { type: string }
+      responses:
+        "200":
+          description: Portfolio entries, criteria, and eligible activities
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortfolioOverview" }
+        "403": { description: Portfolio access is not permitted }
+  /redfp360/portfolio/criteria:
+    post:
+      operationId: createPortfolioCriterion
+      tags: [redfp360]
+      summary: Add a learning criterion to a campaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortfolioCriterionInput" }
+      responses:
+        "201":
+          description: Created learning criterion
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortfolioCriterion" }
+        "400": { description: Invalid criterion }
+        "403": { description: Only authorized educators can add criteria }
+  /redfp360/portfolio/entries:
+    post:
+      operationId: createPortfolioEntry
+      tags: [redfp360]
+      summary: Create an evidence entry from a completed simulation event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortfolioEntryInput" }
+      responses:
+        "201":
+          description: Created or resumed portfolio entry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortfolioEntry" }
+        "400": { description: Event or criterion is not eligible }
+        "403": { description: Entry is outside the student's scope }
+  /redfp360/portfolio/entries/{id}:
+    put:
+      operationId: updatePortfolioEntry
+      tags: [redfp360]
+      summary: Save a new version of a draft or returned entry
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortfolioEntryUpdate" }
+      responses:
+        "200":
+          description: Updated versioned portfolio entry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortfolioEntry" }
+        "403": { description: Entry is outside the student's scope }
+        "409": { description: Entry cannot be edited in its current state }
+  /redfp360/portfolio/entries/{id}/submit:
+    post:
+      operationId: submitPortfolioEntry
+      tags: [redfp360]
+      summary: Submit an entry for educator review
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortfolioActionInput" }
+      responses:
+        "200":
+          description: Submitted portfolio entry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortfolioEntry" }
+        "400": { description: Required criteria or reflection is missing }
+        "409": { description: Entry cannot be submitted in its current state }
+  /redfp360/portfolio/entries/{id}/review:
+    post:
+      operationId: reviewPortfolioEntry
+      tags: [redfp360]
+      summary: Validate or return a submitted entry with educator feedback
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortfolioReviewInput" }
+      responses:
+        "200":
+          description: Reviewed portfolio entry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortfolioEntry" }
+        "403": { description: Only the student's educator or an administrator can review }
+        "409": { description: Entry is not awaiting review }
+  /redfp360/portfolio/entries/{id}/history:
+    get:
+      operationId: getPortfolioEntryHistory
+      tags: [redfp360]
+      summary: Read version and review history for an authorized entry
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Immutable revisions and educator reviews
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortfolioHistory" }
+        "403": { description: History is not available to this role }
+  /redfp360/evaluations/overview:
+    get:
+      operationId: getEvaluationOverview
+      tags: [redfp360]
+      summary: Read campaign evaluation data within the authenticated user's scope
+      parameters:
+        - in: query
+          name: campaignId
+          schema: { type: string }
+      responses:
+        "200":
+          description: Criteria, rubrics, assigned activities, assessments, and audit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EvaluationOverview" }
+        "403": { description: Evaluation access is not permitted }
+  /redfp360/evaluations/criteria:
+    post:
+      operationId: createEvaluationCriterion
+      tags: [redfp360]
+      summary: Add a versioned curriculum criterion to a campaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EvaluationCriterionInput" }
+      responses:
+        "201":
+          description: Created evaluation criterion
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EvaluationCriterion" }
+        "400": { description: Criterion is invalid or campaign weights exceed 100 percent }
+        "403": { description: Only an authorized educator can configure criteria }
+  /redfp360/evaluations/criteria/{id}:
+    put:
+      operationId: reviseEvaluationCriterion
+      tags: [redfp360]
+      summary: Create an immutable new version of a curriculum criterion
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EvaluationCriterionInput" }
+      responses:
+        "200":
+          description: New criterion version
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EvaluationCriterion" }
+        "403": { description: Criterion is outside the educator's scope }
+        "409": { description: Criterion cannot be revised after evaluation closes }
+  /redfp360/evaluations/criteria/validate:
+    post:
+      operationId: validateEvaluationWeights
+      tags: [redfp360]
+      summary: Check that current criterion weights total 100 percent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EvaluationCampaignInput" }
+      responses:
+        "200":
+          description: Weight validation summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EvaluationWeightValidation" }
+  /redfp360/evaluations/groups/{campaignId}/settings:
+    put:
+      operationId: updateEvaluationGroupSettings
+      tags: [redfp360]
+      summary: Configure the simulated scoring scale before assessment
+      parameters:
+        - in: path
+          name: campaignId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EvaluationGroupSettingsInput" }
+      responses:
+        "200":
+          description: Updated evaluation group settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EvaluationGroup" }
+        "409": { description: Settings are locked after the first assessment }
+  /redfp360/evaluations/rubrics:
+    post:
+      operationId: createEvaluationRubric
+      tags: [redfp360]
+      summary: Create a draft rubric version for a curriculum criterion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EvaluationRubricInput" }
+      responses:
+        "201":
+          description: Created draft rubric
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EvaluationRubric" }
+        "403": { description: Only an authorized educator can create rubrics }
+  /redfp360/evaluations/rubrics/{id}/publish:
+    post:
+      operationId: publishEvaluationRubric
+      tags: [redfp360]
+      summary: Freeze a rubric version before it is used for assessment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Published immutable rubric
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EvaluationRubric" }
+        "409": { description: Rubric is invalid or already used }
+  /redfp360/evaluations/activities/{eventId}/criteria:
+    put:
+      operationId: assignEvaluationActivityCriteria
+      tags: [redfp360]
+      summary: Link a simulation activity to current evaluation criteria
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EvaluationActivityCriteriaInput" }
+      responses:
+        "200":
+          description: Activity criteria assignment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EvaluationActivity" }
+        "403": { description: Activity is outside the educator's scope }
+        "409": { description: Existing assessments prevent changing the assignment }
+  /redfp360/evaluations/assessments:
+    post:
+      operationId: createEvaluationAssessment
+      tags: [redfp360]
+      summary: Record a rubric-based criterion result or recovery attempt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EvaluationAssessmentInput" }
+      responses:
+        "201":
+          description: Appended assessment attempt
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EvaluationAssessment" }
+        "400": { description: "Evidence, rubric, or score is invalid" }
+        "403": { description: Assessment is outside the educator's scope }
+        "409": { description: A new attempt is not permitted for the current criterion state }
+  /redfp360/evaluations/groups/{campaignId}/close:
+    post:
+      operationId: closeEvaluationGroup
+      tags: [redfp360]
+      summary: Close a didactic evaluation record after validation
+      parameters:
+        - in: path
+          name: campaignId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EvaluationCloseInput" }
+      responses:
+        "200":
+          description: Closed evaluation group
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EvaluationGroup" }
+        "409": { description: "Weights, evidence, or recovery attempts are incomplete" }
+  /redfp360/mentorship/overview:
+    get:
+      operationId: getMentorshipOverview
+      tags: [redfp360]
+      summary: Read the authenticated user's scoped mentorship workspace
+      parameters:
+        - in: query
+          name: campaignId
+          schema: { type: string }
+      responses:
+        "200":
+          description: Scoped collaborators, sessions, cases, reviews, evidence, and transfer indicators
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorshipOverview" }
+        "403": { description: Mentorship access is not permitted }
+  /redfp360/mentorship/entities:
+    post:
+      operationId: createMentorEntity
+      tags: [redfp360]
+      summary: Register a fictional or authorized mentoring collaborator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorEntityInput" }
+      responses:
+        "201":
+          description: Registered collaborator
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorEntity" }
+        "400": { description: Invalid entity or contact data }
+        "403": { description: Only authorized educators can manage collaborators }
+  /redfp360/mentorship/entities/{id}/agreement:
+    put:
+      operationId: updateMentorAgreement
+      tags: [redfp360]
+      summary: Update the documented agreement state for a collaborator
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorAgreementInput" }
+      responses:
+        "200":
+          description: Updated agreement state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorEntity" }
+        "409": { description: Agreement transition is not permitted }
+  /redfp360/mentorship/sessions:
+    post:
+      operationId: createMentorSession
+      tags: [redfp360]
+      summary: Schedule a mentorship session in a simulation campaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorSessionInput" }
+      responses:
+        "201":
+          description: Scheduled mentorship session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorSession" }
+        "409": { description: Agreement or schedule constraints are not satisfied }
+  /redfp360/mentorship/sessions/{id}/action:
+    post:
+      operationId: actOnMentorSession
+      tags: [redfp360]
+      summary: Confirm, reschedule, complete, or cancel a session
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorSessionAction" }
+      responses:
+        "200":
+          description: Updated session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorSession" }
+        "409": { description: Session transition is not permitted }
+  /redfp360/mentorship/challenges:
+    post:
+      operationId: createMentorChallenge
+      tags: [redfp360]
+      summary: Propose an anonymized professional challenge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorChallengeInput" }
+      responses:
+        "201":
+          description: Proposed anonymized challenge
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorChallenge" }
+        "400": { description: Challenge contains unsafe or non-anonymized data }
+        "403": { description: Challenge is outside the user's organization scope }
+  /redfp360/mentorship/challenges/{id}/action:
+    post:
+      operationId: actOnMentorChallenge
+      tags: [redfp360]
+      summary: Validate, return, assign, or close a professional challenge
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorChallengeAction" }
+      responses:
+        "200":
+          description: Updated challenge
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorChallenge" }
+        "409": { description: Challenge transition is not permitted }
+  /redfp360/mentorship/reviews:
+    post:
+      operationId: createMentorReview
+      tags: [redfp360]
+      summary: Record a professional review without grading students
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorReviewInput" }
+      responses:
+        "201":
+          description: Recorded professional review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorReview" }
+        "403": { description: Review is outside the mentor's assigned scope }
+  /redfp360/mentorship/evidence:
+    post:
+      operationId: createMentorEvidence
+      tags: [redfp360]
+      summary: Record aggregate participation evidence and an optional confirmed document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorEvidenceInput" }
+      responses:
+        "201":
+          description: Recorded participation evidence
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorEvidence" }
+        "400": { description: Evidence or document reference is invalid }
+  /redfp360/mentorship/recommendations:
+    post:
+      operationId: createMentorRecommendation
+      tags: [redfp360]
+      summary: Record a recommendation from a professional review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorRecommendationInput" }
+      responses:
+        "201":
+          description: Recorded transfer recommendation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorRecommendation" }
+        "403": { description: Recommendation is outside the user's scope }
+  /redfp360/mentorship/recommendations/{id}:
+    put:
+      operationId: updateMentorRecommendation
+      tags: [redfp360]
+      summary: Record whether a recommendation was accepted or implemented
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorRecommendationUpdate" }
+      responses:
+        "200":
+          description: Updated recommendation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorRecommendation" }
+        "409": { description: Recommendation transition is not permitted }
   /redfp360/direction/overview:
     get:
       operationId: getFp360DirectionOverview
@@ -7000,20 +7583,23 @@ components:
         eventCount: { type: integer, minimum: 0 }
     Fp360SimulationEvent:
       type: object
-      required: [id, campaignId, organizationId, title, eventType, status, description, preconditions, requiredDocumentType, simulatedDate, createdAt, updatedAt]
+      required: [id, campaignId, organizationId, title, eventType, status, description, preconditions, requiredDocumentType, simulatedDate, evidenceDocumentId, evidenceDocumentReference, completedAt, createdAt, updatedAt]
       properties:
         id: { type: string }
         campaignId: { type: string }
         organizationId: { type: string }
         title: { type: string }
         eventType: { type: string, enum: [offer, late_payment, stock_break, claim, financing, service_incident, other] }
-        status: { type: string, enum: [draft, proposed, approved, published, cancelled] }
+        status: { type: string, enum: [draft, proposed, approved, published, completed, cancelled] }
         description: { type: string }
         preconditions:
           type: array
           items: { type: string }
         requiredDocumentType: { type: string, nullable: true }
         simulatedDate: { type: string, format: date }
+        evidenceDocumentId: { type: string, nullable: true }
+        evidenceDocumentReference: { type: string, nullable: true }
+        completedAt: { type: string, format: date-time, nullable: true }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
     Fp360SimulationOrganization:
@@ -7083,7 +7669,655 @@ components:
       required: [organizationId, action, operationId]
       properties:
         organizationId: { type: string }
-        action: { type: string, enum: [approve, publish, cancel, return] }
+        action: { type: string, enum: [submit, approve, publish, cancel, return] }
         note: { type: string, maxLength: 500 }
         operationId: { type: string, minLength: 8, maxLength: 100 }
+    Fp360SimulationEvidenceInput:
+      type: object
+      required: [organizationId, documentId, operationId]
+      properties:
+        organizationId: { type: string }
+        documentId: { type: string }
+        note: { type: string, maxLength: 500 }
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    PortfolioCriterion:
+      type: object
+      required: [id, campaignId, code, title, description, isRequired, createdAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        code: { type: string, nullable: true }
+        title: { type: string }
+        description: { type: string }
+        isRequired: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    PortfolioCriterionInput:
+      type: object
+      required: [campaignId, title, description, isRequired]
+      properties:
+        campaignId: { type: string }
+        code: { type: string, maxLength: 40 }
+        title: { type: string, minLength: 3, maxLength: 120 }
+        description: { type: string, maxLength: 500 }
+        isRequired: { type: boolean }
+    PortfolioActivity:
+      type: object
+      required: [eventId, campaignId, campaignTitle, organizationId, title, eventType, simulatedDate, evidenceDocumentId, evidenceDocumentReference, completedAt]
+      properties:
+        eventId: { type: string }
+        campaignId: { type: string }
+        campaignTitle: { type: string }
+        organizationId: { type: string }
+        title: { type: string }
+        eventType: { type: string }
+        simulatedDate: { type: string, format: date }
+        evidenceDocumentId: { type: string }
+        evidenceDocumentReference: { type: string, nullable: true }
+        completedAt: { type: string, format: date-time, nullable: true }
+    PortfolioEntry:
+      type: object
+      required: [id, campaignId, campaignTitle, organizationId, eventId, activityTitle, eventType, simulatedDate, evidenceDocumentId, evidenceDocumentReference, studentUserId, studentName, canViewPrivateDetails, status, reflection, contribution, selfAssessment, version, criteria, submittedAt, reviewedAt, reviewerName, feedback, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        campaignTitle: { type: string }
+        organizationId: { type: string }
+        eventId: { type: string }
+        activityTitle: { type: string }
+        eventType: { type: string }
+        simulatedDate: { type: string, format: date }
+        evidenceDocumentId: { type: string }
+        evidenceDocumentReference: { type: string, nullable: true }
+        studentUserId: { type: string }
+        studentName: { type: string }
+        canViewPrivateDetails: { type: boolean }
+        status: { type: string, enum: [draft, submitted, returned, validated] }
+        reflection: { type: string }
+        contribution: { type: string }
+        selfAssessment: { type: string }
+        version: { type: integer }
+        criteria:
+          type: array
+          items: { $ref: "#/components/schemas/PortfolioCriterion" }
+        submittedAt: { type: string, format: date-time, nullable: true }
+        reviewedAt: { type: string, format: date-time, nullable: true }
+        reviewerName: { type: string, nullable: true }
+        feedback: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    PortfolioOverview:
+      type: object
+      required: [entries, activities, criteria, canReview, canManageCriteria]
+      properties:
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/PortfolioEntry" }
+        activities:
+          type: array
+          items: { $ref: "#/components/schemas/PortfolioActivity" }
+        criteria:
+          type: array
+          items: { $ref: "#/components/schemas/PortfolioCriterion" }
+        canReview: { type: boolean }
+        canManageCriteria: { type: boolean }
+    PortfolioEntryInput:
+      type: object
+      required: [eventId, criterionIds, reflection, contribution, selfAssessment]
+      properties:
+        eventId: { type: string }
+        criterionIds:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { type: string }
+        reflection: { type: string, minLength: 20, maxLength: 2000 }
+        contribution: { type: string, minLength: 10, maxLength: 1000 }
+        selfAssessment: { type: string, maxLength: 1000 }
+    PortfolioEntryUpdate:
+      type: object
+      required: [criterionIds, reflection, contribution, selfAssessment]
+      properties:
+        criterionIds:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { type: string }
+        reflection: { type: string, minLength: 20, maxLength: 2000 }
+        contribution: { type: string, minLength: 10, maxLength: 1000 }
+        selfAssessment: { type: string, maxLength: 1000 }
+    PortfolioActionInput:
+      type: object
+      required: [operationId]
+      properties:
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    PortfolioReviewInput:
+      type: object
+      required: [outcome, feedback]
+      properties:
+        outcome: { type: string, enum: [validated, returned] }
+        feedback: { type: string, minLength: 10, maxLength: 1000 }
+    PortfolioRevision:
+      type: object
+      required: [version, reflection, contribution, selfAssessment, createdByName, createdAt]
+      properties:
+        version: { type: integer }
+        reflection: { type: string }
+        contribution: { type: string }
+        selfAssessment: { type: string }
+        createdByName: { type: string }
+        createdAt: { type: string, format: date-time }
+    PortfolioReview:
+      type: object
+      required: [version, outcome, feedback, reviewerName, createdAt]
+      properties:
+        version: { type: integer }
+        outcome: { type: string, enum: [validated, returned] }
+        feedback: { type: string }
+        reviewerName: { type: string }
+        createdAt: { type: string, format: date-time }
+    PortfolioHistory:
+      type: object
+      required: [revisions, reviews]
+      properties:
+        revisions:
+          type: array
+          items: { $ref: "#/components/schemas/PortfolioRevision" }
+        reviews:
+          type: array
+          items: { $ref: "#/components/schemas/PortfolioReview" }
+    EvaluationCampaign:
+      type: object
+      required: [id, title, status]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        status: { type: string }
+    EvaluationGroup:
+      type: object
+      required: [campaignId, scoreScale, status, closedAt]
+      properties:
+        campaignId: { type: string }
+        scoreScale: { type: integer, enum: [10, 100] }
+        status: { type: string, enum: [draft, in_progress, closed] }
+        closedAt: { type: string, format: date-time, nullable: true }
+    EvaluationCriterion:
+      type: object
+      required: [id, campaignId, learningOutcomeCode, learningOutcomeTitle, code, title, weight, minimumScore, minimumEvidenceCount, version, isCurrent]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        learningOutcomeCode: { type: string }
+        learningOutcomeTitle: { type: string }
+        code: { type: string }
+        title: { type: string }
+        weight: { type: number, minimum: 0, maximum: 100 }
+        minimumScore: { type: number, minimum: 0, maximum: 100 }
+        minimumEvidenceCount: { type: integer, minimum: 1, maximum: 50 }
+        version: { type: integer }
+        isCurrent: { type: boolean }
+    EvaluationCriterionInput:
+      type: object
+      required: [campaignId, learningOutcomeCode, learningOutcomeTitle, code, title, weight, minimumScore, minimumEvidenceCount]
+      properties:
+        campaignId: { type: string }
+        learningOutcomeCode: { type: string, minLength: 1, maxLength: 40 }
+        learningOutcomeTitle: { type: string, minLength: 2, maxLength: 160 }
+        code: { type: string, minLength: 1, maxLength: 40 }
+        title: { type: string, minLength: 2, maxLength: 160 }
+        weight: { type: number, minimum: 0, maximum: 100 }
+        minimumScore: { type: number, minimum: 0, maximum: 100 }
+        minimumEvidenceCount: { type: integer, minimum: 1, maximum: 50 }
+    EvaluationCampaignInput:
+      type: object
+      required: [campaignId]
+      properties:
+        campaignId: { type: string }
+    EvaluationWeightValidation:
+      type: object
+      required: [campaignId, criterionCount, totalWeight, valid]
+      properties:
+        campaignId: { type: string }
+        criterionCount: { type: integer }
+        totalWeight: { type: number }
+        valid: { type: boolean }
+    EvaluationGroupSettingsInput:
+      type: object
+      required: [scoreScale]
+      properties:
+        scoreScale: { type: integer, enum: [10, 100] }
+    EvaluationRubricLevel:
+      type: object
+      required: [id, label, score, descriptor]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 40 }
+        label: { type: string, minLength: 1, maxLength: 80 }
+        score: { type: number, minimum: 0, maximum: 100 }
+        descriptor: { type: string, minLength: 1, maxLength: 500 }
+    EvaluationRubric:
+      type: object
+      required: [id, campaignId, criterionId, title, version, levels, isPublished, publishedAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        criterionId: { type: string }
+        title: { type: string }
+        version: { type: integer }
+        levels:
+          type: array
+          minItems: 2
+          maxItems: 6
+          items: { $ref: "#/components/schemas/EvaluationRubricLevel" }
+        isPublished: { type: boolean }
+        publishedAt: { type: string, format: date-time, nullable: true }
+    EvaluationRubricInput:
+      type: object
+      required: [criterionId, title, levels]
+      properties:
+        criterionId: { type: string }
+        title: { type: string, minLength: 2, maxLength: 120 }
+        levels:
+          type: array
+          minItems: 2
+          maxItems: 6
+          items: { $ref: "#/components/schemas/EvaluationRubricLevel" }
+    EvaluationActivityCriteriaInput:
+      type: object
+      required: [criterionIds]
+      properties:
+        criterionIds:
+          type: array
+          minItems: 1
+          maxItems: 30
+          uniqueItems: true
+          items: { type: string }
+    EvaluationActivity:
+      type: object
+      required: [eventId, campaignId, title, eventType, completedAt, criterionIds]
+      properties:
+        eventId: { type: string }
+        campaignId: { type: string }
+        title: { type: string }
+        eventType: { type: string }
+        completedAt: { type: string, format: date-time, nullable: true }
+        criterionIds:
+          type: array
+          items: { type: string }
+    EvaluationAssessmentInput:
+      type: object
+      required: [portfolioEntryId, criterionId, rubricId, rubricLevelId, feedback, reason, isRecovery]
+      properties:
+        portfolioEntryId: { type: string }
+        criterionId: { type: string }
+        rubricId: { type: string }
+        rubricLevelId: { type: string }
+        feedback: { type: string, minLength: 5, maxLength: 1000 }
+        reason: { type: string, minLength: 5, maxLength: 500 }
+        isRecovery: { type: boolean }
+    EvaluationAssessment:
+      type: object
+      required: [id, portfolioEntryId, criterionId, criterionTitle, rubricId, rubricVersion, rubricLevelId, rubricLevelLabel, score, scoreScale, attemptNumber, status, feedback, reason, evaluatorName, createdAt]
+      properties:
+        id: { type: string }
+        portfolioEntryId: { type: string }
+        criterionId: { type: string }
+        criterionTitle: { type: string }
+        rubricId: { type: string }
+        rubricVersion: { type: integer }
+        rubricLevelId: { type: string }
+        rubricLevelLabel: { type: string }
+        score: { type: number }
+        scoreScale: { type: integer, enum: [10, 100] }
+        attemptNumber: { type: integer }
+        status: { type: string, enum: [achieved, recovery_required] }
+        feedback: { type: string }
+        reason: { type: string }
+        evaluatorName: { type: string }
+        createdAt: { type: string, format: date-time }
+    EvaluationEntry:
+      type: object
+      required: [portfolioEntryId, campaignId, eventId, activityTitle, studentUserId, studentName, evidenceDocumentReference, entryStatus, assessments]
+      properties:
+        portfolioEntryId: { type: string }
+        campaignId: { type: string }
+        eventId: { type: string }
+        activityTitle: { type: string }
+        studentUserId: { type: string }
+        studentName: { type: string }
+        evidenceDocumentReference: { type: string }
+        entryStatus: { type: string }
+        assessments:
+          type: array
+          items: { $ref: "#/components/schemas/EvaluationAssessment" }
+    EvaluationAudit:
+      type: object
+      required: [id, campaignId, entityType, entityId, action, summary, actorName, reason, createdAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        entityType: { type: string }
+        entityId: { type: string }
+        action: { type: string }
+        summary: { type: string }
+        actorName: { type: string }
+        reason: { type: string }
+        createdAt: { type: string, format: date-time }
+    EvaluationCapabilities:
+      type: object
+      required: [canConfigure, canEvaluate, canViewAudit, canClose]
+      properties:
+        canConfigure: { type: boolean }
+        canEvaluate: { type: boolean }
+        canViewAudit: { type: boolean }
+        canClose: { type: boolean }
+    EvaluationOverview:
+      type: object
+      required: [campaigns, groups, criteria, rubrics, activities, entries, audit, capabilities]
+      properties:
+        campaigns:
+          type: array
+          items: { $ref: "#/components/schemas/EvaluationCampaign" }
+        groups:
+          type: array
+          items: { $ref: "#/components/schemas/EvaluationGroup" }
+        criteria:
+          type: array
+          items: { $ref: "#/components/schemas/EvaluationCriterion" }
+        rubrics:
+          type: array
+          items: { $ref: "#/components/schemas/EvaluationRubric" }
+        activities:
+          type: array
+          items: { $ref: "#/components/schemas/EvaluationActivity" }
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/EvaluationEntry" }
+        audit:
+          type: array
+          items: { $ref: "#/components/schemas/EvaluationAudit" }
+        capabilities: { $ref: "#/components/schemas/EvaluationCapabilities" }
+    EvaluationCloseInput:
+      type: object
+      required: [confirmationPhrase, reason]
+      properties:
+        confirmationPhrase: { type: string, enum: ["CERRAR EVALUACIÓN"] }
+        reason: { type: string, minLength: 10, maxLength: 500 }
+    MentorEntity:
+      type: object
+      required: [id, name, kind, linkedOrganizationId, areas, agreementStatus, agreementReference, contactName, contactRole, publishNameAuthorized, validFrom, validUntil, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        kind: { type: string, enum: [company, professional_association, institution, other] }
+        linkedOrganizationId: { type: ["string", "null"] }
+        areas: { type: array, items: { type: string } }
+        agreementStatus: { type: string, enum: [draft, pending_review, approved, revoked] }
+        agreementReference: { type: string }
+        contactName: { type: string }
+        contactRole: { type: string }
+        publishNameAuthorized: { type: boolean }
+        validFrom: { type: ["string", "null"], format: date }
+        validUntil: { type: ["string", "null"], format: date }
+        createdAt: { type: string, format: date-time }
+    MentorEntityInput:
+      type: object
+      required: [operationId, name, kind, linkedOrganizationId, areas, agreementReference, contactName, contactRole, publishNameAuthorized]
+      properties:
+        operationId: { type: string, format: uuid }
+        name: { type: string, minLength: 2, maxLength: 140 }
+        kind: { type: string, enum: [company, professional_association, institution, other] }
+        linkedOrganizationId: { type: ["string", "null"] }
+        areas: { type: array, minItems: 1, maxItems: 8, items: { type: string, minLength: 2, maxLength: 80 } }
+        agreementReference: { type: string, minLength: 2, maxLength: 100 }
+        contactName: { type: string, minLength: 2, maxLength: 100 }
+        contactRole: { type: string, minLength: 2, maxLength: 100 }
+        publishNameAuthorized: { type: boolean }
+        validFrom: { type: ["string", "null"], format: date }
+        validUntil: { type: ["string", "null"], format: date }
+    MentorAgreementInput:
+      type: object
+      required: [operationId, agreementStatus, reason]
+      properties:
+        operationId: { type: string, format: uuid }
+        agreementStatus: { type: string, enum: [pending_review, approved, revoked] }
+        reason: { type: string, minLength: 5, maxLength: 400 }
+    MentorSession:
+      type: object
+      required: [id, campaignId, organizationId, entityId, entityName, objective, modality, scheduledDate, scheduledTime, status, groupLabel, participantCount, materialSummary, createdAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        organizationId: { type: string }
+        entityId: { type: string }
+        entityName: { type: string }
+        objective: { type: string }
+        modality: { type: string, enum: [in_person, remote, document_review] }
+        scheduledDate: { type: string, format: date }
+        scheduledTime: { type: string }
+        status: { type: string, enum: [proposed, confirmed, rescheduled, completed, cancelled] }
+        groupLabel: { type: string }
+        participantCount: { type: integer }
+        materialSummary: { type: string }
+        createdAt: { type: string, format: date-time }
+    MentorSessionInput:
+      type: object
+      required: [operationId, campaignId, organizationId, entityId, objective, modality, scheduledDate, scheduledTime, groupLabel, participantCount, materialSummary]
+      properties:
+        operationId: { type: string, format: uuid }
+        campaignId: { type: string }
+        organizationId: { type: string }
+        entityId: { type: string }
+        objective: { type: string, minLength: 5, maxLength: 240 }
+        modality: { type: string, enum: [in_person, remote, document_review] }
+        scheduledDate: { type: string, format: date }
+        scheduledTime: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        groupLabel: { type: string, minLength: 2, maxLength: 80 }
+        participantCount: { type: integer, minimum: 1, maximum: 200 }
+        materialSummary: { type: string, maxLength: 1000 }
+    MentorSessionAction:
+      type: object
+      required: [operationId, action, reason]
+      properties:
+        operationId: { type: string, format: uuid }
+        action: { type: string, enum: [confirm, reschedule, complete, cancel] }
+        scheduledDate: { type: ["string", "null"], format: date }
+        scheduledTime: { type: ["string", "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        reason: { type: string, minLength: 5, maxLength: 400 }
+    MentorChallenge:
+      type: object
+      required: [id, campaignId, entityId, entityName, organizationId, simulationEventId, title, sector, level, anonymizedSummary, status, createdAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        entityId: { type: string }
+        entityName: { type: string }
+        organizationId: { type: ["string", "null"] }
+        simulationEventId: { type: ["string", "null"] }
+        title: { type: string }
+        sector: { type: string }
+        level: { type: string, enum: [basic, intermediate, advanced] }
+        anonymizedSummary: { type: string }
+        status: { type: string, enum: [proposed, validated, returned, assigned, closed] }
+        createdAt: { type: string, format: date-time }
+    MentorChallengeInput:
+      type: object
+      required: [operationId, campaignId, entityId, organizationId, simulationEventId, title, sector, level, anonymizedSummary, isAnonymized]
+      properties:
+        operationId: { type: string, format: uuid }
+        campaignId: { type: string }
+        entityId: { type: string }
+        organizationId: { type: ["string", "null"] }
+        simulationEventId: { type: ["string", "null"] }
+        title: { type: string, minLength: 5, maxLength: 140 }
+        sector: { type: string, minLength: 2, maxLength: 80 }
+        level: { type: string, enum: [basic, intermediate, advanced] }
+        anonymizedSummary: { type: string, minLength: 30, maxLength: 2400 }
+        isAnonymized: { type: boolean, enum: [true] }
+    MentorChallengeAction:
+      type: object
+      required: [operationId, action, reason]
+      properties:
+        operationId: { type: string, format: uuid }
+        action: { type: string, enum: [validate, return, assign, close] }
+        targetOrganizationId: { type: ["string", "null"] }
+        reason: { type: string, minLength: 5, maxLength: 400 }
+    MentorReview:
+      type: object
+      required: [id, challengeId, entityId, reviewerLabel, decision, observation, createdAt]
+      properties:
+        id: { type: string }
+        challengeId: { type: string }
+        entityId: { type: string }
+        reviewerLabel: { type: string }
+        decision: { type: string, enum: [approved, returned] }
+        observation: { type: string }
+        createdAt: { type: string, format: date-time }
+    MentorReviewInput:
+      type: object
+      required: [operationId, challengeId, decision, observation]
+      properties:
+        operationId: { type: string, format: uuid }
+        challengeId: { type: string }
+        decision: { type: string, enum: [approved, returned] }
+        observation: { type: string, minLength: 10, maxLength: 1800 }
+    MentorEvidence:
+      type: object
+      required: [id, campaignId, sessionId, challengeId, kind, summary, participantCount, documentReference, simulatedDate, createdAt]
+      properties:
+        id: { type: string }
+        campaignId: { type: string }
+        sessionId: { type: ["string", "null"] }
+        challengeId: { type: ["string", "null"] }
+        kind: { type: string, enum: [minutes, materials, attendance_aggregate, deliverable] }
+        summary: { type: string }
+        participantCount: { type: integer }
+        documentReference: { type: ["string", "null"] }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    MentorEvidenceInput:
+      type: object
+      required: [operationId, campaignId, sessionId, challengeId, kind, summary, participantCount, documentId, simulatedDate]
+      properties:
+        operationId: { type: string, format: uuid }
+        campaignId: { type: string }
+        sessionId: { type: ["string", "null"] }
+        challengeId: { type: ["string", "null"] }
+        kind: { type: string, enum: [minutes, materials, attendance_aggregate, deliverable] }
+        summary: { type: string, minLength: 5, maxLength: 1000 }
+        participantCount: { type: integer, minimum: 0, maximum: 200 }
+        documentId: { type: ["string", "null"] }
+        simulatedDate: { type: string, format: date }
+    MentorRecommendation:
+      type: object
+      required: [id, reviewId, text, status, createdAt]
+      properties:
+        id: { type: string }
+        reviewId: { type: string }
+        text: { type: string }
+        status: { type: string, enum: [proposed, accepted, implemented, rejected] }
+        createdAt: { type: string, format: date-time }
+    MentorRecommendationInput:
+      type: object
+      required: [operationId, reviewId, text]
+      properties:
+        operationId: { type: string, format: uuid }
+        reviewId: { type: string }
+        text: { type: string, minLength: 10, maxLength: 1200 }
+    MentorRecommendationUpdate:
+      type: object
+      required: [operationId, status, reason]
+      properties:
+        operationId: { type: string, format: uuid }
+        status: { type: string, enum: [accepted, implemented, rejected] }
+        reason: { type: string, minLength: 5, maxLength: 400 }
+    MentorAudit:
+      type: object
+      required: [id, resourceType, resourceId, action, summary, actorLabel, createdAt]
+      properties:
+        id: { type: string }
+        resourceType: { type: string }
+        resourceId: { type: string }
+        action: { type: string }
+        summary: { type: string }
+        actorLabel: { type: string }
+        createdAt: { type: string, format: date-time }
+    MentorCapabilities:
+      type: object
+      required: [canManageEntities, canSchedule, canProposeChallenges, canReview, canRecordEvidence, canManageTransfer, canViewAudit]
+      properties:
+        canManageEntities: { type: boolean }
+        canSchedule: { type: boolean }
+        canProposeChallenges: { type: boolean }
+        canReview: { type: boolean }
+        canRecordEvidence: { type: boolean }
+        canManageTransfer: { type: boolean }
+        canViewAudit: { type: boolean }
+    MentorshipCampaign:
+      type: object
+      required: [id, title, ownerOrganizationId, participantOrganizationIds]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        ownerOrganizationId: { type: string }
+        participantOrganizationIds: { type: array, items: { type: string } }
+    MentorshipOrganization:
+      type: object
+      required: [id, name, center, island, role]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        center: { type: string }
+        island: { type: string }
+        role: { type: string }
+    MentorDocument:
+      type: object
+      required: [id, reference, title, organizationId]
+      properties:
+        id: { type: string }
+        reference: { type: string }
+        title: { type: string }
+        organizationId: { type: string }
+    MentorshipOverview:
+      type: object
+      required: [campaigns, organizations, eligibleDocuments, entities, sessions, challenges, reviews, evidence, recommendations, audit, impact, capabilities]
+      properties:
+        campaigns:
+          type: array
+          items: { $ref: "#/components/schemas/MentorshipCampaign" }
+        organizations:
+          type: array
+          items: { $ref: "#/components/schemas/MentorshipOrganization" }
+        eligibleDocuments:
+          type: array
+          items: { $ref: "#/components/schemas/MentorDocument" }
+        entities:
+          type: array
+          items: { $ref: "#/components/schemas/MentorEntity" }
+        sessions:
+          type: array
+          items: { $ref: "#/components/schemas/MentorSession" }
+        challenges:
+          type: array
+          items: { $ref: "#/components/schemas/MentorChallenge" }
+        reviews:
+          type: array
+          items: { $ref: "#/components/schemas/MentorReview" }
+        evidence:
+          type: array
+          items: { $ref: "#/components/schemas/MentorEvidence" }
+        recommendations:
+          type: array
+          items: { $ref: "#/components/schemas/MentorRecommendation" }
+        audit:
+          type: array
+          items: { $ref: "#/components/schemas/MentorAudit" }
+        impact:
+          type: object
+          required: [sessionsPlanned, sessionsCompleted, challengesValidated, recommendationsImplemented, transferRate]
+          properties:
+            sessionsPlanned: { type: integer }
+            sessionsCompleted: { type: integer }
+            challengesValidated: { type: integer }
+            recommendationsImplemented: { type: integer }
+            transferRate: { type: number }
+        capabilities: { $ref: "#/components/schemas/MentorCapabilities" }
 

@@ -29,4 +29,7 @@ export * from "./redfp360-documents";
 export * from "./redfp360-employment";
 export * from "./redfp360-communications";
 export * from "./redfp360-simulations";
+export * from "./redfp360-portfolios";
+export * from "./redfp360-evaluations";
+export * from "./redfp360-mentorship";
 export * from "./auth";

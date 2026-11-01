@@ -58,6 +58,20 @@ import type {
   DirectionTaskUpdate,
   DirectionThreshold,
   DirectionThresholdInput,
+  EvaluationActivity,
+  EvaluationActivityCriteriaInput,
+  EvaluationAssessment,
+  EvaluationAssessmentInput,
+  EvaluationCampaignInput,
+  EvaluationCloseInput,
+  EvaluationCriterion,
+  EvaluationCriterionInput,
+  EvaluationGroup,
+  EvaluationGroupSettingsInput,
+  EvaluationOverview,
+  EvaluationRubric,
+  EvaluationRubricInput,
+  EvaluationWeightValidation,
   Fp360AccountingAccount,
   Fp360AccountingAccountInput,
   Fp360AccountingEntry,
@@ -191,6 +205,7 @@ import type {
   Fp360SimulationEvent,
   Fp360SimulationEventAction,
   Fp360SimulationEventInput,
+  Fp360SimulationEvidenceInput,
   Fp360SimulationsOverview,
   Fp360SocialSecurityMovement,
   Fp360SocialSecurityMovementInput,
@@ -212,6 +227,7 @@ import type {
   Fp360TaxRequirement,
   Fp360TaxRequirementActionInput,
   Fp360TaxRequirementInput,
+  GetEvaluationOverviewParams,
   GetFp360AccountingOverviewParams,
   GetFp360BankOverviewParams,
   GetFp360CommunicationsOverviewParams,
@@ -224,6 +240,8 @@ import type {
   GetFp360ProjectsOverviewParams,
   GetFp360SocialSecurityOverviewParams,
   GetFp360TaxOverviewParams,
+  GetMentorshipOverviewParams,
+  GetPortfolioOverviewParams,
   HealthStatus,
   InvitationAcceptanceInput,
   InvitationPreview,
@@ -234,6 +252,32 @@ import type {
   LogFp360DocumentAccess201,
   ManagedUser,
   ManagedUserUpdate,
+  MentorAgreementInput,
+  MentorChallenge,
+  MentorChallengeAction,
+  MentorChallengeInput,
+  MentorEntity,
+  MentorEntityInput,
+  MentorEvidence,
+  MentorEvidenceInput,
+  MentorRecommendation,
+  MentorRecommendationInput,
+  MentorRecommendationUpdate,
+  MentorReview,
+  MentorReviewInput,
+  MentorSession,
+  MentorSessionAction,
+  MentorSessionInput,
+  MentorshipOverview,
+  PortfolioActionInput,
+  PortfolioCriterion,
+  PortfolioCriterionInput,
+  PortfolioEntry,
+  PortfolioEntryInput,
+  PortfolioEntryUpdate,
+  PortfolioHistory,
+  PortfolioOverview,
+  PortfolioReviewInput,
   PurchaseAwardInput,
   PurchaseDecisionInput,
   PurchaseEvent,
@@ -2055,6 +2099,2718 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getActOnFp360SimulationEventMutationOptions(options), queryClient);
+    }
+
+export const getUpdateFp360SimulationEventUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/simulations/events/${id}`
+}
+
+/**
+ * @summary Edit a returned event draft before resubmission
+ */
+export const updateFp360SimulationEvent = async (id: string,
+    fp360SimulationEventInput: Fp360SimulationEventInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360SimulationEvent> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360SimulationEvent>(getUpdateFp360SimulationEventUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360SimulationEventInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateFp360SimulationEventMutationKey = () => ['updateFp360SimulationEvent'] as const;
+
+export const getUpdateFp360SimulationEventMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360SimulationEvent>>, TError,UpdateFp360SimulationEventMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFp360SimulationEvent>>, TError,UpdateFp360SimulationEventMutationVariables, TContext> => {
+
+const mutationKey = getUpdateFp360SimulationEventMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFp360SimulationEvent>>, UpdateFp360SimulationEventMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateFp360SimulationEvent(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFp360SimulationEventMutationResult = NonNullable<Awaited<ReturnType<typeof updateFp360SimulationEvent>>>
+    export type UpdateFp360SimulationEventMutationBody = BodyType<Fp360SimulationEventInput>
+    export type UpdateFp360SimulationEventMutationError = ErrorType<void>
+    export type UpdateFp360SimulationEventMutationVariables = {id: string;data: BodyType<Fp360SimulationEventInput>}
+
+    /**
+ * @summary Edit a returned event draft before resubmission
+ */
+export const useUpdateFp360SimulationEvent = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFp360SimulationEvent>>, TError,UpdateFp360SimulationEventMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateFp360SimulationEvent>>,
+        TError,
+        UpdateFp360SimulationEventMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateFp360SimulationEventMutationOptions(options), queryClient);
+    }
+
+export const getLinkFp360SimulationEventEvidenceUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/simulations/events/${id}/evidence`
+}
+
+/**
+ * @summary Complete a published educational event using a confirmed synthetic document
+ */
+export const linkFp360SimulationEventEvidence = async (id: string,
+    fp360SimulationEvidenceInput: Fp360SimulationEvidenceInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360SimulationEvent> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360SimulationEvent>(getLinkFp360SimulationEventEvidenceUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360SimulationEvidenceInput)
+  }
+);}
+
+
+
+
+
+export const getLinkFp360SimulationEventEvidenceMutationKey = () => ['linkFp360SimulationEventEvidence'] as const;
+
+export const getLinkFp360SimulationEventEvidenceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkFp360SimulationEventEvidence>>, TError,LinkFp360SimulationEventEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof linkFp360SimulationEventEvidence>>, TError,LinkFp360SimulationEventEvidenceMutationVariables, TContext> => {
+
+const mutationKey = getLinkFp360SimulationEventEvidenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof linkFp360SimulationEventEvidence>>, LinkFp360SimulationEventEvidenceMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  linkFp360SimulationEventEvidence(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LinkFp360SimulationEventEvidenceMutationResult = NonNullable<Awaited<ReturnType<typeof linkFp360SimulationEventEvidence>>>
+    export type LinkFp360SimulationEventEvidenceMutationBody = BodyType<Fp360SimulationEvidenceInput>
+    export type LinkFp360SimulationEventEvidenceMutationError = ErrorType<void>
+    export type LinkFp360SimulationEventEvidenceMutationVariables = {id: string;data: BodyType<Fp360SimulationEvidenceInput>}
+
+    /**
+ * @summary Complete a published educational event using a confirmed synthetic document
+ */
+export const useLinkFp360SimulationEventEvidence = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkFp360SimulationEventEvidence>>, TError,LinkFp360SimulationEventEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof linkFp360SimulationEventEvidence>>,
+        TError,
+        LinkFp360SimulationEventEvidenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getLinkFp360SimulationEventEvidenceMutationOptions(options), queryClient);
+    }
+
+export const getGetPortfolioOverviewUrl = (params?: GetPortfolioOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/portfolio/overview?${stringifiedParams}` : `/api/redfp360/portfolio/overview`
+}
+
+/**
+ * @summary Read the authenticated user's scoped portfolio
+ */
+export const getPortfolioOverview = async (params?: GetPortfolioOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<PortfolioOverview> => {
+
+  return customFetch<PortfolioOverview>(getGetPortfolioOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPortfolioOverviewQueryKey = (params?: GetPortfolioOverviewParams,) => {
+    return [
+    `/api/redfp360/portfolio/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPortfolioOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getPortfolioOverview>>, TError = ErrorType<void>>(params?: GetPortfolioOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPortfolioOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPortfolioOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPortfolioOverview>>> = ({ signal }) => getPortfolioOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPortfolioOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPortfolioOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getPortfolioOverview>>>
+export type GetPortfolioOverviewQueryError = ErrorType<void>
+
+
+export function useGetPortfolioOverview<TData = Awaited<ReturnType<typeof getPortfolioOverview>>, TError = ErrorType<void>>(
+ params: undefined |  GetPortfolioOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPortfolioOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPortfolioOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getPortfolioOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPortfolioOverview<TData = Awaited<ReturnType<typeof getPortfolioOverview>>, TError = ErrorType<void>>(
+ params?: GetPortfolioOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPortfolioOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPortfolioOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getPortfolioOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPortfolioOverview<TData = Awaited<ReturnType<typeof getPortfolioOverview>>, TError = ErrorType<void>>(
+ params?: GetPortfolioOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPortfolioOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Read the authenticated user's scoped portfolio
+ */
+
+export function useGetPortfolioOverview<TData = Awaited<ReturnType<typeof getPortfolioOverview>>, TError = ErrorType<void>>(
+ params?: GetPortfolioOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPortfolioOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPortfolioOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePortfolioCriterionUrl = () => {
+
+
+
+
+  return `/api/redfp360/portfolio/criteria`
+}
+
+/**
+ * @summary Add a learning criterion to a campaign
+ */
+export const createPortfolioCriterion = async (portfolioCriterionInput: PortfolioCriterionInput, options?: Parameters<typeof customFetch>[1]): Promise<PortfolioCriterion> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PortfolioCriterion>(getCreatePortfolioCriterionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(portfolioCriterionInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePortfolioCriterionMutationKey = () => ['createPortfolioCriterion'] as const;
+
+export const getCreatePortfolioCriterionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPortfolioCriterion>>, TError,CreatePortfolioCriterionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPortfolioCriterion>>, TError,CreatePortfolioCriterionMutationVariables, TContext> => {
+
+const mutationKey = getCreatePortfolioCriterionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPortfolioCriterion>>, CreatePortfolioCriterionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPortfolioCriterion(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePortfolioCriterionMutationResult = NonNullable<Awaited<ReturnType<typeof createPortfolioCriterion>>>
+    export type CreatePortfolioCriterionMutationBody = BodyType<PortfolioCriterionInput>
+    export type CreatePortfolioCriterionMutationError = ErrorType<void>
+    export type CreatePortfolioCriterionMutationVariables = {data: BodyType<PortfolioCriterionInput>}
+
+    /**
+ * @summary Add a learning criterion to a campaign
+ */
+export const useCreatePortfolioCriterion = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPortfolioCriterion>>, TError,CreatePortfolioCriterionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createPortfolioCriterion>>,
+        TError,
+        CreatePortfolioCriterionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreatePortfolioCriterionMutationOptions(options), queryClient);
+    }
+
+export const getCreatePortfolioEntryUrl = () => {
+
+
+
+
+  return `/api/redfp360/portfolio/entries`
+}
+
+/**
+ * @summary Create an evidence entry from a completed simulation event
+ */
+export const createPortfolioEntry = async (portfolioEntryInput: PortfolioEntryInput, options?: Parameters<typeof customFetch>[1]): Promise<PortfolioEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PortfolioEntry>(getCreatePortfolioEntryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(portfolioEntryInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePortfolioEntryMutationKey = () => ['createPortfolioEntry'] as const;
+
+export const getCreatePortfolioEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPortfolioEntry>>, TError,CreatePortfolioEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPortfolioEntry>>, TError,CreatePortfolioEntryMutationVariables, TContext> => {
+
+const mutationKey = getCreatePortfolioEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPortfolioEntry>>, CreatePortfolioEntryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPortfolioEntry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePortfolioEntryMutationResult = NonNullable<Awaited<ReturnType<typeof createPortfolioEntry>>>
+    export type CreatePortfolioEntryMutationBody = BodyType<PortfolioEntryInput>
+    export type CreatePortfolioEntryMutationError = ErrorType<void>
+    export type CreatePortfolioEntryMutationVariables = {data: BodyType<PortfolioEntryInput>}
+
+    /**
+ * @summary Create an evidence entry from a completed simulation event
+ */
+export const useCreatePortfolioEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPortfolioEntry>>, TError,CreatePortfolioEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createPortfolioEntry>>,
+        TError,
+        CreatePortfolioEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreatePortfolioEntryMutationOptions(options), queryClient);
+    }
+
+export const getUpdatePortfolioEntryUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/portfolio/entries/${id}`
+}
+
+/**
+ * @summary Save a new version of a draft or returned entry
+ */
+export const updatePortfolioEntry = async (id: string,
+    portfolioEntryUpdate: PortfolioEntryUpdate, options?: Parameters<typeof customFetch>[1]): Promise<PortfolioEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PortfolioEntry>(getUpdatePortfolioEntryUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(portfolioEntryUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdatePortfolioEntryMutationKey = () => ['updatePortfolioEntry'] as const;
+
+export const getUpdatePortfolioEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePortfolioEntry>>, TError,UpdatePortfolioEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePortfolioEntry>>, TError,UpdatePortfolioEntryMutationVariables, TContext> => {
+
+const mutationKey = getUpdatePortfolioEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePortfolioEntry>>, UpdatePortfolioEntryMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePortfolioEntry(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePortfolioEntryMutationResult = NonNullable<Awaited<ReturnType<typeof updatePortfolioEntry>>>
+    export type UpdatePortfolioEntryMutationBody = BodyType<PortfolioEntryUpdate>
+    export type UpdatePortfolioEntryMutationError = ErrorType<void>
+    export type UpdatePortfolioEntryMutationVariables = {id: string;data: BodyType<PortfolioEntryUpdate>}
+
+    /**
+ * @summary Save a new version of a draft or returned entry
+ */
+export const useUpdatePortfolioEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePortfolioEntry>>, TError,UpdatePortfolioEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updatePortfolioEntry>>,
+        TError,
+        UpdatePortfolioEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdatePortfolioEntryMutationOptions(options), queryClient);
+    }
+
+export const getSubmitPortfolioEntryUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/portfolio/entries/${id}/submit`
+}
+
+/**
+ * @summary Submit an entry for educator review
+ */
+export const submitPortfolioEntry = async (id: string,
+    portfolioActionInput: PortfolioActionInput, options?: Parameters<typeof customFetch>[1]): Promise<PortfolioEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PortfolioEntry>(getSubmitPortfolioEntryUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(portfolioActionInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitPortfolioEntryMutationKey = () => ['submitPortfolioEntry'] as const;
+
+export const getSubmitPortfolioEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitPortfolioEntry>>, TError,SubmitPortfolioEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitPortfolioEntry>>, TError,SubmitPortfolioEntryMutationVariables, TContext> => {
+
+const mutationKey = getSubmitPortfolioEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitPortfolioEntry>>, SubmitPortfolioEntryMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  submitPortfolioEntry(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitPortfolioEntryMutationResult = NonNullable<Awaited<ReturnType<typeof submitPortfolioEntry>>>
+    export type SubmitPortfolioEntryMutationBody = BodyType<PortfolioActionInput>
+    export type SubmitPortfolioEntryMutationError = ErrorType<void>
+    export type SubmitPortfolioEntryMutationVariables = {id: string;data: BodyType<PortfolioActionInput>}
+
+    /**
+ * @summary Submit an entry for educator review
+ */
+export const useSubmitPortfolioEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitPortfolioEntry>>, TError,SubmitPortfolioEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof submitPortfolioEntry>>,
+        TError,
+        SubmitPortfolioEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSubmitPortfolioEntryMutationOptions(options), queryClient);
+    }
+
+export const getReviewPortfolioEntryUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/portfolio/entries/${id}/review`
+}
+
+/**
+ * @summary Validate or return a submitted entry with educator feedback
+ */
+export const reviewPortfolioEntry = async (id: string,
+    portfolioReviewInput: PortfolioReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<PortfolioEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PortfolioEntry>(getReviewPortfolioEntryUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(portfolioReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewPortfolioEntryMutationKey = () => ['reviewPortfolioEntry'] as const;
+
+export const getReviewPortfolioEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewPortfolioEntry>>, TError,ReviewPortfolioEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewPortfolioEntry>>, TError,ReviewPortfolioEntryMutationVariables, TContext> => {
+
+const mutationKey = getReviewPortfolioEntryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewPortfolioEntry>>, ReviewPortfolioEntryMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviewPortfolioEntry(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewPortfolioEntryMutationResult = NonNullable<Awaited<ReturnType<typeof reviewPortfolioEntry>>>
+    export type ReviewPortfolioEntryMutationBody = BodyType<PortfolioReviewInput>
+    export type ReviewPortfolioEntryMutationError = ErrorType<void>
+    export type ReviewPortfolioEntryMutationVariables = {id: string;data: BodyType<PortfolioReviewInput>}
+
+    /**
+ * @summary Validate or return a submitted entry with educator feedback
+ */
+export const useReviewPortfolioEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewPortfolioEntry>>, TError,ReviewPortfolioEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviewPortfolioEntry>>,
+        TError,
+        ReviewPortfolioEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewPortfolioEntryMutationOptions(options), queryClient);
+    }
+
+export const getGetPortfolioEntryHistoryUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/portfolio/entries/${id}/history`
+}
+
+/**
+ * @summary Read version and review history for an authorized entry
+ */
+export const getPortfolioEntryHistory = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<PortfolioHistory> => {
+
+  return customFetch<PortfolioHistory>(getGetPortfolioEntryHistoryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPortfolioEntryHistoryQueryKey = (id: string,) => {
+    return [
+    `/api/redfp360/portfolio/entries/${id}/history`
+    ] as const;
+    }
+
+
+export const getGetPortfolioEntryHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getPortfolioEntryHistory>>, TError = ErrorType<void>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPortfolioEntryHistory>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPortfolioEntryHistoryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPortfolioEntryHistory>>> = ({ signal }) => getPortfolioEntryHistory(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPortfolioEntryHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPortfolioEntryHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getPortfolioEntryHistory>>>
+export type GetPortfolioEntryHistoryQueryError = ErrorType<void>
+
+
+export function useGetPortfolioEntryHistory<TData = Awaited<ReturnType<typeof getPortfolioEntryHistory>>, TError = ErrorType<void>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPortfolioEntryHistory>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPortfolioEntryHistory>>,
+          TError,
+          Awaited<ReturnType<typeof getPortfolioEntryHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPortfolioEntryHistory<TData = Awaited<ReturnType<typeof getPortfolioEntryHistory>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPortfolioEntryHistory>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPortfolioEntryHistory>>,
+          TError,
+          Awaited<ReturnType<typeof getPortfolioEntryHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPortfolioEntryHistory<TData = Awaited<ReturnType<typeof getPortfolioEntryHistory>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPortfolioEntryHistory>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Read version and review history for an authorized entry
+ */
+
+export function useGetPortfolioEntryHistory<TData = Awaited<ReturnType<typeof getPortfolioEntryHistory>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPortfolioEntryHistory>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPortfolioEntryHistoryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetEvaluationOverviewUrl = (params?: GetEvaluationOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/evaluations/overview?${stringifiedParams}` : `/api/redfp360/evaluations/overview`
+}
+
+/**
+ * @summary Read campaign evaluation data within the authenticated user's scope
+ */
+export const getEvaluationOverview = async (params?: GetEvaluationOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<EvaluationOverview> => {
+
+  return customFetch<EvaluationOverview>(getGetEvaluationOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEvaluationOverviewQueryKey = (params?: GetEvaluationOverviewParams,) => {
+    return [
+    `/api/redfp360/evaluations/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetEvaluationOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getEvaluationOverview>>, TError = ErrorType<void>>(params?: GetEvaluationOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvaluationOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEvaluationOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEvaluationOverview>>> = ({ signal }) => getEvaluationOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEvaluationOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetEvaluationOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getEvaluationOverview>>>
+export type GetEvaluationOverviewQueryError = ErrorType<void>
+
+
+export function useGetEvaluationOverview<TData = Awaited<ReturnType<typeof getEvaluationOverview>>, TError = ErrorType<void>>(
+ params: undefined |  GetEvaluationOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvaluationOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEvaluationOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getEvaluationOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetEvaluationOverview<TData = Awaited<ReturnType<typeof getEvaluationOverview>>, TError = ErrorType<void>>(
+ params?: GetEvaluationOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvaluationOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getEvaluationOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getEvaluationOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetEvaluationOverview<TData = Awaited<ReturnType<typeof getEvaluationOverview>>, TError = ErrorType<void>>(
+ params?: GetEvaluationOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvaluationOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Read campaign evaluation data within the authenticated user's scope
+ */
+
+export function useGetEvaluationOverview<TData = Awaited<ReturnType<typeof getEvaluationOverview>>, TError = ErrorType<void>>(
+ params?: GetEvaluationOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getEvaluationOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetEvaluationOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateEvaluationCriterionUrl = () => {
+
+
+
+
+  return `/api/redfp360/evaluations/criteria`
+}
+
+/**
+ * @summary Add a versioned curriculum criterion to a campaign
+ */
+export const createEvaluationCriterion = async (evaluationCriterionInput: EvaluationCriterionInput, options?: Parameters<typeof customFetch>[1]): Promise<EvaluationCriterion> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EvaluationCriterion>(getCreateEvaluationCriterionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(evaluationCriterionInput)
+  }
+);}
+
+
+
+
+
+export const getCreateEvaluationCriterionMutationKey = () => ['createEvaluationCriterion'] as const;
+
+export const getCreateEvaluationCriterionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvaluationCriterion>>, TError,CreateEvaluationCriterionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createEvaluationCriterion>>, TError,CreateEvaluationCriterionMutationVariables, TContext> => {
+
+const mutationKey = getCreateEvaluationCriterionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEvaluationCriterion>>, CreateEvaluationCriterionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createEvaluationCriterion(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateEvaluationCriterionMutationResult = NonNullable<Awaited<ReturnType<typeof createEvaluationCriterion>>>
+    export type CreateEvaluationCriterionMutationBody = BodyType<EvaluationCriterionInput>
+    export type CreateEvaluationCriterionMutationError = ErrorType<void>
+    export type CreateEvaluationCriterionMutationVariables = {data: BodyType<EvaluationCriterionInput>}
+
+    /**
+ * @summary Add a versioned curriculum criterion to a campaign
+ */
+export const useCreateEvaluationCriterion = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvaluationCriterion>>, TError,CreateEvaluationCriterionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createEvaluationCriterion>>,
+        TError,
+        CreateEvaluationCriterionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateEvaluationCriterionMutationOptions(options), queryClient);
+    }
+
+export const getReviseEvaluationCriterionUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/evaluations/criteria/${id}`
+}
+
+/**
+ * @summary Create an immutable new version of a curriculum criterion
+ */
+export const reviseEvaluationCriterion = async (id: string,
+    evaluationCriterionInput: EvaluationCriterionInput, options?: Parameters<typeof customFetch>[1]): Promise<EvaluationCriterion> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EvaluationCriterion>(getReviseEvaluationCriterionUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(evaluationCriterionInput)
+  }
+);}
+
+
+
+
+
+export const getReviseEvaluationCriterionMutationKey = () => ['reviseEvaluationCriterion'] as const;
+
+export const getReviseEvaluationCriterionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviseEvaluationCriterion>>, TError,ReviseEvaluationCriterionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviseEvaluationCriterion>>, TError,ReviseEvaluationCriterionMutationVariables, TContext> => {
+
+const mutationKey = getReviseEvaluationCriterionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviseEvaluationCriterion>>, ReviseEvaluationCriterionMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviseEvaluationCriterion(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviseEvaluationCriterionMutationResult = NonNullable<Awaited<ReturnType<typeof reviseEvaluationCriterion>>>
+    export type ReviseEvaluationCriterionMutationBody = BodyType<EvaluationCriterionInput>
+    export type ReviseEvaluationCriterionMutationError = ErrorType<void>
+    export type ReviseEvaluationCriterionMutationVariables = {id: string;data: BodyType<EvaluationCriterionInput>}
+
+    /**
+ * @summary Create an immutable new version of a curriculum criterion
+ */
+export const useReviseEvaluationCriterion = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviseEvaluationCriterion>>, TError,ReviseEvaluationCriterionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviseEvaluationCriterion>>,
+        TError,
+        ReviseEvaluationCriterionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviseEvaluationCriterionMutationOptions(options), queryClient);
+    }
+
+export const getValidateEvaluationWeightsUrl = () => {
+
+
+
+
+  return `/api/redfp360/evaluations/criteria/validate`
+}
+
+/**
+ * @summary Check that current criterion weights total 100 percent
+ */
+export const validateEvaluationWeights = async (evaluationCampaignInput: EvaluationCampaignInput, options?: Parameters<typeof customFetch>[1]): Promise<EvaluationWeightValidation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EvaluationWeightValidation>(getValidateEvaluationWeightsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(evaluationCampaignInput)
+  }
+);}
+
+
+
+
+
+export const getValidateEvaluationWeightsMutationKey = () => ['validateEvaluationWeights'] as const;
+
+export const getValidateEvaluationWeightsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof validateEvaluationWeights>>, TError,ValidateEvaluationWeightsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof validateEvaluationWeights>>, TError,ValidateEvaluationWeightsMutationVariables, TContext> => {
+
+const mutationKey = getValidateEvaluationWeightsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof validateEvaluationWeights>>, ValidateEvaluationWeightsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  validateEvaluationWeights(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ValidateEvaluationWeightsMutationResult = NonNullable<Awaited<ReturnType<typeof validateEvaluationWeights>>>
+    export type ValidateEvaluationWeightsMutationBody = BodyType<EvaluationCampaignInput>
+    export type ValidateEvaluationWeightsMutationError = ErrorType<unknown>
+    export type ValidateEvaluationWeightsMutationVariables = {data: BodyType<EvaluationCampaignInput>}
+
+    /**
+ * @summary Check that current criterion weights total 100 percent
+ */
+export const useValidateEvaluationWeights = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof validateEvaluationWeights>>, TError,ValidateEvaluationWeightsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof validateEvaluationWeights>>,
+        TError,
+        ValidateEvaluationWeightsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getValidateEvaluationWeightsMutationOptions(options), queryClient);
+    }
+
+export const getUpdateEvaluationGroupSettingsUrl = (campaignId: string,) => {
+
+
+
+
+  return `/api/redfp360/evaluations/groups/${campaignId}/settings`
+}
+
+/**
+ * @summary Configure the simulated scoring scale before assessment
+ */
+export const updateEvaluationGroupSettings = async (campaignId: string,
+    evaluationGroupSettingsInput: EvaluationGroupSettingsInput, options?: Parameters<typeof customFetch>[1]): Promise<EvaluationGroup> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EvaluationGroup>(getUpdateEvaluationGroupSettingsUrl(campaignId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(evaluationGroupSettingsInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateEvaluationGroupSettingsMutationKey = () => ['updateEvaluationGroupSettings'] as const;
+
+export const getUpdateEvaluationGroupSettingsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEvaluationGroupSettings>>, TError,UpdateEvaluationGroupSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateEvaluationGroupSettings>>, TError,UpdateEvaluationGroupSettingsMutationVariables, TContext> => {
+
+const mutationKey = getUpdateEvaluationGroupSettingsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateEvaluationGroupSettings>>, UpdateEvaluationGroupSettingsMutationVariables> = (props) => {
+          const {campaignId,data} = props ?? {};
+
+          return  updateEvaluationGroupSettings(campaignId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateEvaluationGroupSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateEvaluationGroupSettings>>>
+    export type UpdateEvaluationGroupSettingsMutationBody = BodyType<EvaluationGroupSettingsInput>
+    export type UpdateEvaluationGroupSettingsMutationError = ErrorType<void>
+    export type UpdateEvaluationGroupSettingsMutationVariables = {campaignId: string;data: BodyType<EvaluationGroupSettingsInput>}
+
+    /**
+ * @summary Configure the simulated scoring scale before assessment
+ */
+export const useUpdateEvaluationGroupSettings = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEvaluationGroupSettings>>, TError,UpdateEvaluationGroupSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateEvaluationGroupSettings>>,
+        TError,
+        UpdateEvaluationGroupSettingsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateEvaluationGroupSettingsMutationOptions(options), queryClient);
+    }
+
+export const getCreateEvaluationRubricUrl = () => {
+
+
+
+
+  return `/api/redfp360/evaluations/rubrics`
+}
+
+/**
+ * @summary Create a draft rubric version for a curriculum criterion
+ */
+export const createEvaluationRubric = async (evaluationRubricInput: EvaluationRubricInput, options?: Parameters<typeof customFetch>[1]): Promise<EvaluationRubric> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EvaluationRubric>(getCreateEvaluationRubricUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(evaluationRubricInput)
+  }
+);}
+
+
+
+
+
+export const getCreateEvaluationRubricMutationKey = () => ['createEvaluationRubric'] as const;
+
+export const getCreateEvaluationRubricMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvaluationRubric>>, TError,CreateEvaluationRubricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createEvaluationRubric>>, TError,CreateEvaluationRubricMutationVariables, TContext> => {
+
+const mutationKey = getCreateEvaluationRubricMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEvaluationRubric>>, CreateEvaluationRubricMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createEvaluationRubric(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateEvaluationRubricMutationResult = NonNullable<Awaited<ReturnType<typeof createEvaluationRubric>>>
+    export type CreateEvaluationRubricMutationBody = BodyType<EvaluationRubricInput>
+    export type CreateEvaluationRubricMutationError = ErrorType<void>
+    export type CreateEvaluationRubricMutationVariables = {data: BodyType<EvaluationRubricInput>}
+
+    /**
+ * @summary Create a draft rubric version for a curriculum criterion
+ */
+export const useCreateEvaluationRubric = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvaluationRubric>>, TError,CreateEvaluationRubricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createEvaluationRubric>>,
+        TError,
+        CreateEvaluationRubricMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateEvaluationRubricMutationOptions(options), queryClient);
+    }
+
+export const getPublishEvaluationRubricUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/evaluations/rubrics/${id}/publish`
+}
+
+/**
+ * @summary Freeze a rubric version before it is used for assessment
+ */
+export const publishEvaluationRubric = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<EvaluationRubric> => {
+
+  return customFetch<EvaluationRubric>(getPublishEvaluationRubricUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPublishEvaluationRubricMutationKey = () => ['publishEvaluationRubric'] as const;
+
+export const getPublishEvaluationRubricMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishEvaluationRubric>>, TError,PublishEvaluationRubricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof publishEvaluationRubric>>, TError,PublishEvaluationRubricMutationVariables, TContext> => {
+
+const mutationKey = getPublishEvaluationRubricMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publishEvaluationRubric>>, PublishEvaluationRubricMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  publishEvaluationRubric(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublishEvaluationRubricMutationResult = NonNullable<Awaited<ReturnType<typeof publishEvaluationRubric>>>
+
+    export type PublishEvaluationRubricMutationError = ErrorType<void>
+    export type PublishEvaluationRubricMutationVariables = {id: string}
+
+    /**
+ * @summary Freeze a rubric version before it is used for assessment
+ */
+export const usePublishEvaluationRubric = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishEvaluationRubric>>, TError,PublishEvaluationRubricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof publishEvaluationRubric>>,
+        TError,
+        PublishEvaluationRubricMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPublishEvaluationRubricMutationOptions(options), queryClient);
+    }
+
+export const getAssignEvaluationActivityCriteriaUrl = (eventId: string,) => {
+
+
+
+
+  return `/api/redfp360/evaluations/activities/${eventId}/criteria`
+}
+
+/**
+ * @summary Link a simulation activity to current evaluation criteria
+ */
+export const assignEvaluationActivityCriteria = async (eventId: string,
+    evaluationActivityCriteriaInput: EvaluationActivityCriteriaInput, options?: Parameters<typeof customFetch>[1]): Promise<EvaluationActivity> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EvaluationActivity>(getAssignEvaluationActivityCriteriaUrl(eventId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(evaluationActivityCriteriaInput)
+  }
+);}
+
+
+
+
+
+export const getAssignEvaluationActivityCriteriaMutationKey = () => ['assignEvaluationActivityCriteria'] as const;
+
+export const getAssignEvaluationActivityCriteriaMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignEvaluationActivityCriteria>>, TError,AssignEvaluationActivityCriteriaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof assignEvaluationActivityCriteria>>, TError,AssignEvaluationActivityCriteriaMutationVariables, TContext> => {
+
+const mutationKey = getAssignEvaluationActivityCriteriaMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof assignEvaluationActivityCriteria>>, AssignEvaluationActivityCriteriaMutationVariables> = (props) => {
+          const {eventId,data} = props ?? {};
+
+          return  assignEvaluationActivityCriteria(eventId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AssignEvaluationActivityCriteriaMutationResult = NonNullable<Awaited<ReturnType<typeof assignEvaluationActivityCriteria>>>
+    export type AssignEvaluationActivityCriteriaMutationBody = BodyType<EvaluationActivityCriteriaInput>
+    export type AssignEvaluationActivityCriteriaMutationError = ErrorType<void>
+    export type AssignEvaluationActivityCriteriaMutationVariables = {eventId: string;data: BodyType<EvaluationActivityCriteriaInput>}
+
+    /**
+ * @summary Link a simulation activity to current evaluation criteria
+ */
+export const useAssignEvaluationActivityCriteria = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignEvaluationActivityCriteria>>, TError,AssignEvaluationActivityCriteriaMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof assignEvaluationActivityCriteria>>,
+        TError,
+        AssignEvaluationActivityCriteriaMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAssignEvaluationActivityCriteriaMutationOptions(options), queryClient);
+    }
+
+export const getCreateEvaluationAssessmentUrl = () => {
+
+
+
+
+  return `/api/redfp360/evaluations/assessments`
+}
+
+/**
+ * @summary Record a rubric-based criterion result or recovery attempt
+ */
+export const createEvaluationAssessment = async (evaluationAssessmentInput: EvaluationAssessmentInput, options?: Parameters<typeof customFetch>[1]): Promise<EvaluationAssessment> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EvaluationAssessment>(getCreateEvaluationAssessmentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(evaluationAssessmentInput)
+  }
+);}
+
+
+
+
+
+export const getCreateEvaluationAssessmentMutationKey = () => ['createEvaluationAssessment'] as const;
+
+export const getCreateEvaluationAssessmentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvaluationAssessment>>, TError,CreateEvaluationAssessmentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createEvaluationAssessment>>, TError,CreateEvaluationAssessmentMutationVariables, TContext> => {
+
+const mutationKey = getCreateEvaluationAssessmentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEvaluationAssessment>>, CreateEvaluationAssessmentMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createEvaluationAssessment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateEvaluationAssessmentMutationResult = NonNullable<Awaited<ReturnType<typeof createEvaluationAssessment>>>
+    export type CreateEvaluationAssessmentMutationBody = BodyType<EvaluationAssessmentInput>
+    export type CreateEvaluationAssessmentMutationError = ErrorType<void>
+    export type CreateEvaluationAssessmentMutationVariables = {data: BodyType<EvaluationAssessmentInput>}
+
+    /**
+ * @summary Record a rubric-based criterion result or recovery attempt
+ */
+export const useCreateEvaluationAssessment = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvaluationAssessment>>, TError,CreateEvaluationAssessmentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createEvaluationAssessment>>,
+        TError,
+        CreateEvaluationAssessmentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateEvaluationAssessmentMutationOptions(options), queryClient);
+    }
+
+export const getCloseEvaluationGroupUrl = (campaignId: string,) => {
+
+
+
+
+  return `/api/redfp360/evaluations/groups/${campaignId}/close`
+}
+
+/**
+ * @summary Close a didactic evaluation record after validation
+ */
+export const closeEvaluationGroup = async (campaignId: string,
+    evaluationCloseInput: EvaluationCloseInput, options?: Parameters<typeof customFetch>[1]): Promise<EvaluationGroup> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EvaluationGroup>(getCloseEvaluationGroupUrl(campaignId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(evaluationCloseInput)
+  }
+);}
+
+
+
+
+
+export const getCloseEvaluationGroupMutationKey = () => ['closeEvaluationGroup'] as const;
+
+export const getCloseEvaluationGroupMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeEvaluationGroup>>, TError,CloseEvaluationGroupMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof closeEvaluationGroup>>, TError,CloseEvaluationGroupMutationVariables, TContext> => {
+
+const mutationKey = getCloseEvaluationGroupMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof closeEvaluationGroup>>, CloseEvaluationGroupMutationVariables> = (props) => {
+          const {campaignId,data} = props ?? {};
+
+          return  closeEvaluationGroup(campaignId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CloseEvaluationGroupMutationResult = NonNullable<Awaited<ReturnType<typeof closeEvaluationGroup>>>
+    export type CloseEvaluationGroupMutationBody = BodyType<EvaluationCloseInput>
+    export type CloseEvaluationGroupMutationError = ErrorType<void>
+    export type CloseEvaluationGroupMutationVariables = {campaignId: string;data: BodyType<EvaluationCloseInput>}
+
+    /**
+ * @summary Close a didactic evaluation record after validation
+ */
+export const useCloseEvaluationGroup = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeEvaluationGroup>>, TError,CloseEvaluationGroupMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof closeEvaluationGroup>>,
+        TError,
+        CloseEvaluationGroupMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCloseEvaluationGroupMutationOptions(options), queryClient);
+    }
+
+export const getGetMentorshipOverviewUrl = (params?: GetMentorshipOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/mentorship/overview?${stringifiedParams}` : `/api/redfp360/mentorship/overview`
+}
+
+/**
+ * @summary Read the authenticated user's scoped mentorship workspace
+ */
+export const getMentorshipOverview = async (params?: GetMentorshipOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<MentorshipOverview> => {
+
+  return customFetch<MentorshipOverview>(getGetMentorshipOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMentorshipOverviewQueryKey = (params?: GetMentorshipOverviewParams,) => {
+    return [
+    `/api/redfp360/mentorship/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMentorshipOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getMentorshipOverview>>, TError = ErrorType<void>>(params?: GetMentorshipOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMentorshipOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMentorshipOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMentorshipOverview>>> = ({ signal }) => getMentorshipOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMentorshipOverview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMentorshipOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getMentorshipOverview>>>
+export type GetMentorshipOverviewQueryError = ErrorType<void>
+
+
+export function useGetMentorshipOverview<TData = Awaited<ReturnType<typeof getMentorshipOverview>>, TError = ErrorType<void>>(
+ params: undefined |  GetMentorshipOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMentorshipOverview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMentorshipOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getMentorshipOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMentorshipOverview<TData = Awaited<ReturnType<typeof getMentorshipOverview>>, TError = ErrorType<void>>(
+ params?: GetMentorshipOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMentorshipOverview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMentorshipOverview>>,
+          TError,
+          Awaited<ReturnType<typeof getMentorshipOverview>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMentorshipOverview<TData = Awaited<ReturnType<typeof getMentorshipOverview>>, TError = ErrorType<void>>(
+ params?: GetMentorshipOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMentorshipOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Read the authenticated user's scoped mentorship workspace
+ */
+
+export function useGetMentorshipOverview<TData = Awaited<ReturnType<typeof getMentorshipOverview>>, TError = ErrorType<void>>(
+ params?: GetMentorshipOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMentorshipOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMentorshipOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateMentorEntityUrl = () => {
+
+
+
+
+  return `/api/redfp360/mentorship/entities`
+}
+
+/**
+ * @summary Register a fictional or authorized mentoring collaborator
+ */
+export const createMentorEntity = async (mentorEntityInput: MentorEntityInput, options?: Parameters<typeof customFetch>[1]): Promise<MentorEntity> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MentorEntity>(getCreateMentorEntityUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mentorEntityInput)
+  }
+);}
+
+
+
+
+
+export const getCreateMentorEntityMutationKey = () => ['createMentorEntity'] as const;
+
+export const getCreateMentorEntityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMentorEntity>>, TError,CreateMentorEntityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMentorEntity>>, TError,CreateMentorEntityMutationVariables, TContext> => {
+
+const mutationKey = getCreateMentorEntityMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMentorEntity>>, CreateMentorEntityMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMentorEntity(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMentorEntityMutationResult = NonNullable<Awaited<ReturnType<typeof createMentorEntity>>>
+    export type CreateMentorEntityMutationBody = BodyType<MentorEntityInput>
+    export type CreateMentorEntityMutationError = ErrorType<void>
+    export type CreateMentorEntityMutationVariables = {data: BodyType<MentorEntityInput>}
+
+    /**
+ * @summary Register a fictional or authorized mentoring collaborator
+ */
+export const useCreateMentorEntity = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMentorEntity>>, TError,CreateMentorEntityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createMentorEntity>>,
+        TError,
+        CreateMentorEntityMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateMentorEntityMutationOptions(options), queryClient);
+    }
+
+export const getUpdateMentorAgreementUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/mentorship/entities/${id}/agreement`
+}
+
+/**
+ * @summary Update the documented agreement state for a collaborator
+ */
+export const updateMentorAgreement = async (id: string,
+    mentorAgreementInput: MentorAgreementInput, options?: Parameters<typeof customFetch>[1]): Promise<MentorEntity> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MentorEntity>(getUpdateMentorAgreementUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mentorAgreementInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateMentorAgreementMutationKey = () => ['updateMentorAgreement'] as const;
+
+export const getUpdateMentorAgreementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMentorAgreement>>, TError,UpdateMentorAgreementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMentorAgreement>>, TError,UpdateMentorAgreementMutationVariables, TContext> => {
+
+const mutationKey = getUpdateMentorAgreementMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMentorAgreement>>, UpdateMentorAgreementMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateMentorAgreement(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMentorAgreementMutationResult = NonNullable<Awaited<ReturnType<typeof updateMentorAgreement>>>
+    export type UpdateMentorAgreementMutationBody = BodyType<MentorAgreementInput>
+    export type UpdateMentorAgreementMutationError = ErrorType<void>
+    export type UpdateMentorAgreementMutationVariables = {id: string;data: BodyType<MentorAgreementInput>}
+
+    /**
+ * @summary Update the documented agreement state for a collaborator
+ */
+export const useUpdateMentorAgreement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMentorAgreement>>, TError,UpdateMentorAgreementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateMentorAgreement>>,
+        TError,
+        UpdateMentorAgreementMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateMentorAgreementMutationOptions(options), queryClient);
+    }
+
+export const getCreateMentorSessionUrl = () => {
+
+
+
+
+  return `/api/redfp360/mentorship/sessions`
+}
+
+/**
+ * @summary Schedule a mentorship session in a simulation campaign
+ */
+export const createMentorSession = async (mentorSessionInput: MentorSessionInput, options?: Parameters<typeof customFetch>[1]): Promise<MentorSession> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MentorSession>(getCreateMentorSessionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mentorSessionInput)
+  }
+);}
+
+
+
+
+
+export const getCreateMentorSessionMutationKey = () => ['createMentorSession'] as const;
+
+export const getCreateMentorSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMentorSession>>, TError,CreateMentorSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMentorSession>>, TError,CreateMentorSessionMutationVariables, TContext> => {
+
+const mutationKey = getCreateMentorSessionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMentorSession>>, CreateMentorSessionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMentorSession(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMentorSessionMutationResult = NonNullable<Awaited<ReturnType<typeof createMentorSession>>>
+    export type CreateMentorSessionMutationBody = BodyType<MentorSessionInput>
+    export type CreateMentorSessionMutationError = ErrorType<void>
+    export type CreateMentorSessionMutationVariables = {data: BodyType<MentorSessionInput>}
+
+    /**
+ * @summary Schedule a mentorship session in a simulation campaign
+ */
+export const useCreateMentorSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMentorSession>>, TError,CreateMentorSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createMentorSession>>,
+        TError,
+        CreateMentorSessionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateMentorSessionMutationOptions(options), queryClient);
+    }
+
+export const getActOnMentorSessionUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/mentorship/sessions/${id}/action`
+}
+
+/**
+ * @summary Confirm, reschedule, complete, or cancel a session
+ */
+export const actOnMentorSession = async (id: string,
+    mentorSessionAction: MentorSessionAction, options?: Parameters<typeof customFetch>[1]): Promise<MentorSession> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MentorSession>(getActOnMentorSessionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mentorSessionAction)
+  }
+);}
+
+
+
+
+
+export const getActOnMentorSessionMutationKey = () => ['actOnMentorSession'] as const;
+
+export const getActOnMentorSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnMentorSession>>, TError,ActOnMentorSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnMentorSession>>, TError,ActOnMentorSessionMutationVariables, TContext> => {
+
+const mutationKey = getActOnMentorSessionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnMentorSession>>, ActOnMentorSessionMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actOnMentorSession(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnMentorSessionMutationResult = NonNullable<Awaited<ReturnType<typeof actOnMentorSession>>>
+    export type ActOnMentorSessionMutationBody = BodyType<MentorSessionAction>
+    export type ActOnMentorSessionMutationError = ErrorType<void>
+    export type ActOnMentorSessionMutationVariables = {id: string;data: BodyType<MentorSessionAction>}
+
+    /**
+ * @summary Confirm, reschedule, complete, or cancel a session
+ */
+export const useActOnMentorSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnMentorSession>>, TError,ActOnMentorSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnMentorSession>>,
+        TError,
+        ActOnMentorSessionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnMentorSessionMutationOptions(options), queryClient);
+    }
+
+export const getCreateMentorChallengeUrl = () => {
+
+
+
+
+  return `/api/redfp360/mentorship/challenges`
+}
+
+/**
+ * @summary Propose an anonymized professional challenge
+ */
+export const createMentorChallenge = async (mentorChallengeInput: MentorChallengeInput, options?: Parameters<typeof customFetch>[1]): Promise<MentorChallenge> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MentorChallenge>(getCreateMentorChallengeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mentorChallengeInput)
+  }
+);}
+
+
+
+
+
+export const getCreateMentorChallengeMutationKey = () => ['createMentorChallenge'] as const;
+
+export const getCreateMentorChallengeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMentorChallenge>>, TError,CreateMentorChallengeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMentorChallenge>>, TError,CreateMentorChallengeMutationVariables, TContext> => {
+
+const mutationKey = getCreateMentorChallengeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMentorChallenge>>, CreateMentorChallengeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMentorChallenge(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMentorChallengeMutationResult = NonNullable<Awaited<ReturnType<typeof createMentorChallenge>>>
+    export type CreateMentorChallengeMutationBody = BodyType<MentorChallengeInput>
+    export type CreateMentorChallengeMutationError = ErrorType<void>
+    export type CreateMentorChallengeMutationVariables = {data: BodyType<MentorChallengeInput>}
+
+    /**
+ * @summary Propose an anonymized professional challenge
+ */
+export const useCreateMentorChallenge = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMentorChallenge>>, TError,CreateMentorChallengeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createMentorChallenge>>,
+        TError,
+        CreateMentorChallengeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateMentorChallengeMutationOptions(options), queryClient);
+    }
+
+export const getActOnMentorChallengeUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/mentorship/challenges/${id}/action`
+}
+
+/**
+ * @summary Validate, return, assign, or close a professional challenge
+ */
+export const actOnMentorChallenge = async (id: string,
+    mentorChallengeAction: MentorChallengeAction, options?: Parameters<typeof customFetch>[1]): Promise<MentorChallenge> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MentorChallenge>(getActOnMentorChallengeUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mentorChallengeAction)
+  }
+);}
+
+
+
+
+
+export const getActOnMentorChallengeMutationKey = () => ['actOnMentorChallenge'] as const;
+
+export const getActOnMentorChallengeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnMentorChallenge>>, TError,ActOnMentorChallengeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof actOnMentorChallenge>>, TError,ActOnMentorChallengeMutationVariables, TContext> => {
+
+const mutationKey = getActOnMentorChallengeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof actOnMentorChallenge>>, ActOnMentorChallengeMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  actOnMentorChallenge(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActOnMentorChallengeMutationResult = NonNullable<Awaited<ReturnType<typeof actOnMentorChallenge>>>
+    export type ActOnMentorChallengeMutationBody = BodyType<MentorChallengeAction>
+    export type ActOnMentorChallengeMutationError = ErrorType<void>
+    export type ActOnMentorChallengeMutationVariables = {id: string;data: BodyType<MentorChallengeAction>}
+
+    /**
+ * @summary Validate, return, assign, or close a professional challenge
+ */
+export const useActOnMentorChallenge = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof actOnMentorChallenge>>, TError,ActOnMentorChallengeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof actOnMentorChallenge>>,
+        TError,
+        ActOnMentorChallengeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getActOnMentorChallengeMutationOptions(options), queryClient);
+    }
+
+export const getCreateMentorReviewUrl = () => {
+
+
+
+
+  return `/api/redfp360/mentorship/reviews`
+}
+
+/**
+ * @summary Record a professional review without grading students
+ */
+export const createMentorReview = async (mentorReviewInput: MentorReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<MentorReview> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MentorReview>(getCreateMentorReviewUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mentorReviewInput)
+  }
+);}
+
+
+
+
+
+export const getCreateMentorReviewMutationKey = () => ['createMentorReview'] as const;
+
+export const getCreateMentorReviewMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMentorReview>>, TError,CreateMentorReviewMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMentorReview>>, TError,CreateMentorReviewMutationVariables, TContext> => {
+
+const mutationKey = getCreateMentorReviewMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMentorReview>>, CreateMentorReviewMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMentorReview(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMentorReviewMutationResult = NonNullable<Awaited<ReturnType<typeof createMentorReview>>>
+    export type CreateMentorReviewMutationBody = BodyType<MentorReviewInput>
+    export type CreateMentorReviewMutationError = ErrorType<void>
+    export type CreateMentorReviewMutationVariables = {data: BodyType<MentorReviewInput>}
+
+    /**
+ * @summary Record a professional review without grading students
+ */
+export const useCreateMentorReview = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMentorReview>>, TError,CreateMentorReviewMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createMentorReview>>,
+        TError,
+        CreateMentorReviewMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateMentorReviewMutationOptions(options), queryClient);
+    }
+
+export const getCreateMentorEvidenceUrl = () => {
+
+
+
+
+  return `/api/redfp360/mentorship/evidence`
+}
+
+/**
+ * @summary Record aggregate participation evidence and an optional confirmed document
+ */
+export const createMentorEvidence = async (mentorEvidenceInput: MentorEvidenceInput, options?: Parameters<typeof customFetch>[1]): Promise<MentorEvidence> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MentorEvidence>(getCreateMentorEvidenceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mentorEvidenceInput)
+  }
+);}
+
+
+
+
+
+export const getCreateMentorEvidenceMutationKey = () => ['createMentorEvidence'] as const;
+
+export const getCreateMentorEvidenceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMentorEvidence>>, TError,CreateMentorEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMentorEvidence>>, TError,CreateMentorEvidenceMutationVariables, TContext> => {
+
+const mutationKey = getCreateMentorEvidenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMentorEvidence>>, CreateMentorEvidenceMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMentorEvidence(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMentorEvidenceMutationResult = NonNullable<Awaited<ReturnType<typeof createMentorEvidence>>>
+    export type CreateMentorEvidenceMutationBody = BodyType<MentorEvidenceInput>
+    export type CreateMentorEvidenceMutationError = ErrorType<void>
+    export type CreateMentorEvidenceMutationVariables = {data: BodyType<MentorEvidenceInput>}
+
+    /**
+ * @summary Record aggregate participation evidence and an optional confirmed document
+ */
+export const useCreateMentorEvidence = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMentorEvidence>>, TError,CreateMentorEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createMentorEvidence>>,
+        TError,
+        CreateMentorEvidenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateMentorEvidenceMutationOptions(options), queryClient);
+    }
+
+export const getCreateMentorRecommendationUrl = () => {
+
+
+
+
+  return `/api/redfp360/mentorship/recommendations`
+}
+
+/**
+ * @summary Record a recommendation from a professional review
+ */
+export const createMentorRecommendation = async (mentorRecommendationInput: MentorRecommendationInput, options?: Parameters<typeof customFetch>[1]): Promise<MentorRecommendation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MentorRecommendation>(getCreateMentorRecommendationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mentorRecommendationInput)
+  }
+);}
+
+
+
+
+
+export const getCreateMentorRecommendationMutationKey = () => ['createMentorRecommendation'] as const;
+
+export const getCreateMentorRecommendationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMentorRecommendation>>, TError,CreateMentorRecommendationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMentorRecommendation>>, TError,CreateMentorRecommendationMutationVariables, TContext> => {
+
+const mutationKey = getCreateMentorRecommendationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMentorRecommendation>>, CreateMentorRecommendationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMentorRecommendation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMentorRecommendationMutationResult = NonNullable<Awaited<ReturnType<typeof createMentorRecommendation>>>
+    export type CreateMentorRecommendationMutationBody = BodyType<MentorRecommendationInput>
+    export type CreateMentorRecommendationMutationError = ErrorType<void>
+    export type CreateMentorRecommendationMutationVariables = {data: BodyType<MentorRecommendationInput>}
+
+    /**
+ * @summary Record a recommendation from a professional review
+ */
+export const useCreateMentorRecommendation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMentorRecommendation>>, TError,CreateMentorRecommendationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createMentorRecommendation>>,
+        TError,
+        CreateMentorRecommendationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateMentorRecommendationMutationOptions(options), queryClient);
+    }
+
+export const getUpdateMentorRecommendationUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/mentorship/recommendations/${id}`
+}
+
+/**
+ * @summary Record whether a recommendation was accepted or implemented
+ */
+export const updateMentorRecommendation = async (id: string,
+    mentorRecommendationUpdate: MentorRecommendationUpdate, options?: Parameters<typeof customFetch>[1]): Promise<MentorRecommendation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MentorRecommendation>(getUpdateMentorRecommendationUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mentorRecommendationUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateMentorRecommendationMutationKey = () => ['updateMentorRecommendation'] as const;
+
+export const getUpdateMentorRecommendationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMentorRecommendation>>, TError,UpdateMentorRecommendationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMentorRecommendation>>, TError,UpdateMentorRecommendationMutationVariables, TContext> => {
+
+const mutationKey = getUpdateMentorRecommendationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMentorRecommendation>>, UpdateMentorRecommendationMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateMentorRecommendation(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMentorRecommendationMutationResult = NonNullable<Awaited<ReturnType<typeof updateMentorRecommendation>>>
+    export type UpdateMentorRecommendationMutationBody = BodyType<MentorRecommendationUpdate>
+    export type UpdateMentorRecommendationMutationError = ErrorType<void>
+    export type UpdateMentorRecommendationMutationVariables = {id: string;data: BodyType<MentorRecommendationUpdate>}
+
+    /**
+ * @summary Record whether a recommendation was accepted or implemented
+ */
+export const useUpdateMentorRecommendation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMentorRecommendation>>, TError,UpdateMentorRecommendationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateMentorRecommendation>>,
+        TError,
+        UpdateMentorRecommendationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateMentorRecommendationMutationOptions(options), queryClient);
     }
 
 export const getGetFp360DirectionOverviewUrl = (params?: GetFp360DirectionOverviewParams,) => {

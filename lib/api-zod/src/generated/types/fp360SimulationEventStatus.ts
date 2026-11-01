@@ -14,5 +14,6 @@ export const Fp360SimulationEventStatus = {
   proposed: 'proposed',
   approved: 'approved',
   published: 'published',
+  completed: 'completed',
   cancelled: 'cancelled',
 } as const;

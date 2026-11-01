@@ -10,6 +10,7 @@ export type Fp360SimulationEventActionAction = typeof Fp360SimulationEventAction
 
 
 export const Fp360SimulationEventActionAction = {
+  submit: 'submit',
   approve: 'approve',
   publish: 'publish',
   cancel: 'cancel',

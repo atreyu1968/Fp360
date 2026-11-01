@@ -4,3 +4,4 @@
 - [RED FP360 financial controls](red-fp360-financial-controls.md) — Keep dispatch, receipt, invoicing, collection, accounting, and reconciliation as separate auditable simulation stages.
 - [RED FP360 labor and payroll safeguards](red-fp360-labor-safety.md) — Keep workforce records fictional and payroll rates didactic, versioned, and disconnected from real filings or payments.
 - [Hacienda official-form scope](tax-forms-scope.md) — Keep separate AEAT and ATC sections, profile-based applicability, and official templates educational-only.
+- [RED FP360 evaluation scope](redfp360-evaluation-scope.md) — Keep curriculum criteria configurable per center; grades, rubrics, recoveries, and closure remain didactic and auditable.
