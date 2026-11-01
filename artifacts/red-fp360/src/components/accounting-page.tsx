@@ -88,6 +88,7 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
     { query: { enabled: Boolean(organizationId) } },
   );
   const overview = overviewQuery.data;
+  const selectedOrganization = organizations.find((organization) => organization.id === organizationId);
   const accounts = overview?.accounts ?? [];
   const entries = overview?.entries ?? [];
   const balances = overview?.balances ?? [];
@@ -241,7 +242,12 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
     <div className="page-heading accounting-heading">
       <div><span className="page-kicker">CICLO ECONÓMICO · REGISTRO CONTABLE</span><h1>Contabilidad</h1><p>Diario, mayor y estados didácticos enlazados con documentos de origen.</p></div>
       <div className="accounting-heading-actions">
-        {canChooseOrganization && <label className="accounting-org-select">Empresa<select value={organizationId} onChange={(event) => setOrganizationId(event.target.value)}><option value="">Selecciona una empresa</option>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}</select></label>}
+        {canChooseOrganization && <label className="accounting-org-select">Empresa<select value={organizationId} onChange={(event) => {
+          setOrganizationId(event.target.value);
+          setSelectedEntryId('');
+          setSelectedAccountId('');
+          setSearch('');
+        }}><option value="">Selecciona una empresa</option>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name} · {organization.center}</option>)}</select></label>}
         <button className="button button-primary" type="button" disabled={readOnly || !organizationId || !accounts.length} onClick={openEntryForm}>＋ Nuevo asiento</button>
       </div>
     </div>
@@ -298,7 +304,7 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
       </section>}
 
       {view === 'reports' && <section className="panel accounting-panel">
-        <div className="accounting-section-head"><div><h2>Balances y resultados</h2><p>Sumas, saldos y resultado derivados exclusivamente del diario contabilizado.</p></div><button className="button button-secondary" onClick={() => window.print()}>Imprimir / guardar PDF</button></div>
+        <div className="accounting-section-head"><div><h2>Balances y resultados</h2><p>Sumas, saldos y resultado derivados exclusivamente del diario contabilizado.</p>{selectedOrganization && <p className="accounting-report-scope">Ámbito: {selectedOrganization.name} · {selectedOrganization.center}</p>}</div><button className="button button-secondary" onClick={() => window.print()}>Imprimir / guardar PDF</button></div>
         <div className="accounting-report-cards"><article><span>Total Debe</span><b>{formatMoney(overview.totals.debitCents)}</b></article><article><span>Total Haber</span><b>{formatMoney(overview.totals.creditCents)}</b></article><article><span>Resultado didáctico</span><b className={resultCents >= 0 ? 'accounting-positive' : 'accounting-negative'}>{signedMoney(resultCents)}</b></article><article><span>Control</span><b>{overview.totals.balanced ? 'Cuadrado' : 'Revisar'}</b></article></div>
         <div className="accounting-table-scroll"><table className="accounting-table"><thead><tr><th>Cuenta</th><th>Nombre</th><th>Naturaleza</th><th>Sumas Debe</th><th>Sumas Haber</th><th>Saldo natural</th></tr></thead><tbody>
           {balances.map((balance) => <tr key={balance.accountId}><td className="accounting-code">{balance.code}</td><td>{balance.name}</td><td>{natureNames[balance.nature]}</td><td>{formatMoney(balance.debitCents)}</td><td>{formatMoney(balance.creditCents)}</td><td>{signedMoney(balance.balanceCents)}</td></tr>)}

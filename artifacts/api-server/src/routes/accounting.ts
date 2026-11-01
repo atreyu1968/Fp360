@@ -40,6 +40,10 @@ import {
   fpPurchaseOrders,
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
+import {
+  buildAccountingSources,
+  canAccessAccountingOrganization,
+} from "./accounting-scope.mjs";
 
 const router: IRouter = Router();
 router.use("/redfp360/accounting", requireAuth, requireSimulationWriteAccess);
@@ -82,8 +86,7 @@ function isValidDate(value: string) {
 }
 
 async function resolveOrganization(actor: AuthContext, requestedId: string) {
-  if (actor.organizationId && actor.organizationId !== requestedId) return null;
-  if (!actor.organizationId && !["teacher", "administrator"].includes(actor.role)) return null;
+  if (!canAccessAccountingOrganization(actor, requestedId)) return null;
   const [organization] = await db.select({ id: fpOrganizations.id }).from(fpOrganizations).where(and(
     eq(fpOrganizations.id, requestedId),
     eq(fpOrganizations.tenantId, actor.tenantId),
@@ -295,7 +298,6 @@ async function loadOverview(tenantId: string, organizationId: string, actor: Aut
     eq(fpInvoices.tenantId, tenantId),
     eq(fpInvoices.issuerOrganizationId, organizationId),
   ));
-  const salesInvoiceById = new Map(salesInvoices.map((invoice) => [invoice.id, invoice]));
   const payments = salesInvoices.length ? await db.select().from(fpPayments).where(and(
     eq(fpPayments.tenantId, tenantId),
     eq(fpPayments.organizationId, organizationId),
@@ -305,52 +307,27 @@ async function loadOverview(tenantId: string, organizationId: string, actor: Aut
     eq(fpPurchaseOrders.tenantId, tenantId),
     eq(fpPurchaseOrders.buyerOrganizationId, organizationId),
   ));
-  const purchaseOrderIds = new Set(purchaseOrders.map((order) => order.id));
-  const purchaseInvoices = (await db.select().from(fpPurchaseInvoices).where(and(
+  const purchaseInvoices = purchaseOrders.length ? await db.select().from(fpPurchaseInvoices).where(and(
     eq(fpPurchaseInvoices.tenantId, tenantId),
     eq(fpPurchaseInvoices.status, "conformed"),
-  ))).filter((invoice) => purchaseOrderIds.has(invoice.orderId));
+    inArray(fpPurchaseInvoices.orderId, purchaseOrders.map((order) => order.id)),
+  )) : [];
   const partnerIds = [...new Set(purchaseInvoices.map((invoice) => invoice.supplierOrganizationId))];
   const partners = partnerIds.length ? await db.select().from(fpOrganizations).where(and(
     eq(fpOrganizations.tenantId, tenantId),
     inArray(fpOrganizations.id, partnerIds),
   )) : [];
-  const partnerNames = new Map(partners.map((partner) => [partner.id, partner.name]));
-  const sources = [
-    ...salesInvoices.map((invoice) => ({
-      id: invoice.id,
-      sourceType: "sales_invoice" as const,
-      reference: invoice.reference,
-      sourceDate: invoice.simulatedDate,
-      partnerName: invoice.buyerName,
-      totalCents: invoice.totalCents,
-      status: "issued",
-      imported: imported.has(`sales_invoice:${invoice.id}`),
-    })),
-    ...payments.flatMap((payment) => {
-      const invoice = salesInvoiceById.get(payment.invoiceId);
-      return invoice ? [{
-        id: payment.id,
-        sourceType: "payment" as const,
-        reference: `Cobro ${invoice.reference}`,
-        sourceDate: payment.simulatedDate,
-        partnerName: invoice.buyerName,
-        totalCents: payment.amountCents,
-        status: postedSalesInvoiceIds.has(invoice.id) ? "recorded" : "awaiting_invoice",
-        imported: imported.has(`payment:${payment.id}`),
-      }] : [];
-    }),
-    ...purchaseInvoices.map((invoice) => ({
-      id: invoice.id,
-      sourceType: "purchase_invoice" as const,
-      reference: invoice.invoiceReference,
-      sourceDate: invoice.invoiceDate,
-      partnerName: partnerNames.get(invoice.supplierOrganizationId) ?? "Proveedor",
-      totalCents: invoice.totalCents,
-      status: invoice.status,
-      imported: imported.has(`purchase_invoice:${invoice.id}`),
-    })),
-  ].sort((a, b) => b.sourceDate.localeCompare(a.sourceDate));
+  const sources = buildAccountingSources({
+    tenantId,
+    organizationId,
+    salesInvoices,
+    payments,
+    purchaseOrders,
+    purchaseInvoices,
+    partners,
+    imported,
+    postedSalesInvoiceIds,
+  });
 
   const totalsByAccount = new Map<string, { debitCents: number; creditCents: number }>();
   for (const line of lines) {

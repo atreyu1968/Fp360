@@ -137,6 +137,7 @@ export function TreasuryPage({ identity, organizations = [], onNotice }: Props) 
   const readOnly = isReadOnlyRole(identity.role);
   const canChooseOrganization = !identity.organizationId && ['teacher', 'administrator'].includes(identity.role);
   const organizationId = identity.organizationId ?? selectedOrganizationId;
+  const selectedOrganization = organizations.find((organization) => organization.id === organizationId);
   useEffect(() => {
     if (!identity.organizationId && !selectedOrganizationId && organizations[0]) setSelectedOrganizationId(organizations[0].id);
   }, [identity.organizationId, organizations, selectedOrganizationId]);
@@ -263,7 +264,10 @@ export function TreasuryPage({ identity, organizations = [], onNotice }: Props) 
   return <main className="page-content treasury-page">
     <div className="page-heading treasury-heading">
       <div><div className="breadcrumbs"><span>RED FP360</span><span className="crumb-slash">/</span><span>TESORERÍA · LIQUIDEZ</span></div><h1>Tesorería</h1><p>Conecta vencimientos, cobros y saldo contabilizado. Cada decisión se practica, no se liquida.</p></div>
-      {canChooseOrganization && <label className="treasury-organization-select">Empresa<select value={organizationId} onChange={(event) => setSelectedOrganizationId(event.target.value)} data-testid="select-treasury-organization"><option value="">Selecciona una empresa</option>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}</select></label>}
+      {canChooseOrganization && <label className="treasury-organization-select">Empresa<select value={organizationId} onChange={(event) => {
+        setSelectedOrganizationId(event.target.value);
+        setSearch('');
+      }} data-testid="select-treasury-organization"><option value="">Selecciona una empresa</option>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name} · {organization.center}</option>)}</select></label>}
       <span className="treasury-environment"><span /> DATOS SIMULADOS</span>
     </div>
     <div className="treasury-notice"><ShieldAlert size={16} /><span><b>Entorno de aprendizaje.</b> Importes y fechas simulados; sin conexión bancaria ni movimientos de dinero real.</span></div>
@@ -320,7 +324,7 @@ export function TreasuryPage({ identity, organizations = [], onNotice }: Props) 
       </div>}
       {view === 'reconciliation' && <div className="treasury-reconciliation-view page-enter">
         <section className="treasury-forecast-hero">
-          <div><span className="treasury-overline">EXTRACTO SINTÉTICO · MAYOR 572</span><h2>Comparación bancaria</h2><p>Compara movimientos y líneas contables de la empresa seleccionada, sin crear asientos ni modificar saldos.</p></div>
+          <div><span className="treasury-overline">EXTRACTO SINTÉTICO · MAYOR 572</span><h2>Comparación bancaria</h2><p>Compara movimientos y líneas contables de la empresa seleccionada, sin crear asientos ni modificar saldos.</p>{selectedOrganization && <p>Ámbito consultado: {selectedOrganization.name} · {selectedOrganization.center}</p>}</div>
           <label>Mes<input type="month" value={reconciliationMonth} max={SIMULATED_DATE.slice(0, 7)} onChange={(event) => { if (event.target.value) setReconciliationMonth(event.target.value); }} data-testid="input-treasury-reconciliation-month" /></label>
         </section>
         {!organizationId && <div className="treasury-disclaimer"><CircleAlert size={16} /><span>Selecciona una empresa para consultar su extracto sintético y las líneas 572 publicadas.</span></div>}
@@ -371,7 +375,7 @@ export function TreasuryPage({ identity, organizations = [], onNotice }: Props) 
         <section className="treasury-finance-layout"><div className="panel treasury-panel treasury-finance-form"><label>Principal (€)<input inputMode="decimal" value={scenarioAmount} onChange={(event) => setScenarioAmount(event.target.value)} placeholder="p. ej. 4.500,00" data-testid="input-treasury-finance-amount" /></label><label>Tipo anual hipotético (%)<input type="number" min="0" max="100" step="0.1" value={scenarioRate} onChange={(event) => setScenarioRate(event.target.value)} data-testid="input-treasury-finance-rate" /></label><label>Plazo didáctico<select defaultValue="90" disabled aria-label="Plazo del cálculo"><option value="90">90 días</option></select></label><p>Estimación simple de interés: principal × tipo anual × 90 / 365. Sin comisiones, impuestos ni condiciones comerciales.</p></div><div className="treasury-cost-card"><span className="treasury-overline">COSTE ESTIMADO PARA 90 DÍAS</span><strong data-testid="value-treasury-finance-cost">{eur(scenarioCost)}</strong><div><span>Principal hipotético</span><b>{eur(scenarioCents)}</b></div><div><span>Tipo anual introducido</span><b>{Number(scenarioRate || 0).toLocaleString('es-ES')}%</b></div><div><span>Saldo contabilizado actual</span><b>{organizationId ? eur(bankBalance) : '—'}</b></div><small>El resultado es educativo y no constituye recomendación ni oferta financiera.</small></div></section>
       </div>}
       {view === 'reports' && <section className="panel treasury-panel page-enter">
-        <div className="treasury-section-head"><div><span className="treasury-overline">INFORME DE POSICIÓN</span><h2>Resumen de tesorería</h2><p>Lectura del escenario con datos documentales y saldo del mayor.</p></div><button className="treasury-action" onClick={() => window.print()} data-testid="button-print-treasury-report"><FileBarChart2 size={14} /> Imprimir / guardar PDF</button></div>
+        <div className="treasury-section-head"><div><span className="treasury-overline">INFORME DE POSICIÓN</span><h2>Resumen de tesorería</h2><p>Lectura del escenario con datos documentales y saldo del mayor.</p>{selectedOrganization && <p>Ámbito: {selectedOrganization.name} · {selectedOrganization.center}</p>}</div><button className="treasury-action" onClick={() => window.print()} data-testid="button-print-treasury-report"><FileBarChart2 size={14} /> Imprimir / guardar PDF</button></div>
         <div className="treasury-report-grid"><article><span>Saldo bancario contabilizado</span><b>{organizationId && !overviewQuery.isLoading ? eur(bankBalance) : '—'}</b><small>Cuenta 572 · publicado</small></article><article><span>Saldo de facturas de venta</span><b>{eur(totalReceivable)}</b><small>{outstanding.length} documentos con saldo</small></article><article><span>Facturas proveedor conformadas</span><b>{eur(totalPayable)}</b><small>{duePayables.length} documentos · sin pagos ejecutables</small></article><article><span>Partidas en borrador contable</span><b>{organizationId ? pendingEntries : '—'}</b><small>Requieren revisión en Contabilidad</small></article></div>
         <div className="treasury-report-note"><RefreshCw size={15} /><span>El informe se actualiza al recargar desde las consultas de Tesorería. Previsiones y financiación quedan fuera de los libros.</span></div>
       </section>}
