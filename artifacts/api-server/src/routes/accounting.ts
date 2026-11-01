@@ -15,6 +15,8 @@ import {
   ExportFp360AccountingCsvQueryParams,
   GetFp360AccountingOverviewQueryParams,
   GetFp360AccountingOverviewResponse,
+  GetFp360AccountingYearEndSummaryQueryParams,
+  GetFp360AccountingYearEndSummaryResponse,
   PostFp360AccountingEntryBody,
   PostFp360AccountingEntryParams,
   PostFp360AccountingEntryResponse,
@@ -45,6 +47,7 @@ import {
   buildAccountingSources,
   canAccessAccountingOrganization,
 } from "./accounting-scope.mjs";
+import { buildAccountingExportCsv } from "./accounting-export.mjs";
 
 const router: IRouter = Router();
 router.use("/redfp360/accounting", requireAuth, requireSimulationWriteAccess);
@@ -75,22 +78,6 @@ const defaultAccounts: Array<{ code: string; name: string; nature: Nature; norma
 
 function fingerprint(value: unknown) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
-}
-
-function csvCell(value: string | number | null | undefined) {
-  if (typeof value === "number") return String(value);
-  const text = value ?? "";
-  if (/^-?\d+,\d{2}$/.test(text)) return text;
-  const safeText = /^[\t\r\n ]*[=+\-@]/.test(text) ? `'${text}` : text;
-  return `"${safeText.replace(/"/g, '""')}"`;
-}
-
-function csvRow(values: Array<string | number | null | undefined>) {
-  return values.map(csvCell).join(";");
-}
-
-function csvEuro(cents: number) {
-  return (cents / 100).toFixed(2).replace(".", ",");
 }
 
 function isoDateTime(value: Date | null) {
@@ -536,6 +523,110 @@ router.get("/redfp360/accounting/overview", async (req, res): Promise<void> => {
   res.json(await loadOverview(actor.tenantId, organizationId, actor));
 });
 
+router.get("/redfp360/accounting/year-end-summary", async (req, res): Promise<void> => {
+  const actor = req.auth!;
+  const query = GetFp360AccountingYearEndSummaryQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const organizationId = await resolveOrganization(actor, query.data.organizationId);
+  if (!organizationId) {
+    res.status(403).json({ error: "No tienes acceso a la contabilidad de esa empresa." });
+    return;
+  }
+
+  const { fiscalYear } = query.data;
+  const [accounts, entries, periods] = await Promise.all([
+    db.select().from(fpAccountingAccounts).where(and(
+      eq(fpAccountingAccounts.tenantId, actor.tenantId),
+      eq(fpAccountingAccounts.organizationId, organizationId),
+    )),
+    db.select().from(fpAccountingEntries).where(and(
+      eq(fpAccountingEntries.tenantId, actor.tenantId),
+      eq(fpAccountingEntries.organizationId, organizationId),
+      eq(fpAccountingEntries.fiscalYear, fiscalYear),
+    )),
+    db.select().from(fpAccountingPeriods).where(and(
+      eq(fpAccountingPeriods.tenantId, actor.tenantId),
+      eq(fpAccountingPeriods.organizationId, organizationId),
+      eq(fpAccountingPeriods.fiscalYear, fiscalYear),
+    )),
+  ]);
+  const postedEntries = entries.filter((entry) => entry.status !== "draft");
+  const postedEntryIds = postedEntries.map((entry) => entry.id);
+  const lines = postedEntryIds.length ? await db.select().from(fpAccountingEntryLines).where(and(
+    eq(fpAccountingEntryLines.tenantId, actor.tenantId),
+    inArray(fpAccountingEntryLines.entryId, postedEntryIds),
+  )) : [];
+  const accountById = new Map(accounts.map((account) => [account.id, account]));
+  const profitAndLossTotals = new Map<string, { debitCents: number; creditCents: number }>();
+  for (const account of accounts) {
+    if (account.nature === "revenue" || account.nature === "expense") {
+      profitAndLossTotals.set(account.id, { debitCents: 0, creditCents: 0 });
+    }
+  }
+  for (const line of lines) {
+    const account = accountById.get(line.accountId);
+    const totals = profitAndLossTotals.get(line.accountId);
+    if (!account || !totals) continue;
+    totals.debitCents += line.debitCents;
+    totals.creditCents += line.creditCents;
+  }
+  const profitAndLossAccounts = accounts
+    .filter((account) => account.nature === "revenue" || account.nature === "expense")
+    .map((account) => {
+      const totals = profitAndLossTotals.get(account.id) ?? { debitCents: 0, creditCents: 0 };
+      return {
+        accountId: account.id,
+        code: account.code,
+        name: account.name,
+        nature: account.nature,
+        normalBalance: account.normalBalance,
+        debitCents: totals.debitCents,
+        creditCents: totals.creditCents,
+        balanceCents: account.normalBalance === "debit"
+          ? totals.debitCents - totals.creditCents
+          : totals.creditCents - totals.debitCents,
+      };
+    });
+  const revenueCents = profitAndLossAccounts
+    .filter((account) => account.nature === "revenue")
+    .reduce((sum, account) => sum + account.balanceCents, 0);
+  const expenseCents = profitAndLossAccounts
+    .filter((account) => account.nature === "expense")
+    .reduce((sum, account) => sum + account.balanceCents, 0);
+  const periodsClosed = periods.filter((period) => period.status === "closed").length;
+  const draftEntries = entries.length - postedEntries.length;
+  const debitCents = postedEntries.reduce((sum, entry) => sum + entry.debitCents, 0);
+  const creditCents = postedEntries.reduce((sum, entry) => sum + entry.creditCents, 0);
+  const journalBalanced = postedEntries.every((entry) => entry.debitCents === entry.creditCents);
+  const unsettledProfitAndLossAccounts = profitAndLossAccounts.filter((account) => account.balanceCents !== 0).length;
+  const profitAndLossAccountsSettled = unsettledProfitAndLossAccounts === 0;
+
+  res.json(GetFp360AccountingYearEndSummaryResponse.parse({
+    organizationId,
+    fiscalYear,
+    periodsClosed,
+    periodsExpected: 12,
+    draftEntries,
+    postedEntries: postedEntries.length,
+    debitCents,
+    creditCents,
+    journalBalanced,
+    revenueCents,
+    expenseCents,
+    resultCents: revenueCents - expenseCents,
+    unsettledProfitAndLossAccounts,
+    profitAndLossAccountsSettled,
+    readyForAnnualClose: periodsClosed === 12
+      && draftEntries === 0
+      && journalBalanced
+      && profitAndLossAccountsSettled,
+    profitAndLossAccounts,
+  }));
+});
+
 router.get("/redfp360/accounting/export", async (req, res): Promise<void> => {
   const actor = req.auth!;
   const query = ExportFp360AccountingCsvQueryParams.safeParse(req.query);
@@ -572,98 +663,19 @@ router.get("/redfp360/accounting/export", async (req, res): Promise<void> => {
       ? eq(fpAccountingEntries.fiscalYear, fiscalYear)
       : lte(fpAccountingEntries.fiscalYear, fiscalYear),
   )).orderBy(asc(fpAccountingEntries.entryDate), asc(fpAccountingEntries.entryNumber), asc(fpAccountingEntries.createdAt));
-  const exportEntries = book === "ledger" ? entries.filter((entry) => entry.status !== "draft") : entries;
-  const entryLines = exportEntries.length ? await db.select().from(fpAccountingEntryLines).where(and(
+  const entryLines = entries.length ? await db.select().from(fpAccountingEntryLines).where(and(
     eq(fpAccountingEntryLines.tenantId, actor.tenantId),
-    inArray(fpAccountingEntryLines.entryId, exportEntries.map((entry) => entry.id)),
+    inArray(fpAccountingEntryLines.entryId, entries.map((entry) => entry.id)),
   )).orderBy(asc(fpAccountingEntryLines.lineNumber)) : [];
-  const accountsById = new Map(accounts.map((account) => [account.id, account]));
-  const linesByEntry = new Map<string, typeof entryLines>();
-  for (const line of entryLines) {
-    linesByEntry.set(line.entryId, [...(linesByEntry.get(line.entryId) ?? []), line]);
-  }
-  const scopedValues = [organization.name, organization.center, organizationId, fiscalYear];
-  const rows: string[] = [];
-
-  if (book === "journal") {
-    rows.push(csvRow([
-      "empresa", "centro", "empresa_id", "ejercicio", "periodo", "fecha", "asiento",
-      "estado", "tipo_origen", "referencia_origen", "concepto", "linea",
-      "cuenta_codigo", "cuenta_nombre", "descripcion", "debe_eur", "haber_eur",
-    ]));
-    for (const entry of entries) {
-      const lines = (linesByEntry.get(entry.id) ?? []).filter((line) => accountsById.has(line.accountId));
-      if (!lines.length) {
-        rows.push(csvRow([
-          ...scopedValues, entry.period, entry.entryDate, entry.entryNumber, entry.status,
-          entry.sourceType, entry.sourceReference, entry.concept, "", "", "", "", "", "",
-        ]));
-        continue;
-      }
-      for (const line of lines) {
-        const account = accountsById.get(line.accountId)!;
-        rows.push(csvRow([
-          ...scopedValues, entry.period, entry.entryDate, entry.entryNumber, entry.status,
-          entry.sourceType, entry.sourceReference, entry.concept, line.lineNumber,
-          account.code, account.name, line.description, csvEuro(line.debitCents), csvEuro(line.creditCents),
-        ]));
-      }
-    }
-  } else {
-    rows.push(csvRow([
-      "empresa", "centro", "empresa_id", "ejercicio", "tipo_fila", "cuenta_codigo",
-      "cuenta_nombre", "fecha", "asiento", "estado", "referencia_origen", "concepto",
-      "descripcion", "debe_eur", "haber_eur", "saldo_acumulado_eur",
-    ]));
-    const ledgerItems: Array<{
-      entry: (typeof exportEntries)[number];
-      line: (typeof entryLines)[number];
-      account: (typeof accounts)[number];
-    }> = [];
-    for (const entry of exportEntries) {
-      for (const line of linesByEntry.get(entry.id) ?? []) {
-        const account = accountsById.get(line.accountId);
-        if (account) ledgerItems.push({ entry, line, account });
-      }
-    }
-    ledgerItems.sort((a, b) =>
-      a.account.code.localeCompare(b.account.code, "es")
-      || a.entry.entryDate.localeCompare(b.entry.entryDate)
-      || (a.entry.entryNumber ?? 0) - (b.entry.entryNumber ?? 0)
-      || a.line.lineNumber - b.line.lineNumber,
-    );
-    const runningBalances = new Map(accounts.map((account) => [account.id, 0]));
-    for (const item of ledgerItems) {
-      if (item.entry.fiscalYear >= fiscalYear) continue;
-      const delta = item.account.normalBalance === "debit"
-        ? item.line.debitCents - item.line.creditCents
-        : item.line.creditCents - item.line.debitCents;
-      runningBalances.set(item.account.id, (runningBalances.get(item.account.id) ?? 0) + delta);
-    }
-    for (const account of accounts) {
-      const openingBalance = runningBalances.get(account.id) ?? 0;
-      if (!openingBalance) continue;
-      rows.push(csvRow([
-        ...scopedValues, "saldo_inicial", account.code, account.name, `${fiscalYear}-01-01`, "",
-        "saldo_inicial", "", "Saldo acumulado de ejercicios anteriores", "Saldo de apertura",
-        "0,00", "0,00", csvEuro(openingBalance),
-      ]));
-    }
-    for (const item of ledgerItems) {
-      if (item.entry.fiscalYear !== fiscalYear) continue;
-      const delta = item.account.normalBalance === "debit"
-        ? item.line.debitCents - item.line.creditCents
-        : item.line.creditCents - item.line.debitCents;
-      const balance = (runningBalances.get(item.account.id) ?? 0) + delta;
-      runningBalances.set(item.account.id, balance);
-      rows.push(csvRow([
-        ...scopedValues, "movimiento", item.account.code, item.account.name,
-        item.entry.entryDate, item.entry.entryNumber, item.entry.status, item.entry.sourceReference,
-        item.entry.concept, item.line.description, csvEuro(item.line.debitCents),
-        csvEuro(item.line.creditCents), csvEuro(balance),
-      ]));
-    }
-  }
+  const csv = buildAccountingExportCsv({
+    tenantId: actor.tenantId,
+    organization: { id: organizationId, ...organization },
+    fiscalYear,
+    book,
+    accounts,
+    entries,
+    entryLines,
+  });
 
   const safeOrganizationName = organization.name.normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -672,7 +684,7 @@ router.get("/redfp360/accounting/export", async (req, res): Promise<void> => {
     .replace(/^-|-$/g, "") || organizationId.slice(0, 12);
   const filename = `red-fp360-${book}-${safeOrganizationName}-${fiscalYear}.csv`;
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-  res.status(200).type("text/csv; charset=utf-8").send(`\uFEFF${rows.join("\r\n")}\r\n`);
+  res.status(200).type("text/csv; charset=utf-8").send(csv);
 });
 
 router.post("/redfp360/accounting/accounts", async (req, res): Promise<void> => {
