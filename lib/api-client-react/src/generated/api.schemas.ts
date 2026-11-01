@@ -1202,6 +1202,7 @@ export type UserInvitationStatus = typeof UserInvitationStatus[keyof typeof User
 export const UserInvitationStatus = {
   pending: 'pending',
   accepted: 'accepted',
+  rejected: 'rejected',
   revoked: 'revoked',
   expired: 'expired',
 } as const;
@@ -1234,6 +1235,10 @@ export interface InvitationPreview {
   email: string;
   role: AccessRole;
   expiresAt: string;
+  tenantId: string;
+  /** @nullable */
+  organizationName: string | null;
+  existingAccount: boolean;
 }
 
 export interface InvitationAcceptanceInput {

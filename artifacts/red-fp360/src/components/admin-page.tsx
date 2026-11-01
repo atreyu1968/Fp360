@@ -36,13 +36,16 @@ const permissionLabels: Record<string, string> = {
   run_backup_exercise: 'Realizar ensayo de respaldo', manage_intercenter_campaigns: 'Coordinar campañas intercentros',
   manage_company_operations: 'Gestionar operaciones de empresa', work_assigned_cases: 'Atender casos asignados',
 };
-const stateNames: Record<string, string> = { pending: 'Pendiente de revisión', approved: 'Aprobada', rejected: 'Rechazada', verified: 'Ensayo registrado', attention: 'Revisión necesaria', not_configured: 'No configurada', simulation_only: 'Solo simulación' };
+const stateNames: Record<string, string> = { pending: 'Pendiente de revisión', approved: 'Aprobada', rejected: 'Rechazada', accepted: 'Aceptada', revoked: 'Revocada', expired: 'Caducada', verified: 'Ensayo registrado', attention: 'Revisión necesaria', not_configured: 'No configurada', simulation_only: 'Solo simulación' };
 const readable = (v?: string) => stateNames[v ?? ''] ?? v ?? 'Sin estado';
 const privilegeLabel = (type: string) => type === 'promote_user' ? 'Promoción a administración' : type === 'deactivate_administrator' ? 'Baja de administración' : 'Invitación administrativa';
 const auditLabel = (action: string) => ({
   'invitation.created': 'Invitación creada',
   'invitation.revoked': 'Invitación revocada',
   'invitation.accepted': 'Invitación aceptada',
+  'invitation.accepted_existing': 'Cuenta existente aceptó la invitación',
+  'membership.created_by_invitation': 'Pertenencia creada por invitación',
+  'invitation.rejected': 'Invitación rechazada',
   'user.updated': 'Usuario actualizado',
   'organization.created': 'Organización creada',
   'organization.activate': 'Organización activada',
@@ -222,7 +225,7 @@ function UsersView({ identity, done }: { identity: AuthIdentity; done: (t: strin
       <LoadState loading={requests.isLoading} error={requests.isError} retry={() => void requests.refetch()} empty={!!requests.data && !requests.data.length} />
        {requests.data?.length ? <AdminTable min={760}><thead><tr><th>Solicitud</th><th>Solicitante</th><th>Estado</th><th>Fecha</th><th>Decisión</th></tr></thead><tbody>{requests.data.map(r => <tr key={r.id}><td><b>{privilegeLabel(r.requestType)}</b><small className="ac-sub">{r.email ?? r.targetUserId ?? 'Cuenta existente'}</small></td><td>{r.requestedByUserId === identity.id ? 'Tú' : r.requestedByUserId.slice(0, 8)}</td><td><Badge tone={r.status === 'approved' ? 'good' : r.status === 'rejected' ? 'bad' : 'warn'}>{readable(r.status)}</Badge></td><td>{dateTime(r.createdAt)}</td><td>{r.status === 'pending' ? r.requestedByUserId === identity.id ? <span className="ac-pending-note">Bloqueada para aprobación propia</span> : <div className="ac-actions"><button className="ac-text-link" onClick={() => setDecision({ id: r.id, action: 'approve' })}>Aprobar</button><button className="ac-text-danger" onClick={() => setDecision({ id: r.id, action: 'reject' })}>Rechazar</button></div> : r.decisionNote || '—'}</td></tr>)}</tbody></AdminTable> : null}
     </Panel>
-    <Panel title="Invitaciones recientes" note="El estado se actualiza tras aceptar, revocar o caducar.">
+    <Panel title="Invitaciones recientes" note="El estado se actualiza tras aceptar, rechazar, revocar o caducar.">
       <LoadState loading={invitations.isLoading} error={invitations.isError} retry={() => void invitations.refetch()} empty={!!invitations.data && !invitations.data.length} />
       {invitations.data?.length ? <AdminTable min={700}><thead><tr><th>Correo</th><th>Rol</th><th>Estado</th><th>Caducidad</th><th></th></tr></thead><tbody>{invitations.data.map(inv => <tr key={inv.id}><td><b>{inv.email}</b></td><td>{accessRoleLabel(inv.role)}</td><td><Badge tone={inv.status === 'accepted' ? 'good' : inv.status === 'pending' ? 'warn' : 'neutral'}>{readable(inv.status)}</Badge></td><td>{dateTime(inv.expiresAt)}</td><td>{inv.status === 'pending' && <button className="ac-text-danger" onClick={() => { if (window.confirm(`¿Revocar la invitación a ${inv.email}?`)) revoke.mutate({ id: inv.id }, { onSuccess: () => { done('Invitación revocada.', 'success'); complete(); }, onError: e => done(explainMutation(e, 'No se pudo revocar la invitación.'), 'error') }); }}>Revocar</button>}</td></tr>)}</tbody></AdminTable> : null}
     </Panel>

@@ -228,7 +228,7 @@ export const ListAdminInvitationsResponseItem = zod.object({
   "email": zod.string().email(),
   "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
   "organizationId": zod.string().nullish(),
-  "status": zod.enum(['pending', 'accepted', 'revoked', 'expired']),
+  "status": zod.enum(['pending', 'accepted', 'rejected', 'revoked', 'expired']),
   "expiresAt": zod.string().datetime({"offset":true}),
   "createdAt": zod.string().datetime({"offset":true})
 })
@@ -252,7 +252,7 @@ export const CreateAdminInvitationResponse = zod.object({
   "email": zod.string().email(),
   "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
   "organizationId": zod.string().nullish(),
-  "status": zod.enum(['pending', 'accepted', 'revoked', 'expired']),
+  "status": zod.enum(['pending', 'accepted', 'rejected', 'revoked', 'expired']),
   "expiresAt": zod.string().datetime({"offset":true}),
   "createdAt": zod.string().datetime({"offset":true})
 }),
@@ -719,7 +719,10 @@ export const InspectInvitationBody = zod.object({
 export const InspectInvitationResponse = zod.object({
   "email": zod.string().email(),
   "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
-  "expiresAt": zod.string().datetime({"offset":true})
+  "expiresAt": zod.string().datetime({"offset":true}),
+  "tenantId": zod.string(),
+  "organizationName": zod.string().nullable(),
+  "existingAccount": zod.boolean()
 })
 
 
@@ -749,6 +752,39 @@ export const AcceptInvitationResponse = zod.object({
   "mfaSetupRequired": zod.boolean(),
   "mfaVerificationRequired": zod.boolean()
 })
+
+
+export const acceptExistingAccountInvitationBodyTokenMin = 32;
+export const acceptExistingAccountInvitationBodyTokenMax = 128;
+
+
+
+export const AcceptExistingAccountInvitationBody = zod.object({
+  "token": zod.string().min(acceptExistingAccountInvitationBodyTokenMin).max(acceptExistingAccountInvitationBodyTokenMax)
+})
+
+export const AcceptExistingAccountInvitationResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "displayName": zod.string(),
+  "tenantId": zod.string(),
+  "organizationId": zod.string().optional(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "mfaSetupRequired": zod.boolean(),
+  "mfaVerificationRequired": zod.boolean()
+})
+
+
+export const rejectExistingAccountInvitationBodyTokenMin = 32;
+export const rejectExistingAccountInvitationBodyTokenMax = 128;
+
+
+
+export const RejectExistingAccountInvitationBody = zod.object({
+  "token": zod.string().min(rejectExistingAccountInvitationBodyTokenMin).max(rejectExistingAccountInvitationBodyTokenMax)
+})
+
+export const RejectExistingAccountInvitationResponse = zod.void()
 
 
 /**

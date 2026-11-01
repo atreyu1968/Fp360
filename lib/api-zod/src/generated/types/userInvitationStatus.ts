@@ -12,6 +12,7 @@ export type UserInvitationStatus = typeof UserInvitationStatus[keyof typeof User
 export const UserInvitationStatus = {
   pending: 'pending',
   accepted: 'accepted',
+  rejected: 'rejected',
   revoked: 'revoked',
   expired: 'expired',
 } as const;

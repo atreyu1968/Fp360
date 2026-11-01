@@ -239,7 +239,7 @@ paths:
               schema: { $ref: "#/components/schemas/IssuedInvitation" }
         "400": { description: Invalid invitation }
         "403": { description: Administrator required }
-        "409": { description: Account or pending invitation already exists }
+        "409": { description: Membership in this network or pending invitation already exists }
   /admin/invitations/{id}:
     delete:
       operationId: revokeAdminInvitation
@@ -504,6 +504,39 @@ paths:
               schema: { $ref: "#/components/schemas/AuthIdentity" }
         "400": { description: Invalid account details }
         "409": { description: Account already exists }
+        "410": { description: "Invitation invalid, expired or already used" }
+  /auth/invitations/accept-existing:
+    post:
+      operationId: acceptExistingAccountInvitation
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvitationTokenInput" }
+      responses:
+        "200":
+          description: Authenticated user accepted access to the invited network
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthIdentity" }
+        "401": { description: Sign-in required }
+        "403": { description: Invitation belongs to a different account }
+        "409": { description: Account already has membership in this network }
+        "410": { description: "Invitation invalid, expired or already used" }
+  /auth/invitations/reject-existing:
+    post:
+      operationId: rejectExistingAccountInvitation
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvitationTokenInput" }
+      responses:
+        "204": { description: Invitation declined without changing memberships }
+        "401": { description: Sign-in required }
+        "403": { description: Invitation belongs to a different account }
         "410": { description: "Invitation invalid, expired or already used" }
   /redfp360/dashboard:
     get:
@@ -5495,7 +5528,7 @@ components:
         email: { type: string, format: email }
         role: { $ref: "#/components/schemas/AccessRole" }
         organizationId: { type: ["string", "null"] }
-        status: { type: string, enum: [pending, accepted, revoked, expired] }
+        status: { type: string, enum: [pending, accepted, rejected, revoked, expired] }
         expiresAt: { type: string, format: date-time }
         createdAt: { type: string, format: date-time }
     IssuedInvitation:
@@ -5511,11 +5544,14 @@ components:
         token: { type: string, minLength: 32, maxLength: 128 }
     InvitationPreview:
       type: object
-      required: [email, role, expiresAt]
+      required: [email, role, expiresAt, tenantId, organizationName, existingAccount]
       properties:
         email: { type: string, format: email }
         role: { $ref: "#/components/schemas/AccessRole" }
         expiresAt: { type: string, format: date-time }
+        tenantId: { type: string }
+        organizationName: { type: ["string", "null"] }
+        existingAccount: { type: boolean }
     InvitationAcceptanceInput:
       type: object
       required: [token, displayName, password]

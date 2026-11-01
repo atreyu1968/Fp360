@@ -2874,6 +2874,170 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getAcceptInvitationMutationOptions(options), queryClient);
     }
 
+export const getAcceptExistingAccountInvitationUrl = () => {
+
+
+
+
+  return `/api/auth/invitations/accept-existing`
+}
+
+export const acceptExistingAccountInvitation = async (invitationTokenInput: InvitationTokenInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthIdentity> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AuthIdentity>(getAcceptExistingAccountInvitationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(invitationTokenInput)
+  }
+);}
+
+
+
+
+
+export const getAcceptExistingAccountInvitationMutationKey = () => ['acceptExistingAccountInvitation'] as const;
+
+export const getAcceptExistingAccountInvitationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptExistingAccountInvitation>>, TError,AcceptExistingAccountInvitationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptExistingAccountInvitation>>, TError,AcceptExistingAccountInvitationMutationVariables, TContext> => {
+
+const mutationKey = getAcceptExistingAccountInvitationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptExistingAccountInvitation>>, AcceptExistingAccountInvitationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  acceptExistingAccountInvitation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptExistingAccountInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof acceptExistingAccountInvitation>>>
+    export type AcceptExistingAccountInvitationMutationBody = BodyType<InvitationTokenInput>
+    export type AcceptExistingAccountInvitationMutationError = ErrorType<void>
+    export type AcceptExistingAccountInvitationMutationVariables = {data: BodyType<InvitationTokenInput>}
+
+    export const useAcceptExistingAccountInvitation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptExistingAccountInvitation>>, TError,AcceptExistingAccountInvitationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof acceptExistingAccountInvitation>>,
+        TError,
+        AcceptExistingAccountInvitationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAcceptExistingAccountInvitationMutationOptions(options), queryClient);
+    }
+
+export const getRejectExistingAccountInvitationUrl = () => {
+
+
+
+
+  return `/api/auth/invitations/reject-existing`
+}
+
+export const rejectExistingAccountInvitation = async (invitationTokenInput: InvitationTokenInput, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<void>(getRejectExistingAccountInvitationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(invitationTokenInput)
+  }
+);}
+
+
+
+
+
+export const getRejectExistingAccountInvitationMutationKey = () => ['rejectExistingAccountInvitation'] as const;
+
+export const getRejectExistingAccountInvitationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectExistingAccountInvitation>>, TError,RejectExistingAccountInvitationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectExistingAccountInvitation>>, TError,RejectExistingAccountInvitationMutationVariables, TContext> => {
+
+const mutationKey = getRejectExistingAccountInvitationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectExistingAccountInvitation>>, RejectExistingAccountInvitationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  rejectExistingAccountInvitation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectExistingAccountInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof rejectExistingAccountInvitation>>>
+    export type RejectExistingAccountInvitationMutationBody = BodyType<InvitationTokenInput>
+    export type RejectExistingAccountInvitationMutationError = ErrorType<void>
+    export type RejectExistingAccountInvitationMutationVariables = {data: BodyType<InvitationTokenInput>}
+
+    export const useRejectExistingAccountInvitation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectExistingAccountInvitation>>, TError,RejectExistingAccountInvitationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof rejectExistingAccountInvitation>>,
+        TError,
+        RejectExistingAccountInvitationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRejectExistingAccountInvitationMutationOptions(options), queryClient);
+    }
+
 export const getGetFp360DashboardUrl = () => {
 
 
