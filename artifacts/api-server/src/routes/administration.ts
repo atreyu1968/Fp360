@@ -2,7 +2,10 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { Router, type ErrorRequestHandler, type IRouter, type RequestHandler } from "express";
 import rateLimit from "express-rate-limit";
+import * as api from "@workspace/api-zod";
 import {
+  AcceptExistingAccountInvitationBody, AcceptExistingAccountInvitationResponse,
+  RejectExistingAccountInvitationBody, RejectExistingAccountInvitationResponse,
   AcceptInvitationBody, AcceptInvitationResponse, CreateAdminInvitationBody,
   CreateAdminInvitationResponse, InspectInvitationBody, InspectInvitationResponse,
   GetAdminSystemOverviewResponse, CreateAdminOrganizationBody, CreateAdminOrganizationResponse,
@@ -18,10 +21,11 @@ import {
 } from "@workspace/api-zod";
 import {
   db, fpAdminBackupExercises, fpAdminConfigVersions, fpAdminPrivilegeRequests,
-  fpAuthAudit, fpAuthInvitations, fpAuthMemberships, fpAuthSessions,
+  fpAdminAiCoordinatorSettings, fpAuthAudit, fpAuthInvitations, fpAuthMemberships, fpAuthSessions,
   fpAuthUsers, fpDocuments, fpOrganizations, fpSimulationCampaigns,
 } from "@workspace/db";
 import { hashPassword } from "../lib/passwords";
+import { checkLocalAiEndpoint, normalizeLocalAiBaseUrl } from "../lib/local-ai";
 import { hashSessionToken, issueAuthSession, requireAuth, requireSameOrigin, type AuthContext } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -42,14 +46,14 @@ const administratorOnly: RequestHandler = (req, res, next) => {
 function invitationView(row: Invitation) {
   return {
     id: row.id, email: row.email, role: row.role, organizationId: row.organizationId,
-    status: row.acceptedAt ? "accepted" : row.revokedAt ? "revoked" : row.expiresAt <= new Date() ? "expired" : "pending",
+    status: row.acceptedAt ? "accepted" : row.rejectedAt ? "rejected" : row.revokedAt ? "revoked" : row.expiresAt <= new Date() ? "expired" : "pending",
     expiresAt: row.expiresAt.toISOString(), createdAt: row.createdAt.toISOString(),
   };
 }
 function pendingInvitation(token: string) {
   return and(
     eq(fpAuthInvitations.tokenHash, hashSessionToken(`invite:${token}`)),
-    isNull(fpAuthInvitations.acceptedAt), isNull(fpAuthInvitations.revokedAt),
+    isNull(fpAuthInvitations.acceptedAt), isNull(fpAuthInvitations.rejectedAt), isNull(fpAuthInvitations.revokedAt),
     gt(fpAuthInvitations.expiresAt, new Date()),
   );
 }
@@ -129,7 +133,6 @@ const integrationCatalog = [
   { id: "smtp", name: "SMTP autorizado", description: "Correo de prueba. No se envían mensajes desde este panel." },
   { id: "public-api", name: "API de servicios", description: "Estado interno del servicio; no se muestran claves." },
   { id: "replit-export", name: "Exportación Replit", description: "Preparación de despliegue. No publica cambios." },
-  { id: "local-models", name: "Modelos locales", description: "Proveedor de IA no conectado en esta simulación." },
 ] as const;
 
 const policyMatrix = [
@@ -155,9 +158,97 @@ router.post("/auth/invitations/inspect", async (req, res): Promise<void> => {
   if (!body.success) fail(400, "El enlace de invitación no es válido.");
   const [invitation] = await db.select().from(fpAuthInvitations).where(pendingInvitation(body.data.token));
   if (!invitation) fail(410, "La invitación ha caducado, se ha revocado o ya se ha utilizado.");
+  const [[user], [organization]] = await Promise.all([
+    db.select({ id: fpAuthUsers.id }).from(fpAuthUsers).where(eq(fpAuthUsers.email, invitation.email)).limit(1),
+    invitation.organizationId
+      ? db.select({ name: fpOrganizations.name }).from(fpOrganizations).where(and(
+        eq(fpOrganizations.id, invitation.organizationId),
+        eq(fpOrganizations.tenantId, invitation.tenantId),
+      )).limit(1)
+      : Promise.resolve([]),
+  ]);
   res.json(InspectInvitationResponse.parse({
     email: invitation.email, role: invitation.role, expiresAt: invitation.expiresAt.toISOString(),
+    tenantId: invitation.tenantId, organizationName: organization?.name ?? null,
+    existingAccount: Boolean(user),
   }));
+});
+
+router.post("/auth/invitations/accept-existing", requireAuth, requireSameOrigin, async (req, res): Promise<void> => {
+  const body = AcceptExistingAccountInvitationBody.safeParse(req.body);
+  if (!body.success) fail(400, "El enlace de invitación no es válido.");
+  const actor = req.auth!;
+  const identity = await db.transaction(async (tx) => {
+    const [invitation] = await tx.select().from(fpAuthInvitations)
+      .where(pendingInvitation(body.data.token)).for("update");
+    if (!invitation) fail(410, "La invitación ha caducado, se ha revocado o ya se ha utilizado.");
+    if (!actor.sessionId) fail(401, "Inicia sesión de nuevo para aceptar la invitación.");
+    const [signedIn] = await tx.select({
+      email: fpAuthUsers.email, displayName: fpAuthUsers.displayName,
+      mfaEnabledAt: fpAuthUsers.mfaEnabledAt,
+    }).from(fpAuthSessions)
+      .innerJoin(fpAuthUsers, eq(fpAuthUsers.id, fpAuthSessions.userId))
+      .innerJoin(fpAuthMemberships, eq(fpAuthMemberships.id, fpAuthSessions.membershipId))
+      .where(and(
+        eq(fpAuthSessions.id, actor.sessionId),
+        eq(fpAuthSessions.userId, actor.userId),
+        eq(fpAuthSessions.membershipId, actor.membershipId),
+        gt(fpAuthSessions.expiresAt, new Date()),
+        isNull(fpAuthSessions.revokedAt),
+        eq(fpAuthUsers.isActive, true),
+        eq(fpAuthMemberships.isActive, true),
+      )).for("update");
+    if (!signedIn) fail(401, "La sesión ya no está activa. Inicia sesión de nuevo.");
+    if (signedIn.email.trim().toLowerCase() !== invitation.email.trim().toLowerCase()) {
+      fail(403, "Inicia sesión con la cuenta indicada en la invitación.");
+    }
+    await checkOrganization(tx, invitation.tenantId, invitation.organizationId);
+    const [existing] = await tx.select({ id: fpAuthMemberships.id }).from(fpAuthMemberships)
+      .where(and(
+        eq(fpAuthMemberships.userId, actor.userId),
+        eq(fpAuthMemberships.tenantId, invitation.tenantId),
+      )).for("update");
+    if (existing) fail(409, "Esta cuenta ya tiene una pertenencia a la red. No se ha cambiado.");
+    const membershipId = randomUUID();
+    const [membership] = await tx.insert(fpAuthMemberships).values({
+      id: membershipId, userId: actor.userId, tenantId: invitation.tenantId,
+      organizationId: invitation.organizationId, role: invitation.role,
+    }).onConflictDoNothing().returning({ id: fpAuthMemberships.id });
+    if (!membership) fail(409, "Esta cuenta ya tiene una pertenencia a la red. No se ha cambiado.");
+    await tx.update(fpAuthInvitations).set({ acceptedAt: new Date() })
+      .where(eq(fpAuthInvitations.id, invitation.id));
+    await audit(tx, invitation.tenantId, actor.userId, "invitation.accepted_existing", invitation.id);
+    await audit(tx, invitation.tenantId, actor.userId, "membership.created_by_invitation", membership.id);
+    return {
+      id: actor.userId, email: signedIn.email, displayName: signedIn.displayName,
+      tenantId: invitation.tenantId,
+      ...(invitation.organizationId ? { organizationId: invitation.organizationId } : {}),
+      role: invitation.role, membershipId,
+      mfaSetupRequired: invitation.role === "administrator" && !signedIn.mfaEnabledAt,
+      mfaVerificationRequired: invitation.role === "administrator" && Boolean(signedIn.mfaEnabledAt),
+    };
+  });
+  await issueAuthSession(identity.id, identity.membershipId, res);
+  const { membershipId: _membershipId, ...output } = identity;
+  res.json(AcceptExistingAccountInvitationResponse.parse(output));
+});
+
+router.post("/auth/invitations/reject-existing", requireAuth, requireSameOrigin, async (req, res): Promise<void> => {
+  const body = RejectExistingAccountInvitationBody.safeParse(req.body);
+  if (!body.success) fail(400, "El enlace de invitación no es válido.");
+  const actor = req.auth!;
+  await db.transaction(async (tx) => {
+    const [invitation] = await tx.select().from(fpAuthInvitations)
+      .where(pendingInvitation(body.data.token)).for("update");
+    if (!invitation) fail(410, "La invitación ha caducado, se ha revocado o ya se ha utilizado.");
+    if (actor.email.trim().toLowerCase() !== invitation.email.trim().toLowerCase()) {
+      fail(403, "Inicia sesión con la cuenta indicada en la invitación.");
+    }
+    await tx.update(fpAuthInvitations).set({ rejectedAt: new Date() })
+      .where(eq(fpAuthInvitations.id, invitation.id));
+    await audit(tx, invitation.tenantId, actor.userId, "invitation.rejected", invitation.id);
+  });
+  res.status(204).end();
 });
 
 router.post("/auth/invitations/accept", async (req, res): Promise<void> => {
@@ -271,10 +362,18 @@ router.post("/admin/invitations", async (req, res): Promise<void> => {
     await lockAdministration(tx, actor);
     await checkOrganization(tx, actor.tenantId, body.data.organizationId);
     const [existing] = await tx.select({ id: fpAuthUsers.id }).from(fpAuthUsers).where(eq(fpAuthUsers.email, email));
-    if (existing) fail(409, "Este correo ya dispone de una cuenta.");
+    if (existing) {
+      const [membership] = await tx.select({ id: fpAuthMemberships.id }).from(fpAuthMemberships)
+        .where(and(
+          eq(fpAuthMemberships.userId, existing.id),
+          eq(fpAuthMemberships.tenantId, actor.tenantId),
+        ));
+      if (membership) fail(409, "Esta cuenta ya pertenece a la red.");
+    }
     const [pending] = await tx.select({ id: fpAuthInvitations.id }).from(fpAuthInvitations).where(and(
       eq(fpAuthInvitations.tenantId, actor.tenantId), eq(fpAuthInvitations.email, email),
-      isNull(fpAuthInvitations.acceptedAt), isNull(fpAuthInvitations.revokedAt), gt(fpAuthInvitations.expiresAt, new Date()),
+      isNull(fpAuthInvitations.acceptedAt), isNull(fpAuthInvitations.rejectedAt),
+      isNull(fpAuthInvitations.revokedAt), gt(fpAuthInvitations.expiresAt, new Date()),
     ));
     if (pending) fail(409, "Ya hay una invitación pendiente para este correo. Revócala antes de crear otra.");
     const [created] = await tx.insert(fpAuthInvitations).values({
@@ -298,7 +397,7 @@ router.delete("/admin/invitations/:id", async (req, res): Promise<void> => {
     const [invitation] = await tx.select().from(fpAuthInvitations)
       .where(and(eq(fpAuthInvitations.id, params.data.id), eq(fpAuthInvitations.tenantId, actor.tenantId))).for("update");
     if (!invitation) fail(404, "Invitación no encontrada.");
-    if (invitation.acceptedAt || invitation.revokedAt || invitation.expiresAt <= new Date()) fail(409, "La invitación ya no está pendiente.");
+    if (invitation.acceptedAt || invitation.rejectedAt || invitation.revokedAt || invitation.expiresAt <= new Date()) fail(409, "La invitación ya no está pendiente.");
     await tx.update(fpAuthInvitations).set({ revokedAt: new Date() }).where(eq(fpAuthInvitations.id, invitation.id));
     await audit(tx, actor.tenantId, actor.userId, "invitation.revoked", invitation.id);
   });
@@ -340,6 +439,7 @@ router.get("/admin/system/overview", async (req, res): Promise<void> => {
     scenarioRows,
     backupRows,
     requestRows,
+    aiSettings,
     databaseStatus,
     integrationChecks,
   ] = await Promise.all([
@@ -357,6 +457,7 @@ router.get("/admin/system/overview", async (req, res): Promise<void> => {
       .orderBy(desc(fpAdminBackupExercises.createdAt)).limit(20),
     db.select().from(fpAdminPrivilegeRequests).where(eq(fpAdminPrivilegeRequests.tenantId, tenantId))
       .orderBy(desc(fpAdminPrivilegeRequests.createdAt)).limit(50),
+    db.select().from(fpAdminAiCoordinatorSettings).where(eq(fpAdminAiCoordinatorSettings.tenantId, tenantId)).limit(1),
     adminDatabaseStatus(),
     Promise.all(integrationCatalog.map(async (integration) => {
       const [latest] = await db.select({ createdAt: fpAuthAudit.createdAt }).from(fpAuthAudit).where(and(
@@ -399,9 +500,117 @@ router.get("/admin/system/overview", async (req, res): Promise<void> => {
     backupExercises: backupRows.map(backupExerciseView),
     privilegeRequests: requestRows.map(privilegeRequestView),
     integrations,
+    aiCoordinator: {
+      configured: Boolean(aiSettings[0]?.baseUrl && aiSettings[0]?.model),
+      enabled: aiSettings[0]?.enabled ?? false,
+      baseUrl: aiSettings[0]?.baseUrl ?? "",
+      model: aiSettings[0]?.model ?? "",
+      updatedAt: aiSettings[0]?.updatedAt.toISOString() ?? null,
+    },
     policyMatrix,
     simulationOnly: true,
   }));
+
+router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => {
+  const body = api.UpdateAdminAiCoordinatorSettingsBody.safeParse(req.body);
+  if (!body.success) fail(400, "Revisa la URL, el modelo y el estado del coordinador.");
+  const actor = req.auth!;
+  let baseUrl = body.data.baseUrl.trim();
+  const model = body.data.model.trim();
+  if (body.data.enabled && (!baseUrl || !model)) fail(400, "Indica una URL local y un modelo antes de activar el coordinador.");
+  if (baseUrl) {
+    try {
+      baseUrl = normalizeLocalAiBaseUrl(baseUrl);
+    } catch (error) {
+      fail(400, error instanceof Error ? error.message : "La URL local no es válida.");
+    }
+  }
+  if (body.data.enabled && model.length < 1) fail(400, "Indica el nombre del modelo local.");
+  const action = "ai.coordinator.settings.updated";
+  const fingerprint = requestFingerprint({ enabled: body.data.enabled, baseUrl, model });
+  await db.transaction(async (tx) => {
+    await lockAdministration(tx, actor);
+    if (await priorAdminOperation(tx, actor, body.data.operationId, action, fingerprint)) return;
+    await tx.insert(fpAdminAiCoordinatorSettings).values({
+      id: randomUUID(),
+      tenantId: actor.tenantId,
+      baseUrl,
+      model,
+      enabled: body.data.enabled,
+      createdByUserId: actor.userId,
+      updatedByUserId: actor.userId,
+    }).onConflictDoUpdate({
+      target: fpAdminAiCoordinatorSettings.tenantId,
+      set: {
+        baseUrl,
+        model,
+        enabled: body.data.enabled,
+        updatedByUserId: actor.userId,
+        updatedAt: new Date(),
+      },
+    });
+    await audit(tx, actor.tenantId, actor.userId, action, "ai-coordinator", body.data.operationId, fingerprint);
+  });
+  const [saved] = await db.select().from(fpAdminAiCoordinatorSettings)
+    .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
+  res.json(api.UpdateAdminAiCoordinatorSettingsResponse.parse({
+    configured: Boolean(saved?.baseUrl && saved?.model),
+    enabled: saved?.enabled ?? false,
+    baseUrl: saved?.baseUrl ?? "",
+    model: saved?.model ?? "",
+    updatedAt: saved?.updatedAt.toISOString() ?? null,
+  }));
+});
+
+router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
+  const body = api.TestAdminAiCoordinatorConnectionBody.safeParse(req.body);
+  if (!body.success) fail(400, "La solicitud de prueba no es válida.");
+  const actor = req.auth!;
+  const [settings] = await db.select().from(fpAdminAiCoordinatorSettings)
+    .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
+  if (!settings?.enabled || !settings.baseUrl || !settings.model) {
+    fail(409, "Configura y activa primero un endpoint local de IA.");
+  }
+  const action = "ai.coordinator.connection.tested";
+  const fingerprint = requestFingerprint({ model: settings.model });
+  const [priorTest] = await db.select().from(fpAuthAudit).where(and(
+    eq(fpAuthAudit.tenantId, actor.tenantId),
+    eq(fpAuthAudit.operationId, body.data.operationId),
+  )).limit(1);
+  if (priorTest) {
+    if (priorTest.action !== action || priorTest.operationFingerprint !== fingerprint) {
+      fail(409, "El identificador ya se utilizó para otra operación.");
+    }
+    res.json(api.TestAdminAiCoordinatorConnectionResponse.parse({
+      connected: true,
+      model: settings.model,
+      checkedAt: priorTest.createdAt.toISOString(),
+      message: "La prueba ya se completó correctamente.",
+    }));
+    return;
+  }
+  try {
+    await checkLocalAiEndpoint({ baseUrl: settings.baseUrl, model: settings.model });
+  } catch {
+    req.log.warn({ tenantId: actor.tenantId }, "Local AI endpoint check failed");
+    fail(502, "No se pudo conectar con el endpoint local. Comprueba su disponibilidad y la ruta /models.");
+  }
+  const checkedAt = new Date().toISOString();
+  await db.transaction(async (tx) => {
+    await lockAdministration(tx, actor);
+    if (await priorAdminOperation(tx, actor, body.data.operationId, action, fingerprint)) return;
+    await audit(
+      tx, actor.tenantId, actor.userId, action,
+      "ai-coordinator", body.data.operationId, fingerprint,
+    );
+  });
+  res.json(api.TestAdminAiCoordinatorConnectionResponse.parse({
+    connected: true,
+    model: settings.model,
+    checkedAt,
+    message: "La API local respondió correctamente.",
+  }));
+});
 });
 
 router.post("/admin/organizations", async (req, res): Promise<void> => {
@@ -709,7 +918,14 @@ router.post("/admin/privilege-requests", async (req, res): Promise<void> => {
     } else {
       await checkOrganization(tx, actor.tenantId, body.data.organizationId);
       const [existingUser] = await tx.select({ id: fpAuthUsers.id }).from(fpAuthUsers).where(eq(fpAuthUsers.email, email!)).limit(1);
-      if (existingUser) fail(409, "Ese correo ya dispone de una cuenta.");
+      if (existingUser) {
+        const [membership] = await tx.select({ id: fpAuthMemberships.id }).from(fpAuthMemberships)
+          .where(and(
+            eq(fpAuthMemberships.userId, existingUser.id),
+            eq(fpAuthMemberships.tenantId, actor.tenantId),
+          ));
+        if (membership) fail(409, "Esa cuenta ya pertenece a esta red.");
+      }
       const [pendingRequest] = await tx.select({ id: fpAdminPrivilegeRequests.id }).from(fpAdminPrivilegeRequests).where(and(
         eq(fpAdminPrivilegeRequests.tenantId, actor.tenantId),
         eq(fpAdminPrivilegeRequests.email, email!),
@@ -809,11 +1025,19 @@ router.post("/admin/privilege-requests/:id/action", async (req, res): Promise<vo
         await checkOrganization(tx, actor.tenantId, current.organizationId);
         const [existingUser] = await tx.select({ id: fpAuthUsers.id }).from(fpAuthUsers)
           .where(eq(fpAuthUsers.email, current.email)).limit(1);
-        if (existingUser) fail(409, "Ese correo ya dispone de una cuenta.");
+        if (existingUser) {
+          const [membership] = await tx.select({ id: fpAuthMemberships.id }).from(fpAuthMemberships)
+            .where(and(
+              eq(fpAuthMemberships.userId, existingUser.id),
+              eq(fpAuthMemberships.tenantId, actor.tenantId),
+            ));
+          if (membership) fail(409, "Esa cuenta ya pertenece a esta red.");
+        }
         const [pending] = await tx.select({ id: fpAuthInvitations.id }).from(fpAuthInvitations).where(and(
           eq(fpAuthInvitations.tenantId, actor.tenantId),
           eq(fpAuthInvitations.email, current.email),
           isNull(fpAuthInvitations.acceptedAt),
+          isNull(fpAuthInvitations.rejectedAt),
           isNull(fpAuthInvitations.revokedAt),
           gt(fpAuthInvitations.expiresAt, new Date()),
         )).limit(1);

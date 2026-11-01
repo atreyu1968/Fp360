@@ -11,4 +11,8 @@ export interface InvitationPreview {
   email: string;
   role: AccessRole;
   expiresAt: string;
+  tenantId: string;
+  /** @nullable */
+  organizationName: string | null;
+  existingAccount: boolean;
 }

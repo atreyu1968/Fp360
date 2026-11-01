@@ -19,11 +19,11 @@ Distinguish the application's cookie settings from the attributes observed throu
 
 ## Invitations and existing accounts
 
-Invitations currently provision new accounts only. Do not automatically attach an existing email account to another network.
+An invitation may target an existing account in another network, but must not create or activate a membership until that signed-in account explicitly accepts. Match the authenticated account to the invited email and scope the new membership and audit event to the invitation's tenant. Rejection, expiry, and revocation must leave all existing memberships unchanged.
 
-**Why:** cross-network membership changes need an explicit authenticated consent flow; matching an email alone must not change an existing account's access.
+**Why:** cross-network access is a security-sensitive choice; an email match or invitation creation is not consent.
 
-**How to apply:** keep existing-account invitations rejected until a deliberate membership-acceptance and network-switching flow is implemented.
+**How to apply:** require authentication for accept/reject decisions, show the invited network and role before consent, and preserve unrelated sessions and memberships.
 
 ## Rate limiting behind the Replit proxy
 

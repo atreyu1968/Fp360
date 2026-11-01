@@ -8,6 +8,10 @@
 
 export * from './accessAuditEvent';
 export * from './accessRole';
+export * from './adminAiCoordinatorConnectionTestInput';
+export * from './adminAiCoordinatorConnectionTestResult';
+export * from './adminAiCoordinatorSettings';
+export * from './adminAiCoordinatorSettingsInput';
 export * from './adminBackupDatasetCounts';
 export * from './adminBackupExercise';
 export * from './adminBackupExerciseInput';
@@ -207,6 +211,9 @@ export * from './fp360AccountingSourceDraftInput';
 export * from './fp360AccountingSourceSourceType';
 export * from './fp360AccountingYearEndSummary';
 export * from './fp360Activity';
+export * from './fp360AiSimulationProposal';
+export * from './fp360AiSimulationProposalInput';
+export * from './fp360AiSimulationProposalInputDifficulty';
 export * from './fp360BankAccount';
 export * from './fp360BankAccountAccountType';
 export * from './fp360BankAccountInput';

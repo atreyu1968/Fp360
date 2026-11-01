@@ -228,7 +228,7 @@ export const ListAdminInvitationsResponseItem = zod.object({
   "email": zod.string().email(),
   "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
   "organizationId": zod.string().nullish(),
-  "status": zod.enum(['pending', 'accepted', 'revoked', 'expired']),
+  "status": zod.enum(['pending', 'accepted', 'rejected', 'revoked', 'expired']),
   "expiresAt": zod.string().datetime({"offset":true}),
   "createdAt": zod.string().datetime({"offset":true})
 })
@@ -252,7 +252,7 @@ export const CreateAdminInvitationResponse = zod.object({
   "email": zod.string().email(),
   "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
   "organizationId": zod.string().nullish(),
-  "status": zod.enum(['pending', 'accepted', 'revoked', 'expired']),
+  "status": zod.enum(['pending', 'accepted', 'rejected', 'revoked', 'expired']),
   "expiresAt": zod.string().datetime({"offset":true}),
   "createdAt": zod.string().datetime({"offset":true})
 }),
@@ -315,6 +315,10 @@ export const getAdminSystemOverviewResponseBackupExercisesItemDatasetCountsUsers
 export const getAdminSystemOverviewResponseBackupExercisesItemDatasetCountsDocumentsMin = 0;
 
 export const getAdminSystemOverviewResponseBackupExercisesItemDatasetCountsSimulationCampaignsMin = 0;
+
+export const getAdminSystemOverviewResponseAiCoordinatorBaseUrlMax = 512;
+
+export const getAdminSystemOverviewResponseAiCoordinatorModelMax = 120;
 
 
 
@@ -394,12 +398,67 @@ export const GetAdminSystemOverviewResponse = zod.object({
   "checkedAt": zod.string().datetime({"offset":true}).nullable(),
   "simulationOnly": zod.boolean()
 })),
+  "aiCoordinator": zod.object({
+  "configured": zod.boolean(),
+  "enabled": zod.boolean(),
+  "baseUrl": zod.string().max(getAdminSystemOverviewResponseAiCoordinatorBaseUrlMax),
+  "model": zod.string().max(getAdminSystemOverviewResponseAiCoordinatorModelMax),
+  "updatedAt": zod.string().datetime({"offset":true}).nullable()
+}),
   "policyMatrix": zod.array(zod.object({
   "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
   "label": zod.string(),
   "permissions": zod.array(zod.enum(['system_admin', 'network_admin', 'manage_center_accounts', 'manage_scenario_settings', 'run_backup_exercise', 'manage_intercenter_campaigns', 'manage_company_operations', 'work_assigned_cases']))
 })),
   "simulationOnly": zod.literal(true)
+})
+
+
+export const updateAdminAiCoordinatorSettingsBodyOperationIdMin = 8;
+export const updateAdminAiCoordinatorSettingsBodyOperationIdMax = 100;
+
+export const updateAdminAiCoordinatorSettingsBodyBaseUrlMax = 512;
+
+export const updateAdminAiCoordinatorSettingsBodyModelMax = 120;
+
+
+
+export const UpdateAdminAiCoordinatorSettingsBody = zod.object({
+  "operationId": zod.string().min(updateAdminAiCoordinatorSettingsBodyOperationIdMin).max(updateAdminAiCoordinatorSettingsBodyOperationIdMax),
+  "enabled": zod.boolean(),
+  "baseUrl": zod.string().max(updateAdminAiCoordinatorSettingsBodyBaseUrlMax),
+  "model": zod.string().max(updateAdminAiCoordinatorSettingsBodyModelMax)
+})
+
+export const updateAdminAiCoordinatorSettingsResponseBaseUrlMax = 512;
+
+export const updateAdminAiCoordinatorSettingsResponseModelMax = 120;
+
+
+
+export const UpdateAdminAiCoordinatorSettingsResponse = zod.object({
+  "configured": zod.boolean(),
+  "enabled": zod.boolean(),
+  "baseUrl": zod.string().max(updateAdminAiCoordinatorSettingsResponseBaseUrlMax),
+  "model": zod.string().max(updateAdminAiCoordinatorSettingsResponseModelMax),
+  "updatedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+export const testAdminAiCoordinatorConnectionBodyOperationIdMin = 8;
+export const testAdminAiCoordinatorConnectionBodyOperationIdMax = 100;
+
+
+
+export const TestAdminAiCoordinatorConnectionBody = zod.object({
+  "operationId": zod.string().min(testAdminAiCoordinatorConnectionBodyOperationIdMin).max(testAdminAiCoordinatorConnectionBodyOperationIdMax)
+})
+
+export const TestAdminAiCoordinatorConnectionResponse = zod.object({
+  "connected": zod.literal(true),
+  "model": zod.string(),
+  "checkedAt": zod.string().datetime({"offset":true}),
+  "message": zod.string()
 })
 
 
@@ -660,7 +719,10 @@ export const InspectInvitationBody = zod.object({
 export const InspectInvitationResponse = zod.object({
   "email": zod.string().email(),
   "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
-  "expiresAt": zod.string().datetime({"offset":true})
+  "expiresAt": zod.string().datetime({"offset":true}),
+  "tenantId": zod.string(),
+  "organizationName": zod.string().nullable(),
+  "existingAccount": zod.boolean()
 })
 
 
@@ -690,6 +752,39 @@ export const AcceptInvitationResponse = zod.object({
   "mfaSetupRequired": zod.boolean(),
   "mfaVerificationRequired": zod.boolean()
 })
+
+
+export const acceptExistingAccountInvitationBodyTokenMin = 32;
+export const acceptExistingAccountInvitationBodyTokenMax = 128;
+
+
+
+export const AcceptExistingAccountInvitationBody = zod.object({
+  "token": zod.string().min(acceptExistingAccountInvitationBodyTokenMin).max(acceptExistingAccountInvitationBodyTokenMax)
+})
+
+export const AcceptExistingAccountInvitationResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "displayName": zod.string(),
+  "tenantId": zod.string(),
+  "organizationId": zod.string().optional(),
+  "role": zod.enum(['student', 'team_manager', 'teacher', 'promoter', 'mentor', 'administrator']),
+  "mfaSetupRequired": zod.boolean(),
+  "mfaVerificationRequired": zod.boolean()
+})
+
+
+export const rejectExistingAccountInvitationBodyTokenMin = 32;
+export const rejectExistingAccountInvitationBodyTokenMax = 128;
+
+
+
+export const RejectExistingAccountInvitationBody = zod.object({
+  "token": zod.string().min(rejectExistingAccountInvitationBodyTokenMin).max(rejectExistingAccountInvitationBodyTokenMax)
+})
+
+export const RejectExistingAccountInvitationResponse = zod.void()
 
 
 /**
@@ -777,6 +872,84 @@ export const GetFp360SimulationsOverviewResponse = zod.object({
   "center": zod.string(),
   "island": zod.string()
 }))
+})
+
+
+/**
+ * @summary Generate a supervised intercompany simulation proposal using the network snapshot
+ */
+export const generateFp360AiSimulationProposalBodyOperationIdMin = 8;
+export const generateFp360AiSimulationProposalBodyOperationIdMax = 100;
+
+export const generateFp360AiSimulationProposalBodyParticipantOrganizationIdsMin = 2;
+export const generateFp360AiSimulationProposalBodyParticipantOrganizationIdsMax = 40;
+
+export const generateFp360AiSimulationProposalBodyObjectiveMin = 20;
+export const generateFp360AiSimulationProposalBodyObjectiveMax = 800;
+
+export const generateFp360AiSimulationProposalBodyDurationWeeksMax = 16;
+
+export const generateFp360AiSimulationProposalBodyEventCountMin = 2;
+export const generateFp360AiSimulationProposalBodyEventCountMax = 40;
+
+
+
+export const GenerateFp360AiSimulationProposalBody = zod.object({
+  "operationId": zod.string().min(generateFp360AiSimulationProposalBodyOperationIdMin).max(generateFp360AiSimulationProposalBodyOperationIdMax),
+  "ownerOrganizationId": zod.string(),
+  "participantOrganizationIds": zod.array(zod.string()).min(generateFp360AiSimulationProposalBodyParticipantOrganizationIdsMin).max(generateFp360AiSimulationProposalBodyParticipantOrganizationIdsMax),
+  "objective": zod.string().min(generateFp360AiSimulationProposalBodyObjectiveMin).max(generateFp360AiSimulationProposalBodyObjectiveMax),
+  "startDate": zod.string().date(),
+  "durationWeeks": zod.number().int().min(1).max(generateFp360AiSimulationProposalBodyDurationWeeksMax),
+  "difficulty": zod.enum(['low', 'medium', 'high']),
+  "eventCount": zod.number().int().min(generateFp360AiSimulationProposalBodyEventCountMin).max(generateFp360AiSimulationProposalBodyEventCountMax)
+})
+
+export const generateFp360AiSimulationProposalResponseCampaignEventCountMin = 0;
+
+
+
+
+export const GenerateFp360AiSimulationProposalResponse = zod.object({
+  "campaign": zod.object({
+  "id": zod.string(),
+  "ownerOrganizationId": zod.string(),
+  "ownerOrganizationName": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "mode": zod.enum(['manual', 'supervised', 'autonomous']),
+  "durationWeeks": zod.number().int(),
+  "difficulty": zod.enum(['low', 'medium', 'high']),
+  "status": zod.enum(['draft', 'review', 'approved', 'active', 'paused', 'closed', 'rejected']),
+  "startDate": zod.string().date(),
+  "endDate": zod.string().date(),
+  "participantOrganizationIds": zod.array(zod.string()),
+  "participantNames": zod.array(zod.string()),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true}),
+  "eventCount": zod.number().int().min(generateFp360AiSimulationProposalResponseCampaignEventCountMin)
+}),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "campaignId": zod.string(),
+  "organizationId": zod.string(),
+  "title": zod.string(),
+  "eventType": zod.enum(['offer', 'late_payment', 'stock_break', 'claim', 'financing', 'service_incident', 'other']),
+  "status": zod.enum(['draft', 'proposed', 'approved', 'published', 'completed', 'cancelled']),
+  "description": zod.string(),
+  "preconditions": zod.array(zod.string()),
+  "requiredDocumentType": zod.string().nullable(),
+  "simulatedDate": zod.string().date(),
+  "evidenceDocumentId": zod.string().nullable(),
+  "evidenceDocumentReference": zod.string().nullable(),
+  "completedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})),
+  "networkSnapshotAt": zod.string().datetime({"offset":true}),
+  "networkCompanyCount": zod.number().int().min(1),
+  "approvalRequired": zod.literal(true),
+  "simulationOnly": zod.literal(true)
 })
 
 

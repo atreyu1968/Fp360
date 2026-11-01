@@ -1202,6 +1202,7 @@ export type UserInvitationStatus = typeof UserInvitationStatus[keyof typeof User
 export const UserInvitationStatus = {
   pending: 'pending',
   accepted: 'accepted',
+  rejected: 'rejected',
   revoked: 'revoked',
   expired: 'expired',
 } as const;
@@ -1234,6 +1235,10 @@ export interface InvitationPreview {
   email: string;
   role: AccessRole;
   expiresAt: string;
+  tenantId: string;
+  /** @nullable */
+  organizationName: string | null;
+  existingAccount: boolean;
 }
 
 export interface InvitationAcceptanceInput {
@@ -1441,6 +1446,17 @@ export interface AdminIntegrationStatus {
   simulationOnly: boolean;
 }
 
+export interface AdminAiCoordinatorSettings {
+  configured: boolean;
+  enabled: boolean;
+  /** @maxLength 512 */
+  baseUrl: string;
+  /** @maxLength 120 */
+  model: string;
+  /** @nullable */
+  updatedAt: string | null;
+}
+
 export type AdminPolicyPermission = typeof AdminPolicyPermission[keyof typeof AdminPolicyPermission];
 
 
@@ -1469,6 +1485,7 @@ export interface AdminSystemOverview {
   backupExercises: AdminBackupExercise[];
   privilegeRequests: AdminPrivilegeRequest[];
   integrations: AdminIntegrationStatus[];
+  aiCoordinator: AdminAiCoordinatorSettings;
   policyMatrix: AdminPolicyMatrixEntry[];
   simulationOnly: true;
 }
@@ -1539,6 +1556,34 @@ export interface AdminScenarioVersionInput {
   operationId: string;
   validFrom: string;
   settings: AdminScenarioSettings;
+}
+
+export interface AdminAiCoordinatorSettingsInput {
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+  enabled: boolean;
+  /** @maxLength 512 */
+  baseUrl: string;
+  /** @maxLength 120 */
+  model: string;
+}
+
+export interface AdminAiCoordinatorConnectionTestInput {
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+}
+
+export interface AdminAiCoordinatorConnectionTestResult {
+  connected: true;
+  model: string;
+  checkedAt: string;
+  message: string;
 }
 
 export interface AdminBackupExerciseInput {
@@ -7318,6 +7363,56 @@ export interface Fp360SimulationCampaignInput {
      * @maxLength 100
      */
   operationId: string;
+}
+
+export type Fp360AiSimulationProposalInputDifficulty = typeof Fp360AiSimulationProposalInputDifficulty[keyof typeof Fp360AiSimulationProposalInputDifficulty];
+
+
+export const Fp360AiSimulationProposalInputDifficulty = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface Fp360AiSimulationProposalInput {
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+  ownerOrganizationId: string;
+  /**
+     * @minItems 2
+     * @maxItems 40
+     */
+  participantOrganizationIds: string[];
+  /**
+     * @minLength 20
+     * @maxLength 800
+     */
+  objective: string;
+  startDate: string;
+  /**
+     * @minimum 1
+     * @maximum 16
+     */
+  durationWeeks: number;
+  difficulty: Fp360AiSimulationProposalInputDifficulty;
+  /**
+     * @minimum 2
+     * @maximum 40
+     */
+  eventCount: number;
+}
+
+export interface Fp360AiSimulationProposal {
+  campaign: Fp360SimulationCampaign;
+  events: Fp360SimulationEvent[];
+  networkSnapshotAt: string;
+  /** @minimum 1 */
+  networkCompanyCount: number;
+  approvalRequired: true;
+  simulationOnly: true;
 }
 
 export type Fp360SimulationCampaignActionAction = typeof Fp360SimulationCampaignActionAction[keyof typeof Fp360SimulationCampaignActionAction];

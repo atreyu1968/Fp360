@@ -13,11 +13,13 @@ import {
   useCreateAdminInvitation, useCreateAdminOrganization, useCreateAdminPrivilegeRequest,
   useCreateAdminScenarioVersion, useEvaluateAdminPolicy, useGetAdminSystemOverview,
   useListAdminAudit, useListAdminInvitations, useListAdminPrivilegeRequests, useListAdminUsers,
-  useRevokeAdminInvitation, useUpdateAdminUser,
+  useRevokeAdminInvitation, useTestAdminAiCoordinatorConnection, useUpdateAdminAiCoordinatorSettings,
+  useUpdateAdminUser,
 } from '@workspace/api-client-react';
 import type { AccessRole, AdminPolicyPermission, AdminSystemOverview, AuthIdentity, IssuedInvitation, ManagedUser } from '@workspace/api-client-react';
 import { ROLE_OPTIONS, accessRoleLabel, dateTime, httpStatus } from './admin-shared';
 import './admin-page.css';
+import './admin-ai.css';
 
 type View = 'health' | 'organizations' | 'users' | 'policies' | 'scenario' | 'security' | 'recovery' | 'integrations';
 const views: { id: View; label: string; icon: typeof Activity; eyebrow: string; title: string; intro: string }[] = [
@@ -36,13 +38,16 @@ const permissionLabels: Record<string, string> = {
   run_backup_exercise: 'Realizar ensayo de respaldo', manage_intercenter_campaigns: 'Coordinar campañas intercentros',
   manage_company_operations: 'Gestionar operaciones de empresa', work_assigned_cases: 'Atender casos asignados',
 };
-const stateNames: Record<string, string> = { pending: 'Pendiente de revisión', approved: 'Aprobada', rejected: 'Rechazada', verified: 'Ensayo registrado', attention: 'Revisión necesaria', not_configured: 'No configurada', simulation_only: 'Solo simulación' };
+const stateNames: Record<string, string> = { pending: 'Pendiente de revisión', approved: 'Aprobada', rejected: 'Rechazada', accepted: 'Aceptada', revoked: 'Revocada', expired: 'Caducada', verified: 'Ensayo registrado', attention: 'Revisión necesaria', not_configured: 'No configurada', simulation_only: 'Solo simulación' };
 const readable = (v?: string) => stateNames[v ?? ''] ?? v ?? 'Sin estado';
 const privilegeLabel = (type: string) => type === 'promote_user' ? 'Promoción a administración' : type === 'deactivate_administrator' ? 'Baja de administración' : 'Invitación administrativa';
 const auditLabel = (action: string) => ({
   'invitation.created': 'Invitación creada',
   'invitation.revoked': 'Invitación revocada',
   'invitation.accepted': 'Invitación aceptada',
+  'invitation.accepted_existing': 'Cuenta existente aceptó la invitación',
+  'membership.created_by_invitation': 'Pertenencia creada por invitación',
+  'invitation.rejected': 'Invitación rechazada',
   'user.updated': 'Usuario actualizado',
   'organization.created': 'Organización creada',
   'organization.activate': 'Organización activada',
@@ -222,7 +227,7 @@ function UsersView({ identity, done }: { identity: AuthIdentity; done: (t: strin
       <LoadState loading={requests.isLoading} error={requests.isError} retry={() => void requests.refetch()} empty={!!requests.data && !requests.data.length} />
        {requests.data?.length ? <AdminTable min={760}><thead><tr><th>Solicitud</th><th>Solicitante</th><th>Estado</th><th>Fecha</th><th>Decisión</th></tr></thead><tbody>{requests.data.map(r => <tr key={r.id}><td><b>{privilegeLabel(r.requestType)}</b><small className="ac-sub">{r.email ?? r.targetUserId ?? 'Cuenta existente'}</small></td><td>{r.requestedByUserId === identity.id ? 'Tú' : r.requestedByUserId.slice(0, 8)}</td><td><Badge tone={r.status === 'approved' ? 'good' : r.status === 'rejected' ? 'bad' : 'warn'}>{readable(r.status)}</Badge></td><td>{dateTime(r.createdAt)}</td><td>{r.status === 'pending' ? r.requestedByUserId === identity.id ? <span className="ac-pending-note">Bloqueada para aprobación propia</span> : <div className="ac-actions"><button className="ac-text-link" onClick={() => setDecision({ id: r.id, action: 'approve' })}>Aprobar</button><button className="ac-text-danger" onClick={() => setDecision({ id: r.id, action: 'reject' })}>Rechazar</button></div> : r.decisionNote || '—'}</td></tr>)}</tbody></AdminTable> : null}
     </Panel>
-    <Panel title="Invitaciones recientes" note="El estado se actualiza tras aceptar, revocar o caducar.">
+    <Panel title="Invitaciones recientes" note="El estado se actualiza tras aceptar, rechazar, revocar o caducar.">
       <LoadState loading={invitations.isLoading} error={invitations.isError} retry={() => void invitations.refetch()} empty={!!invitations.data && !invitations.data.length} />
       {invitations.data?.length ? <AdminTable min={700}><thead><tr><th>Correo</th><th>Rol</th><th>Estado</th><th>Caducidad</th><th></th></tr></thead><tbody>{invitations.data.map(inv => <tr key={inv.id}><td><b>{inv.email}</b></td><td>{accessRoleLabel(inv.role)}</td><td><Badge tone={inv.status === 'accepted' ? 'good' : inv.status === 'pending' ? 'warn' : 'neutral'}>{readable(inv.status)}</Badge></td><td>{dateTime(inv.expiresAt)}</td><td>{inv.status === 'pending' && <button className="ac-text-danger" onClick={() => { if (window.confirm(`¿Revocar la invitación a ${inv.email}?`)) revoke.mutate({ id: inv.id }, { onSuccess: () => { done('Invitación revocada.', 'success'); complete(); }, onError: e => done(explainMutation(e, 'No se pudo revocar la invitación.'), 'error') }); }}>Revocar</button>}</td></tr>)}</tbody></AdminTable> : null}
     </Panel>
@@ -284,8 +289,60 @@ function RecoveryView({ data, done }: { data: AdminSystemOverview; done: (t: str
 function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t: string, k: 'success' | 'error') => void }) {
   const qc = useQueryClient();
   const check = useCheckAdminIntegration();
-  return <div className="ac-stack"><div className="ac-simulation"><Network size={16} /><span><b>Comprobaciones exclusivamente simuladas.</b> No se contacta con proveedores ni se solicitan credenciales.</span><span className="ac-sim-tag">SIN CONEXIONES</span></div>
+  const saveAi = useUpdateAdminAiCoordinatorSettings();
+  const testAi = useTestAdminAiCoordinatorConnection();
+  const [aiEnabled, setAiEnabled] = useState(data.aiCoordinator.enabled);
+  const saveCoordinator = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    saveAi.mutate({
+      data: {
+        operationId: newOperationId(),
+        enabled: aiEnabled,
+        baseUrl: String(form.get('localAiBaseUrl') ?? ''),
+        model: String(form.get('localAiModel') ?? ''),
+      },
+    }, {
+      onSuccess: () => {
+        void qc.invalidateQueries({ queryKey: getGetAdminSystemOverviewQueryKey() });
+        done('Configuración del coordinador local guardada.', 'success');
+      },
+      onError: (error) => done(explainMutation(error, 'No se pudo guardar la configuración local.'), 'error'),
+    });
+  };
+  return <div className="ac-stack">
+    <Panel title="Coordinador económico con IA" note="La IA analiza la red antes de proponer campañas; no ejecuta operaciones.">
+      <form className="ac-ai-config" onSubmit={saveCoordinator}>
+        <div className="ac-ai-config-grid">
+          <label>URL base local
+            <input name="localAiBaseUrl" type="url" required={aiEnabled} maxLength={512}
+              defaultValue={data.aiCoordinator.baseUrl} placeholder="http://127.0.0.1:11434/v1" />
+          </label>
+          <label>Modelo local
+            <input name="localAiModel" required={aiEnabled} maxLength={120}
+              defaultValue={data.aiCoordinator.model} placeholder="Nombre exacto del modelo" />
+          </label>
+        </div>
+        <label className="ac-ai-toggle"><input type="checkbox" checked={aiEnabled} onChange={event => setAiEnabled(event.target.checked)} />
+          Activar generación supervisada de propuestas</label>
+        <div className="ac-ai-config-actions">
+          <button className="ac-button ac-primary" type="submit" disabled={saveAi.isPending}>
+            {saveAi.isPending ? 'Guardando…' : 'Guardar configuración'}
+          </button>
+          <button className="ac-button" type="button" disabled={testAi.isPending || !data.aiCoordinator.enabled}
+            onClick={() => testAi.mutate({ data: { operationId: newOperationId() } }, {
+              onSuccess: result => done(`${result.message} Modelo: ${result.model}.`, 'success'),
+              onError: error => done(explainMutation(error, 'No se pudo conectar con la IA local.'), 'error'),
+            })}>
+            <RefreshCw size={14} /> {testAi.isPending ? 'Comprobando…' : 'Probar conexión guardada'}
+          </button>
+          <Badge tone={data.aiCoordinator.enabled ? 'good' : 'neutral'}>{data.aiCoordinator.enabled ? 'Activada' : 'Desactivada'}</Badge>
+        </div>
+        <p className="ac-ai-note">Compatible con endpoints locales OpenAI, como Ollama o LM Studio. El servidor de RED FP360 debe poder acceder a esa URL. No se guarda ni se envía ninguna clave; los datos económicos se envían solo al endpoint local configurado.</p>
+      </form>
+    </Panel>
+    <div className="ac-simulation"><Network size={16} /><span><b>Comprobaciones de catálogo simuladas.</b> No se contacta con proveedores externos ni se solicitan credenciales.</span><span className="ac-sim-tag">SIN PROVEEDORES</span></div>
     <Panel title="Integraciones previstas" note="Las comprobaciones solo actualizan el estado de demostración."><div className="ac-integrations">{data.integrations.map(item => <article key={item.id} className="ac-integration-card"><div className="ac-integration-top"><span className="ac-service-icon"><Network size={17} /></span><Badge tone={item.status === 'simulation_only' ? 'blue' : 'neutral'}>{readable(item.status)}</Badge></div><h3>{item.name}</h3><p>{item.description}</p><div className="ac-integration-meta"><span>{item.simulationOnly ? 'Sin llamadas externas' : 'Estado de catálogo'}</span><small>{item.checkedAt ? `Última comprobación: ${dateTime(item.checkedAt)}` : 'Sin comprobación registrada'}</small></div><button className="ac-button" disabled={check.isPending || !item.simulationOnly} onClick={() => check.mutate({ integrationId: item.id, data: { operationId: newOperationId() } }, { onSuccess: () => { void qc.invalidateQueries({ queryKey: getGetAdminSystemOverviewQueryKey() }); done(`Comprobación simulada registrada para ${item.name}.`, 'success'); }, onError: e => done(explainMutation(e, 'No se pudo registrar la comprobación.'), 'error') })}><RefreshCw size={14} /> Comprobar estado simulado</button></article>)}{!data.integrations.length && <div className="ac-empty"><b>No hay integraciones en catálogo</b><p>Las capacidades incorporadas aparecerán aquí.</p></div>}</div></Panel>
-    <Panel title="Preparación de despliegue" note="La consola no gestiona infraestructura, despliegues ni secretos."><div className="ac-deploy-row"><span className="ac-service-icon"><Server size={17} /></span><div><b>Modo de operación</b><small>Desarrollo funcional · datos y procesos de formación</small></div><Badge tone="blue">Solo entorno educativo</Badge></div><div className="ac-callout"><Lock size={15} /><p>Las credenciales y endpoints externos no se muestran ni se configuran desde esta vista.</p></div></Panel>
+    <Panel title="Preparación de despliegue" note="La consola no gestiona infraestructura, despliegues ni secretos."><div className="ac-deploy-row"><span className="ac-service-icon"><Server size={17} /></span><div><b>Modo de operación</b><small>Desarrollo funcional · datos y procesos de formación</small></div><Badge tone="blue">Solo entorno educativo</Badge></div><div className="ac-callout"><Lock size={15} /><p>No se configuran claves ni proveedores externos. El coordinador solo admite endpoints locales o de red privada.</p></div></Panel>
   </div>;
 }

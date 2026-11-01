@@ -2,13 +2,13 @@ import { type FormEvent, type ReactNode, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Activity, ArrowRight, BookOpen, CalendarDays, Check, CheckCircle2, ChevronRight, CircleAlert,
-  ClipboardList, Clock3, FileText, Gauge, MapPin, Pause, Play, Plus, Radio,
+  ClipboardList, Clock3, FileText, Gauge, MapPin, Pause, Play, Plus, Radio, Sparkles,
   ShieldCheck, Users, X,
 } from 'lucide-react';
 import {
   getGetFp360SimulationsOverviewQueryKey, useActOnFp360SimulationCampaign,
   useActOnFp360SimulationEvent, useCreateFp360SimulationCampaign,
-  useCreateFp360SimulationEvent, useGetFp360DocumentsOverview,
+  useCreateFp360SimulationEvent, useGenerateFp360AiSimulationProposal, useGetFp360DocumentsOverview,
   useGetFp360SimulationsOverview, useLinkFp360SimulationEventEvidence,
   useUpdateFp360SimulationEvent,
 } from '@workspace/api-client-react';
@@ -16,6 +16,7 @@ import type {
   AuthIdentity, Fp360SimulationCampaign, Fp360SimulationEvent, Fp360SimulationEventEventType,
 } from '@workspace/api-client-react';
 import './simulation-campaigns-page.css';
+import './simulation-ai.css';
 
 type Props = {
   identity: Pick<AuthIdentity, 'role'> & { organizationId?: string };
@@ -78,6 +79,7 @@ export function SimulationCampaignsPage({ identity, onNotice }: Props) {
   const client = useQueryClient();
   const overview = useGetFp360SimulationsOverview({ query: { staleTime: 15_000 } });
   const createCampaign = useCreateFp360SimulationCampaign();
+  const generateAiProposal = useGenerateFp360AiSimulationProposal();
   const campaignAction = useActOnFp360SimulationCampaign();
   const createEvent = useCreateFp360SimulationEvent();
   const eventAction = useActOnFp360SimulationEvent();
@@ -282,7 +284,10 @@ export function SimulationCampaignsPage({ identity, onNotice }: Props) {
         </section>
         <div className="sc-columns">
           <section className="sc-panel"><PanelTitle kicker="PORTAFOLIO" title="Campañas de la red" detail="Selección real del servicio de simulación."
-            action={canCreate && <button className="sc-button primary" onClick={() => setView('create')} data-testid="button-sim-new-campaign"><Plus size={15} /> Diseñar campaña</button>} />
+            action={canCreate && <div className="sc-portfolio-actions">
+              <button className="sc-button primary" onClick={() => setView('create')} data-testid="button-sim-new-campaign"><Plus size={15} /> Diseñar campaña</button>
+              {canReview && <button className="sc-button" onClick={() => setView('create')} data-testid="button-sim-ai-campaign"><Sparkles size={15} /> Coordinar con IA</button>}
+            </div>} />
             {campaigns.length ? <div className="sc-campaign-list">{campaigns.map((item) => <article className={`sc-campaign-row ${selectedCampaign?.id === item.id ? 'selected' : ''}`} key={item.id} data-testid={`card-campaign-${item.id}`}>
               <button className="sc-campaign-select" onClick={() => setCampaignId(item.id)} data-testid={`button-select-campaign-${item.id}`}>
                 <span className="sc-campaign-monogram">{item.ownerOrganizationName.slice(0, 2).toUpperCase()}</span>
@@ -300,6 +305,69 @@ export function SimulationCampaignsPage({ identity, onNotice }: Props) {
           </aside>
         </div>
       </div>}
+
+      {view === 'create' && canReview && <section className="sc-panel sc-form-panel sc-ai-panel">
+        <PanelTitle kicker="COORDINACIÓN SUPERVISADA" title="Generar campaña con IA"
+          detail="La IA propone una secuencia interconectada; no ejecuta operaciones económicas." />
+        <form className="sc-form sc-ai-form" onSubmit={(event: FormEvent<HTMLFormElement>) => {
+          event.preventDefault();
+          const form = new FormData(event.currentTarget);
+          const participantOrganizationIds = form.getAll('aiParticipant').map(String);
+          const ownerOrganizationId = String(form.get('aiOwner') ?? '');
+          const eventCount = Number(form.get('aiEventCount') ?? 0);
+          if (participantOrganizationIds.length < 2 || participantOrganizationIds.length > 40) {
+            onNotice('Selecciona entre dos y cuarenta empresas participantes.', 'error');
+            return;
+          }
+          if (!participantOrganizationIds.includes(ownerOrganizationId)) {
+            onNotice('La empresa responsable también debe participar en la campaña.', 'error');
+            return;
+          }
+          if (eventCount < participantOrganizationIds.length || eventCount > 40) {
+            onNotice(`Indica al menos ${participantOrganizationIds.length} eventos, uno por empresa.`, 'error');
+            return;
+          }
+          generateAiProposal.mutate({ data: {
+            operationId: operationId(),
+            ownerOrganizationId,
+            participantOrganizationIds,
+            objective: String(form.get('aiObjective') ?? ''),
+            startDate: String(form.get('aiStartDate') ?? today()),
+            durationWeeks: Number(form.get('aiDurationWeeks') ?? 2),
+            difficulty: String(form.get('aiDifficulty') ?? 'medium') as 'low' | 'medium' | 'high',
+            eventCount,
+          } }, {
+            onSuccess: proposal => {
+              setCampaignId(proposal.campaign.id);
+              setView('queue');
+              onNotice(`Propuesta creada con el contexto de ${proposal.networkCompanyCount} empresas. La campaña y sus eventos requieren aprobación.`, 'success');
+              void refresh();
+            },
+            onError: error => onNotice(errorMessage(error), 'error'),
+          });
+        }} data-testid="form-sim-ai-proposal">
+          <div className="sc-info"><Sparkles size={16} /><span>Antes de proponer, consulta el estado de todas las empresas y el historial económico y de auditoría disponible: pedidos, compras, facturas, cobros, inventario, contabilidad e impuestos. Se excluyen datos personales y textos libres.</span></div>
+          <div className="sc-form-grid">
+            <label className="sc-field wide"><span>Objetivo económico de la práctica</span><textarea name="aiObjective" required minLength={20} maxLength={800} rows={3} placeholder="Ej. Coordinar el suministro de una empresa, la entrega logística y el cobro de una venta entre varias empresas." data-testid="input-sim-ai-objective" /></label>
+            <label className="sc-field"><span>Empresa responsable</span><select name="aiOwner" required defaultValue={organizations.find(org => org.id === organizationId)?.id ?? organizations[0]?.id ?? ''} data-testid="select-sim-ai-owner">{organizations.map(org => <option key={org.id} value={org.id}>{org.name}</option>)}</select></label>
+            <label className="sc-field"><span>Inicio simulado</span><input name="aiStartDate" type="date" min="2027-01-01" max="2028-09-08" defaultValue={today()} required data-testid="input-sim-ai-start" /></label>
+            <label className="sc-field"><span>Duración</span><select name="aiDurationWeeks" defaultValue="4" data-testid="select-sim-ai-duration">{[1, 2, 4, 6, 8, 12, 16].map(weeks => <option key={weeks} value={weeks}>{weeks} {weeks === 1 ? 'semana' : 'semanas'}</option>)}</select></label>
+            <label className="sc-field"><span>Dificultad</span><select name="aiDifficulty" defaultValue="medium" data-testid="select-sim-ai-difficulty"><option value="low">Inicial</option><option value="medium">Intermedia</option><option value="high">Avanzada</option></select></label>
+            <label className="sc-field"><span>Número de eventos</span><input name="aiEventCount" type="number" min="2" max="40" defaultValue={Math.min(40, Math.max(2, organizations.length))} required data-testid="input-sim-ai-event-count" /></label>
+            <fieldset className="sc-ai-participants">
+              <legend>Empresas participantes · seleccionadas por defecto</legend>
+              {organizations.map(org => <label key={org.id}>
+                <input type="checkbox" name="aiParticipant" value={org.id} defaultChecked />
+                <span>{org.name}<small>{org.center} · {org.island}</small></span>
+              </label>)}
+            </fieldset>
+          </div>
+          <div className="sc-info"><ShieldCheck size={16} /><span>La IA solo crea un borrador con eventos propuestos. Para publicarlos, una persona debe revisar y aprobar la campaña y sus eventos.</span></div>
+          <div className="sc-form-actions"><button type="submit" className="sc-button primary" disabled={generateAiProposal.isPending || organizations.length < 2}>
+            <Sparkles size={15} /> {generateAiProposal.isPending ? 'Analizando la red…' : 'Analizar y generar propuesta'} <ArrowRight size={15} />
+          </button></div>
+        </form>
+      </section>}
 
       {view === 'create' && <section className="sc-panel sc-form-panel">
         <PanelTitle kicker="DISEÑO DE ESCENARIO" title="Crear campaña" detail="Define el marco común para una práctica entre empresas simuladas." />

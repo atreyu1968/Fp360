@@ -3,7 +3,7 @@ name: RED FP360 administration safety
 description: Durable boundaries for administration, recovery exercises, and integrations.
 ---
 
-RED FP360 administration is a training console, not an infrastructure control plane. Backup and recovery actions remain readiness exercises only; integrations never contact external services or expose credentials. Administrator accounts use app-owned TOTP with one-time recovery codes. Global administrator invitations, promotions, and deactivations require approval by a different administrator, and requesters cannot approve their own requests. Suspensions preserve historical records.
+RED FP360 administration is a training console, not an infrastructure control plane. Backup and recovery actions remain readiness exercises only; external integrations stay simulation-only and never expose credentials. The AI scenario coordinator is an exception: its provider is configured in the administrator panel, it may use a local AI endpoint, and it only proposes changes for approval. Administrator accounts use app-owned TOTP with one-time recovery codes. Global administrator invitations, promotions, and deactivations require approval by a different administrator, and requesters cannot approve their own requests. Suspensions preserve historical records.
 
 **Why:** The official module specification and the project's educational-only boundary require safe, auditable administration rather than live infrastructure changes.
 

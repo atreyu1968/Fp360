@@ -1325,6 +1325,10 @@ function isUnauthorized(error: unknown) {
 function AuthLoading({ label = 'Comprobando acceso seguro' }: { label?: string }) {
   return <main className="auth-loading" role="status" aria-live="polite"><div className="auth-loading-brand"><span className="brand-mark"><span>R</span><i /></span><b>RED FP360</b></div><div className="auth-skeleton"><span /><span /><span /></div><p>{label}…</p></main>;
 }
+function hasPendingInvitationReturn() {
+  try { return window.sessionStorage.getItem('redfp360_pending_invitation_return') === 'true'; }
+  catch { return false; }
+}
 function AuthRouter() {
   const [location, setLocation] = useLocation();
   const authStatus = useGetAuthStatus({ query: { queryKey: getGetAuthStatusQueryKey(), retry: 1 } });
@@ -1346,17 +1350,35 @@ function AuthRouter() {
     setValidatedIdentity(identityKey);
   }, [identity, identityQuery.isFetching, identityQuery.isError, identityKey]);
 
-  const onAuthenticated = (nextIdentity: AuthIdentity) => {
+  const onAuthenticated = (nextIdentity: AuthIdentity, options?: { stayOnInvitation?: boolean }) => {
     const nextKey = `${nextIdentity.id}:${nextIdentity.tenantId}:${nextIdentity.organizationId ?? ''}:${nextIdentity.role}`;
     if (previousIdentity.current && previousIdentity.current !== nextKey) clearBusinessCache();
     previousIdentity.current = nextKey;
     setValidatedIdentity(nextKey);
     queryClient.setQueryData(getGetCurrentIdentityQueryKey(), nextIdentity);
     queryClient.setQueryData(getGetAuthStatusQueryKey(), { setupRequired: false });
-    setLocation('/');
+    const needsMfa = nextIdentity.mfaSetupRequired || nextIdentity.mfaVerificationRequired;
+    const invitationReturn = options?.stayOnInvitation || hasPendingInvitationReturn();
+    if (invitationReturn && !needsMfa) setLocation('/accept-invitation');
+    else setLocation('/');
   };
 
-  if (location === '/accept-invitation') return <AcceptInvitation onAuthenticated={onAuthenticated} />;
+  useEffect(() => {
+    if (location !== '/accept-invitation') return;
+    const token = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('token');
+    if (!token) return;
+    try {
+      window.sessionStorage.setItem('redfp360_pending_invitation_token', token);
+      window.sessionStorage.setItem('redfp360_pending_invitation_return', 'true');
+    } catch {
+      return;
+    }
+    window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+  }, [location]);
+
+  if (location === '/accept-invitation' && !(identity && (identity.mfaSetupRequired || identity.mfaVerificationRequired))) {
+    return <AcceptInvitation onAuthenticated={onAuthenticated} />;
+  }
   if (authStatus.isLoading) return <AuthLoading label="Cargando configuración del acceso" />;
   if (authStatus.isError || !authStatus.data) return <main className="auth-loading"><div className="auth-state-card"><CircleHelp size={22} /><h1>No podemos comprobar el acceso</h1><p>El servicio de autenticación no responde. Comprueba la conexión e inténtalo otra vez.</p><button className="auth-submit" type="button" onClick={() => { void authStatus.refetch(); void identityQuery.refetch(); }} data-testid="button-retry-auth">Reintentar <ArrowRight size={16} /></button></div></main>;
 

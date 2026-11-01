@@ -239,7 +239,7 @@ paths:
               schema: { $ref: "#/components/schemas/IssuedInvitation" }
         "400": { description: Invalid invitation }
         "403": { description: Administrator required }
-        "409": { description: Account or pending invitation already exists }
+        "409": { description: Membership in this network or pending invitation already exists }
   /admin/invitations/{id}:
     delete:
       operationId: revokeAdminInvitation
@@ -275,6 +275,41 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AdminSystemOverview" }
         "403": { description: Administrator required }
+  /admin/ai-coordinator/settings:
+    put:
+      operationId: updateAdminAiCoordinatorSettings
+      tags: [administration]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminAiCoordinatorSettingsInput" }
+      responses:
+        "200":
+          description: Local AI endpoint configuration without credentials
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminAiCoordinatorSettings" }
+        "400": { description: Invalid endpoint or model }
+        "403": { description: Administrator required }
+  /admin/ai-coordinator/test:
+    post:
+      operationId: testAdminAiCoordinatorConnection
+      tags: [administration]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminAiCoordinatorConnectionTestInput" }
+      responses:
+        "200":
+          description: Local model endpoint responded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminAiCoordinatorConnectionTestResult" }
+        "403": { description: Administrator required }
+        "409": { description: AI provider is not configured }
+        "502": { description: Local model endpoint unavailable }
   /admin/organizations:
     post:
       operationId: createAdminOrganization
@@ -470,6 +505,39 @@ paths:
         "400": { description: Invalid account details }
         "409": { description: Account already exists }
         "410": { description: "Invitation invalid, expired or already used" }
+  /auth/invitations/accept-existing:
+    post:
+      operationId: acceptExistingAccountInvitation
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvitationTokenInput" }
+      responses:
+        "200":
+          description: Authenticated user accepted access to the invited network
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthIdentity" }
+        "401": { description: Sign-in required }
+        "403": { description: Invitation belongs to a different account }
+        "409": { description: Account already has membership in this network }
+        "410": { description: "Invitation invalid, expired or already used" }
+  /auth/invitations/reject-existing:
+    post:
+      operationId: rejectExistingAccountInvitation
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvitationTokenInput" }
+      responses:
+        "204": { description: Invitation declined without changing memberships }
+        "401": { description: Sign-in required }
+        "403": { description: Invitation belongs to a different account }
+        "410": { description: "Invitation invalid, expired or already used" }
   /redfp360/dashboard:
     get:
       operationId: getFp360Dashboard
@@ -493,6 +561,27 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Fp360SimulationsOverview" }
+  /redfp360/simulations/ai-proposals:
+    post:
+      operationId: generateFp360AiSimulationProposal
+      tags: [redfp360]
+      summary: Generate a supervised intercompany simulation proposal using the network snapshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360AiSimulationProposalInput" }
+      responses:
+        "201":
+          description: Draft campaign and proposed events; operational changes still require approval
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360AiSimulationProposal" }
+        "400": { description: Invalid proposal request }
+        "403": { description: Network-wide review role required }
+        "409": { description: Operation identifier already used }
+        "502": { description: Local AI endpoint returned an invalid proposal }
+        "503": { description: Local AI endpoint is not configured }
   /redfp360/simulations/campaigns:
     post:
       operationId: createFp360SimulationCampaign
@@ -5439,7 +5528,7 @@ components:
         email: { type: string, format: email }
         role: { $ref: "#/components/schemas/AccessRole" }
         organizationId: { type: ["string", "null"] }
-        status: { type: string, enum: [pending, accepted, revoked, expired] }
+        status: { type: string, enum: [pending, accepted, rejected, revoked, expired] }
         expiresAt: { type: string, format: date-time }
         createdAt: { type: string, format: date-time }
     IssuedInvitation:
@@ -5455,11 +5544,14 @@ components:
         token: { type: string, minLength: 32, maxLength: 128 }
     InvitationPreview:
       type: object
-      required: [email, role, expiresAt]
+      required: [email, role, expiresAt, tenantId, organizationName, existingAccount]
       properties:
         email: { type: string, format: email }
         role: { $ref: "#/components/schemas/AccessRole" }
         expiresAt: { type: string, format: date-time }
+        tenantId: { type: string }
+        organizationName: { type: ["string", "null"] }
+        existingAccount: { type: boolean }
     InvitationAcceptanceInput:
       type: object
       required: [token, displayName, password]
@@ -5571,6 +5663,15 @@ components:
         status: { type: string, enum: [not_configured, simulation_only] }
         checkedAt: { type: ["string", "null"], format: date-time }
         simulationOnly: { type: boolean }
+    AdminAiCoordinatorSettings:
+      type: object
+      required: [configured, enabled, baseUrl, model, updatedAt]
+      properties:
+        configured: { type: boolean }
+        enabled: { type: boolean }
+        baseUrl: { type: string, maxLength: 512 }
+        model: { type: string, maxLength: 120 }
+        updatedAt: { type: ["string", "null"], format: date-time }
     AdminPolicyPermission:
       type: string
       enum: [system_admin, network_admin, manage_center_accounts, manage_scenario_settings, run_backup_exercise, manage_intercenter_campaigns, manage_company_operations, work_assigned_cases]
@@ -5585,7 +5686,7 @@ components:
           items: { $ref: "#/components/schemas/AdminPolicyPermission" }
     AdminSystemOverview:
       type: object
-      required: [health, counts, organizations, scenarioVersions, backupExercises, privilegeRequests, integrations, policyMatrix, simulationOnly]
+      required: [health, counts, organizations, scenarioVersions, backupExercises, privilegeRequests, integrations, aiCoordinator, policyMatrix, simulationOnly]
       properties:
         health: { $ref: "#/components/schemas/AdminHealthStatus" }
         counts: { $ref: "#/components/schemas/AdminSystemCounts" }
@@ -5604,6 +5705,7 @@ components:
         integrations:
           type: array
           items: { $ref: "#/components/schemas/AdminIntegrationStatus" }
+        aiCoordinator: { $ref: "#/components/schemas/AdminAiCoordinatorSettings" }
         policyMatrix:
           type: array
           items: { $ref: "#/components/schemas/AdminPolicyMatrixEntry" }
@@ -5647,6 +5749,27 @@ components:
         operationId: { type: string, format: uuid }
         validFrom: { type: string, format: date }
         settings: { $ref: "#/components/schemas/AdminScenarioSettings" }
+    AdminAiCoordinatorSettingsInput:
+      type: object
+      required: [operationId, enabled, baseUrl, model]
+      properties:
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+        enabled: { type: boolean }
+        baseUrl: { type: string, maxLength: 512 }
+        model: { type: string, maxLength: 120 }
+    AdminAiCoordinatorConnectionTestInput:
+      type: object
+      required: [operationId]
+      properties:
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+    AdminAiCoordinatorConnectionTestResult:
+      type: object
+      required: [connected, model, checkedAt, message]
+      properties:
+        connected: { type: boolean, enum: [true] }
+        model: { type: string }
+        checkedAt: { type: string, format: date-time }
+        message: { type: string }
     AdminBackupExerciseInput:
       type: object
       required: [operationId, label]
@@ -8483,6 +8606,35 @@ components:
           maxItems: 40
           items: { type: string }
         operationId: { type: string, minLength: 8, maxLength: 100 }
+    Fp360AiSimulationProposalInput:
+      type: object
+      required: [operationId, ownerOrganizationId, participantOrganizationIds, objective, startDate, durationWeeks, difficulty, eventCount]
+      properties:
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+        ownerOrganizationId: { type: string }
+        participantOrganizationIds:
+          type: array
+          minItems: 2
+          maxItems: 40
+          uniqueItems: true
+          items: { type: string }
+        objective: { type: string, minLength: 20, maxLength: 800 }
+        startDate: { type: string, format: date }
+        durationWeeks: { type: integer, minimum: 1, maximum: 16 }
+        difficulty: { type: string, enum: [low, medium, high] }
+        eventCount: { type: integer, minimum: 2, maximum: 40 }
+    Fp360AiSimulationProposal:
+      type: object
+      required: [campaign, events, networkSnapshotAt, networkCompanyCount, approvalRequired, simulationOnly]
+      properties:
+        campaign: { $ref: "#/components/schemas/Fp360SimulationCampaign" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360SimulationEvent" }
+        networkSnapshotAt: { type: string, format: date-time }
+        networkCompanyCount: { type: integer, minimum: 1 }
+        approvalRequired: { type: boolean, enum: [true] }
+        simulationOnly: { type: boolean, enum: [true] }
     Fp360SimulationCampaignAction:
       type: object
       required: [organizationId, action, operationId]
