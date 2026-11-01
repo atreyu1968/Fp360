@@ -175,6 +175,7 @@ El endpoint de configuración inicial falla de forma cerrada si `RED_FP360_SETUP
 
 - RED FP360 usa **autenticación propia de la aplicación**. No usa Clerk.
 - El servidor gestiona el inicio y cierre de sesión, las sesiones y las rutas de MFA/TOTP.
+- TOTP mantiene HMAC-SHA1 de RFC 4226/6238 para compatibilidad con autenticadores. El aviso estático sobre SHA-1 debe revisarse en ese contexto: no se usa SHA-1 para contraseñas ni para cifrar secretos; cambiar el algoritmo sin migrar los registros existentes rompería los códigos MFA.
 - Las cookies de sesión son `HttpOnly` y `SameSite=Lax`; en producción se marcan como `Secure`.
 - La API valida el rol y el alcance de organización/empresa en el servidor. Ocultar una opción en la interfaz no sustituye a la comprobación de permisos del API.
 - Las invitaciones y los permisos administrativos tienen controles adicionales. Los enlaces de invitación deben compartirse por un canal seguro y no registrarse en logs.
@@ -221,6 +222,8 @@ El servidor llama a `POST /chat/completions` para generar propuestas. La configu
 - La respuesta registra la fecha del contexto y el número de empresas conocidas por el coordinador. Si el endpoint o el modelo no están disponibles, la generación falla explícitamente y no crea una campaña parcial.
 
 ## Pruebas y validaciones
+
+Los validadores compartidos usan Zod 4 y se regeneran con Orval. Tras actualizar una dependencia que cambie los tipos públicos, ejecuta `pnpm exec tsc --build --force` una vez para evitar declaraciones incrementales antiguas antes de comprobar el proyecto.
 
 ```bash
 # Tipos de librerías y artefactos
