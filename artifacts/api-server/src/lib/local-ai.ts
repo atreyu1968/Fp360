@@ -68,7 +68,7 @@ export async function requestLocalAiJson(
     body: JSON.stringify({
       model: configuration.model,
       stream: false,
-      max_tokens: 4_000,
+      max_tokens: 10_000,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },

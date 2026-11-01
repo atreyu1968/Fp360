@@ -5,6 +5,8 @@ description: Requisito de producto para escenarios de empresa y coordinación ec
 
 La aplicación debe incluir una función basada en IA que establezca las distintas situaciones que deben implementar las empresas participantes y coordine todo el sistema económico interconectado.
 
+La configuración admite un endpoint local o de red privada compatible, sin guardar claves API ni enviar el contexto a proveedores externos.
+
 Los cambios en operaciones simuladas requieren aprobación explícita; la IA coordina, pero no actúa automáticamente.
 
 La API y el modelo de IA se configuran en el panel del administrador; debe contemplarse el uso de una IA local.

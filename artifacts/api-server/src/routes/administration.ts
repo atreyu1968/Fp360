@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { Router, type ErrorRequestHandler, type IRouter, type RequestHandler } from "express";
 import rateLimit from "express-rate-limit";
+import * as api from "@workspace/api-zod";
 import {
   AcceptExistingAccountInvitationBody, AcceptExistingAccountInvitationResponse,
   RejectExistingAccountInvitationBody, RejectExistingAccountInvitationResponse,
@@ -570,6 +571,24 @@ router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
   if (!settings?.enabled || !settings.baseUrl || !settings.model) {
     fail(409, "Configura y activa primero un endpoint local de IA.");
   }
+  const action = "ai.coordinator.connection.tested";
+  const fingerprint = requestFingerprint({ model: settings.model });
+  const [priorTest] = await db.select().from(fpAuthAudit).where(and(
+    eq(fpAuthAudit.tenantId, actor.tenantId),
+    eq(fpAuthAudit.operationId, body.data.operationId),
+  )).limit(1);
+  if (priorTest) {
+    if (priorTest.action !== action || priorTest.operationFingerprint !== fingerprint) {
+      fail(409, "El identificador ya se utilizó para otra operación.");
+    }
+    res.json(api.TestAdminAiCoordinatorConnectionResponse.parse({
+      connected: true,
+      model: settings.model,
+      checkedAt: priorTest.createdAt.toISOString(),
+      message: "La prueba ya se completó correctamente.",
+    }));
+    return;
+  }
   try {
     await checkLocalAiEndpoint({ baseUrl: settings.baseUrl, model: settings.model });
   } catch {
@@ -579,9 +598,10 @@ router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
   const checkedAt = new Date().toISOString();
   await db.transaction(async (tx) => {
     await lockAdministration(tx, actor);
+    if (await priorAdminOperation(tx, actor, body.data.operationId, action, fingerprint)) return;
     await audit(
-      tx, actor.tenantId, actor.userId, "ai.coordinator.connection.tested",
-      "ai-coordinator", body.data.operationId, requestFingerprint({ model: settings.model }),
+      tx, actor.tenantId, actor.userId, action,
+      "ai-coordinator", body.data.operationId, fingerprint,
     );
   });
   res.json(api.TestAdminAiCoordinatorConnectionResponse.parse({

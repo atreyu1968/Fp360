@@ -1,0 +1,11 @@
+.ac-ai-config { display: grid; gap: 13px; padding: 15px; }
+.ac-ai-config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.ac-ai-config-grid label { display: grid; gap: 6px; color: #526d82; font-size: 9px; font-weight: 750; }
+.ac-ai-config-grid input { width: 100%; min-height: 36px; padding: 0 10px; border: 1px solid #d8e3eb; border-radius: 5px; color: #294960; background: #fbfdff; font: inherit; font-size: 10px; }
+.ac-ai-toggle { display: flex; align-items: center; gap: 8px; color: #526d82; font-size: 9px; font-weight: 750; }
+.ac-ai-toggle input { accent-color: #167b91; }
+.ac-ai-config-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.ac-ai-note { margin: 0; padding: 10px 12px; border-radius: 6px; color: #6c8293; background: #f4f8fa; font-size: 9px; line-height: 1.55; }
+@media (max-width: 620px) {
+  .ac-ai-config-grid { grid-template-columns: 1fr; }
+}

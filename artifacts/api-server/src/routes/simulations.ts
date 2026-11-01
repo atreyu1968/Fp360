@@ -150,7 +150,10 @@ async function networkSituationSnapshot(tenantId: string) {
     customerReceivablesCents: 0,
     purchaseOrderCount: 0,
     purchaseOrderTotalCents: 0,
+    purchaseOrderCountByStatus: {} as Record<string, number>,
     supplyOrderCount: 0,
+    supplyOrderTotalCents: 0,
+    supplyOrderCountByStatus: {} as Record<string, number>,
     inventoryProductCount: 0,
     lowStockProductCount: 0,
     availableInventoryUnits: 0,
@@ -207,9 +210,14 @@ async function networkSituationSnapshot(tenantId: string) {
     if (buyer) {
       buyer.purchaseOrderCount += 1;
       buyer.purchaseOrderTotalCents += order.totalCents;
+      addCount(buyer.purchaseOrderCountByStatus, order.status);
     }
     const supplier = companyState.get(order.supplierOrganizationId);
-    if (supplier) supplier.supplyOrderCount += 1;
+    if (supplier) {
+      supplier.supplyOrderCount += 1;
+      supplier.supplyOrderTotalCents += order.totalCents;
+      addCount(supplier.supplyOrderCountByStatus, order.status);
+    }
     append({
       module: "pedido_compra",
       organizationId: order.buyerOrganizationId,
@@ -319,6 +327,12 @@ function validDate(value: string): boolean {
 function safeScenarioText(...values: Array<string | null | undefined>): void {
   if (values.some((value) => value && personalChannel.test(value))) {
     fail(400, "No incluyas correos ni teléfonos reales en el contenido didáctico.");
+  }
+}
+
+function safeAiScenarioText(...values: Array<string | null | undefined>): void {
+  if (values.some((value) => value && personalChannel.test(value))) {
+    fail(502, "La IA local devolvió datos de contacto; la propuesta no se guardó.");
   }
 }
 
@@ -479,6 +493,218 @@ router.get("/redfp360/simulations/overview", route(async (req, res) => {
       center: organization.center,
       island: organization.island,
     })),
+  }));
+}));
+
+router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, route(async (req, res) => {
+  const actor = req.auth as AuthContext;
+  if (!canReview(actor.role)) fail(403, "Solo docentes y administradores pueden coordinar la red completa.");
+  const body = api.GenerateFp360AiSimulationProposalBody.safeParse(req.body);
+  if (!body.success) fail(400, "Revisa el objetivo, las empresas y el periodo de la propuesta.");
+  const data = body.data;
+  safeScenarioText(data.objective);
+  if (personalChannel.test(data.operationId)) fail(400, "El identificador no puede contener datos de contacto.");
+  if (!data.participantOrganizationIds.includes(data.ownerOrganizationId)) {
+    fail(400, "La empresa responsable debe participar en la campaña.");
+  }
+  if (data.eventCount < data.participantOrganizationIds.length) {
+    fail(400, "Cada empresa participante necesita al menos un evento.");
+  }
+  if (!validDate(data.startDate) || data.startDate < SIMULATION_START) {
+    fail(400, "La fecha inicial debe quedar dentro del escenario 2027–2028.");
+  }
+  const endDateValue = new Date(`${data.startDate}T12:00:00.000Z`);
+  endDateValue.setUTCDate(endDateValue.getUTCDate() + data.durationWeeks * 7);
+  const endDate = endDateValue.toISOString().slice(0, 10);
+  if (endDate > SIMULATION_END) fail(400, "La duración supera el periodo disponible del escenario.");
+  await assertOrganizations(actor, [data.ownerOrganizationId, ...data.participantOrganizationIds]);
+
+  const inputFingerprint = createHash("sha256").update(JSON.stringify(data)).digest("hex");
+  const [priorCampaign] = await db.select().from(fpSimulationCampaigns).where(and(
+    eq(fpSimulationCampaigns.tenantId, actor.tenantId),
+    eq(fpSimulationCampaigns.operationId, data.operationId),
+  )).limit(1);
+  if (priorCampaign) {
+    const [marker] = await db.select().from(fpSimulationAuditEvents).where(and(
+      eq(fpSimulationAuditEvents.tenantId, actor.tenantId),
+      eq(fpSimulationAuditEvents.campaignId, priorCampaign.id),
+      eq(fpSimulationAuditEvents.action, "ai:proposal_generated"),
+    )).limit(1);
+    let markerData: { inputFingerprint?: string; snapshotAt?: string; networkCompanyCount?: number } = {};
+    try {
+      markerData = marker ? JSON.parse(marker.detail) as typeof markerData : {};
+    } catch { /* An invalid audit record must not be treated as an idempotent replay. */ }
+    if (!marker || markerData.inputFingerprint !== inputFingerprint) fail(409, "El identificador ya se utilizó para otra operación.");
+    const existingEvents = await db.select().from(fpSimulationEvents).where(and(
+      eq(fpSimulationEvents.tenantId, actor.tenantId),
+      eq(fpSimulationEvents.campaignId, priorCampaign.id),
+    )).orderBy(asc(fpSimulationEvents.simulatedDate), asc(fpSimulationEvents.createdAt));
+    res.status(201).json(api.GenerateFp360AiSimulationProposalResponse.parse({
+      campaign: await campaignOutput(priorCampaign),
+      events: await Promise.all(existingEvents.map(eventOutput)),
+      networkSnapshotAt: markerData.snapshotAt,
+      networkCompanyCount: markerData.networkCompanyCount,
+      approvalRequired: true,
+      simulationOnly: true,
+    }));
+    return;
+  }
+
+  const [settings] = await db.select().from(fpAdminAiCoordinatorSettings)
+    .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
+  if (!settings?.enabled || !settings.baseUrl || !settings.model) {
+    fail(503, "El administrador debe configurar y activar una IA local antes de generar propuestas.");
+  }
+  let baseUrl: string;
+  try {
+    baseUrl = normalizeLocalAiBaseUrl(settings.baseUrl);
+  } catch {
+    fail(503, "La configuración del endpoint local de IA no es válida.");
+  }
+  const network = await networkSituationSnapshot(actor.tenantId);
+  if (!network.companyCount) fail(400, "No hay empresas registradas en la red.");
+  const participantSet = new Set(data.participantOrganizationIds);
+  const participantNames = network.companies
+    .filter((company) => participantSet.has(company.id))
+    .map((company) => ({ id: company.id, name: company.name }));
+  if (participantNames.length !== participantSet.size) fail(400, "No se pudieron resolver todas las empresas participantes.");
+
+  const systemPrompt = [
+    "Eres el coordinador didáctico de RED FP360, un ERP educativo con una red de empresas simuladas.",
+    "Antes de proponer, estudia toda la situación de empresas y el historial económico y de auditoría incluido en el contexto.",
+    "Usa únicamente los hechos del contexto; no inventes saldos, contratos, pedidos, normas ni operaciones ya realizadas.",
+    "Crea una cadena económica interconectada y realista: las empresas deben coordinar compras, ventas, logística, cobros, contabilidad o atención según los datos disponibles.",
+    "Usa solo los IDs de empresa participante indicados y asigna al menos un evento a cada una.",
+    "Ordena los eventos cronológicamente; expresa dependencias entre empresas en preconditions.",
+    "No incluyas datos personales, correos, teléfonos, credenciales ni texto de expedientes.",
+    "Devuelve exclusivamente un objeto JSON: {title, description, events:[{organizationId,title,eventType,description,preconditions,requiredDocumentType,simulatedDate}]}",
+    "eventType solo puede ser offer, late_payment, stock_break, claim, financing, service_incident u other.",
+    "requiredDocumentType debe ser una cadena breve o null; preconditions debe ser una lista de textos breves.",
+  ].join(" ");
+  const userPrompt = JSON.stringify({
+    request: {
+      objective: data.objective,
+      ownerOrganizationId: data.ownerOrganizationId,
+      participants: participantNames,
+      startDate: data.startDate,
+      endDate,
+      durationWeeks: data.durationWeeks,
+      difficulty: data.difficulty,
+      exactEventCount: data.eventCount,
+      simulatedToday: SIMULATION_TODAY,
+    },
+    networkSnapshotAndCompleteOperationHistory: network,
+  });
+  let rawPlan: unknown;
+  try {
+    rawPlan = await requestLocalAiJson({ baseUrl, model: settings.model }, systemPrompt, userPrompt);
+  } catch (error) {
+    req.log.warn({ tenantId: actor.tenantId, model: settings.model, error }, "Local AI proposal generation failed");
+    fail(502, "La IA local no pudo generar una propuesta válida. Comprueba el servicio y el tamaño de contexto disponible.");
+  }
+  if (!rawPlan || typeof rawPlan !== "object") fail(502, "La IA local devolvió una propuesta no válida.");
+  const plan = rawPlan as Record<string, unknown>;
+  if (typeof plan.title !== "string" || typeof plan.description !== "string" || !Array.isArray(plan.events)) {
+    fail(502, "La IA local no devolvió todos los campos requeridos.");
+  }
+  if (plan.events.length !== data.eventCount) fail(502, "La IA local no generó el número de eventos solicitado.");
+  safeAiScenarioText(plan.title, plan.description);
+  const parsedCampaign = api.CreateFp360SimulationCampaignBody.safeParse({
+    operationId: data.operationId,
+    ownerOrganizationId: data.ownerOrganizationId,
+    participantOrganizationIds: data.participantOrganizationIds,
+    title: plan.title,
+    description: plan.description,
+    mode: "supervised",
+    durationWeeks: data.durationWeeks,
+    difficulty: data.difficulty,
+    startDate: data.startDate,
+    endDate,
+  });
+  if (!parsedCampaign.success) fail(502, "La propuesta de campaña generada no cumple las reglas de RED FP360.");
+  const eventInputs = plan.events.map((candidate, index) => {
+    if (!candidate || typeof candidate !== "object") fail(502, `El evento ${index + 1} no es válido.`);
+    const rawEvent = candidate as Record<string, unknown>;
+    const parsed = api.CreateFp360SimulationEventBody.safeParse({
+      operationId: randomUUID(),
+      organizationId: rawEvent.organizationId,
+      title: rawEvent.title,
+      eventType: rawEvent.eventType,
+      description: rawEvent.description,
+      preconditions: rawEvent.preconditions,
+      requiredDocumentType: rawEvent.requiredDocumentType ?? null,
+      simulatedDate: rawEvent.simulatedDate,
+    });
+    if (!parsed.success) fail(502, `El evento ${index + 1} no cumple las reglas de RED FP360.`);
+    if (!participantSet.has(parsed.data.organizationId)) fail(502, "La IA asignó un evento a una empresa que no participa.");
+    if (parsed.data.simulatedDate < data.startDate || parsed.data.simulatedDate > endDate) {
+      fail(502, "La IA asignó una fecha fuera del periodo de campaña.");
+    }
+    safeAiScenarioText(parsed.data.title, parsed.data.description, ...parsed.data.preconditions, parsed.data.requiredDocumentType);
+    return parsed.data;
+  }).sort((left, right) => left.simulatedDate.localeCompare(right.simulatedDate));
+  const assignedCompanies = new Set(eventInputs.map((event) => event.organizationId));
+  if (data.participantOrganizationIds.some((id) => !assignedCompanies.has(id))) {
+    fail(502, "La propuesta debe incluir al menos un evento para cada empresa participante.");
+  }
+
+  const campaignId = randomUUID();
+  const createdCampaign = await db.transaction(async (tx) => {
+    const [created] = await tx.insert(fpSimulationCampaigns).values({
+      id: campaignId,
+      tenantId: actor.tenantId,
+      ownerOrganizationId: parsedCampaign.data.ownerOrganizationId,
+      title: parsedCampaign.data.title.trim(),
+      description: parsedCampaign.data.description.trim(),
+      mode: "supervised",
+      durationWeeks: parsedCampaign.data.durationWeeks,
+      difficulty: parsedCampaign.data.difficulty,
+      startDate: parsedCampaign.data.startDate,
+      endDate: parsedCampaign.data.endDate,
+      participantOrganizationIds: parsedCampaign.data.participantOrganizationIds,
+      operationId: parsedCampaign.data.operationId,
+      createdByUserId: actor.userId,
+    }).returning();
+    await appendAudit(tx, actor, campaignId, data.ownerOrganizationId, null, "created", data.operationId, "Borrador de campaña coordinado por IA; requiere revisión.");
+    for (const eventData of eventInputs) {
+      const eventId = randomUUID();
+      await tx.insert(fpSimulationEvents).values({
+        id: eventId,
+        tenantId: actor.tenantId,
+        campaignId,
+        organizationId: eventData.organizationId,
+        title: eventData.title.trim(),
+        eventType: eventData.eventType,
+        status: "proposed",
+        description: eventData.description.trim(),
+        preconditions: eventData.preconditions,
+        requiredDocumentType: eventData.requiredDocumentType ?? null,
+        simulatedDate: eventData.simulatedDate,
+        operationId: eventData.operationId,
+        createdByUserId: actor.userId,
+      });
+      await appendAudit(tx, actor, campaignId, eventData.organizationId, eventId, "event:proposed", eventData.operationId, "Propuesta de IA pendiente de revisión; no modifica operaciones.");
+    }
+    await appendAudit(tx, actor, campaignId, data.ownerOrganizationId, null, "ai:proposal_generated", randomUUID(), JSON.stringify({
+      inputFingerprint,
+      snapshotAt: network.snapshotAt,
+      networkCompanyCount: network.companyCount,
+      operationCount: network.operationHistory.length,
+      model: settings.model,
+    }));
+    return created;
+  });
+  const storedEvents = await db.select().from(fpSimulationEvents).where(and(
+    eq(fpSimulationEvents.tenantId, actor.tenantId),
+    eq(fpSimulationEvents.campaignId, createdCampaign.id),
+  )).orderBy(asc(fpSimulationEvents.simulatedDate), asc(fpSimulationEvents.createdAt));
+  res.status(201).json(api.GenerateFp360AiSimulationProposalResponse.parse({
+    campaign: await campaignOutput(createdCampaign),
+    events: await Promise.all(storedEvents.map(eventOutput)),
+    networkSnapshotAt: network.snapshotAt,
+    networkCompanyCount: network.companyCount,
+    approvalRequired: true,
+    simulationOnly: true,
   }));
 }));
 

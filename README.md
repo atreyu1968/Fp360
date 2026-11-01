@@ -196,6 +196,29 @@ El endpoint de configuración inicial falla de forma cerrada si `RED_FP360_SETUP
 - Edita primero el contrato OpenAPI cuando cambie la forma pública de una petición o respuesta. No edites manualmente los archivos generados: vuelve a ejecutar `codegen` y valida los paquetes.
 - Las operaciones financieras y fiscales tienen alcance de simulación. Las API no son una pasarela para presentar declaraciones o enviar operaciones reales.
 
+## Coordinador económico con IA local
+
+El coordinador crea propuestas didácticas de campañas y eventos para conectar el trabajo de varias empresas simuladas. No ejecuta pedidos, pagos, cambios de stock, asientos, declaraciones ni otras operaciones del ERP.
+
+### Configuración
+
+1. Entra con una cuenta administradora y abre **Integraciones → Coordinador económico con IA**.
+2. Introduce la URL base de un endpoint local compatible con la API OpenAI, por ejemplo:
+   - Ollama: `http://127.0.0.1:11434/v1`
+   - LM Studio: `http://127.0.0.1:1234/v1`
+3. Escribe el nombre exacto del modelo, activa el coordinador y guarda.
+4. Usa **Probar conexión guardada**. El servicio debe responder a `GET /models`.
+
+El servidor llama a `POST /chat/completions` para generar propuestas. La configuración no guarda claves API: solo admite hosts locales o de red privada, y rechaza credenciales incrustadas, parámetros de URL y redirecciones. La dirección debe ser accesible desde el proceso del API; `127.0.0.1` se refiere al servidor/contenedor del API, no al navegador del usuario. Si el modelo se ejecuta en otro equipo, usa un nombre de host o una dirección privada accesible desde ese proceso.
+
+### Contexto, acceso y aprobación
+
+- Antes de cada generación, el servidor reúne empresas de todo el tenant, indicadores actuales de pedidos, compras, facturas, cobros, inventario, contabilidad y declaraciones, junto con el historial económico y los eventos de auditoría disponibles.
+- El historial se filtra en el servidor: no se envían nombres personales, datos de contacto, credenciales ni descripciones libres de expedientes. El contexto se entrega al endpoint local configurado; no se envía a un proveedor alojado por RED FP360.
+- Solo perfiles docentes y administradores pueden solicitar esta vista completa de la red. Los eventos propuestos se limitan a las empresas participantes y cada empresa seleccionada recibe al menos uno.
+- La IA crea una campaña en estado **Borrador** y eventos **Pendientes**. Una persona debe enviar la campaña a revisión y aprobarla; los eventos también requieren aprobación antes de publicarse al alumnado.
+- La respuesta registra la fecha del contexto y el número de empresas conocidas por el coordinador. Si el endpoint o el modelo no están disponibles, la generación falla explícitamente y no crea una campaña parcial.
+
 ## Pruebas y validaciones
 
 ```bash

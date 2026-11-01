@@ -13,11 +13,13 @@ import {
   useCreateAdminInvitation, useCreateAdminOrganization, useCreateAdminPrivilegeRequest,
   useCreateAdminScenarioVersion, useEvaluateAdminPolicy, useGetAdminSystemOverview,
   useListAdminAudit, useListAdminInvitations, useListAdminPrivilegeRequests, useListAdminUsers,
-  useRevokeAdminInvitation, useUpdateAdminUser,
+  useRevokeAdminInvitation, useTestAdminAiCoordinatorConnection, useUpdateAdminAiCoordinatorSettings,
+  useUpdateAdminUser,
 } from '@workspace/api-client-react';
 import type { AccessRole, AdminPolicyPermission, AdminSystemOverview, AuthIdentity, IssuedInvitation, ManagedUser } from '@workspace/api-client-react';
 import { ROLE_OPTIONS, accessRoleLabel, dateTime, httpStatus } from './admin-shared';
 import './admin-page.css';
+import './admin-ai.css';
 
 type View = 'health' | 'organizations' | 'users' | 'policies' | 'scenario' | 'security' | 'recovery' | 'integrations';
 const views: { id: View; label: string; icon: typeof Activity; eyebrow: string; title: string; intro: string }[] = [
@@ -287,8 +289,60 @@ function RecoveryView({ data, done }: { data: AdminSystemOverview; done: (t: str
 function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t: string, k: 'success' | 'error') => void }) {
   const qc = useQueryClient();
   const check = useCheckAdminIntegration();
-  return <div className="ac-stack"><div className="ac-simulation"><Network size={16} /><span><b>Comprobaciones exclusivamente simuladas.</b> No se contacta con proveedores ni se solicitan credenciales.</span><span className="ac-sim-tag">SIN CONEXIONES</span></div>
+  const saveAi = useUpdateAdminAiCoordinatorSettings();
+  const testAi = useTestAdminAiCoordinatorConnection();
+  const [aiEnabled, setAiEnabled] = useState(data.aiCoordinator.enabled);
+  const saveCoordinator = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    saveAi.mutate({
+      data: {
+        operationId: newOperationId(),
+        enabled: aiEnabled,
+        baseUrl: String(form.get('localAiBaseUrl') ?? ''),
+        model: String(form.get('localAiModel') ?? ''),
+      },
+    }, {
+      onSuccess: () => {
+        void qc.invalidateQueries({ queryKey: getGetAdminSystemOverviewQueryKey() });
+        done('Configuración del coordinador local guardada.', 'success');
+      },
+      onError: (error) => done(explainMutation(error, 'No se pudo guardar la configuración local.'), 'error'),
+    });
+  };
+  return <div className="ac-stack">
+    <Panel title="Coordinador económico con IA" note="La IA analiza la red antes de proponer campañas; no ejecuta operaciones.">
+      <form className="ac-ai-config" onSubmit={saveCoordinator}>
+        <div className="ac-ai-config-grid">
+          <label>URL base local
+            <input name="localAiBaseUrl" type="url" required={aiEnabled} maxLength={512}
+              defaultValue={data.aiCoordinator.baseUrl} placeholder="http://127.0.0.1:11434/v1" />
+          </label>
+          <label>Modelo local
+            <input name="localAiModel" required={aiEnabled} maxLength={120}
+              defaultValue={data.aiCoordinator.model} placeholder="Nombre exacto del modelo" />
+          </label>
+        </div>
+        <label className="ac-ai-toggle"><input type="checkbox" checked={aiEnabled} onChange={event => setAiEnabled(event.target.checked)} />
+          Activar generación supervisada de propuestas</label>
+        <div className="ac-ai-config-actions">
+          <button className="ac-button ac-primary" type="submit" disabled={saveAi.isPending}>
+            {saveAi.isPending ? 'Guardando…' : 'Guardar configuración'}
+          </button>
+          <button className="ac-button" type="button" disabled={testAi.isPending || !data.aiCoordinator.enabled}
+            onClick={() => testAi.mutate({ data: { operationId: newOperationId() } }, {
+              onSuccess: result => done(`${result.message} Modelo: ${result.model}.`, 'success'),
+              onError: error => done(explainMutation(error, 'No se pudo conectar con la IA local.'), 'error'),
+            })}>
+            <RefreshCw size={14} /> {testAi.isPending ? 'Comprobando…' : 'Probar conexión guardada'}
+          </button>
+          <Badge tone={data.aiCoordinator.enabled ? 'good' : 'neutral'}>{data.aiCoordinator.enabled ? 'Activada' : 'Desactivada'}</Badge>
+        </div>
+        <p className="ac-ai-note">Compatible con endpoints locales OpenAI, como Ollama o LM Studio. El servidor de RED FP360 debe poder acceder a esa URL. No se guarda ni se envía ninguna clave; los datos económicos se envían solo al endpoint local configurado.</p>
+      </form>
+    </Panel>
+    <div className="ac-simulation"><Network size={16} /><span><b>Comprobaciones de catálogo simuladas.</b> No se contacta con proveedores externos ni se solicitan credenciales.</span><span className="ac-sim-tag">SIN PROVEEDORES</span></div>
     <Panel title="Integraciones previstas" note="Las comprobaciones solo actualizan el estado de demostración."><div className="ac-integrations">{data.integrations.map(item => <article key={item.id} className="ac-integration-card"><div className="ac-integration-top"><span className="ac-service-icon"><Network size={17} /></span><Badge tone={item.status === 'simulation_only' ? 'blue' : 'neutral'}>{readable(item.status)}</Badge></div><h3>{item.name}</h3><p>{item.description}</p><div className="ac-integration-meta"><span>{item.simulationOnly ? 'Sin llamadas externas' : 'Estado de catálogo'}</span><small>{item.checkedAt ? `Última comprobación: ${dateTime(item.checkedAt)}` : 'Sin comprobación registrada'}</small></div><button className="ac-button" disabled={check.isPending || !item.simulationOnly} onClick={() => check.mutate({ integrationId: item.id, data: { operationId: newOperationId() } }, { onSuccess: () => { void qc.invalidateQueries({ queryKey: getGetAdminSystemOverviewQueryKey() }); done(`Comprobación simulada registrada para ${item.name}.`, 'success'); }, onError: e => done(explainMutation(e, 'No se pudo registrar la comprobación.'), 'error') })}><RefreshCw size={14} /> Comprobar estado simulado</button></article>)}{!data.integrations.length && <div className="ac-empty"><b>No hay integraciones en catálogo</b><p>Las capacidades incorporadas aparecerán aquí.</p></div>}</div></Panel>
-    <Panel title="Preparación de despliegue" note="La consola no gestiona infraestructura, despliegues ni secretos."><div className="ac-deploy-row"><span className="ac-service-icon"><Server size={17} /></span><div><b>Modo de operación</b><small>Desarrollo funcional · datos y procesos de formación</small></div><Badge tone="blue">Solo entorno educativo</Badge></div><div className="ac-callout"><Lock size={15} /><p>Las credenciales y endpoints externos no se muestran ni se configuran desde esta vista.</p></div></Panel>
+    <Panel title="Preparación de despliegue" note="La consola no gestiona infraestructura, despliegues ni secretos."><div className="ac-deploy-row"><span className="ac-service-icon"><Server size={17} /></span><div><b>Modo de operación</b><small>Desarrollo funcional · datos y procesos de formación</small></div><Badge tone="blue">Solo entorno educativo</Badge></div><div className="ac-callout"><Lock size={15} /><p>No se configuran claves ni proveedores externos. El coordinador solo admite endpoints locales o de red privada.</p></div></Panel>
   </div>;
 }
