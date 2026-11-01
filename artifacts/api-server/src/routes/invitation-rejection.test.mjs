@@ -102,6 +102,26 @@ test("rejecting an invitation creates no access and allows a new invitation", {
     assert.equal(firstInvite.invitation.email, invitationEmail.toLowerCase());
     assert.equal(firstInvite.invitation.status, "pending");
 
+    const crossOriginRejectResponse = await fetch(`${baseUrl}/api/auth/invitations/reject`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "https://attacker.example" },
+      body: JSON.stringify({ token: firstInvite.token }),
+    });
+    assert.equal(crossOriginRejectResponse.status, 403);
+
+    const [stillPending] = (await client.query(
+      `SELECT rejected_at FROM fp360_auth_invitations WHERE id = $1 AND tenant_id = $2`,
+      [firstInvite.invitation.id, tenantId],
+    )).rows;
+    assert.equal(stillPending?.rejected_at, null, "a cross-origin rejection must leave the invitation pending");
+
+    const crossOriginRejectionEvents = await client.query(
+      `SELECT id FROM fp360_auth_audit
+       WHERE tenant_id = $1 AND entity_id = $2 AND action = 'invitation.rejected'`,
+      [tenantId, firstInvite.invitation.id],
+    );
+    assert.equal(crossOriginRejectionEvents.rowCount, 0, "a cross-origin rejection must not be audited");
+
     const rejectResponse = await fetch(`${baseUrl}/api/auth/invitations/reject`, {
       method: "POST",
       headers: { "content-type": "application/json", origin: baseUrl },

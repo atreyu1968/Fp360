@@ -253,7 +253,7 @@ router.post("/auth/invitations/reject-existing", requireAuth, requireSameOrigin,
   res.status(204).end();
 });
 
-router.post("/auth/invitations/reject", async (req, res): Promise<void> => {
+router.post("/auth/invitations/reject", requireSameOrigin, async (req, res): Promise<void> => {
   const body = RejectInvitationBody.safeParse(req.body);
   if (!body.success) fail(400, "El enlace de invitación no es válido.");
   await db.transaction(async (tx) => {
