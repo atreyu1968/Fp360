@@ -2079,6 +2079,147 @@ paths:
               schema: { $ref: "#/components/schemas/Fp360PayrollRun" }
         "401":
           description: Authentication required
+  /redfp360/customer-service/overview:
+    get:
+      operationId: getFp360CustomerServiceOverview
+      tags: [redfp360]
+      summary: Get customer cases, return requests, agreements, and quality indicators
+      parameters:
+        - in: query
+          name: organizationId
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Customer service records for one organization
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CustomerServiceOverview" }
+        "401":
+          description: Authentication required
+  /redfp360/customer-service/cases:
+    post:
+      operationId: createFp360CustomerCase
+      tags: [redfp360]
+      summary: Create a customer-service case draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360CustomerCaseInput" }
+      responses:
+        "201":
+          description: Case draft saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CustomerCase" }
+        "401":
+          description: Authentication required
+  /redfp360/customer-service/cases/{caseId}/actions:
+    post:
+      operationId: actOnFp360CustomerCase
+      tags: [redfp360]
+      summary: Assign, investigate, document, propose, resolve, or close a case
+      parameters:
+        - in: path
+          name: caseId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360CustomerCaseActionInput" }
+      responses:
+        "200":
+          description: Updated customer-service case
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CustomerCase" }
+        "401":
+          description: Authentication required
+  /redfp360/customer-service/returns:
+    post:
+      operationId: createFp360CustomerReturn
+      tags: [redfp360]
+      summary: Request a return against delivered shipment units
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360CustomerReturnInput" }
+      responses:
+        "201":
+          description: Simulated return request saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CustomerReturn" }
+        "401":
+          description: Authentication required
+  /redfp360/customer-service/returns/{returnId}/actions:
+    post:
+      operationId: actOnFp360CustomerReturn
+      tags: [redfp360]
+      summary: Review, receive, or close a simulated return
+      parameters:
+        - in: path
+          name: returnId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360CustomerReturnActionInput" }
+      responses:
+        "200":
+          description: Updated simulated return request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CustomerReturn" }
+        "401":
+          description: Authentication required
+  /redfp360/customer-service/agreements:
+    post:
+      operationId: createFp360CustomerAgreement
+      tags: [redfp360]
+      summary: Create a draft training warranty agreement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360CustomerAgreementInput" }
+      responses:
+        "201":
+          description: Draft agreement saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CustomerAgreement" }
+        "401":
+          description: Authentication required
+  /redfp360/customer-service/agreements/{agreementId}/actions:
+    post:
+      operationId: actOnFp360CustomerAgreement
+      tags: [redfp360]
+      summary: Activate or archive a training warranty agreement
+      parameters:
+        - in: path
+          name: agreementId
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360CustomerAgreementActionInput" }
+      responses:
+        "200":
+          description: Updated agreement
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360CustomerAgreement" }
+        "401":
+          description: Authentication required
   /redfp360/hr/overview:
     get:
       operationId: getFp360HrOverview
@@ -3797,6 +3938,223 @@ components:
           additionalProperties: { type: string }
         withholdingBaseCents: { type: integer, minimum: 0, maximum: 1000000000 }
         withholdingCents: { type: integer, minimum: 0, maximum: 1000000000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360CustomerServiceOverview:
+      type: object
+      required: [organizationId, simulatedDate, customerOrganizations, products, cases, events, returns, agreements, returnSources, summary]
+      properties:
+        organizationId: { type: string }
+        simulatedDate: { type: string, format: date }
+        customerOrganizations:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360CustomerOrganization" }
+        products:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360CustomerProduct" }
+        cases:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360CustomerCase" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360CustomerCaseEvent" }
+        returns:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360CustomerReturn" }
+        agreements:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360CustomerAgreement" }
+        returnSources:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360CustomerReturnSource" }
+        summary:
+          type: object
+          required: [openCases, highPriorityCases, resolvedThisMonth, averageSatisfaction, pendingReturns, activeAgreements]
+          properties:
+            openCases: { type: integer, minimum: 0 }
+            highPriorityCases: { type: integer, minimum: 0 }
+            resolvedThisMonth: { type: integer, minimum: 0 }
+            averageSatisfaction: { type: number, minimum: 0, maximum: 5 }
+            pendingReturns: { type: integer, minimum: 0 }
+            activeAgreements: { type: integer, minimum: 0 }
+    Fp360CustomerOrganization:
+      type: object
+      required: [id, name, center, island]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        center: { type: string }
+        island: { type: string }
+    Fp360CustomerProduct:
+      type: object
+      required: [sku, name]
+      properties:
+        sku: { type: string }
+        name: { type: string }
+    Fp360CustomerCase:
+      type: object
+      required: [id, organizationId, customerOrganizationId, customerOrganizationName, caseRef, sourceType, sourceReference, category, priority, status, request, standaloneReason, assignedToName, proposedSolution, rootCause, satisfactionScore, openedDate, dueDate, resolvedAt, closedAt, createdByName, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        customerOrganizationId: { type: string }
+        customerOrganizationName: { type: string }
+        caseRef: { type: string }
+        sourceType: { type: string, enum: [order, invoice, shipment, standalone] }
+        sourceReference: { type: ["string", "null"] }
+        category: { type: string, enum: [inquiry, delivery, product_quality, invoice, return, warranty, other] }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        status: { type: string, enum: [draft, pending, assigned, investigating, solution_proposed, resolved, closed, rejected] }
+        request: { type: string }
+        standaloneReason: { type: ["string", "null"] }
+        assignedToName: { type: ["string", "null"] }
+        proposedSolution: { type: ["string", "null"] }
+        rootCause: { type: ["string", "null"] }
+        satisfactionScore: { type: ["integer", "null"], minimum: 1, maximum: 5 }
+        openedDate: { type: string, format: date }
+        dueDate: { type: ["string", "null"], format: date }
+        resolvedAt: { type: ["string", "null"], format: date-time }
+        closedAt: { type: ["string", "null"], format: date-time }
+        createdByName: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Fp360CustomerCaseInput:
+      type: object
+      required: [organizationId, customerOrganizationId, sourceType, category, priority, request, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        customerOrganizationId: { type: string, minLength: 1 }
+        sourceType: { type: string, enum: [order, invoice, shipment, standalone] }
+        sourceReference: { type: string, maxLength: 100 }
+        category: { type: string, enum: [inquiry, delivery, product_quality, invoice, return, warranty, other] }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        request: { type: string, minLength: 10, maxLength: 3000 }
+        standaloneReason: { type: string, maxLength: 500 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360CustomerCaseActionInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [validate, assign_to_me, start_investigation, request_evidence, record_evidence, draft_response, propose_solution, resolve, close, reject] }
+        description: { type: string, maxLength: 3000 }
+        reference: { type: string, maxLength: 160 }
+        rootCause: { type: string, maxLength: 1000 }
+        satisfactionScore: { type: integer, minimum: 1, maximum: 5 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360CustomerCaseEvent:
+      type: object
+      required: [id, caseId, caseRef, eventType, description, reference, actorName, simulatedDate, createdAt]
+      properties:
+        id: { type: string }
+        caseId: { type: string }
+        caseRef: { type: string }
+        eventType: { type: string }
+        description: { type: string }
+        reference: { type: ["string", "null"] }
+        actorName: { type: string }
+        simulatedDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    Fp360CustomerReturnSource:
+      type: object
+      required: [shipmentId, shipmentReference, customerOrganizationId, customerOrganizationName, deliveredDate, lines]
+      properties:
+        shipmentId: { type: string }
+        shipmentReference: { type: string }
+        customerOrganizationId: { type: string }
+        customerOrganizationName: { type: string }
+        deliveredDate: { type: string, format: date }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360CustomerReturnSourceLine" }
+    Fp360CustomerReturnSourceLine:
+      type: object
+      required: [shipmentLineId, productId, productName, deliveredUnits, alreadyRequestedUnits]
+      properties:
+        shipmentLineId: { type: string }
+        productId: { type: string }
+        productName: { type: string }
+        deliveredUnits: { type: integer, minimum: 0 }
+        alreadyRequestedUnits: { type: integer, minimum: 0 }
+    Fp360CustomerReturn:
+      type: object
+      required: [id, organizationId, caseId, caseRef, shipmentId, shipmentReference, shipmentLineId, returnRef, productId, productName, unitsDelivered, unitsReported, unitsApproved, unitsReceived, condition, reason, status, creditNoteRequested, createdByName, reviewedByName, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        caseId: { type: string }
+        caseRef: { type: string }
+        shipmentId: { type: string }
+        shipmentReference: { type: string }
+        shipmentLineId: { type: string }
+        returnRef: { type: string }
+        productId: { type: string }
+        productName: { type: string }
+        unitsDelivered: { type: integer, minimum: 0 }
+        unitsReported: { type: integer, minimum: 1 }
+        unitsApproved: { type: integer, minimum: 0 }
+        unitsReceived: { type: integer, minimum: 0 }
+        condition: { type: string, enum: [damaged, defective, unopened, incomplete, other] }
+        reason: { type: string }
+        status: { type: string, enum: [requested, approved, received, credit_note_requested, closed, rejected] }
+        creditNoteRequested: { type: boolean }
+        createdByName: { type: string }
+        reviewedByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Fp360CustomerReturnInput:
+      type: object
+      required: [caseId, shipmentId, shipmentLineId, unitsReported, condition, reason, operationId]
+      properties:
+        caseId: { type: string, minLength: 1 }
+        shipmentId: { type: string, minLength: 1 }
+        shipmentLineId: { type: string, minLength: 1 }
+        unitsReported: { type: integer, minimum: 1, maximum: 10000 }
+        condition: { type: string, enum: [damaged, defective, unopened, incomplete, other] }
+        reason: { type: string, minLength: 10, maxLength: 1000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360CustomerReturnActionInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [approve, reject, record_receipt, request_credit_note, close] }
+        unitsApproved: { type: integer, minimum: 0, maximum: 10000 }
+        unitsReceived: { type: integer, minimum: 0, maximum: 10000 }
+        description: { type: string, maxLength: 1000 }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360CustomerAgreement:
+      type: object
+      required: [id, organizationId, agreementRef, productRef, terms, validFrom, validTo, replacementAllowed, compensationAllowed, status, createdByName, approvedByName, createdAt, approvedAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        agreementRef: { type: string }
+        productRef: { type: string }
+        terms: { type: string }
+        validFrom: { type: string, format: date }
+        validTo: { type: string, format: date }
+        replacementAllowed: { type: boolean }
+        compensationAllowed: { type: boolean }
+        status: { type: string, enum: [draft, active, archived] }
+        createdByName: { type: string }
+        approvedByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        approvedAt: { type: ["string", "null"], format: date-time }
+    Fp360CustomerAgreementInput:
+      type: object
+      required: [organizationId, productRef, terms, validFrom, validTo, replacementAllowed, compensationAllowed, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        productRef: { type: string, minLength: 1, maxLength: 80 }
+        terms: { type: string, minLength: 10, maxLength: 2000 }
+        validFrom: { type: string, format: date }
+        validTo: { type: string, format: date }
+        replacementAllowed: { type: boolean }
+        compensationAllowed: { type: boolean }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360CustomerAgreementActionInput:
+      type: object
+      required: [action, operationId]
+      properties:
+        action: { type: string, enum: [activate, archive] }
         operationId: { type: string, minLength: 8, maxLength: 120 }
     Fp360PayrollPolicy:
       type: object

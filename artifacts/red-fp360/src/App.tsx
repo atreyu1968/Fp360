@@ -47,6 +47,7 @@ import { HaciendaPage } from '@/components/hacienda-page';
 import { SocialSecurityPage } from '@/components/social-security-page';
 import { HumanResourcesPage } from '@/components/human-resources-page';
 import { PayrollPage } from '@/components/payroll-page';
+import { CustomerServicePage } from '@/components/customer-service-page';
 import '@/components/treasury-page.css';
 
 const queryClient = new QueryClient();
@@ -91,7 +92,7 @@ const appModules = [
   'Portafolio profesional', 'Evaluación docente', 'Mentoría empresarial',
   'Coordinación intercentros', 'Administración del sistema',
 ];
-const implemented = new Set([1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 15, 16, 17, 18]);
+const implemented = new Set([1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 17, 18]);
 const navItems = [
   { href: '/', label: 'Inicio', icon: LayoutDashboard },
   { href: '/mercado', label: 'Mercado', icon: Globe2 },
@@ -110,6 +111,7 @@ const navItems = [
   { href: '/facturas', label: 'Facturas', icon: ReceiptText },
   { href: '/clientes', label: 'Clientes', icon: Users },
   { href: '/crm', label: 'CRM', icon: BriefcaseBusiness },
+  { href: '/atencion-cliente', label: 'Atención al cliente', icon: CircleHelp },
   { href: '/aplicaciones', label: 'Aplicaciones', icon: Package },
   { href: '/documentacion', label: 'Documentación', icon: BookOpen },
 ];
@@ -126,6 +128,7 @@ const titles: Record<string, { title: string; kicker: string; description: strin
   '/hacienda': { title: 'Hacienda FP360', kicker: 'FISCALIDAD SIMULADA · SIN VALIDEZ OFICIAL', description: 'Prepara y revisa expedientes fiscales educativos; no se presentan declaraciones reales.' },
   '/recursos-humanos': { title: 'Recursos humanos', kicker: 'GESTIÓN LABORAL EDUCATIVA · DATOS FICTICIOS', description: 'Gestiona selección, expedientes, contratos, calendario e incidencias del personal simulado.' },
   '/nominas': { title: 'Nóminas FP360', kicker: 'RECIBOS EDUCATIVOS · IMPORTES DIDÁCTICOS', description: 'Calcula nóminas con parámetros configurables; no se envían pagos, retenciones ni cotizaciones reales.' },
+  '/atencion-cliente': { title: 'Atención al cliente', kicker: 'CASOS, DEVOLUCIONES Y ACUERDOS EDUCATIVOS', description: 'Gestiona reclamaciones y su trazabilidad; las comunicaciones y los efectos comerciales permanecen simulados.' },
   '/seguridad-social': { title: 'Seguridad Social FP360', kicker: 'AFILIACIÓN Y COTIZACIÓN SIMULADAS', description: 'Gestiona movimientos laborales y resúmenes educativos; no hay trámites ni pagos reales.' },
   '/facturas': { title: 'Facturación', kicker: 'DOCUMENTOS · COBROS', description: 'Emite facturas y registra pagos en el circuito de prácticas.' },
   '/productos': { title: 'Catálogo de productos', kicker: 'CATÁLOGO · INVENTARIO', description: 'Productos inventariables, publicación y ajustes manuales.' },
@@ -1201,6 +1204,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       case '/hacienda': return <HaciendaPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/recursos-humanos': return <HumanResourcesPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/nominas': return <PayrollPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/atencion-cliente': return <CustomerServicePage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/seguridad-social': return <SocialSecurityPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/facturas': return <InvoicesPage invoices={invoicesQuery.data} orders={ordersQuery.data} stateInvoices={states.invoices} stateOrders={states.orders} onRefresh={() => { void queryClient.invalidateQueries({ queryKey: getGetFp360DashboardQueryKey() }); void queryClient.invalidateQueries(); }} onNotice={setNotice} />;
       case '/clientes': return <OrganizationsDirectory onNotice={setNotice} />;
@@ -1244,6 +1248,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
         <Route path="/hacienda">{page}</Route>
         <Route path="/recursos-humanos">{page}</Route>
         <Route path="/nominas">{page}</Route>
+        <Route path="/atencion-cliente">{page}</Route>
         <Route path="/seguridad-social">{page}</Route>
         <Route path="/facturas">{page}</Route>
         <Route path="/clientes">{page}</Route>

@@ -2396,6 +2396,450 @@ export interface Fp360TaxDeclarationInput {
   operationId: string;
 }
 
+export type Fp360CustomerServiceOverviewSummary = {
+  /** @minimum 0 */
+  openCases: number;
+  /** @minimum 0 */
+  highPriorityCases: number;
+  /** @minimum 0 */
+  resolvedThisMonth: number;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  averageSatisfaction: number;
+  /** @minimum 0 */
+  pendingReturns: number;
+  /** @minimum 0 */
+  activeAgreements: number;
+};
+
+export interface Fp360CustomerOrganization {
+  id: string;
+  name: string;
+  center: string;
+  island: string;
+}
+
+export interface Fp360CustomerProduct {
+  sku: string;
+  name: string;
+}
+
+export type Fp360CustomerCaseSourceType = typeof Fp360CustomerCaseSourceType[keyof typeof Fp360CustomerCaseSourceType];
+
+
+export const Fp360CustomerCaseSourceType = {
+  order: 'order',
+  invoice: 'invoice',
+  shipment: 'shipment',
+  standalone: 'standalone',
+} as const;
+
+export type Fp360CustomerCaseCategory = typeof Fp360CustomerCaseCategory[keyof typeof Fp360CustomerCaseCategory];
+
+
+export const Fp360CustomerCaseCategory = {
+  inquiry: 'inquiry',
+  delivery: 'delivery',
+  product_quality: 'product_quality',
+  invoice: 'invoice',
+  return: 'return',
+  warranty: 'warranty',
+  other: 'other',
+} as const;
+
+export type Fp360CustomerCasePriority = typeof Fp360CustomerCasePriority[keyof typeof Fp360CustomerCasePriority];
+
+
+export const Fp360CustomerCasePriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export type Fp360CustomerCaseStatus = typeof Fp360CustomerCaseStatus[keyof typeof Fp360CustomerCaseStatus];
+
+
+export const Fp360CustomerCaseStatus = {
+  draft: 'draft',
+  pending: 'pending',
+  assigned: 'assigned',
+  investigating: 'investigating',
+  solution_proposed: 'solution_proposed',
+  resolved: 'resolved',
+  closed: 'closed',
+  rejected: 'rejected',
+} as const;
+
+export interface Fp360CustomerCase {
+  id: string;
+  organizationId: string;
+  customerOrganizationId: string;
+  customerOrganizationName: string;
+  caseRef: string;
+  sourceType: Fp360CustomerCaseSourceType;
+  /** @nullable */
+  sourceReference: string | null;
+  category: Fp360CustomerCaseCategory;
+  priority: Fp360CustomerCasePriority;
+  status: Fp360CustomerCaseStatus;
+  request: string;
+  /** @nullable */
+  standaloneReason: string | null;
+  /** @nullable */
+  assignedToName: string | null;
+  /** @nullable */
+  proposedSolution: string | null;
+  /** @nullable */
+  rootCause: string | null;
+  /**
+     * @minimum 1
+     * @maximum 5
+     * @nullable
+     */
+  satisfactionScore: number | null;
+  openedDate: string;
+  /** @nullable */
+  dueDate: string | null;
+  /** @nullable */
+  resolvedAt: string | null;
+  /** @nullable */
+  closedAt: string | null;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Fp360CustomerCaseEvent {
+  id: string;
+  caseId: string;
+  caseRef: string;
+  eventType: string;
+  description: string;
+  /** @nullable */
+  reference: string | null;
+  actorName: string;
+  simulatedDate: string;
+  createdAt: string;
+}
+
+export type Fp360CustomerReturnCondition = typeof Fp360CustomerReturnCondition[keyof typeof Fp360CustomerReturnCondition];
+
+
+export const Fp360CustomerReturnCondition = {
+  damaged: 'damaged',
+  defective: 'defective',
+  unopened: 'unopened',
+  incomplete: 'incomplete',
+  other: 'other',
+} as const;
+
+export type Fp360CustomerReturnStatus = typeof Fp360CustomerReturnStatus[keyof typeof Fp360CustomerReturnStatus];
+
+
+export const Fp360CustomerReturnStatus = {
+  requested: 'requested',
+  approved: 'approved',
+  received: 'received',
+  credit_note_requested: 'credit_note_requested',
+  closed: 'closed',
+  rejected: 'rejected',
+} as const;
+
+export interface Fp360CustomerReturn {
+  id: string;
+  organizationId: string;
+  caseId: string;
+  caseRef: string;
+  shipmentId: string;
+  shipmentReference: string;
+  shipmentLineId: string;
+  returnRef: string;
+  productId: string;
+  productName: string;
+  /** @minimum 0 */
+  unitsDelivered: number;
+  /** @minimum 1 */
+  unitsReported: number;
+  /** @minimum 0 */
+  unitsApproved: number;
+  /** @minimum 0 */
+  unitsReceived: number;
+  condition: Fp360CustomerReturnCondition;
+  reason: string;
+  status: Fp360CustomerReturnStatus;
+  creditNoteRequested: boolean;
+  createdByName: string;
+  /** @nullable */
+  reviewedByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type Fp360CustomerAgreementStatus = typeof Fp360CustomerAgreementStatus[keyof typeof Fp360CustomerAgreementStatus];
+
+
+export const Fp360CustomerAgreementStatus = {
+  draft: 'draft',
+  active: 'active',
+  archived: 'archived',
+} as const;
+
+export interface Fp360CustomerAgreement {
+  id: string;
+  organizationId: string;
+  agreementRef: string;
+  productRef: string;
+  terms: string;
+  validFrom: string;
+  validTo: string;
+  replacementAllowed: boolean;
+  compensationAllowed: boolean;
+  status: Fp360CustomerAgreementStatus;
+  createdByName: string;
+  /** @nullable */
+  approvedByName: string | null;
+  createdAt: string;
+  /** @nullable */
+  approvedAt: string | null;
+}
+
+export interface Fp360CustomerReturnSourceLine {
+  shipmentLineId: string;
+  productId: string;
+  productName: string;
+  /** @minimum 0 */
+  deliveredUnits: number;
+  /** @minimum 0 */
+  alreadyRequestedUnits: number;
+}
+
+export interface Fp360CustomerReturnSource {
+  shipmentId: string;
+  shipmentReference: string;
+  customerOrganizationId: string;
+  customerOrganizationName: string;
+  deliveredDate: string;
+  lines: Fp360CustomerReturnSourceLine[];
+}
+
+export interface Fp360CustomerServiceOverview {
+  organizationId: string;
+  simulatedDate: string;
+  customerOrganizations: Fp360CustomerOrganization[];
+  products: Fp360CustomerProduct[];
+  cases: Fp360CustomerCase[];
+  events: Fp360CustomerCaseEvent[];
+  returns: Fp360CustomerReturn[];
+  agreements: Fp360CustomerAgreement[];
+  returnSources: Fp360CustomerReturnSource[];
+  summary: Fp360CustomerServiceOverviewSummary;
+}
+
+export type Fp360CustomerCaseInputSourceType = typeof Fp360CustomerCaseInputSourceType[keyof typeof Fp360CustomerCaseInputSourceType];
+
+
+export const Fp360CustomerCaseInputSourceType = {
+  order: 'order',
+  invoice: 'invoice',
+  shipment: 'shipment',
+  standalone: 'standalone',
+} as const;
+
+export type Fp360CustomerCaseInputCategory = typeof Fp360CustomerCaseInputCategory[keyof typeof Fp360CustomerCaseInputCategory];
+
+
+export const Fp360CustomerCaseInputCategory = {
+  inquiry: 'inquiry',
+  delivery: 'delivery',
+  product_quality: 'product_quality',
+  invoice: 'invoice',
+  return: 'return',
+  warranty: 'warranty',
+  other: 'other',
+} as const;
+
+export type Fp360CustomerCaseInputPriority = typeof Fp360CustomerCaseInputPriority[keyof typeof Fp360CustomerCaseInputPriority];
+
+
+export const Fp360CustomerCaseInputPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export interface Fp360CustomerCaseInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /** @minLength 1 */
+  customerOrganizationId: string;
+  sourceType: Fp360CustomerCaseInputSourceType;
+  /** @maxLength 100 */
+  sourceReference?: string;
+  category: Fp360CustomerCaseInputCategory;
+  priority: Fp360CustomerCaseInputPriority;
+  /**
+     * @minLength 10
+     * @maxLength 3000
+     */
+  request: string;
+  /** @maxLength 500 */
+  standaloneReason?: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360CustomerCaseActionInputAction = typeof Fp360CustomerCaseActionInputAction[keyof typeof Fp360CustomerCaseActionInputAction];
+
+
+export const Fp360CustomerCaseActionInputAction = {
+  validate: 'validate',
+  assign_to_me: 'assign_to_me',
+  start_investigation: 'start_investigation',
+  request_evidence: 'request_evidence',
+  record_evidence: 'record_evidence',
+  draft_response: 'draft_response',
+  propose_solution: 'propose_solution',
+  resolve: 'resolve',
+  close: 'close',
+  reject: 'reject',
+} as const;
+
+export interface Fp360CustomerCaseActionInput {
+  action: Fp360CustomerCaseActionInputAction;
+  /** @maxLength 3000 */
+  description?: string;
+  /** @maxLength 160 */
+  reference?: string;
+  /** @maxLength 1000 */
+  rootCause?: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  satisfactionScore?: number;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360CustomerReturnInputCondition = typeof Fp360CustomerReturnInputCondition[keyof typeof Fp360CustomerReturnInputCondition];
+
+
+export const Fp360CustomerReturnInputCondition = {
+  damaged: 'damaged',
+  defective: 'defective',
+  unopened: 'unopened',
+  incomplete: 'incomplete',
+  other: 'other',
+} as const;
+
+export interface Fp360CustomerReturnInput {
+  /** @minLength 1 */
+  caseId: string;
+  /** @minLength 1 */
+  shipmentId: string;
+  /** @minLength 1 */
+  shipmentLineId: string;
+  /**
+     * @minimum 1
+     * @maximum 10000
+     */
+  unitsReported: number;
+  condition: Fp360CustomerReturnInputCondition;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  reason: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360CustomerReturnActionInputAction = typeof Fp360CustomerReturnActionInputAction[keyof typeof Fp360CustomerReturnActionInputAction];
+
+
+export const Fp360CustomerReturnActionInputAction = {
+  approve: 'approve',
+  reject: 'reject',
+  record_receipt: 'record_receipt',
+  request_credit_note: 'request_credit_note',
+  close: 'close',
+} as const;
+
+export interface Fp360CustomerReturnActionInput {
+  action: Fp360CustomerReturnActionInputAction;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  unitsApproved?: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  unitsReceived?: number;
+  /** @maxLength 1000 */
+  description?: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360CustomerAgreementInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  productRef: string;
+  /**
+     * @minLength 10
+     * @maxLength 2000
+     */
+  terms: string;
+  validFrom: string;
+  validTo: string;
+  replacementAllowed: boolean;
+  compensationAllowed: boolean;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export type Fp360CustomerAgreementActionInputAction = typeof Fp360CustomerAgreementActionInputAction[keyof typeof Fp360CustomerAgreementActionInputAction];
+
+
+export const Fp360CustomerAgreementActionInputAction = {
+  activate: 'activate',
+  archive: 'archive',
+} as const;
+
+export interface Fp360CustomerAgreementActionInput {
+  action: Fp360CustomerAgreementActionInputAction;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
 export type Fp360PayrollPolicyStatus = typeof Fp360PayrollPolicyStatus[keyof typeof Fp360PayrollPolicyStatus];
 
 
@@ -4676,6 +5120,13 @@ organizationId: string;
 };
 
 export type GetFp360PayrollOverviewParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+};
+
+export type GetFp360CustomerServiceOverviewParams = {
 /**
  * @minLength 1
  */

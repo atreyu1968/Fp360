@@ -15,6 +15,7 @@ import taxRouter from "./tax";
 import socialSecurityRouter from "./social-security";
 import humanResourcesRouter from "./human-resources";
 import payrollRouter from "./payroll";
+import customerServiceRouter from "./customer-service";
 
 const router: IRouter = Router();
 
@@ -33,6 +34,7 @@ router.use(taxRouter);
 router.use(socialSecurityRouter);
 router.use(humanResourcesRouter);
 router.use(payrollRouter);
+router.use(customerServiceRouter);
 router.use(redfp360Router);
 
 export default router;

@@ -5056,6 +5056,489 @@ export const ActOnFp360PayrollRunResponse = zod.object({
 
 
 /**
+ * @summary Get customer cases, return requests, agreements, and quality indicators
+ */
+
+
+
+export const GetFp360CustomerServiceOverviewQueryParams = zod.object({
+  "organizationId": zod.coerce.string().min(1)
+})
+
+export const getFp360CustomerServiceOverviewResponseCasesItemSatisfactionScoreMax = 5;
+
+export const getFp360CustomerServiceOverviewResponseReturnsItemUnitsDeliveredMin = 0;
+
+
+export const getFp360CustomerServiceOverviewResponseReturnsItemUnitsApprovedMin = 0;
+
+export const getFp360CustomerServiceOverviewResponseReturnsItemUnitsReceivedMin = 0;
+
+export const getFp360CustomerServiceOverviewResponseReturnSourcesItemLinesItemDeliveredUnitsMin = 0;
+
+export const getFp360CustomerServiceOverviewResponseReturnSourcesItemLinesItemAlreadyRequestedUnitsMin = 0;
+
+export const getFp360CustomerServiceOverviewResponseSummaryOpenCasesMin = 0;
+
+export const getFp360CustomerServiceOverviewResponseSummaryHighPriorityCasesMin = 0;
+
+export const getFp360CustomerServiceOverviewResponseSummaryResolvedThisMonthMin = 0;
+
+export const getFp360CustomerServiceOverviewResponseSummaryAverageSatisfactionMin = 0;
+export const getFp360CustomerServiceOverviewResponseSummaryAverageSatisfactionMax = 5;
+
+export const getFp360CustomerServiceOverviewResponseSummaryPendingReturnsMin = 0;
+
+export const getFp360CustomerServiceOverviewResponseSummaryActiveAgreementsMin = 0;
+
+
+
+export const GetFp360CustomerServiceOverviewResponse = zod.object({
+  "organizationId": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "customerOrganizations": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "center": zod.string(),
+  "island": zod.string()
+})),
+  "products": zod.array(zod.object({
+  "sku": zod.string(),
+  "name": zod.string()
+})),
+  "cases": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "customerOrganizationId": zod.string(),
+  "customerOrganizationName": zod.string(),
+  "caseRef": zod.string(),
+  "sourceType": zod.enum(['order', 'invoice', 'shipment', 'standalone']),
+  "sourceReference": zod.string().nullable(),
+  "category": zod.enum(['inquiry', 'delivery', 'product_quality', 'invoice', 'return', 'warranty', 'other']),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
+  "status": zod.enum(['draft', 'pending', 'assigned', 'investigating', 'solution_proposed', 'resolved', 'closed', 'rejected']),
+  "request": zod.string(),
+  "standaloneReason": zod.string().nullable(),
+  "assignedToName": zod.string().nullable(),
+  "proposedSolution": zod.string().nullable(),
+  "rootCause": zod.string().nullable(),
+  "satisfactionScore": zod.number().int().min(1).max(getFp360CustomerServiceOverviewResponseCasesItemSatisfactionScoreMax).nullable(),
+  "openedDate": zod.string().date(),
+  "dueDate": zod.string().date().nullable(),
+  "resolvedAt": zod.string().datetime({"offset":true}).nullable(),
+  "closedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "caseId": zod.string(),
+  "caseRef": zod.string(),
+  "eventType": zod.string(),
+  "description": zod.string(),
+  "reference": zod.string().nullable(),
+  "actorName": zod.string(),
+  "simulatedDate": zod.string().date(),
+  "createdAt": zod.string().datetime({"offset":true})
+})),
+  "returns": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "caseId": zod.string(),
+  "caseRef": zod.string(),
+  "shipmentId": zod.string(),
+  "shipmentReference": zod.string(),
+  "shipmentLineId": zod.string(),
+  "returnRef": zod.string(),
+  "productId": zod.string(),
+  "productName": zod.string(),
+  "unitsDelivered": zod.number().int().min(getFp360CustomerServiceOverviewResponseReturnsItemUnitsDeliveredMin),
+  "unitsReported": zod.number().int().min(1),
+  "unitsApproved": zod.number().int().min(getFp360CustomerServiceOverviewResponseReturnsItemUnitsApprovedMin),
+  "unitsReceived": zod.number().int().min(getFp360CustomerServiceOverviewResponseReturnsItemUnitsReceivedMin),
+  "condition": zod.enum(['damaged', 'defective', 'unopened', 'incomplete', 'other']),
+  "reason": zod.string(),
+  "status": zod.enum(['requested', 'approved', 'received', 'credit_note_requested', 'closed', 'rejected']),
+  "creditNoteRequested": zod.boolean(),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})),
+  "agreements": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "agreementRef": zod.string(),
+  "productRef": zod.string(),
+  "terms": zod.string(),
+  "validFrom": zod.string().date(),
+  "validTo": zod.string().date(),
+  "replacementAllowed": zod.boolean(),
+  "compensationAllowed": zod.boolean(),
+  "status": zod.enum(['draft', 'active', 'archived']),
+  "createdByName": zod.string(),
+  "approvedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "approvedAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "returnSources": zod.array(zod.object({
+  "shipmentId": zod.string(),
+  "shipmentReference": zod.string(),
+  "customerOrganizationId": zod.string(),
+  "customerOrganizationName": zod.string(),
+  "deliveredDate": zod.string().date(),
+  "lines": zod.array(zod.object({
+  "shipmentLineId": zod.string(),
+  "productId": zod.string(),
+  "productName": zod.string(),
+  "deliveredUnits": zod.number().int().min(getFp360CustomerServiceOverviewResponseReturnSourcesItemLinesItemDeliveredUnitsMin),
+  "alreadyRequestedUnits": zod.number().int().min(getFp360CustomerServiceOverviewResponseReturnSourcesItemLinesItemAlreadyRequestedUnitsMin)
+}))
+})),
+  "summary": zod.object({
+  "openCases": zod.number().int().min(getFp360CustomerServiceOverviewResponseSummaryOpenCasesMin),
+  "highPriorityCases": zod.number().int().min(getFp360CustomerServiceOverviewResponseSummaryHighPriorityCasesMin),
+  "resolvedThisMonth": zod.number().int().min(getFp360CustomerServiceOverviewResponseSummaryResolvedThisMonthMin),
+  "averageSatisfaction": zod.number().min(getFp360CustomerServiceOverviewResponseSummaryAverageSatisfactionMin).max(getFp360CustomerServiceOverviewResponseSummaryAverageSatisfactionMax),
+  "pendingReturns": zod.number().int().min(getFp360CustomerServiceOverviewResponseSummaryPendingReturnsMin),
+  "activeAgreements": zod.number().int().min(getFp360CustomerServiceOverviewResponseSummaryActiveAgreementsMin)
+})
+})
+
+
+/**
+ * @summary Create a customer-service case draft
+ */
+
+
+export const createFp360CustomerCaseBodySourceReferenceMax = 100;
+
+export const createFp360CustomerCaseBodyRequestMin = 10;
+export const createFp360CustomerCaseBodyRequestMax = 3000;
+
+export const createFp360CustomerCaseBodyStandaloneReasonMax = 500;
+
+export const createFp360CustomerCaseBodyOperationIdMin = 8;
+export const createFp360CustomerCaseBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360CustomerCaseBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "customerOrganizationId": zod.string().min(1),
+  "sourceType": zod.enum(['order', 'invoice', 'shipment', 'standalone']),
+  "sourceReference": zod.string().max(createFp360CustomerCaseBodySourceReferenceMax).optional(),
+  "category": zod.enum(['inquiry', 'delivery', 'product_quality', 'invoice', 'return', 'warranty', 'other']),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
+  "request": zod.string().min(createFp360CustomerCaseBodyRequestMin).max(createFp360CustomerCaseBodyRequestMax),
+  "standaloneReason": zod.string().max(createFp360CustomerCaseBodyStandaloneReasonMax).optional(),
+  "operationId": zod.string().min(createFp360CustomerCaseBodyOperationIdMin).max(createFp360CustomerCaseBodyOperationIdMax)
+})
+
+export const createFp360CustomerCaseResponseSatisfactionScoreMax = 5;
+
+
+
+export const CreateFp360CustomerCaseResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "customerOrganizationId": zod.string(),
+  "customerOrganizationName": zod.string(),
+  "caseRef": zod.string(),
+  "sourceType": zod.enum(['order', 'invoice', 'shipment', 'standalone']),
+  "sourceReference": zod.string().nullable(),
+  "category": zod.enum(['inquiry', 'delivery', 'product_quality', 'invoice', 'return', 'warranty', 'other']),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
+  "status": zod.enum(['draft', 'pending', 'assigned', 'investigating', 'solution_proposed', 'resolved', 'closed', 'rejected']),
+  "request": zod.string(),
+  "standaloneReason": zod.string().nullable(),
+  "assignedToName": zod.string().nullable(),
+  "proposedSolution": zod.string().nullable(),
+  "rootCause": zod.string().nullable(),
+  "satisfactionScore": zod.number().int().min(1).max(createFp360CustomerCaseResponseSatisfactionScoreMax).nullable(),
+  "openedDate": zod.string().date(),
+  "dueDate": zod.string().date().nullable(),
+  "resolvedAt": zod.string().datetime({"offset":true}).nullable(),
+  "closedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Assign, investigate, document, propose, resolve, or close a case
+ */
+
+
+
+export const ActOnFp360CustomerCaseParams = zod.object({
+  "caseId": zod.coerce.string().min(1)
+})
+
+export const actOnFp360CustomerCaseBodyDescriptionMax = 3000;
+
+export const actOnFp360CustomerCaseBodyReferenceMax = 160;
+
+export const actOnFp360CustomerCaseBodyRootCauseMax = 1000;
+
+export const actOnFp360CustomerCaseBodySatisfactionScoreMax = 5;
+
+export const actOnFp360CustomerCaseBodyOperationIdMin = 8;
+export const actOnFp360CustomerCaseBodyOperationIdMax = 120;
+
+
+
+export const ActOnFp360CustomerCaseBody = zod.object({
+  "action": zod.enum(['validate', 'assign_to_me', 'start_investigation', 'request_evidence', 'record_evidence', 'draft_response', 'propose_solution', 'resolve', 'close', 'reject']),
+  "description": zod.string().max(actOnFp360CustomerCaseBodyDescriptionMax).optional(),
+  "reference": zod.string().max(actOnFp360CustomerCaseBodyReferenceMax).optional(),
+  "rootCause": zod.string().max(actOnFp360CustomerCaseBodyRootCauseMax).optional(),
+  "satisfactionScore": zod.number().int().min(1).max(actOnFp360CustomerCaseBodySatisfactionScoreMax).optional(),
+  "operationId": zod.string().min(actOnFp360CustomerCaseBodyOperationIdMin).max(actOnFp360CustomerCaseBodyOperationIdMax)
+})
+
+export const actOnFp360CustomerCaseResponseSatisfactionScoreMax = 5;
+
+
+
+export const ActOnFp360CustomerCaseResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "customerOrganizationId": zod.string(),
+  "customerOrganizationName": zod.string(),
+  "caseRef": zod.string(),
+  "sourceType": zod.enum(['order', 'invoice', 'shipment', 'standalone']),
+  "sourceReference": zod.string().nullable(),
+  "category": zod.enum(['inquiry', 'delivery', 'product_quality', 'invoice', 'return', 'warranty', 'other']),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
+  "status": zod.enum(['draft', 'pending', 'assigned', 'investigating', 'solution_proposed', 'resolved', 'closed', 'rejected']),
+  "request": zod.string(),
+  "standaloneReason": zod.string().nullable(),
+  "assignedToName": zod.string().nullable(),
+  "proposedSolution": zod.string().nullable(),
+  "rootCause": zod.string().nullable(),
+  "satisfactionScore": zod.number().int().min(1).max(actOnFp360CustomerCaseResponseSatisfactionScoreMax).nullable(),
+  "openedDate": zod.string().date(),
+  "dueDate": zod.string().date().nullable(),
+  "resolvedAt": zod.string().datetime({"offset":true}).nullable(),
+  "closedAt": zod.string().datetime({"offset":true}).nullable(),
+  "createdByName": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Request a return against delivered shipment units
+ */
+
+
+
+export const createFp360CustomerReturnBodyUnitsReportedMax = 10000;
+
+export const createFp360CustomerReturnBodyReasonMin = 10;
+export const createFp360CustomerReturnBodyReasonMax = 1000;
+
+export const createFp360CustomerReturnBodyOperationIdMin = 8;
+export const createFp360CustomerReturnBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360CustomerReturnBody = zod.object({
+  "caseId": zod.string().min(1),
+  "shipmentId": zod.string().min(1),
+  "shipmentLineId": zod.string().min(1),
+  "unitsReported": zod.number().int().min(1).max(createFp360CustomerReturnBodyUnitsReportedMax),
+  "condition": zod.enum(['damaged', 'defective', 'unopened', 'incomplete', 'other']),
+  "reason": zod.string().min(createFp360CustomerReturnBodyReasonMin).max(createFp360CustomerReturnBodyReasonMax),
+  "operationId": zod.string().min(createFp360CustomerReturnBodyOperationIdMin).max(createFp360CustomerReturnBodyOperationIdMax)
+})
+
+export const createFp360CustomerReturnResponseUnitsDeliveredMin = 0;
+
+
+export const createFp360CustomerReturnResponseUnitsApprovedMin = 0;
+
+export const createFp360CustomerReturnResponseUnitsReceivedMin = 0;
+
+
+
+export const CreateFp360CustomerReturnResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "caseId": zod.string(),
+  "caseRef": zod.string(),
+  "shipmentId": zod.string(),
+  "shipmentReference": zod.string(),
+  "shipmentLineId": zod.string(),
+  "returnRef": zod.string(),
+  "productId": zod.string(),
+  "productName": zod.string(),
+  "unitsDelivered": zod.number().int().min(createFp360CustomerReturnResponseUnitsDeliveredMin),
+  "unitsReported": zod.number().int().min(1),
+  "unitsApproved": zod.number().int().min(createFp360CustomerReturnResponseUnitsApprovedMin),
+  "unitsReceived": zod.number().int().min(createFp360CustomerReturnResponseUnitsReceivedMin),
+  "condition": zod.enum(['damaged', 'defective', 'unopened', 'incomplete', 'other']),
+  "reason": zod.string(),
+  "status": zod.enum(['requested', 'approved', 'received', 'credit_note_requested', 'closed', 'rejected']),
+  "creditNoteRequested": zod.boolean(),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Review, receive, or close a simulated return
+ */
+
+
+
+export const ActOnFp360CustomerReturnParams = zod.object({
+  "returnId": zod.coerce.string().min(1)
+})
+
+export const actOnFp360CustomerReturnBodyUnitsApprovedMin = 0;
+export const actOnFp360CustomerReturnBodyUnitsApprovedMax = 10000;
+
+export const actOnFp360CustomerReturnBodyUnitsReceivedMin = 0;
+export const actOnFp360CustomerReturnBodyUnitsReceivedMax = 10000;
+
+export const actOnFp360CustomerReturnBodyDescriptionMax = 1000;
+
+export const actOnFp360CustomerReturnBodyOperationIdMin = 8;
+export const actOnFp360CustomerReturnBodyOperationIdMax = 120;
+
+
+
+export const ActOnFp360CustomerReturnBody = zod.object({
+  "action": zod.enum(['approve', 'reject', 'record_receipt', 'request_credit_note', 'close']),
+  "unitsApproved": zod.number().int().min(actOnFp360CustomerReturnBodyUnitsApprovedMin).max(actOnFp360CustomerReturnBodyUnitsApprovedMax).optional(),
+  "unitsReceived": zod.number().int().min(actOnFp360CustomerReturnBodyUnitsReceivedMin).max(actOnFp360CustomerReturnBodyUnitsReceivedMax).optional(),
+  "description": zod.string().max(actOnFp360CustomerReturnBodyDescriptionMax).optional(),
+  "operationId": zod.string().min(actOnFp360CustomerReturnBodyOperationIdMin).max(actOnFp360CustomerReturnBodyOperationIdMax)
+})
+
+export const actOnFp360CustomerReturnResponseUnitsDeliveredMin = 0;
+
+
+export const actOnFp360CustomerReturnResponseUnitsApprovedMin = 0;
+
+export const actOnFp360CustomerReturnResponseUnitsReceivedMin = 0;
+
+
+
+export const ActOnFp360CustomerReturnResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "caseId": zod.string(),
+  "caseRef": zod.string(),
+  "shipmentId": zod.string(),
+  "shipmentReference": zod.string(),
+  "shipmentLineId": zod.string(),
+  "returnRef": zod.string(),
+  "productId": zod.string(),
+  "productName": zod.string(),
+  "unitsDelivered": zod.number().int().min(actOnFp360CustomerReturnResponseUnitsDeliveredMin),
+  "unitsReported": zod.number().int().min(1),
+  "unitsApproved": zod.number().int().min(actOnFp360CustomerReturnResponseUnitsApprovedMin),
+  "unitsReceived": zod.number().int().min(actOnFp360CustomerReturnResponseUnitsReceivedMin),
+  "condition": zod.enum(['damaged', 'defective', 'unopened', 'incomplete', 'other']),
+  "reason": zod.string(),
+  "status": zod.enum(['requested', 'approved', 'received', 'credit_note_requested', 'closed', 'rejected']),
+  "creditNoteRequested": zod.boolean(),
+  "createdByName": zod.string(),
+  "reviewedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Create a draft training warranty agreement
+ */
+
+export const createFp360CustomerAgreementBodyProductRefMax = 80;
+
+export const createFp360CustomerAgreementBodyTermsMin = 10;
+export const createFp360CustomerAgreementBodyTermsMax = 2000;
+
+export const createFp360CustomerAgreementBodyOperationIdMin = 8;
+export const createFp360CustomerAgreementBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360CustomerAgreementBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "productRef": zod.string().min(1).max(createFp360CustomerAgreementBodyProductRefMax),
+  "terms": zod.string().min(createFp360CustomerAgreementBodyTermsMin).max(createFp360CustomerAgreementBodyTermsMax),
+  "validFrom": zod.string().date(),
+  "validTo": zod.string().date(),
+  "replacementAllowed": zod.boolean(),
+  "compensationAllowed": zod.boolean(),
+  "operationId": zod.string().min(createFp360CustomerAgreementBodyOperationIdMin).max(createFp360CustomerAgreementBodyOperationIdMax)
+})
+
+export const CreateFp360CustomerAgreementResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "agreementRef": zod.string(),
+  "productRef": zod.string(),
+  "terms": zod.string(),
+  "validFrom": zod.string().date(),
+  "validTo": zod.string().date(),
+  "replacementAllowed": zod.boolean(),
+  "compensationAllowed": zod.boolean(),
+  "status": zod.enum(['draft', 'active', 'archived']),
+  "createdByName": zod.string(),
+  "approvedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "approvedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Activate or archive a training warranty agreement
+ */
+
+
+
+export const ActOnFp360CustomerAgreementParams = zod.object({
+  "agreementId": zod.coerce.string().min(1)
+})
+
+export const actOnFp360CustomerAgreementBodyOperationIdMin = 8;
+export const actOnFp360CustomerAgreementBodyOperationIdMax = 120;
+
+
+
+export const ActOnFp360CustomerAgreementBody = zod.object({
+  "action": zod.enum(['activate', 'archive']),
+  "operationId": zod.string().min(actOnFp360CustomerAgreementBodyOperationIdMin).max(actOnFp360CustomerAgreementBodyOperationIdMax)
+})
+
+export const ActOnFp360CustomerAgreementResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "agreementRef": zod.string(),
+  "productRef": zod.string(),
+  "terms": zod.string(),
+  "validFrom": zod.string().date(),
+  "validTo": zod.string().date(),
+  "replacementAllowed": zod.boolean(),
+  "compensationAllowed": zod.boolean(),
+  "status": zod.enum(['draft', 'active', 'archived']),
+  "createdByName": zod.string(),
+  "approvedByName": zod.string().nullable(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "approvedAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
  * @summary Get fictional workforce, hiring, contract, and absence records
  */
 
