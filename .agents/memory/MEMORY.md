@@ -7,3 +7,4 @@
 - [RED FP360 evaluation scope](redfp360-evaluation-scope.md) — Keep curriculum criteria configurable per center; grades, rubrics, recoveries, and closure remain didactic and auditable.
 - [RED FP360 administration safety](redfp360-administration-safety.md) — Keep recovery and integrations simulation-only; global privilege changes require independent administrator approval.
 - [Idempotent replay authorization](redfp360-idempotency-access.md) — Bind retries to the original actor and recheck current resource scope before returning stored results.
+- [Coordinación económica con IA](redfp360-ai-economic-coordinator.md) — La IA establece situaciones para las empresas y coordina el sistema económico interconectado.
