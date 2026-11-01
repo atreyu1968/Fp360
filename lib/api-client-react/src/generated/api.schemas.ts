@@ -2268,6 +2268,34 @@ export interface Fp360AccountingOverview {
   totals: Fp360AccountingOverviewTotals;
 }
 
+export interface Fp360AccountingYearEndSummary {
+  organizationId: string;
+  fiscalYear: number;
+  /**
+     * @minimum 0
+     * @maximum 12
+     */
+  periodsClosed: number;
+  periodsExpected: 12;
+  /** @minimum 0 */
+  draftEntries: number;
+  /** @minimum 0 */
+  postedEntries: number;
+  /** @minimum 0 */
+  debitCents: number;
+  /** @minimum 0 */
+  creditCents: number;
+  journalBalanced: boolean;
+  revenueCents: number;
+  expenseCents: number;
+  resultCents: number;
+  /** @minimum 0 */
+  unsettledProfitAndLossAccounts: number;
+  profitAndLossAccountsSettled: boolean;
+  readyForAnnualClose: boolean;
+  profitAndLossAccounts: Fp360AccountingBalance[];
+}
+
 export type Fp360AccountingAccountInputNature = typeof Fp360AccountingAccountInputNature[keyof typeof Fp360AccountingAccountInputNature];
 
 
@@ -9028,6 +9056,18 @@ export type GetFp360AccountingOverviewParams = {
  * @minLength 1
  */
 organizationId: string;
+};
+
+export type GetFp360AccountingYearEndSummaryParams = {
+/**
+ * @minLength 1
+ */
+organizationId: string;
+/**
+ * @minimum 2000
+ * @maximum 2100
+ */
+fiscalYear: number;
 };
 
 export type ExportFp360AccountingCsvParams = {

@@ -119,6 +119,7 @@ import type {
   Fp360AccountingPeriod,
   Fp360AccountingPeriodActionInput,
   Fp360AccountingSourceDraftInput,
+  Fp360AccountingYearEndSummary,
   Fp360Activity,
   Fp360BankAccount,
   Fp360BankAccountInput,
@@ -269,6 +270,7 @@ import type {
   GetCoordinationOverviewParams,
   GetEvaluationOverviewParams,
   GetFp360AccountingOverviewParams,
+  GetFp360AccountingYearEndSummaryParams,
   GetFp360BankOverviewParams,
   GetFp360BankReconciliationParams,
   GetFp360CommunicationsOverviewParams,
@@ -13741,6 +13743,114 @@ export function useGetFp360AccountingOverview<TData = Awaited<ReturnType<typeof 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetFp360AccountingOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetFp360AccountingYearEndSummaryUrl = (params: GetFp360AccountingYearEndSummaryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/accounting/year-end-summary?${stringifiedParams}` : `/api/redfp360/accounting/year-end-summary`
+}
+
+/**
+ * @summary Summarize profit and loss balances before closing a fiscal year
+ */
+export const getFp360AccountingYearEndSummary = async (params: GetFp360AccountingYearEndSummaryParams, options?: Parameters<typeof customFetch>[1]): Promise<Fp360AccountingYearEndSummary> => {
+
+  return customFetch<Fp360AccountingYearEndSummary>(getGetFp360AccountingYearEndSummaryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360AccountingYearEndSummaryQueryKey = (params?: GetFp360AccountingYearEndSummaryParams,) => {
+    return [
+    `/api/redfp360/accounting/year-end-summary`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360AccountingYearEndSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>, TError = ErrorType<void>>(params: GetFp360AccountingYearEndSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360AccountingYearEndSummaryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>> = ({ signal }) => getFp360AccountingYearEndSummary(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360AccountingYearEndSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>>
+export type GetFp360AccountingYearEndSummaryQueryError = ErrorType<void>
+
+
+export function useGetFp360AccountingYearEndSummary<TData = Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>, TError = ErrorType<void>>(
+ params: GetFp360AccountingYearEndSummaryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360AccountingYearEndSummary<TData = Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>, TError = ErrorType<void>>(
+ params: GetFp360AccountingYearEndSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360AccountingYearEndSummary<TData = Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>, TError = ErrorType<void>>(
+ params: GetFp360AccountingYearEndSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Summarize profit and loss balances before closing a fiscal year
+ */
+
+export function useGetFp360AccountingYearEndSummary<TData = Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>, TError = ErrorType<void>>(
+ params: GetFp360AccountingYearEndSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360AccountingYearEndSummary>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360AccountingYearEndSummaryQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

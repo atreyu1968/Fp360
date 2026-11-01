@@ -2,11 +2,13 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getGetFp360AccountingOverviewQueryKey,
+  getGetFp360AccountingYearEndSummaryQueryKey,
   useCloseFp360AccountingPeriod,
   useCreateFp360AccountingAccount,
   useCreateFp360AccountingEntry,
   useCreateFp360AccountingSourceDraft,
   useGetFp360AccountingOverview,
+  useGetFp360AccountingYearEndSummary,
   usePostFp360AccountingEntry,
   useReopenFp360AccountingPeriod,
   useReverseFp360AccountingEntry,
@@ -17,6 +19,7 @@ import type {
   Fp360AccountingEntry,
   Fp360AccountingOverview,
   Fp360AccountingPeriod,
+  Fp360AccountingYearEndSummary,
   Fp360Organization,
 } from '@workspace/api-client-react';
 
@@ -89,6 +92,10 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
     { organizationId },
     { query: { enabled: Boolean(organizationId) } },
   );
+  const yearEndSummaryQuery = useGetFp360AccountingYearEndSummary<Fp360AccountingYearEndSummary>(
+    { organizationId, fiscalYear: selectedFiscalYear },
+    { query: { enabled: Boolean(organizationId) && view === 'close' } },
+  );
   const overview = overviewQuery.data;
   const selectedOrganization = organizations.find((organization) => organization.id === organizationId);
   const accounts = overview?.accounts ?? [];
@@ -121,7 +128,12 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
   const creditDraft = currentDraftLines.reduce((sum, line) => sum + (Number.isFinite(centsFromInput(line.credit)) ? centsFromInput(line.credit) : 0), 0);
   const resultCents = balances.filter((balance) => balance.nature === 'revenue').reduce((sum, balance) => sum + balance.balanceCents, 0)
     - balances.filter((balance) => balance.nature === 'expense').reduce((sum, balance) => sum + balance.balanceCents, 0);
-  const refresh = () => void queryClient.invalidateQueries({ queryKey: getGetFp360AccountingOverviewQueryKey({ organizationId }) });
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: getGetFp360AccountingOverviewQueryKey({ organizationId }) });
+    void queryClient.invalidateQueries({
+      queryKey: getGetFp360AccountingYearEndSummaryQueryKey({ organizationId, fiscalYear: selectedFiscalYear }),
+    });
+  };
   const exportBook = async (book: ExportBook) => {
     if (!organizationId || !overview || exportingBook) return;
     setExportingBook(book);
@@ -359,6 +371,7 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
 
       {view === 'close' && <section className="panel accounting-panel">
         <div className="accounting-section-head"><div><h2>Cierre contable</h2><p>Un periodo no se cierra si conserva borradores o saldos descuadrados. La reapertura queda auditada.</p></div><label className="accounting-inline-select">Ejercicio<select value={selectedFiscalYear} onChange={(event) => setSelectedFiscalYear(Number(event.target.value))}>{[...new Set(periods.map((period) => period.fiscalYear))].sort((a, b) => b - a).map((year) => <option key={year} value={year}>{year}</option>)}</select></label></div>
+        <YearEndSummaryCard summary={yearEndSummaryQuery.data} loading={yearEndSummaryQuery.isLoading} error={yearEndSummaryQuery.isError} />
         <div className="accounting-period-grid">{periods.filter((period) => period.fiscalYear === selectedFiscalYear).sort((a, b) => a.period - b.period).map((period) => {
           const drafts = entries.filter((entry) => entry.fiscalYear === period.fiscalYear && entry.period === period.period && entry.status === 'draft').length;
           return <article key={period.id} className={period.status === 'closed' ? 'accounting-period closed' : 'accounting-period'}>
@@ -410,6 +423,59 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
       </form>
     </section></div>}
   </main>;
+}
+
+function YearEndSummaryCard({ summary, loading, error }: {
+  summary?: Fp360AccountingYearEndSummary;
+  loading: boolean;
+  error: boolean;
+}) {
+  const unsettledAccounts = summary?.profitAndLossAccounts.filter((account) => account.balanceCents !== 0) ?? [];
+
+  return <section className="accounting-year-end" aria-labelledby="accounting-year-end-title">
+    <div className="accounting-year-end-heading">
+      <div><h3 id="accounting-year-end-title">Comprobación de cierre anual</h3><p>Resumen didáctico del ejercicio. Esta consulta no crea asientos ni modifica saldos.</p></div>
+    </div>
+    {loading && <p className="accounting-year-end-message">Calculando saldos del ejercicio…</p>}
+    {error && <p className="accounting-year-end-message error">No se pudo cargar la comprobación del ejercicio.</p>}
+    {summary && <>
+      <div className="accounting-year-end-cards">
+        <article><span>Ingresos contabilizados</span><b>{signedMoney(summary.revenueCents)}</b></article>
+        <article><span>Gastos contabilizados</span><b>{signedMoney(summary.expenseCents)}</b></article>
+        <article><span>Resultado didáctico</span><b className={summary.resultCents >= 0 ? 'accounting-positive' : 'accounting-negative'}>{signedMoney(summary.resultCents)}</b></article>
+      </div>
+      <div className="accounting-year-end-checks" aria-label="Controles del ejercicio">
+        <YearEndCheck label="Periodos cerrados" value={`${summary.periodsClosed}/${summary.periodsExpected}`} passed={summary.periodsClosed === summary.periodsExpected} />
+        <YearEndCheck label="Borradores pendientes" value={String(summary.draftEntries)} passed={summary.draftEntries === 0} />
+        <YearEndCheck label="Libro diario" value={summary.journalBalanced ? 'Cuadrado' : 'Descuadrado'} passed={summary.journalBalanced} />
+        <YearEndCheck label="Saldos de ingresos y gastos" value={summary.profitAndLossAccountsSettled ? 'A cero' : `${summary.unsettledProfitAndLossAccounts} pendientes`} passed={summary.profitAndLossAccountsSettled} />
+      </div>
+      {unsettledAccounts.length > 0
+        ? <div className="accounting-table-scroll"><table className="accounting-table">
+          <thead><tr><th>Cuenta</th><th>Nombre</th><th>Naturaleza</th><th>Debe</th><th>Haber</th><th>Saldo</th></tr></thead>
+          <tbody>{unsettledAccounts.map((account) => <tr key={account.accountId}>
+            <td className="accounting-code">{account.code}</td>
+            <td>{account.name}</td>
+            <td>{account.nature === 'revenue' ? 'Ingresos' : 'Gastos'}</td>
+            <td>{formatMoney(account.debitCents)}</td>
+            <td>{formatMoney(account.creditCents)}</td>
+            <td>{signedMoney(account.balanceCents)}</td>
+          </tr>)}</tbody>
+        </table></div>
+        : <p className="accounting-year-end-message">No hay saldos pendientes en cuentas de ingresos o gastos.</p>}
+      <p className={`accounting-year-end-result ${summary.readyForAnnualClose ? 'passed' : ''}`}>
+        {summary.readyForAnnualClose
+          ? 'Los controles previos del ejercicio están completos. No se ha generado ningún asiento de cierre.'
+          : 'El ejercicio aún no supera todos los controles previos al cierre.'}
+      </p>
+    </>}
+  </section>;
+}
+
+function YearEndCheck({ label, value, passed }: { label: string; value: string; passed: boolean }) {
+  return <div className={`accounting-year-end-check ${passed ? 'passed' : 'pending'}`}>
+    <span>{label}</span><b>{value}</b>
+  </div>;
 }
 
 function EntryTable({ entries, selectedId, onSelect }: {

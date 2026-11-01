@@ -2718,6 +2718,31 @@ paths:
                 $ref: "#/components/schemas/Fp360AccountingOverview"
         "403":
           description: Organization is outside the actor's access
+  /redfp360/accounting/year-end-summary:
+    get:
+      operationId: getFp360AccountingYearEndSummary
+      tags: [redfp360]
+      summary: Summarize profit and loss balances before closing a fiscal year
+      parameters:
+        - name: organizationId
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+        - name: fiscalYear
+          in: query
+          required: true
+          schema: { type: integer, minimum: 2000, maximum: 2100 }
+      responses:
+        "200":
+          description: Read-only fiscal-year closing checks and profit-and-loss balances
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fp360AccountingYearEndSummary"
+        "400":
+          description: Invalid organization or fiscal year
+        "403":
+          description: Organization is outside the actor's access
   /redfp360/accounting/export:
     get:
       operationId: exportFp360AccountingCsv
@@ -5949,6 +5974,28 @@ components:
             debitCents: { type: integer, minimum: 0 }
             creditCents: { type: integer, minimum: 0 }
             balanced: { type: boolean }
+    Fp360AccountingYearEndSummary:
+      type: object
+      required: [organizationId, fiscalYear, periodsClosed, periodsExpected, draftEntries, postedEntries, debitCents, creditCents, journalBalanced, revenueCents, expenseCents, resultCents, unsettledProfitAndLossAccounts, profitAndLossAccountsSettled, readyForAnnualClose, profitAndLossAccounts]
+      properties:
+        organizationId: { type: string }
+        fiscalYear: { type: integer }
+        periodsClosed: { type: integer, minimum: 0, maximum: 12 }
+        periodsExpected: { type: integer, const: 12 }
+        draftEntries: { type: integer, minimum: 0 }
+        postedEntries: { type: integer, minimum: 0 }
+        debitCents: { type: integer, minimum: 0 }
+        creditCents: { type: integer, minimum: 0 }
+        journalBalanced: { type: boolean }
+        revenueCents: { type: integer }
+        expenseCents: { type: integer }
+        resultCents: { type: integer }
+        unsettledProfitAndLossAccounts: { type: integer, minimum: 0 }
+        profitAndLossAccountsSettled: { type: boolean }
+        readyForAnnualClose: { type: boolean }
+        profitAndLossAccounts:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360AccountingBalance" }
     Fp360AccountingAccount:
       type: object
       required: [id, organizationId, code, name, nature, normalBalance, parentCode, active, isSystem, createdAt]

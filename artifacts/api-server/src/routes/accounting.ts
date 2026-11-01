@@ -15,6 +15,8 @@ import {
   ExportFp360AccountingCsvQueryParams,
   GetFp360AccountingOverviewQueryParams,
   GetFp360AccountingOverviewResponse,
+  GetFp360AccountingYearEndSummaryQueryParams,
+  GetFp360AccountingYearEndSummaryResponse,
   PostFp360AccountingEntryBody,
   PostFp360AccountingEntryParams,
   PostFp360AccountingEntryResponse,
@@ -519,6 +521,110 @@ router.get("/redfp360/accounting/overview", async (req, res): Promise<void> => {
     return;
   }
   res.json(await loadOverview(actor.tenantId, organizationId, actor));
+});
+
+router.get("/redfp360/accounting/year-end-summary", async (req, res): Promise<void> => {
+  const actor = req.auth!;
+  const query = GetFp360AccountingYearEndSummaryQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const organizationId = await resolveOrganization(actor, query.data.organizationId);
+  if (!organizationId) {
+    res.status(403).json({ error: "No tienes acceso a la contabilidad de esa empresa." });
+    return;
+  }
+
+  const { fiscalYear } = query.data;
+  const [accounts, entries, periods] = await Promise.all([
+    db.select().from(fpAccountingAccounts).where(and(
+      eq(fpAccountingAccounts.tenantId, actor.tenantId),
+      eq(fpAccountingAccounts.organizationId, organizationId),
+    )),
+    db.select().from(fpAccountingEntries).where(and(
+      eq(fpAccountingEntries.tenantId, actor.tenantId),
+      eq(fpAccountingEntries.organizationId, organizationId),
+      eq(fpAccountingEntries.fiscalYear, fiscalYear),
+    )),
+    db.select().from(fpAccountingPeriods).where(and(
+      eq(fpAccountingPeriods.tenantId, actor.tenantId),
+      eq(fpAccountingPeriods.organizationId, organizationId),
+      eq(fpAccountingPeriods.fiscalYear, fiscalYear),
+    )),
+  ]);
+  const postedEntries = entries.filter((entry) => entry.status !== "draft");
+  const postedEntryIds = postedEntries.map((entry) => entry.id);
+  const lines = postedEntryIds.length ? await db.select().from(fpAccountingEntryLines).where(and(
+    eq(fpAccountingEntryLines.tenantId, actor.tenantId),
+    inArray(fpAccountingEntryLines.entryId, postedEntryIds),
+  )) : [];
+  const accountById = new Map(accounts.map((account) => [account.id, account]));
+  const profitAndLossTotals = new Map<string, { debitCents: number; creditCents: number }>();
+  for (const account of accounts) {
+    if (account.nature === "revenue" || account.nature === "expense") {
+      profitAndLossTotals.set(account.id, { debitCents: 0, creditCents: 0 });
+    }
+  }
+  for (const line of lines) {
+    const account = accountById.get(line.accountId);
+    const totals = profitAndLossTotals.get(line.accountId);
+    if (!account || !totals) continue;
+    totals.debitCents += line.debitCents;
+    totals.creditCents += line.creditCents;
+  }
+  const profitAndLossAccounts = accounts
+    .filter((account) => account.nature === "revenue" || account.nature === "expense")
+    .map((account) => {
+      const totals = profitAndLossTotals.get(account.id) ?? { debitCents: 0, creditCents: 0 };
+      return {
+        accountId: account.id,
+        code: account.code,
+        name: account.name,
+        nature: account.nature,
+        normalBalance: account.normalBalance,
+        debitCents: totals.debitCents,
+        creditCents: totals.creditCents,
+        balanceCents: account.normalBalance === "debit"
+          ? totals.debitCents - totals.creditCents
+          : totals.creditCents - totals.debitCents,
+      };
+    });
+  const revenueCents = profitAndLossAccounts
+    .filter((account) => account.nature === "revenue")
+    .reduce((sum, account) => sum + account.balanceCents, 0);
+  const expenseCents = profitAndLossAccounts
+    .filter((account) => account.nature === "expense")
+    .reduce((sum, account) => sum + account.balanceCents, 0);
+  const periodsClosed = periods.filter((period) => period.status === "closed").length;
+  const draftEntries = entries.length - postedEntries.length;
+  const debitCents = postedEntries.reduce((sum, entry) => sum + entry.debitCents, 0);
+  const creditCents = postedEntries.reduce((sum, entry) => sum + entry.creditCents, 0);
+  const journalBalanced = postedEntries.every((entry) => entry.debitCents === entry.creditCents);
+  const unsettledProfitAndLossAccounts = profitAndLossAccounts.filter((account) => account.balanceCents !== 0).length;
+  const profitAndLossAccountsSettled = unsettledProfitAndLossAccounts === 0;
+
+  res.json(GetFp360AccountingYearEndSummaryResponse.parse({
+    organizationId,
+    fiscalYear,
+    periodsClosed,
+    periodsExpected: 12,
+    draftEntries,
+    postedEntries: postedEntries.length,
+    debitCents,
+    creditCents,
+    journalBalanced,
+    revenueCents,
+    expenseCents,
+    resultCents: revenueCents - expenseCents,
+    unsettledProfitAndLossAccounts,
+    profitAndLossAccountsSettled,
+    readyForAnnualClose: periodsClosed === 12
+      && draftEntries === 0
+      && journalBalanced
+      && profitAndLossAccountsSettled,
+    profitAndLossAccounts,
+  }));
 });
 
 router.get("/redfp360/accounting/export", async (req, res): Promise<void> => {

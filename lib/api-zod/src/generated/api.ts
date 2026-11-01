@@ -6149,6 +6149,68 @@ export const GetFp360AccountingOverviewResponse = zod.object({
 
 
 /**
+ * @summary Summarize profit and loss balances before closing a fiscal year
+ */
+
+export const getFp360AccountingYearEndSummaryQueryFiscalYearMin = 2000;
+export const getFp360AccountingYearEndSummaryQueryFiscalYearMax = 2100;
+
+
+
+export const GetFp360AccountingYearEndSummaryQueryParams = zod.object({
+  "organizationId": zod.coerce.string().min(1),
+  "fiscalYear": zod.coerce.number().int().min(getFp360AccountingYearEndSummaryQueryFiscalYearMin).max(getFp360AccountingYearEndSummaryQueryFiscalYearMax)
+})
+
+export const getFp360AccountingYearEndSummaryResponsePeriodsClosedMin = 0;
+export const getFp360AccountingYearEndSummaryResponsePeriodsClosedMax = 12;
+
+export const getFp360AccountingYearEndSummaryResponseDraftEntriesMin = 0;
+
+export const getFp360AccountingYearEndSummaryResponsePostedEntriesMin = 0;
+
+export const getFp360AccountingYearEndSummaryResponseDebitCentsMin = 0;
+
+export const getFp360AccountingYearEndSummaryResponseCreditCentsMin = 0;
+
+export const getFp360AccountingYearEndSummaryResponseUnsettledProfitAndLossAccountsMin = 0;
+
+export const getFp360AccountingYearEndSummaryResponseProfitAndLossAccountsItemDebitCentsMin = 0;
+
+export const getFp360AccountingYearEndSummaryResponseProfitAndLossAccountsItemCreditCentsMin = 0;
+
+
+
+export const GetFp360AccountingYearEndSummaryResponse = zod.object({
+  "organizationId": zod.string(),
+  "fiscalYear": zod.number().int(),
+  "periodsClosed": zod.number().int().min(getFp360AccountingYearEndSummaryResponsePeriodsClosedMin).max(getFp360AccountingYearEndSummaryResponsePeriodsClosedMax),
+  "periodsExpected": zod.literal(12),
+  "draftEntries": zod.number().int().min(getFp360AccountingYearEndSummaryResponseDraftEntriesMin),
+  "postedEntries": zod.number().int().min(getFp360AccountingYearEndSummaryResponsePostedEntriesMin),
+  "debitCents": zod.number().int().min(getFp360AccountingYearEndSummaryResponseDebitCentsMin),
+  "creditCents": zod.number().int().min(getFp360AccountingYearEndSummaryResponseCreditCentsMin),
+  "journalBalanced": zod.boolean(),
+  "revenueCents": zod.number().int(),
+  "expenseCents": zod.number().int(),
+  "resultCents": zod.number().int(),
+  "unsettledProfitAndLossAccounts": zod.number().int().min(getFp360AccountingYearEndSummaryResponseUnsettledProfitAndLossAccountsMin),
+  "profitAndLossAccountsSettled": zod.boolean(),
+  "readyForAnnualClose": zod.boolean(),
+  "profitAndLossAccounts": zod.array(zod.object({
+  "accountId": zod.string(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "nature": zod.enum(['asset', 'liability', 'equity', 'revenue', 'expense']),
+  "normalBalance": zod.enum(['debit', 'credit']),
+  "debitCents": zod.number().int().min(getFp360AccountingYearEndSummaryResponseProfitAndLossAccountsItemDebitCentsMin),
+  "creditCents": zod.number().int().min(getFp360AccountingYearEndSummaryResponseProfitAndLossAccountsItemCreditCentsMin),
+  "balanceCents": zod.number().int()
+}))
+})
+
+
+/**
  * @summary Export one organization's journal or general ledger for a fiscal year
  */
 
