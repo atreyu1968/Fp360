@@ -571,8 +571,14 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
 function InventoryPage({ products, orders, stateProducts, stateOrders }: {
   products?: Product[]; orders?: Order[]; stateProducts: DataState; stateOrders: DataState;
 }) {
+  const identity = useGetCurrentIdentity();
   const [search, setSearch] = useState('');
-  const inventoryProducts = (products ?? []).filter((p) => p.tracksInventory);
+  const isNetworkSupervisor = identity.data?.role === 'administrator' ||
+    (identity.data?.role === 'teacher' && !identity.data.organizationId);
+  const inventoryProducts = (products ?? []).filter((p) =>
+    (isNetworkSupervisor || (!!identity.data?.organizationId && p.supplierOrganizationId === identity.data.organizationId)) &&
+    p.tracksInventory,
+  );
   const rows = inventoryProducts.filter((p) => `${p.name} ${p.sku} ${p.category}`.toLowerCase().includes(search.toLowerCase()));
   const totalAvailable = inventoryProducts.reduce((sum, p) => sum + Math.max(0, p.stock - p.reserved), 0);
   const totalReserved = inventoryProducts.reduce((sum, p) => sum + p.reserved, 0);
@@ -592,7 +598,7 @@ function InventoryPage({ products, orders, stateProducts, stateOrders }: {
       <DataTable minWidth={720}><thead><tr><th>Artículo</th><th>SKU</th><th>Tipo</th><th>En almacén</th><th>Reservado</th><th>Disponible</th><th>Estado de stock</th></tr></thead><tbody>
         {!stateProducts.loading && !stateProducts.error && rows.map((p) => {
           const available = Math.max(0, p.stock - p.reserved);
-          const level = available === 0 ? 'Agotado' : available <= p.minimumStock ? 'Bajo' : 'Disponible';
+          const level = available === 0 ? 'Agotado' : p.minimumStock !== null && available <= p.minimumStock ? 'Bajo' : 'Disponible';
           return <tr key={p.id} data-testid={`row-stock-${p.id}`}><td><div className="product-cell"><span className="product-glyph"><Package size={17} /></span><span><b>{p.name}</b><small className="table-secondary">{!p.isActive ? 'Archivado · fuera de venta' : p.isPublished ? 'Publicado' : 'Sin publicar'}</small></span></div></td><td className="mono">{p.sku}</td><td>{p.category}</td><td className="numeric">{p.stock}</td><td className="numeric">{p.reserved}</td><td className="numeric stock-value">{available}</td><td><span className={`stock-state ${level === 'Disponible' ? 'stock-ok' : level === 'Bajo' ? 'stock-low' : 'stock-empty'}`}><span />{level}</span></td></tr>;
         })}
         {!stateProducts.loading && !stateProducts.error && rows.length === 0 && <TableEmpty colSpan={7} title="No hay artículos en este filtro" detail="Prueba otra búsqueda o consulta el catálogo del mercado." />}

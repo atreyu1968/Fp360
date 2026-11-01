@@ -5688,9 +5688,9 @@ components:
         igicBasisPoints: { type: integer, minimum: 0 }
         stock: { type: integer, minimum: 0 }
         reserved: { type: integer, minimum: 0 }
-        costCents: { type: integer, minimum: 0 }
-        minimumStock: { type: integer, minimum: 0 }
-        maxDiscountBasisPoints: { type: integer, minimum: 0 }
+        costCents: { type: ["integer", "null"], minimum: 0 }
+        minimumStock: { type: ["integer", "null"], minimum: 0 }
+        maxDiscountBasisPoints: { type: ["integer", "null"], minimum: 0 }
         leadTimeDays: { type: integer, minimum: 0 }
         supplierOrganizationId: { type: ["string", "null"] }
         isActive: { type: boolean }

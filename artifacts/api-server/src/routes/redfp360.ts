@@ -497,16 +497,26 @@ router.get("/redfp360/organizations", async (req, res): Promise<void> => {
 });
 
 router.get("/redfp360/products", async (req, res): Promise<void> => {
-  const tenantId = req.auth!.tenantId;
+  const actor = req.auth!;
+  const tenantId = actor.tenantId;
+  const networkSupervisor = isNetworkSupervisor(actor);
   await ensureDemoData(tenantId);
   const products = await db
     .select()
     .from(fpProducts)
     .where(eq(fpProducts.tenantId, tenantId))
     .orderBy(fpProducts.category, fpProducts.name);
+  const visibleProducts = products.filter((product) =>
+    networkSupervisor ||
+    product.supplierOrganizationId === actor.organizationId ||
+    (product.isActive && product.isPublished),
+  );
   res.json(
     ListFp360ProductsResponse.parse(
-      products.map((product) => ({
+      visibleProducts.map((product) => {
+        const canSeeInternalFields = networkSupervisor ||
+          (!!actor.organizationId && product.supplierOrganizationId === actor.organizationId);
+        return {
         id: product.id,
         sku: product.sku,
         name: product.name,
@@ -517,16 +527,17 @@ router.get("/redfp360/products", async (req, res): Promise<void> => {
         tracksInventory: product.tracksInventory,
         unitPriceCents: product.unitPriceCents,
         igicBasisPoints: product.igicBasisPoints,
-        stock: product.stock,
-        reserved: product.reserved,
-        costCents: product.costCents,
-        minimumStock: product.minimumStock,
-        maxDiscountBasisPoints: product.maxDiscountBasisPoints,
+        stock: canSeeInternalFields ? product.stock : Math.max(0, product.stock - product.reserved),
+        reserved: canSeeInternalFields ? product.reserved : 0,
+        costCents: canSeeInternalFields ? product.costCents : null,
+        minimumStock: canSeeInternalFields ? product.minimumStock : null,
+        maxDiscountBasisPoints: canSeeInternalFields ? product.maxDiscountBasisPoints : null,
         leadTimeDays: product.leadTimeDays,
         supplierOrganizationId: product.supplierOrganizationId,
         isActive: product.isActive,
         isPublished: product.isPublished,
-      })),
+        };
+      }),
     ),
   );
 });

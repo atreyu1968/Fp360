@@ -24,12 +24,21 @@ export interface Fp360Product {
   stock: number;
   /** @minimum 0 */
   reserved: number;
-  /** @minimum 0 */
-  costCents: number;
-  /** @minimum 0 */
-  minimumStock: number;
-  /** @minimum 0 */
-  maxDiscountBasisPoints: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  costCents: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  minimumStock: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  maxDiscountBasisPoints: number | null;
   /** @minimum 0 */
   leadTimeDays: number;
   /** @nullable */

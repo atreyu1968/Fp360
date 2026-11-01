@@ -33,7 +33,10 @@ type Filter = 'all' | 'product' | 'service' | 'published' | 'pending' | 'archive
 type DialogAction = { product: Fp360Product; action: 'archive' | 'restore' | 'publish' | 'unpublish' };
 
 function available(p: Fp360Product) { return Math.max(0, p.stock - p.reserved); }
-function lowStock(p: Fp360Product) { return p.itemType === 'product' && p.tracksInventory && p.isActive && available(p) <= p.minimumStock; }
+function lowStock(p: Fp360Product) {
+  return p.itemType === 'product' && p.tracksInventory && p.isActive &&
+    p.minimumStock !== null && available(p) <= p.minimumStock;
+}
 
 function ItemState({ product }: { product: Fp360Product }) {
   if (!product.isActive) return <span className="status md-muted"><span className="status-dot" />Archivado</span>;
@@ -50,6 +53,17 @@ export function CatalogPage({ onNotice }: { onNotice: (message: string) => void 
   const update = useUpdateFp360Product();
   const canWrite = WRITE_ROLES.includes(identity.data?.role ?? '');
   const canPublish = PUBLISH_ROLES.includes(identity.data?.role ?? '');
+  const isNetworkSupervisor = identity.data?.role === 'administrator' ||
+    (identity.data?.role === 'teacher' && !identity.data.organizationId);
+  const canManageProduct = (product: Fp360Product) => canWrite &&
+    (isNetworkSupervisor || (!!identity.data?.organizationId &&
+      product.supplierOrganizationId === identity.data.organizationId));
+  const ownOrganization = organizations.data?.find((org) => org.id === identity.data?.organizationId);
+  const canCreateProduct = canWrite && (isNetworkSupervisor ||
+    (!!ownOrganization && (ownOrganization.role === 'seller' || ownOrganization.role === 'both')));
+  const suppliers = (organizations.data ?? []).filter((org) => org.isActive &&
+    (org.role === 'seller' || org.role === 'both') &&
+    (isNetworkSupervisor || org.id === identity.data?.organizationId));
   const canEditTax = canPublish;
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
@@ -126,10 +140,10 @@ export function CatalogPage({ onNotice }: { onNotice: (message: string) => void 
       <div className="breadcrumbs"><span>RED FP360</span><span className="crumb-slash">/</span><span>COMERCIAL · CATÁLOGO</span></div>
       <div className="heading-row">
         <div><h1>Productos y servicios</h1><p>Fichas maestras, tarifas y aprobación comercial de la empresa simulada.</p></div>
-        {canWrite && <button className="button button-primary" onClick={() => setEditing('new')} data-testid="button-create-catalog-item"><PackagePlus size={16} /> Nueva referencia</button>}
+        {canCreateProduct && <button className="button button-primary" onClick={() => setEditing('new')} data-testid="button-create-catalog-item"><PackagePlus size={16} /> Nueva referencia</button>}
       </div>
     </div>
-    {!canWrite && identity.data && <ReadOnlyBanner text="Tu perfil puede consultar el catálogo y sus historiales, pero no modificar fichas." />}
+    {!canWrite && identity.data && <ReadOnlyBanner text="Tu perfil puede consultar las referencias publicadas del catálogo, pero no modificar fichas." />}
 
     <div className="catalog-overview" aria-label="Resumen de catálogo">
       <div className="catalog-overview-title"><span className="catalog-overview-mark"><Tags size={17} /></span><div><b>Un catálogo, dos formas de vender</b><small>Los productos pueden controlar existencias; los servicios se gestionan por prestación.</small></div></div>
@@ -157,45 +171,51 @@ export function CatalogPage({ onNotice }: { onNotice: (message: string) => void 
         {catalog.data && <div className="table-scroll redfp-scroll catalog-table-wrap"><table className="catalog-table"><thead><tr>
           <th>Referencia</th><th>Tipo</th><th>Precio unitario</th><th>Coste</th><th>IGIC</th><th>Existencias</th><th>Estado</th><th>Acciones</th>
         </tr></thead><tbody>
-          {rows.map((p) => <tr key={p.id} className={`${p.isActive ? '' : 'md-row-archived'} ${selectedProduct?.id === p.id ? 'catalog-row-selected' : ''}`} data-testid={`row-catalog-item-${p.id}`}>
+          {rows.map((p) => {
+            const canManage = canManageProduct(p);
+            return <tr key={p.id} className={`${p.isActive ? '' : 'md-row-archived'} ${selectedProduct?.id === p.id ? 'catalog-row-selected' : ''}`} data-testid={`row-catalog-item-${p.id}`}>
             <td><button className="catalog-item-select" onClick={() => setSelected(p.id)} aria-label={`Ver ficha de ${p.name}`} aria-pressed={selectedProduct?.id === p.id} data-testid={`button-select-item-${p.id}`}>
               <span className={`catalog-item-icon ${p.itemType === 'service' ? 'service' : ''}`}>{p.itemType === 'service' ? <BriefcaseBusiness size={17} /> : <Package size={17} />}</span>
               <span><b>{p.name}</b><small className="mono">{p.sku} <i>·</i> {p.category}</small></span>
             </button></td>
             <td><span className={`catalog-type ${p.itemType}`}>{p.itemType === 'service' ? 'Servicio' : p.tracksInventory ? 'Inventariable' : 'Producto'}</span></td>
             <td className="price-cell">{money(p.unitPriceCents)}<small className="table-secondary block">por {p.unit}</small></td>
-            <td>{money(p.costCents)}</td>
+            <td>{p.costCents === null ? '—' : money(p.costCents)}</td>
             <td>{basisToPercent(p.igicBasisPoints)} %</td>
-            <td>{p.tracksInventory ? <><b className="catalog-stock">{available(p)}</b><small className="table-secondary block">de {p.stock} · {p.reserved} reservado</small>{lowStock(p) && <span className="md-low">Bajo mínimo {p.minimumStock}</span>}</> : <span className="text-muted">No aplica</span>}</td>
+            <td>{p.tracksInventory ? <><b className="catalog-stock">{available(p)}</b>{canManage
+              ? <><small className="table-secondary block">de {p.stock} · {p.reserved} reservado</small>{lowStock(p) && <span className="md-low">Bajo mínimo {p.minimumStock}</span>}</>
+              : <small className="table-secondary block">unidades disponibles</small>}</> : <span className="text-muted">No aplica</span>}</td>
             <td><ItemState product={p} /></td>
             <td><div className="row-actions catalog-actions">
-              {canWrite && p.isActive && <button className="mini-button" onClick={() => setEditing(p)} data-testid={`button-edit-item-${p.id}`}><Pencil size={13} /> Editar</button>}
-              {canWrite && p.tracksInventory && p.isActive && <button className="mini-button" onClick={() => setAdjusting(p)} data-testid={`button-adjust-stock-${p.id}`}><SlidersHorizontal size={13} /> Ajustar</button>}
-              <button className="mini-button" onClick={() => setPriceHistoryProduct(p)} data-testid={`button-price-history-${p.id}`}><History size={13} /> Tarifas</button>
-              {p.tracksInventory && <button className="mini-button" onClick={() => setStockHistoryProduct(p)} data-testid={`button-stock-history-${p.id}`}><Boxes size={13} /> Movimientos</button>}
-              {canPublish && p.isActive && <button className="mini-button mini-button-blue" onClick={() => { setActionError(''); setConfirmation({ product: p, action: p.isPublished ? 'unpublish' : 'publish' }); }} data-testid={`${p.isPublished ? 'button-unpublish' : 'button-approve'}-item-${p.id}`}>
+              {canManage && p.isActive && <button className="mini-button" onClick={() => setEditing(p)} data-testid={`button-edit-item-${p.id}`}><Pencil size={13} /> Editar</button>}
+              {canManage && p.tracksInventory && p.isActive && <button className="mini-button" onClick={() => setAdjusting(p)} data-testid={`button-adjust-stock-${p.id}`}><SlidersHorizontal size={13} /> Ajustar</button>}
+              {canManage && <button className="mini-button" onClick={() => setPriceHistoryProduct(p)} data-testid={`button-price-history-${p.id}`}><History size={13} /> Tarifas</button>}
+              {canManage && p.tracksInventory && <button className="mini-button" onClick={() => setStockHistoryProduct(p)} data-testid={`button-stock-history-${p.id}`}><Boxes size={13} /> Movimientos</button>}
+              {canManage && canPublish && p.isActive && <button className="mini-button mini-button-blue" onClick={() => { setActionError(''); setConfirmation({ product: p, action: p.isPublished ? 'unpublish' : 'publish' }); }} data-testid={`${p.isPublished ? 'button-unpublish' : 'button-approve'}-item-${p.id}`}>
                 {p.isPublished ? <><EyeOff size={13} /> Retirar</> : <><BadgeCheck size={13} /> Aprobar</>}
               </button>}
-              {canWrite && <button className="mini-button" onClick={() => { setActionError(''); setConfirmation({ product: p, action: p.isActive ? 'archive' : 'restore' }); }} data-testid={`${p.isActive ? 'button-archive' : 'button-restore'}-item-${p.id}`}>
+              {canManage && <button className="mini-button" onClick={() => { setActionError(''); setConfirmation({ product: p, action: p.isActive ? 'archive' : 'restore' }); }} data-testid={`${p.isActive ? 'button-archive' : 'button-restore'}-item-${p.id}`}>
                 {p.isActive ? <><Archive size={13} /> Archivar</> : <><ArchiveRestore size={13} /> Restaurar</>}
               </button>}
-              {canWrite && <button className="mini-button" onClick={() => setEditing({ ...p, id: '', sku: '' } as Fp360Product)} data-testid={`button-duplicate-item-${p.id}`}><PackagePlus size={13} /> Duplicar</button>}
+              {canManage && <button className="mini-button" onClick={() => setEditing({ ...p, id: '', sku: '' } as Fp360Product)} data-testid={`button-duplicate-item-${p.id}`}><PackagePlus size={13} /> Duplicar</button>}
             </div></td>
-          </tr>)}
-          {!rows.length && <tr><td colSpan={8}><div className="empty-state"><div className="empty-icon"><Package size={20} /></div><strong>{all.length ? 'No hay referencias coincidentes' : 'Aún no hay referencias'}</strong><p>{all.length ? 'Ajusta la búsqueda o el filtro para revisar el catálogo.' : 'Crea una ficha de producto o servicio para iniciar el catálogo de esta empresa.'}</p>{canWrite && !all.length && <button className="button button-primary" onClick={() => setEditing('new')} data-testid="button-create-first-item">Crear primera referencia</button>}</div></td></tr>}
+            </tr>;
+          })}
+          {!rows.length && <tr><td colSpan={8}><div className="empty-state"><div className="empty-icon"><Package size={20} /></div><strong>{all.length ? 'No hay referencias coincidentes' : 'Aún no hay referencias'}</strong><p>{all.length ? 'Ajusta la búsqueda o el filtro para revisar el catálogo.' : 'Crea una ficha de producto o servicio para iniciar el catálogo de esta empresa.'}</p>{canCreateProduct && !all.length && <button className="button button-primary" onClick={() => setEditing('new')} data-testid="button-create-first-item">Crear primera referencia</button>}</div></td></tr>}
         </tbody></table></div>}
         <div className="table-footer"><span>{rows.length} de {catalog.data?.length ?? '—'} referencias</span><span className="catalog-table-note">La disponibilidad de inventario excluye unidades reservadas.</span></div>
       </section>
 
       <aside className="catalog-side">
         <section className="panel catalog-detail-panel">
-          {selectedProduct ? <ProductDetail product={selectedProduct} supplierName={organizations.data?.find((org) => org.id === selectedProduct.supplierOrganizationId)?.name} orders={orders.data} ordersLoading={orders.isLoading} ordersError={orders.isError} onRetry={() => void orders.refetch()} onEdit={() => setEditing(selectedProduct)} onDuplicate={() => setEditing({ ...selectedProduct, id: '', sku: '' } as Fp360Product)} canWrite={canWrite} /> :
+          {selectedProduct ? <ProductDetail product={selectedProduct} supplierName={organizations.data?.find((org) => org.id === selectedProduct.supplierOrganizationId)?.name} orders={orders.data} ordersLoading={orders.isLoading} ordersError={orders.isError} onRetry={() => void orders.refetch()} onEdit={() => setEditing(selectedProduct)} onDuplicate={() => setEditing({ ...selectedProduct, id: '', sku: '' } as Fp360Product)} canWrite={canManageProduct(selectedProduct)} /> :
             <div className="catalog-detail-empty"><Package size={22} /><b>Selecciona una referencia</b><span>La ficha muestra sus condiciones comerciales y los resultados facturados disponibles.</span></div>}
         </section>
         <section className="catalog-learning-note"><div className="catalog-note-icon"><CircleHelp size={17} /></div><div><b>Trazabilidad comercial</b><p>Los cambios de tarifa guardan motivo, fecha efectiva y responsable. El inventario solo cambia mediante ajustes registrados o movimientos de ventas.</p></div></section>
       </aside>
     </div>
-    {editing && <ProductForm product={editing === 'new' ? null : editing} suppliers={(organizations.data ?? []).filter((org) => org.isActive && (org.role === 'seller' || org.role === 'both'))} canEditTax={canEditTax}
+    {editing && <ProductForm product={editing === 'new' ? null : editing} suppliers={suppliers}
+      defaultSupplierOrganizationId={isNetworkSupervisor ? '' : identity.data?.organizationId ?? ''} canEditTax={canEditTax}
       onClose={() => setEditing(null)} onSaved={(message, id) => { setEditing(null); refreshRelated(); if (id) setSelected(id); onNotice(message); }} />}
     {adjusting && <StockAdjustmentDialog product={adjusting} onClose={() => setAdjusting(null)} onSaved={() => {
       void refreshProducts(); void queryClient.invalidateQueries({ queryKey: getListFp360StockAdjustmentsQueryKey(adjusting.id) });
@@ -238,9 +258,9 @@ function ProductDetail({ product, supplierName, orders, ordersLoading, ordersErr
     <dl className="catalog-detail-list">
       <div><dt>Precio unitario</dt><dd>{money(product.unitPriceCents)} <small>por {product.unit}</small></dd></div>
       <div><dt>IGIC</dt><dd>{basisToPercent(product.igicBasisPoints)} %</dd></div>
-      <div><dt>Coste registrado</dt><dd>{money(product.costCents)}</dd></div>
+      <div><dt>Coste registrado</dt><dd>{product.costCents === null ? 'Privado' : money(product.costCents)}</dd></div>
       {product.itemType === 'product' && <div><dt>Control de inventario</dt><dd>{product.tracksInventory ? 'Sí' : 'No'}</dd></div>}
-      {product.tracksInventory && <div><dt>Disponible</dt><dd>{available(product)} <small>de {product.stock}; {product.reserved} reservado</small></dd></div>}
+      {product.tracksInventory && <div><dt>Disponible</dt><dd>{available(product)} <small>{canWrite ? `de ${product.stock}; ${product.reserved} reservado` : 'unidades disponibles'}</small></dd></div>}
       <div><dt>Proveedor asignado</dt><dd>{product.supplierOrganizationId ? supplierName ?? 'Proveedor no disponible' : 'Sin asignar'}</dd></div>
       <div><dt>Plazo previsto</dt><dd>{product.leadTimeDays ? `${product.leadTimeDays} días` : 'No indicado'}</dd></div>
     </dl>
@@ -293,8 +313,9 @@ const productSchema = z.object({
 });
 type ProductFormValues = z.infer<typeof productSchema>;
 
-function ProductForm({ product, suppliers, canEditTax, onClose, onSaved }: {
-  product: Fp360Product | null; suppliers: { id: string; name: string; island: string }[]; canEditTax: boolean;
+function ProductForm({ product, suppliers, defaultSupplierOrganizationId, canEditTax, onClose, onSaved }: {
+  product: Fp360Product | null; suppliers: { id: string; name: string; island: string }[];
+  defaultSupplierOrganizationId: string; canEditTax: boolean;
   onClose: () => void; onSaved: (message: string, id?: string) => void;
 }) {
   const creating = !product || !product.id;
@@ -309,10 +330,10 @@ function ProductForm({ product, suppliers, canEditTax, onClose, onSaved }: {
     defaultValues: {
       sku: creating ? '' : seed?.sku ?? '', name: seed?.name ?? '', description: seed?.description ?? '', category: seed?.category ?? '',
       itemType: seed?.itemType ?? 'product', unit: seed?.unit ?? 'ud.', tracksInventory: creating ? true : seed?.tracksInventory ?? false,
-      price: seed ? centsToEuros(seed.unitPriceCents) : '', cost: seed ? centsToEuros(seed.costCents) : '0.00',
+      price: seed ? centsToEuros(seed.unitPriceCents) : '', cost: seed ? centsToEuros(seed.costCents ?? 0) : '0.00',
       igic: seed ? basisToPercent(seed.igicBasisPoints) : '7', initialStock: '0', minimumStock: String(seed?.minimumStock ?? 0),
-      maxDiscount: String(seed ? seed.maxDiscountBasisPoints / 100 : 0), leadTime: String(seed?.leadTimeDays ?? 0),
-      supplierOrganizationId: seed?.supplierOrganizationId ?? '', priceChangeReason: '', effectiveFrom: SIMULATED_DATE,
+      maxDiscount: String(seed ? (seed.maxDiscountBasisPoints ?? 0) / 100 : 0), leadTime: String(seed?.leadTimeDays ?? 0),
+      supplierOrganizationId: seed?.supplierOrganizationId ?? defaultSupplierOrganizationId, priceChangeReason: '', effectiveFrom: SIMULATED_DATE,
     },
   });
   const [serverError, setServerError] = useState('');
@@ -321,9 +342,9 @@ function ProductForm({ product, suppliers, canEditTax, onClose, onSaved }: {
   const priceWatch = form.watch(['price', 'cost', 'igic', 'maxDiscount']);
   const tariffChanged = !!product?.id && (
     eurosToCents(priceWatch[0]) !== product.unitPriceCents ||
-    eurosToCents(priceWatch[1]) !== product.costCents ||
+    eurosToCents(priceWatch[1]) !== (product.costCents ?? 0) ||
     percentToBasis(priceWatch[2]) !== product.igicBasisPoints ||
-    Number(priceWatch[3]) * 100 !== product.maxDiscountBasisPoints
+    Number(priceWatch[3]) * 100 !== (product.maxDiscountBasisPoints ?? 0)
   );
   const roleCanChangeIgic = canEditTax;
   useEffect(() => {
@@ -370,11 +391,11 @@ function ProductForm({ product, suppliers, canEditTax, onClose, onSaved }: {
     if (values.unit.trim() !== product.unit) data.unit = values.unit.trim();
     if (values.itemType === 'product' && values.tracksInventory !== product.tracksInventory) data.tracksInventory = values.tracksInventory;
     if (priceCents !== product.unitPriceCents) data.unitPriceCents = priceCents;
-    if (costCents !== product.costCents) data.costCents = costCents;
+    if (costCents !== (product.costCents ?? 0)) data.costCents = costCents;
     if (igicBasisPoints !== product.igicBasisPoints) data.igicBasisPoints = igicBasisPoints;
     const minimumStock = values.itemType === 'product' && values.tracksInventory ? Number(values.minimumStock) : 0;
-    if (minimumStock !== product.minimumStock) data.minimumStock = minimumStock;
-    if (Math.round(Number(values.maxDiscount) * 100) !== product.maxDiscountBasisPoints) data.maxDiscountBasisPoints = Math.round(Number(values.maxDiscount) * 100);
+    if (minimumStock !== (product.minimumStock ?? 0)) data.minimumStock = minimumStock;
+    if (Math.round(Number(values.maxDiscount) * 100) !== (product.maxDiscountBasisPoints ?? 0)) data.maxDiscountBasisPoints = Math.round(Number(values.maxDiscount) * 100);
     if (Number(values.leadTime) !== product.leadTimeDays) data.leadTimeDays = Number(values.leadTime);
     if (supplierOrganizationId !== product.supplierOrganizationId) data.supplierOrganizationId = supplierOrganizationId;
     if (tariffChanged) {

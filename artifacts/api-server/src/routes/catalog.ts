@@ -35,6 +35,21 @@ class CatalogError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 function fail(status: number, message: string): never { throw new CatalogError(status, message); }
+function isNetworkSupervisor(actor: AuthContext) {
+  return actor.role === "administrator" || (actor.role === "teacher" && actor.organizationId === null);
+}
+function canManageProduct(actor: AuthContext, product: typeof fpProducts.$inferSelect) {
+  return isNetworkSupervisor(actor) ||
+    (!!actor.organizationId && product.supplierOrganizationId === actor.organizationId);
+}
+function requireProductManager(actor: AuthContext, product: typeof fpProducts.$inferSelect) {
+  if (!canManageProduct(actor, product)) fail(404, "Referencia de catálogo no encontrada en tu empresa.");
+}
+function requireProductReader(actor: AuthContext, product: typeof fpProducts.$inferSelect) {
+  if (!canManageProduct(actor, product) && (!product.isActive || !product.isPublished)) {
+    fail(404, "Referencia de catálogo no encontrada en tu empresa.");
+  }
+}
 function nonBlank(value: string | undefined, label: string) {
   if (value !== undefined && !value.trim()) fail(400, `${label} no puede estar vacío.`);
 }
@@ -71,6 +86,7 @@ router.post("/redfp360/organizations", async (req, res): Promise<void> => {
   nonBlank(body.data.name, "El nombre");
   nonBlank(body.data.center, "El centro");
   const actor = req.auth!;
+  if (!isNetworkSupervisor(actor)) fail(403, "Solo la administración o el profesorado de red puede crear empresas.");
   const organization = await db.transaction(async (tx) => {
     await lockDirectory(tx, actor.tenantId);
     await checkDuplicate(tx, actor.tenantId, body.data.name, body.data.center);
@@ -97,6 +113,14 @@ router.patch("/redfp360/organizations/:id", async (req, res): Promise<void> => {
       eq(fpOrganizations.id, params.data.id), eq(fpOrganizations.tenantId, actor.tenantId),
     )).for("update");
     if (!previous) fail(404, "Empresa no encontrada en tu red.");
+    if (!isNetworkSupervisor(actor) && previous.id !== actor.organizationId) {
+      fail(404, "Empresa no encontrada en tu organización.");
+    }
+    if (!isNetworkSupervisor(actor) &&
+      (body.data.isActive !== undefined || body.data.role !== undefined ||
+       body.data.center !== undefined || body.data.island !== undefined)) {
+      fail(403, "Solo la supervisión de red puede cambiar el estado, centro, isla o perfil comercial de una empresa.");
+    }
     const name = body.data.name?.trim() ?? previous.name;
     const center = body.data.center?.trim() ?? previous.center;
     await checkDuplicate(tx, actor.tenantId, name, center, previous.id);
@@ -133,8 +157,11 @@ router.post("/redfp360/products", async (req, res): Promise<void> => {
   if ((itemType === "service" && tracksInventory) || (!tracksInventory && (stock !== 0 || minimumStock !== 0))) {
     fail(400, "Los servicios y las referencias sin control de almacén no pueden tener existencias ni stock mínimo.");
   }
+  const supplierOrganizationId = body.data.supplierOrganizationId ?? (isNetworkSupervisor(actor) ? null : actor.organizationId);
+  if (!isNetworkSupervisor(actor) && (!actor.organizationId || supplierOrganizationId !== actor.organizationId)) {
+    fail(403, "Solo puedes crear referencias para tu propia empresa.");
+  }
   const product = await db.transaction(async (tx) => {
-    const supplierOrganizationId = body.data.supplierOrganizationId ?? null;
     if (supplierOrganizationId) {
       const [supplier] = await tx.select().from(fpOrganizations).where(and(
         eq(fpOrganizations.id, supplierOrganizationId),
@@ -204,6 +231,11 @@ router.patch("/redfp360/products/:id", async (req, res): Promise<void> => {
       eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, actor.tenantId),
     )).for("update");
     if (!previous) fail(404, "Referencia de catálogo no encontrada en tu red.");
+    requireProductManager(actor, previous);
+    if (!isNetworkSupervisor(actor) && changes.supplierOrganizationId !== undefined &&
+      changes.supplierOrganizationId !== actor.organizationId) {
+      fail(403, "No puedes transferir una referencia a otra empresa.");
+    }
     const next = {
       ...changes,
       ...(changes.sku !== undefined ? { sku: changes.sku.trim().toUpperCase() } : {}),
@@ -295,14 +327,15 @@ router.patch("/redfp360/products/:id", async (req, res): Promise<void> => {
 router.get("/redfp360/products/:id/price-versions", async (req, res): Promise<void> => {
   const params = ListFp360ProductPriceVersionsParams.safeParse(req.params);
   if (!params.success) fail(400, "Referencia no válida.");
-  const tenantId = req.auth!.tenantId;
-  const [product] = await db.select({ id: fpProducts.id }).from(fpProducts).where(and(
-    eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, tenantId),
+  const actor = req.auth!;
+  const [product] = await db.select().from(fpProducts).where(and(
+    eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, actor.tenantId),
   ));
   if (!product) fail(404, "Referencia de catálogo no encontrada en tu red.");
+  requireProductManager(actor, product);
   const rows = await db.select().from(fpProductPriceVersions).where(and(
     eq(fpProductPriceVersions.productId, product.id),
-    eq(fpProductPriceVersions.tenantId, tenantId),
+    eq(fpProductPriceVersions.tenantId, actor.tenantId),
   )).orderBy(desc(fpProductPriceVersions.validFrom), desc(fpProductPriceVersions.createdAt));
   res.json(ListFp360ProductPriceVersionsResponse.parse(rows.map((row) => ({
     ...row,
@@ -313,15 +346,22 @@ router.get("/redfp360/products/:id/price-versions", async (req, res): Promise<vo
 router.get("/redfp360/products/:id/documents", async (req, res): Promise<void> => {
   const params = ListFp360ProductDocumentsParams.safeParse(req.params);
   if (!params.success) fail(400, "Referencia no válida.");
-  const tenantId = req.auth!.tenantId;
-  const [product] = await db.select({ id: fpProducts.id }).from(fpProducts).where(and(
-    eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, tenantId),
+  const actor = req.auth!;
+  const [product] = await db.select().from(fpProducts).where(and(
+    eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, actor.tenantId),
   ));
   if (!product) fail(404, "Referencia de catálogo no encontrada en tu red.");
+  requireProductReader(actor, product);
   const documents = await db.select().from(fpProductDocuments).where(and(
-    eq(fpProductDocuments.productId, product.id), eq(fpProductDocuments.tenantId, tenantId),
+    eq(fpProductDocuments.productId, product.id), eq(fpProductDocuments.tenantId, actor.tenantId),
   )).orderBy(desc(fpProductDocuments.createdAt));
-  res.json(ListFp360ProductDocumentsResponse.parse(documents.map(documentResponse)));
+  const visibleDocuments = canManageProduct(actor, product)
+    ? documents
+    : documents.filter((document) => document.status === "ready");
+  res.json(ListFp360ProductDocumentsResponse.parse(visibleDocuments.map((document) => ({
+    ...documentResponse(document),
+    uploaderName: canManageProduct(actor, product) ? document.uploaderName : "Empresa proveedora",
+  }))));
 });
 
 router.post("/redfp360/products/:id/documents/upload-url", async (req, res): Promise<void> => {
@@ -333,6 +373,7 @@ router.post("/redfp360/products/:id/documents/upload-url", async (req, res): Pro
     eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, actor.tenantId),
   ));
   if (!product) fail(404, "Referencia de catálogo no encontrada en tu red.");
+  requireProductManager(actor, product);
   if (!product.isActive) fail(409, "Reactiva la referencia antes de adjuntar documentos.");
   if (body.data.size > MAX_PRODUCT_DOCUMENT_BYTES) fail(400, "El documento no puede superar los 10 MB.");
   const originalName = sanitizeDocumentName(body.data.name);
@@ -375,6 +416,11 @@ router.post("/redfp360/products/:id/documents/:documentId/complete", async (req,
       eq(fpProductDocuments.tenantId, actor.tenantId),
     )).for("update");
     if (!row) fail(404, "Documento no encontrado en esta referencia.");
+    const [product] = await tx.select().from(fpProducts).where(and(
+      eq(fpProducts.id, row.productId), eq(fpProducts.tenantId, actor.tenantId),
+    ));
+    if (!product) fail(404, "Referencia de catálogo no encontrada en tu empresa.");
+    requireProductManager(actor, product);
     if (row.status === "ready") return row;
     let file;
     try {
@@ -398,9 +444,9 @@ router.post("/redfp360/products/:id/documents/:documentId/complete", async (req,
     const [updated] = await tx.update(fpProductDocuments).set({ status: "ready" }).where(and(
       eq(fpProductDocuments.id, row.id), eq(fpProductDocuments.tenantId, actor.tenantId),
     )).returning();
-    const [product] = await tx.select({ name: fpProducts.name }).from(fpProducts).where(eq(fpProducts.id, row.productId));
+    const [productName] = await tx.select({ name: fpProducts.name }).from(fpProducts).where(eq(fpProducts.id, row.productId));
     await activity(tx, actor, "Documento de catálogo adjuntado",
-      `${row.originalName} se ha vinculado a ${product?.name ?? "una referencia de catálogo"}.`, row.productId);
+      `${row.originalName} se ha vinculado a ${productName?.name ?? "una referencia de catálogo"}.`, row.productId);
     return updated;
   });
   res.json(CompleteFp360ProductDocumentUploadResponse.parse(documentResponse(document)));
@@ -409,13 +455,19 @@ router.post("/redfp360/products/:id/documents/:documentId/complete", async (req,
 router.get("/redfp360/products/:id/documents/:documentId/download", async (req, res): Promise<void> => {
   const params = DownloadFp360ProductDocumentParams.safeParse(req.params);
   if (!params.success) fail(400, "Documento no válido.");
+  const actor = req.auth!;
   const [document] = await db.select().from(fpProductDocuments).where(and(
     eq(fpProductDocuments.id, params.data.documentId),
     eq(fpProductDocuments.productId, params.data.id),
-    eq(fpProductDocuments.tenantId, req.auth!.tenantId),
+    eq(fpProductDocuments.tenantId, actor.tenantId),
     eq(fpProductDocuments.status, "ready"),
   ));
   if (!document) fail(404, "Documento disponible no encontrado en esta referencia.");
+  const [product] = await db.select().from(fpProducts).where(and(
+    eq(fpProducts.id, document.productId), eq(fpProducts.tenantId, actor.tenantId),
+  ));
+  if (!product) fail(404, "Referencia de catálogo no encontrada en tu empresa.");
+  requireProductReader(actor, product);
   let file;
   try {
     file = await objectStorageService.getObjectEntityFile(document.objectPath);
@@ -441,6 +493,11 @@ router.delete("/redfp360/products/:id/documents/:documentId", async (req, res): 
     eq(fpProductDocuments.tenantId, actor.tenantId),
   ));
   if (!document) fail(404, "Documento no encontrado en esta referencia.");
+  const [product] = await db.select().from(fpProducts).where(and(
+    eq(fpProducts.id, document.productId), eq(fpProducts.tenantId, actor.tenantId),
+  ));
+  if (!product) fail(404, "Referencia de catálogo no encontrada en tu empresa.");
+  requireProductManager(actor, product);
   try {
     const file = await objectStorageService.getObjectEntityFile(document.objectPath);
     await file.delete({ ignoreNotFound: true });
@@ -460,13 +517,14 @@ router.delete("/redfp360/products/:id/documents/:documentId", async (req, res): 
 router.get("/redfp360/products/:id/stock-adjustments", async (req, res): Promise<void> => {
   const params = ListFp360StockAdjustmentsParams.safeParse(req.params);
   if (!params.success) fail(400, "Referencia no válida.");
-  const tenantId = req.auth!.tenantId;
-  const [product] = await db.select({ id: fpProducts.id }).from(fpProducts).where(and(
-    eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, tenantId),
+  const actor = req.auth!;
+  const [product] = await db.select().from(fpProducts).where(and(
+    eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, actor.tenantId),
   ));
   if (!product) fail(404, "Producto no encontrado en tu red.");
+  requireProductManager(actor, product);
   const rows = await db.select().from(fpStockAdjustments).where(and(
-    eq(fpStockAdjustments.productId, product.id), eq(fpStockAdjustments.tenantId, tenantId),
+    eq(fpStockAdjustments.productId, product.id), eq(fpStockAdjustments.tenantId, actor.tenantId),
   )).orderBy(desc(fpStockAdjustments.createdAt));
   res.json(ListFp360StockAdjustmentsResponse.parse(rows.map((row) => ({
     ...row, createdAt: row.createdAt.toISOString(),
@@ -485,6 +543,7 @@ router.post("/redfp360/products/:id/stock-adjustments", async (req, res): Promis
       eq(fpProducts.id, params.data.id), eq(fpProducts.tenantId, actor.tenantId),
     )).for("update");
     if (!previous) fail(404, "Producto no encontrado en tu red.");
+    requireProductManager(actor, previous);
     const [replay] = await tx.select().from(fpStockAdjustments).where(eq(fpStockAdjustments.id, body.data.operationId));
     if (replay) {
       if (replay.tenantId !== actor.tenantId || replay.productId !== previous.id || replay.actorUserId !== actor.userId ||

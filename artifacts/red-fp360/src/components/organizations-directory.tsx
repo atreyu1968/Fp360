@@ -11,6 +11,12 @@ const roleLabel = (r: string) => (r === 'both' ? 'Compra y vende' : r === 'selle
 export function OrganizationsDirectory({ onNotice }: { onNotice: (m: string) => void }) {
   const identity = useGetCurrentIdentity();
   const canWrite = WRITE_ROLES.includes(identity.data?.role ?? '');
+  const isNetworkSupervisor = identity.data?.role === 'administrator' ||
+    (identity.data?.role === 'teacher' && !identity.data.organizationId);
+  const canCreateOrganization = canWrite && isNetworkSupervisor;
+  const canManageOrganization = (org: Fp360Organization) => canWrite &&
+    (isNetworkSupervisor || org.id === identity.data?.organizationId);
+  const canArchiveOrganization = canWrite && isNetworkSupervisor;
   const orgs = useListFp360Organizations();
   const orders = useListFp360Orders();
   const update = useUpdateFp360Organization();
@@ -38,7 +44,7 @@ export function OrganizationsDirectory({ onNotice }: { onNotice: (m: string) => 
   return <main className="page-content">
     <div className="page-heading page-enter"><div className="breadcrumbs"><span>RED FP360</span><span className="crumb-slash">/</span><span>EMPRESAS SIMULADAS</span></div>
       <div className="heading-row"><div><h1>Directorio de organizaciones</h1><p>Empresas simuladas de los centros de FP de Canarias. Sin datos de contacto reales ni de personas.</p></div>
-        {canWrite && <button className="button button-primary" onClick={() => setEditing('new')} data-testid="button-new-org"><Plus size={16} /> Nueva empresa</button>}</div>
+        {canCreateOrganization && <button className="button button-primary" onClick={() => setEditing('new')} data-testid="button-new-org"><Plus size={16} /> Nueva empresa</button>}</div>
     </div>
     {!canWrite && identity.data && <ReadOnlyBanner text="Tu perfil permite consultar el directorio y su historial, pero no modificarlo." />}
     <div className="md-strip">
@@ -61,10 +67,11 @@ export function OrganizationsDirectory({ onNotice }: { onNotice: (m: string) => 
           <td>{o.center}</td><td><span className="island-label">{o.island}</span></td><td><span className="role-pill">{roleLabel(o.role)}</span></td>
           <td className="numeric">{orders.isLoading ? '…' : orderCount(o.id)}</td>
           <td>{o.isActive ? <span className="status status-green"><span className="status-dot" />Activa</span> : <span className="status md-muted"><span className="status-dot" />Archivada</span>}</td>
-          <td><div className="row-actions md-actions">{canWrite ? <>
+          <td><div className="row-actions md-actions">{canManageOrganization(o) ? <>
             {o.isActive && <button className="mini-button" onClick={() => setEditing(o)} data-testid={`button-edit-org-${o.id}`}><Pencil size={13} /> Editar</button>}
-            {o.isActive ? <button className="mini-button admin-danger" onClick={() => { setConfirmError(''); setConfirm(o); }} data-testid={`button-archive-org-${o.id}`}><Archive size={13} /> Archivar</button>
-              : <button className="mini-button" onClick={() => { setConfirmError(''); setConfirm(o); }} data-testid={`button-restore-org-${o.id}`}><ArchiveRestore size={13} /> Restaurar</button>}
+            {canArchiveOrganization && (o.isActive
+              ? <button className="mini-button admin-danger" onClick={() => { setConfirmError(''); setConfirm(o); }} data-testid={`button-archive-org-${o.id}`}><Archive size={13} /> Archivar</button>
+              : <button className="mini-button" onClick={() => { setConfirmError(''); setConfirm(o); }} data-testid={`button-restore-org-${o.id}`}><ArchiveRestore size={13} /> Restaurar</button>)}
           </> : <span className="text-muted">Solo lectura</span>}</div></td>
         </tr>)}
         {!rows.length && <tr><td colSpan={7}><div className="empty-state"><div className="empty-icon"><Building2 size={20} /></div><strong>{all.length ? 'Sin coincidencias' : 'Aún no hay empresas'}</strong><p>{all.length ? 'Cambia el filtro o la búsqueda.' : 'Crea la primera empresa simulada de la red.'}</p></div></td></tr>}
@@ -72,7 +79,8 @@ export function OrganizationsDirectory({ onNotice }: { onNotice: (m: string) => 
       <div className="table-footer"><span>{rows.length} organizaciones</span><span className="footer-simulation"><ShieldAlert size={13} /> Datos ficticios · sin contactos de menores</span></div>
     </section>
     <div className="learning-note"><CircleHelp size={17} /><div><b>Archivar no borra</b><p>Las empresas archivadas no aparecen en el mercado ni en pedidos nuevos, pero conservan sus pedidos y facturas. No se puede archivar una empresa asignada a cuentas activas.</p></div></div>
-    {editing && <OrgForm org={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSaved={(m) => { setEditing(null); refresh(); onNotice(m); }} />}
+    {editing && <OrgForm org={editing === 'new' ? null : editing} canEditNetworkFields={isNetworkSupervisor}
+      onClose={() => setEditing(null)} onSaved={(m) => { setEditing(null); refresh(); onNotice(m); }} />}
     {confirm && <MasterDialog title={confirm.isActive ? 'Archivar organización' : 'Restaurar organización'} onClose={() => setConfirm(null)}>
       <div className="form-stack">
         <p className="form-intro"><b>{confirm.name}</b> · {confirm.center}</p>
@@ -84,7 +92,10 @@ export function OrganizationsDirectory({ onNotice }: { onNotice: (m: string) => 
   </main>;
 }
 
-function OrgForm({ org, onClose, onSaved }: { org: Fp360Organization | null; onClose: () => void; onSaved: (m: string) => void }) {
+function OrgForm({ org, canEditNetworkFields, onClose, onSaved }: {
+  org: Fp360Organization | null; canEditNetworkFields: boolean;
+  onClose: () => void; onSaved: (m: string) => void;
+}) {
   const create = useCreateFp360Organization();
   const update = useUpdateFp360Organization();
   const [name, setName] = useState(org?.name ?? '');
@@ -120,9 +131,9 @@ function OrgForm({ org, onClose, onSaved }: { org: Fp360Organization | null; onC
     <form className="form-stack" onSubmit={submit} noValidate>
       <p className="form-intro">Empresa ficticia de prácticas. No introduzcas datos personales ni de contacto reales.</p>
       <label>Nombre comercial<input required maxLength={150} value={name} onChange={(e) => setName(e.target.value)} data-testid="input-org-name" /></label>
-      <label>Centro educativo<input required maxLength={150} value={center} onChange={(e) => setCenter(e.target.value)} data-testid="input-org-center" /></label>
-      <label>Isla<select value={island} onChange={(e) => setIsland(e.target.value)} data-testid="select-org-island">{ISLANDS.map((i) => <option key={i} value={i}>{i}</option>)}</select></label>
-      <label>Participación en la red<select value={role} onChange={(e) => setRole(e.target.value)} data-testid="select-org-role"><option value="seller">Vende</option><option value="buyer">Compra</option><option value="both">Compra y vende</option></select></label>
+      <label>Centro educativo<input required maxLength={150} value={center} onChange={(e) => setCenter(e.target.value)} disabled={!canEditNetworkFields} data-testid="input-org-center" /></label>
+      <label>Isla<select value={island} onChange={(e) => setIsland(e.target.value)} disabled={!canEditNetworkFields} data-testid="select-org-island">{ISLANDS.map((i) => <option key={i} value={i}>{i}</option>)}</select></label>
+      <label>Participación en la red<select value={role} onChange={(e) => setRole(e.target.value)} disabled={!canEditNetworkFields} data-testid="select-org-role"><option value="seller">Vende</option><option value="buyer">Compra</option><option value="both">Compra y vende</option></select></label>
       <FormError text={error} />
       <div className="modal-actions"><button type="button" className="button button-quiet" onClick={onClose}>Cancelar</button><button className="button button-primary" disabled={pending} data-testid="button-save-org">{pending ? 'Guardando…' : org ? 'Guardar cambios' : 'Crear empresa'}</button></div>
     </form>
