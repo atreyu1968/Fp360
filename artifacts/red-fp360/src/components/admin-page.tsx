@@ -47,6 +47,7 @@ const auditLabel = (action: string) => ({
   'invitation.accepted': 'Invitación aceptada',
   'invitation.accepted_existing': 'Cuenta existente aceptó la invitación',
   'membership.created_by_invitation': 'Pertenencia creada por invitación',
+  'membership.left': 'Pertenencia abandonada por su titular',
   'invitation.rejected': 'Invitación rechazada',
   'user.updated': 'Usuario actualizado',
   'organization.created': 'Organización creada',

@@ -185,6 +185,13 @@ export const GetCurrentIdentityResponse = zod.object({
 export const LogoutResponse = zod.void()
 
 
+/**
+ * Removes only the current network membership and its sessions; other memberships remain unchanged.
+ * @summary Leave the network used by the current session
+ */
+export const LeaveCurrentNetworkResponse = zod.void()
+
+
 export const ListAdminUsersResponseItem = zod.object({
   "id": zod.string(),
   "email": zod.string().email(),

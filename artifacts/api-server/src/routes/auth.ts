@@ -1,5 +1,5 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter, type RequestHandler } from "express";
 import rateLimit from "express-rate-limit";
 import {
@@ -515,6 +515,91 @@ router.get("/auth/me", requireAuth, (request, response) => {
   }
   response.json(identityResponse(request.auth));
 });
+
+router.post(
+  "/auth/membership/leave",
+  requireAuth,
+  requireSameOrigin,
+  async (request, response, next) => {
+    setNoStore(response);
+    const actor = request.auth;
+    if (!actor) {
+      response.status(401).json({ message: "Authentication required" });
+      return;
+    }
+
+    try {
+      const outcome = await db.transaction(async (transaction) => {
+        // Use the same network lock as administrator role changes and deactivations.
+        await transaction.execute(
+          sql`SELECT pg_advisory_xact_lock(hashtext(${`fp360-admin:${actor.tenantId}`}))`,
+        );
+        const [membership] = await transaction
+          .select({
+            id: fpAuthMemberships.id,
+            role: fpAuthMemberships.role,
+            isActive: fpAuthMemberships.isActive,
+          })
+          .from(fpAuthMemberships)
+          .where(
+            and(
+              eq(fpAuthMemberships.id, actor.membershipId),
+              eq(fpAuthMemberships.userId, actor.userId),
+              eq(fpAuthMemberships.tenantId, actor.tenantId),
+              eq(fpAuthMemberships.isActive, true),
+            ),
+          )
+          .for("update");
+        if (!membership) {
+          return "inactive" as const;
+        }
+
+        if (membership.role === "administrator") {
+          const administrators = await transaction
+            .select({ id: fpAuthMemberships.id })
+            .from(fpAuthMemberships)
+            .innerJoin(fpAuthUsers, eq(fpAuthUsers.id, fpAuthMemberships.userId))
+            .where(
+              and(
+                eq(fpAuthMemberships.tenantId, actor.tenantId),
+                eq(fpAuthMemberships.role, "administrator"),
+                eq(fpAuthMemberships.isActive, true),
+                eq(fpAuthUsers.isActive, true),
+              ),
+            );
+          if (administrators.length <= 1) {
+            return "last-administrator" as const;
+          }
+        }
+
+        await transaction.insert(fpAuthAudit).values({
+          id: randomUUID(),
+          tenantId: actor.tenantId,
+          actorUserId: actor.userId,
+          action: "membership.left",
+          entityId: membership.id,
+        });
+        // Deleting this membership cascades only its sessions; other network access remains.
+        await transaction
+          .delete(fpAuthMemberships)
+          .where(eq(fpAuthMemberships.id, membership.id));
+        return "left" as const;
+      });
+      if (outcome !== "left") {
+        response.status(409).json({
+          message: outcome === "inactive"
+            ? "Esta pertenencia ya no está activa."
+            : "La red debe conservar al menos una cuenta administradora activa.",
+        });
+        return;
+      }
+      clearAuthCookie(response);
+      response.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 router.post(
   "/auth/logout",

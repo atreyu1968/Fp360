@@ -1179,6 +1179,81 @@ export const useLogout = <TError = ErrorType<void>,
       return useMutation(getLogoutMutationOptions(options), queryClient);
     }
 
+export const getLeaveCurrentNetworkUrl = () => {
+
+
+
+
+  return `/api/auth/membership/leave`
+}
+
+/**
+ * Removes only the current network membership and its sessions; other memberships remain unchanged.
+ * @summary Leave the network used by the current session
+ */
+export const leaveCurrentNetwork = async ( options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getLeaveCurrentNetworkUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getLeaveCurrentNetworkMutationKey = () => ['leaveCurrentNetwork'] as const;
+
+export const getLeaveCurrentNetworkMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveCurrentNetwork>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof leaveCurrentNetwork>>, TError,void, TContext> => {
+
+const mutationKey = getLeaveCurrentNetworkMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof leaveCurrentNetwork>>, void> = () => {
+
+
+          return  leaveCurrentNetwork(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LeaveCurrentNetworkMutationResult = NonNullable<Awaited<ReturnType<typeof leaveCurrentNetwork>>>
+
+    export type LeaveCurrentNetworkMutationError = ErrorType<void>
+
+
+    /**
+ * @summary Leave the network used by the current session
+ */
+export const useLeaveCurrentNetwork = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveCurrentNetwork>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof leaveCurrentNetwork>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getLeaveCurrentNetworkMutationOptions(options), queryClient);
+    }
+
 export const getListAdminUsersUrl = () => {
 
 

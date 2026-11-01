@@ -15,7 +15,7 @@ import {
   useListFp360Organizations, useListFp360Products, useRecordFp360Payment,
   useResolveFp360LogisticsIncident, useUpdateFp360LogisticsRoute,
   getGetAuthStatusQueryKey, getGetCurrentIdentityQueryKey, useGetAuthStatus,
-  useGetCurrentIdentity, useLogout,
+  useGetCurrentIdentity, useLeaveCurrentNetwork, useLogout,
 } from '@workspace/api-client-react';
 import type {
   AuthIdentity,
@@ -28,6 +28,7 @@ import type {
   Fp360Product,
 } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { httpStatus } from '@/components/admin-shared';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
@@ -1213,6 +1214,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
   const [mobileNav, setMobileNav] = useState(false);
   const [notice, setNotice] = useState('');
   const logout = useLogout();
+  const leaveNetwork = useLeaveCurrentNetwork();
   const organizationsQuery = useListFp360Organizations<Organization[]>();
   const productsQuery = useListFp360Products<Product[]>();
   const ordersQuery = useListFp360Orders<Order[]>();
@@ -1270,7 +1272,28 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       <div className="nav-caption">ESPACIO DE TRABAJO</div>
       <nav className="main-nav" aria-label="Navegación principal">{[...navItems, ...(identity.role === 'administrator' ? [{ href: '/administracion', label: 'Administración del sistema', icon: ShieldCheck }] : [])].map(({ href, label, icon: Icon }) => <Link href={href} key={href} className={`nav-link ${location === href ? 'nav-active' : ''}`} onClick={() => setMobileNav(false)} aria-current={location === href ? 'page' : undefined}><Icon size={18} strokeWidth={1.8} /><span>{label}</span>{href === '/aplicaciones' && <span className="nav-count">26</span>}</Link>)}</nav>
       <div className="sidebar-bottom"><div className="help-card"><div className="help-icon"><LifeBuoy size={17} /></div><b>¿Primera vez por aquí?</b><p>Consulta la guía de aprendizaje de la red.</p><Link href="/documentacion" onClick={() => setMobileNav(false)}>Abrir recursos <ArrowRight size={13} /></Link></div>
-         <div className="profile-chip"><span className="profile-avatar">{identityInitials(identity)}</span><span><b>{identity.displayName}</b><small>{roleLabel(identity.role)}</small></span><button className="profile-logout" type="button" disabled={logout.isPending} onClick={() => logout.mutate(undefined, { onSuccess: () => { clearBusinessCache(); void queryClient.resetQueries({ queryKey: getGetCurrentIdentityQueryKey(), exact: true }); setLocation('/sign-in'); }, onError: () => setNotice('No se pudo cerrar la sesión. Comprueba la conexión e inténtalo de nuevo.') })} aria-label="Cerrar sesión" title="Cerrar sesión" data-testid="button-logout"><ArrowRight size={15} /></button></div>
+         <div className="profile-chip"><span className="profile-avatar">{identityInitials(identity)}</span><span><b>{identity.displayName}</b><small>{roleLabel(identity.role)}</small></span><button className="profile-logout" type="button" disabled={logout.isPending || leaveNetwork.isPending} onClick={() => logout.mutate(undefined, { onSuccess: () => { clearBusinessCache(); void queryClient.resetQueries({ queryKey: getGetCurrentIdentityQueryKey(), exact: true }); setLocation('/sign-in'); }, onError: () => setNotice('No se pudo cerrar la sesión. Comprueba la conexión e inténtalo de nuevo.') })} aria-label="Cerrar sesión" title="Cerrar sesión" data-testid="button-logout"><ArrowRight size={15} /></button></div>
+         <button className="profile-leave-network" type="button" disabled={leaveNetwork.isPending || logout.isPending} data-testid="button-leave-network" onClick={() => {
+           const confirmed = window.confirm('¿Quieres dejar la red activa? Solo se quitará esta pertenencia; tu cuenta y tus accesos a otras redes seguirán activos. No podrás salir si eres la última persona administradora activa.');
+           if (!confirmed) return;
+           leaveNetwork.mutate(undefined, {
+             onSuccess: () => {
+               clearBusinessCache();
+               void queryClient.resetQueries({ queryKey: getGetCurrentIdentityQueryKey(), exact: true });
+               setLocation('/sign-in');
+             },
+             onError: (error) => {
+               const data = error && typeof error === 'object' && 'data' in error ? error.data : null;
+               const candidateMessage = data && typeof data === 'object' && 'message' in data
+                 ? (data as { message?: unknown }).message
+                 : null;
+               const message = typeof candidateMessage === 'string' ? candidateMessage : null;
+               setNotice(httpStatus(error) === 409
+                 ? message ?? 'No se puede completar la salida porque el estado de la pertenencia ha cambiado.'
+                 : 'No se pudo dejar la red. Comprueba la conexión e inténtalo de nuevo.');
+             },
+           });
+         }}>{leaveNetwork.isPending ? 'Saliendo de la red…' : 'Salir de esta red'}</button>
       </div>
     </aside>
     {mobileNav && <button className="mobile-scrim" aria-label="Cerrar menú" onClick={() => setMobileNav(false)} />}

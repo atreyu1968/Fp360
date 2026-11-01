@@ -176,6 +176,19 @@ paths:
           description: Session ended
         "401":
           description: Sign-in required
+  /auth/membership/leave:
+    post:
+      operationId: leaveCurrentNetwork
+      tags: [auth]
+      summary: Leave the network used by the current session
+      description: Removes only the current network membership and its sessions; other memberships remain unchanged.
+      responses:
+        "204":
+          description: Current network membership ended and audited
+        "401":
+          description: Sign-in required
+        "409":
+          description: Membership is inactive or this would remove the last active administrator
   /admin/users:
     get:
       operationId: listAdminUsers
