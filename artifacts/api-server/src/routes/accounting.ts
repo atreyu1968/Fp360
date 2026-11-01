@@ -45,7 +45,7 @@ import {
   buildAccountingSources,
   canAccessAccountingOrganization,
 } from "./accounting-scope.mjs";
-import { buildAccountingLedger } from "./accounting-ledger.mjs";
+import { buildAccountingExportCsv } from "./accounting-export.mjs";
 
 const router: IRouter = Router();
 router.use("/redfp360/accounting", requireAuth, requireSimulationWriteAccess);
@@ -76,22 +76,6 @@ const defaultAccounts: Array<{ code: string; name: string; nature: Nature; norma
 
 function fingerprint(value: unknown) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
-}
-
-function csvCell(value: string | number | null | undefined) {
-  if (typeof value === "number") return String(value);
-  const text = value ?? "";
-  if (/^-?\d+,\d{2}$/.test(text)) return text;
-  const safeText = /^[\t\r\n ]*[=+\-@]/.test(text) ? `'${text}` : text;
-  return `"${safeText.replace(/"/g, '""')}"`;
-}
-
-function csvRow(values: Array<string | number | null | undefined>) {
-  return values.map(csvCell).join(";");
-}
-
-function csvEuro(cents: number) {
-  return (cents / 100).toFixed(2).replace(".", ",");
 }
 
 function isoDateTime(value: Date | null) {
@@ -573,71 +557,19 @@ router.get("/redfp360/accounting/export", async (req, res): Promise<void> => {
       ? eq(fpAccountingEntries.fiscalYear, fiscalYear)
       : lte(fpAccountingEntries.fiscalYear, fiscalYear),
   )).orderBy(asc(fpAccountingEntries.entryDate), asc(fpAccountingEntries.entryNumber), asc(fpAccountingEntries.createdAt));
-  const exportEntries = entries;
-  const entryLines = exportEntries.length ? await db.select().from(fpAccountingEntryLines).where(and(
+  const entryLines = entries.length ? await db.select().from(fpAccountingEntryLines).where(and(
     eq(fpAccountingEntryLines.tenantId, actor.tenantId),
-    inArray(fpAccountingEntryLines.entryId, exportEntries.map((entry) => entry.id)),
+    inArray(fpAccountingEntryLines.entryId, entries.map((entry) => entry.id)),
   )).orderBy(asc(fpAccountingEntryLines.lineNumber)) : [];
-  const accountsById = new Map(accounts.map((account) => [account.id, account]));
-  const linesByEntry = new Map<string, typeof entryLines>();
-  for (const line of entryLines) {
-    linesByEntry.set(line.entryId, [...(linesByEntry.get(line.entryId) ?? []), line]);
-  }
-  const scopedValues = [organization.name, organization.center, organizationId, fiscalYear];
-  const rows: string[] = [];
-
-  if (book === "journal") {
-    rows.push(csvRow([
-      "empresa", "centro", "empresa_id", "ejercicio", "periodo", "fecha", "asiento",
-      "estado", "tipo_origen", "referencia_origen", "concepto", "linea",
-      "cuenta_codigo", "cuenta_nombre", "descripcion", "debe_eur", "haber_eur",
-    ]));
-    for (const entry of entries) {
-      const lines = (linesByEntry.get(entry.id) ?? []).filter((line) => accountsById.has(line.accountId));
-      if (!lines.length) {
-        rows.push(csvRow([
-          ...scopedValues, entry.period, entry.entryDate, entry.entryNumber, entry.status,
-          entry.sourceType, entry.sourceReference, entry.concept, "", "", "", "", "", "",
-        ]));
-        continue;
-      }
-      for (const line of lines) {
-        const account = accountsById.get(line.accountId)!;
-        rows.push(csvRow([
-          ...scopedValues, entry.period, entry.entryDate, entry.entryNumber, entry.status,
-          entry.sourceType, entry.sourceReference, entry.concept, line.lineNumber,
-          account.code, account.name, line.description, csvEuro(line.debitCents), csvEuro(line.creditCents),
-        ]));
-      }
-    }
-  } else {
-    rows.push(csvRow([
-      "empresa", "centro", "empresa_id", "ejercicio", "tipo_fila", "cuenta_codigo",
-      "cuenta_nombre", "fecha", "asiento", "estado", "referencia_origen", "concepto",
-      "descripcion", "debe_eur", "haber_eur", "saldo_acumulado_eur",
-    ]));
-    const ledger = buildAccountingLedger({
-      accounts,
-      entries: exportEntries,
-      lines: entryLines,
-      fiscalYear,
-    });
-    for (const { account, balanceCents } of ledger.openingBalances) {
-      rows.push(csvRow([
-        ...scopedValues, "saldo_inicial", account.code, account.name, `${fiscalYear}-01-01`, "",
-        "saldo_inicial", "", "Saldo acumulado de ejercicios anteriores", "Saldo de apertura",
-        "0,00", "0,00", csvEuro(balanceCents),
-      ]));
-    }
-    for (const { entry, line, account, balanceCents } of ledger.movements) {
-      rows.push(csvRow([
-        ...scopedValues, "movimiento", account.code, account.name,
-        entry.entryDate, entry.entryNumber, entry.status, entry.sourceReference,
-        entry.concept, line.description, csvEuro(line.debitCents),
-        csvEuro(line.creditCents), csvEuro(balanceCents),
-      ]));
-    }
-  }
+  const csv = buildAccountingExportCsv({
+    tenantId: actor.tenantId,
+    organization: { id: organizationId, ...organization },
+    fiscalYear,
+    book,
+    accounts,
+    entries,
+    entryLines,
+  });
 
   const safeOrganizationName = organization.name.normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -646,7 +578,7 @@ router.get("/redfp360/accounting/export", async (req, res): Promise<void> => {
     .replace(/^-|-$/g, "") || organizationId.slice(0, 12);
   const filename = `red-fp360-${book}-${safeOrganizationName}-${fiscalYear}.csv`;
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-  res.status(200).type("text/csv; charset=utf-8").send(`\uFEFF${rows.join("\r\n")}\r\n`);
+  res.status(200).type("text/csv; charset=utf-8").send(csv);
 });
 
 router.post("/redfp360/accounting/accounts", async (req, res): Promise<void> => {
