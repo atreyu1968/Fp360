@@ -34,6 +34,14 @@ function trimNonBlank(value: string, label: string) {
   if (!normalized) fail(400, `${label} no puede estar vacío.`);
   return normalized;
 }
+function isNetworkSupervisor(actor: AuthContext) {
+  return actor.role === "administrator" || (actor.role === "teacher" && actor.organizationId === null);
+}
+function assertOrganizationAccess(actor: AuthContext, organizationId: string) {
+  if (!isNetworkSupervisor(actor) && actor.organizationId !== organizationId) {
+    fail(404, "El registro no existe en tu empresa.");
+  }
+}
 async function audit(tx: Transaction, actor: AuthContext, action: string, description: string, reference: string) {
   await tx.insert(fpActivity).values({
     id: randomUUID(), tenantId: actor.tenantId, action,
@@ -41,13 +49,14 @@ async function audit(tx: Transaction, actor: AuthContext, action: string, descri
     reference, simulatedDate: SIMULATED_DATE,
   });
 }
-async function activeOrganization(tx: Transaction, tenantId: string, organizationId: string) {
+async function activeOrganization(tx: Transaction, actor: AuthContext, organizationId: string) {
   const [organization] = await tx.select({ id: fpOrganizations.id, name: fpOrganizations.name })
     .from(fpOrganizations).where(and(
-      eq(fpOrganizations.id, organizationId), eq(fpOrganizations.tenantId, tenantId),
+      eq(fpOrganizations.id, organizationId), eq(fpOrganizations.tenantId, actor.tenantId),
       eq(fpOrganizations.isActive, true),
     )).for("share");
   if (!organization) fail(404, "Selecciona una empresa activa de tu red.");
+  assertOrganizationAccess(actor, organization.id);
   return organization;
 }
 async function contactDuplicate(tx: Transaction, tenantId: string, organizationId: string, fullName: string, excludingId = "") {
@@ -62,7 +71,12 @@ function iso(date: Date) { return date.toISOString(); }
 
 router.use("/redfp360/crm", requireAuth, requireSimulationWriteAccess);
 
-async function readContacts(tenantId: string) {
+async function readContacts(actor: AuthContext) {
+  const organizationScope = isNetworkSupervisor(actor)
+    ? undefined
+    : actor.organizationId
+      ? eq(fpCrmContacts.organizationId, actor.organizationId)
+      : sql`false`;
   const rows = await db.select({
     id: fpCrmContacts.id, organizationId: fpCrmContacts.organizationId,
     organizationName: fpOrganizations.name, fullName: fpCrmContacts.fullName,
@@ -71,12 +85,12 @@ async function readContacts(tenantId: string) {
   }).from(fpCrmContacts).innerJoin(fpOrganizations, and(
     eq(fpOrganizations.id, fpCrmContacts.organizationId),
     eq(fpOrganizations.tenantId, fpCrmContacts.tenantId),
-  )).where(eq(fpCrmContacts.tenantId, tenantId))
+  )).where(and(eq(fpCrmContacts.tenantId, actor.tenantId), organizationScope))
     .orderBy(fpOrganizations.name, fpCrmContacts.fullName).limit(500);
   return ListCrmContactsResponse.parse(rows.map((row) => ({ ...row, createdAt: iso(row.createdAt) })));
 }
 router.get("/redfp360/crm/contacts", async (req, res) => {
-  res.json(await readContacts(req.auth!.tenantId));
+  res.json(await readContacts(req.auth!));
 });
 router.post("/redfp360/crm/contacts", async (req, res): Promise<void> => {
   const parsed = CreateCrmContactBody.safeParse(req.body);
@@ -86,7 +100,7 @@ router.post("/redfp360/crm/contacts", async (req, res): Promise<void> => {
   const actor = req.auth!;
   const id = await db.transaction(async (tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`fp360-crm-contact:${actor.tenantId}`}))`);
-    const org = await activeOrganization(tx, actor.tenantId, parsed.data.organizationId);
+    const org = await activeOrganization(tx, actor, parsed.data.organizationId);
     await contactDuplicate(tx, actor.tenantId, org.id, fullName);
     const contactId = randomUUID();
     await tx.insert(fpCrmContacts).values({
@@ -96,7 +110,7 @@ router.post("/redfp360/crm/contacts", async (req, res): Promise<void> => {
     await audit(tx, actor, "Contacto de práctica creado", `Alta de ${fullName} en ${org.name}.`, contactId);
     return contactId;
   });
-  const result = (await readContacts(actor.tenantId)).find((contact) => contact.id === id);
+  const result = (await readContacts(actor)).find((contact) => contact.id === id);
   if (!result) fail(500, "No se pudo recuperar el contacto recién creado.");
   res.status(201).json(CreateCrmContactResponse.parse(result));
 });
@@ -111,6 +125,7 @@ router.patch("/redfp360/crm/contacts/:id", async (req, res): Promise<void> => {
       eq(fpCrmContacts.id, params.data.id), eq(fpCrmContacts.tenantId, actor.tenantId),
     )).for("update");
     if (!previous) fail(404, "Contacto no encontrado en tu red.");
+    assertOrganizationAccess(actor, previous.organizationId);
     const fullName = parsed.data.fullName === undefined
       ? previous.fullName : trimNonBlank(parsed.data.fullName, "El nombre");
     const position = parsed.data.position === undefined
@@ -123,12 +138,17 @@ router.patch("/redfp360/crm/contacts/:id", async (req, res): Promise<void> => {
       `${updated.isActive ? "Actualización" : "Archivo"} de ${updated.fullName}; se conservan sus seguimientos.`, updated.id);
     return updated;
   });
-  const result = (await readContacts(actor.tenantId)).find((item) => item.id === contact.id);
+  const result = (await readContacts(actor)).find((item) => item.id === contact.id);
   if (!result) fail(500, "No se pudo recuperar el contacto actualizado.");
   res.json(UpdateCrmContactResponse.parse(result));
 });
 
-async function readOpportunities(tenantId: string) {
+async function readOpportunities(actor: AuthContext) {
+  const organizationScope = isNetworkSupervisor(actor)
+    ? undefined
+    : actor.organizationId
+      ? eq(fpCrmOpportunities.organizationId, actor.organizationId)
+      : sql`false`;
   const rows = await db.select({
     id: fpCrmOpportunities.id, organizationId: fpCrmOpportunities.organizationId,
     organizationName: fpOrganizations.name, title: fpCrmOpportunities.title,
@@ -139,21 +159,21 @@ async function readOpportunities(tenantId: string) {
   }).from(fpCrmOpportunities).innerJoin(fpOrganizations, and(
     eq(fpOrganizations.id, fpCrmOpportunities.organizationId),
     eq(fpOrganizations.tenantId, fpCrmOpportunities.tenantId),
-  )).where(eq(fpCrmOpportunities.tenantId, tenantId))
+  )).where(and(eq(fpCrmOpportunities.tenantId, actor.tenantId), organizationScope))
     .orderBy(desc(fpCrmOpportunities.updatedAt)).limit(500);
   return ListCrmOpportunitiesResponse.parse(rows.map((row) => ({
     ...row, createdAt: iso(row.createdAt), updatedAt: iso(row.updatedAt),
   })));
 }
 router.get("/redfp360/crm/opportunities", async (req, res) => {
-  res.json(await readOpportunities(req.auth!.tenantId));
+  res.json(await readOpportunities(req.auth!));
 });
 router.post("/redfp360/crm/opportunities", async (req, res): Promise<void> => {
   const parsed = CreateCrmOpportunityBody.safeParse(req.body);
   if (!parsed.success) fail(400, "Revisa la oportunidad, el importe y el motivo de alta.");
   const actor = req.auth!;
   const opportunityId = await db.transaction(async (tx) => {
-    const org = await activeOrganization(tx, actor.tenantId, parsed.data.organizationId);
+    const org = await activeOrganization(tx, actor, parsed.data.organizationId);
     const id = randomUUID();
     await tx.insert(fpCrmOpportunities).values({
       id, tenantId: actor.tenantId, organizationId: org.id,
@@ -170,7 +190,7 @@ router.post("/redfp360/crm/opportunities", async (req, res): Promise<void> => {
     await audit(tx, actor, "Oportunidad creada", `${parsed.data.title.trim()} · ${org.name}.`, id);
     return id;
   });
-  const result = (await readOpportunities(actor.tenantId)).find((item) => item.id === opportunityId);
+  const result = (await readOpportunities(actor)).find((item) => item.id === opportunityId);
   if (!result) fail(500, "No se pudo recuperar la oportunidad recién creada.");
   res.status(201).json(CreateCrmOpportunityResponse.parse(result));
 });
@@ -181,11 +201,16 @@ router.patch("/redfp360/crm/opportunities/:id", async (req, res): Promise<void> 
   if (parsed.data.title !== undefined) trimNonBlank(parsed.data.title, "El título");
   const actor = req.auth!;
   const opportunityId = await db.transaction(async (tx) => {
-    const [previous] = await tx.select({ id: fpCrmOpportunities.id, title: fpCrmOpportunities.title })
+    const [previous] = await tx.select({
+      id: fpCrmOpportunities.id,
+      title: fpCrmOpportunities.title,
+      organizationId: fpCrmOpportunities.organizationId,
+    })
       .from(fpCrmOpportunities).where(and(
         eq(fpCrmOpportunities.id, params.data.id), eq(fpCrmOpportunities.tenantId, actor.tenantId),
       )).for("update");
     if (!previous) fail(404, "Oportunidad no encontrada en tu red.");
+    assertOrganizationAccess(actor, previous.organizationId);
     const [updated] = await tx.update(fpCrmOpportunities).set({
       ...parsed.data,
       ...(parsed.data.title !== undefined ? { title: parsed.data.title.trim() } : {}),
@@ -195,7 +220,7 @@ router.patch("/redfp360/crm/opportunities/:id", async (req, res): Promise<void> 
       `Ficha de ${parsed.data.title?.trim() ?? previous.title} modificada.`, updated.id);
     return updated.id;
   });
-  const result = (await readOpportunities(actor.tenantId)).find((item) => item.id === opportunityId);
+  const result = (await readOpportunities(actor)).find((item) => item.id === opportunityId);
   if (!result) fail(500, "No se pudo recuperar la oportunidad actualizada.");
   res.json(UpdateCrmOpportunityResponse.parse(result));
 });
@@ -210,6 +235,7 @@ router.post("/redfp360/crm/opportunities/:id/stage", async (req, res): Promise<v
       eq(fpCrmOpportunities.id, params.data.id), eq(fpCrmOpportunities.tenantId, actor.tenantId),
     )).for("update");
     if (!previous) fail(404, "Oportunidad no encontrada en tu red.");
+    assertOrganizationAccess(actor, previous.organizationId);
     if (previous.stage === parsed.data.stage) fail(400, "Selecciona una fase distinta para registrar el cambio.");
     await tx.update(fpCrmOpportunities).set({
       stage: parsed.data.stage, probabilityBasisPoints: STAGE_PROBABILITY[parsed.data.stage],
@@ -223,11 +249,17 @@ router.post("/redfp360/crm/opportunities/:id/stage", async (req, res): Promise<v
     await audit(tx, actor, "Fase de oportunidad cambiada",
       `${previous.title}: ${previous.stage} → ${parsed.data.stage}. Motivo: ${reason}`, previous.id);
   });
-  const result = (await readOpportunities(actor.tenantId)).find((item) => item.id === params.data.id);
+  const result = (await readOpportunities(actor)).find((item) => item.id === params.data.id);
   if (!result) fail(500, "No se pudo recuperar la oportunidad actualizada.");
   res.json(MoveCrmOpportunityResponse.parse(result));
 });
 router.get("/redfp360/crm/opportunity-history", async (req, res) => {
+  const actor = req.auth!;
+  const organizationScope = isNetworkSupervisor(actor)
+    ? undefined
+    : actor.organizationId
+      ? eq(fpCrmOpportunities.organizationId, actor.organizationId)
+      : sql`false`;
   const rows = await db.select({
     id: fpCrmOpportunityHistory.id, opportunityId: fpCrmOpportunityHistory.opportunityId,
     opportunityTitle: fpCrmOpportunities.title, organizationId: fpCrmOpportunities.organizationId,
@@ -243,14 +275,19 @@ router.get("/redfp360/crm/opportunity-history", async (req, res) => {
     .innerJoin(fpOrganizations, and(
       eq(fpOrganizations.id, fpCrmOpportunities.organizationId),
       eq(fpOrganizations.tenantId, fpCrmOpportunityHistory.tenantId),
-    )).where(eq(fpCrmOpportunityHistory.tenantId, req.auth!.tenantId))
+    )).where(and(eq(fpCrmOpportunityHistory.tenantId, actor.tenantId), organizationScope))
     .orderBy(desc(fpCrmOpportunityHistory.createdAt)).limit(1000);
   res.json(ListCrmOpportunityHistoryResponse.parse(rows.map((row) => ({
     ...row, createdAt: iso(row.createdAt),
   }))));
 });
 
-async function readActivities(tenantId: string) {
+async function readActivities(actor: AuthContext) {
+  const organizationScope = isNetworkSupervisor(actor)
+    ? undefined
+    : actor.organizationId
+      ? eq(fpCrmOpportunities.organizationId, actor.organizationId)
+      : sql`false`;
   const rows = await db.select({
     id: fpCrmActivities.id, opportunityId: fpCrmActivities.opportunityId,
     opportunityTitle: fpCrmOpportunities.title, organizationId: fpCrmOpportunities.organizationId,
@@ -272,14 +309,14 @@ async function readActivities(tenantId: string) {
     .leftJoin(fpCrmContacts, and(
       eq(fpCrmContacts.id, fpCrmActivities.contactId),
       eq(fpCrmContacts.tenantId, fpCrmActivities.tenantId),
-    )).where(eq(fpCrmActivities.tenantId, tenantId))
+    )).where(and(eq(fpCrmActivities.tenantId, actor.tenantId), organizationScope))
     .orderBy(desc(fpCrmActivities.createdAt)).limit(1000);
   return ListCrmActivitiesResponse.parse(rows.map((row) => ({
     ...row, createdAt: iso(row.createdAt), updatedAt: iso(row.updatedAt),
   })));
 }
 router.get("/redfp360/crm/activities", async (req, res) => {
-  res.json(await readActivities(req.auth!.tenantId));
+  res.json(await readActivities(req.auth!));
 });
 router.post("/redfp360/crm/activities", async (req, res): Promise<void> => {
   const parsed = CreateCrmActivityBody.safeParse(req.body);
@@ -290,6 +327,7 @@ router.post("/redfp360/crm/activities", async (req, res): Promise<void> => {
       eq(fpCrmOpportunities.id, parsed.data.opportunityId), eq(fpCrmOpportunities.tenantId, actor.tenantId),
     ));
     if (!opportunity) fail(404, "La oportunidad no pertenece a tu red.");
+    assertOrganizationAccess(actor, opportunity.organizationId);
     if (parsed.data.contactId) {
       const [contact] = await tx.select({ id: fpCrmContacts.id }).from(fpCrmContacts).where(and(
         eq(fpCrmContacts.id, parsed.data.contactId), eq(fpCrmContacts.tenantId, actor.tenantId),
@@ -309,7 +347,7 @@ router.post("/redfp360/crm/activities", async (req, res): Promise<void> => {
       `${parsed.data.kind}: ${parsed.data.description.trim()}`, activityId);
     return activityId;
   });
-  const result = (await readActivities(actor.tenantId)).find((item) => item.id === id);
+  const result = (await readActivities(actor)).find((item) => item.id === id);
   if (!result) fail(500, "No se pudo recuperar el seguimiento recién creado.");
   res.status(201).json(CreateCrmActivityResponse.parse(result));
 });
@@ -320,11 +358,22 @@ router.patch("/redfp360/crm/activities/:id", async (req, res): Promise<void> => 
   if (parsed.data.description !== undefined) trimNonBlank(parsed.data.description, "La descripción");
   const actor = req.auth!;
   const activityId = await db.transaction(async (tx) => {
-    const [previous] = await tx.select({ id: fpCrmActivities.id, description: fpCrmActivities.description })
+    const [previous] = await tx.select({
+      id: fpCrmActivities.id,
+      description: fpCrmActivities.description,
+      opportunityId: fpCrmActivities.opportunityId,
+    })
       .from(fpCrmActivities).where(and(
         eq(fpCrmActivities.id, params.data.id), eq(fpCrmActivities.tenantId, actor.tenantId),
       )).for("update");
     if (!previous) fail(404, "Seguimiento no encontrado en tu red.");
+    const [opportunity] = await tx.select({ organizationId: fpCrmOpportunities.organizationId })
+      .from(fpCrmOpportunities).where(and(
+        eq(fpCrmOpportunities.id, previous.opportunityId),
+        eq(fpCrmOpportunities.tenantId, actor.tenantId),
+      ));
+    if (!opportunity) fail(404, "Oportunidad relacionada no encontrada.");
+    assertOrganizationAccess(actor, opportunity.organizationId);
     const [updated] = await tx.update(fpCrmActivities).set({
       ...parsed.data,
       ...(parsed.data.description !== undefined ? { description: parsed.data.description.trim() } : {}),
@@ -335,7 +384,7 @@ router.patch("/redfp360/crm/activities/:id", async (req, res): Promise<void> => 
       updated.id);
     return updated.id;
   });
-  const result = (await readActivities(actor.tenantId)).find((item) => item.id === activityId);
+  const result = (await readActivities(actor)).find((item) => item.id === activityId);
   if (!result) fail(500, "No se pudo recuperar el seguimiento actualizado.");
   res.json(UpdateCrmActivityResponse.parse(result));
 });

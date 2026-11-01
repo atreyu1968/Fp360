@@ -90,8 +90,11 @@ export function CrmPage({ onNotice }: { onNotice: (message: string) => void }) {
   const activities = activitiesQuery.data ?? [];
   const history = historyQuery.data ?? [];
   const organizations = organizationsQuery.data ?? [];
-  const activeOrganizations = organizations.filter((org) => org.isActive);
   const activeContacts = contacts.filter((contact) => contact.isActive);
+  const isNetworkSupervisor = identity.data?.role === 'administrator' ||
+    (identity.data?.role === 'teacher' && !identity.data.organizationId);
+  const activeOrganizations = organizations.filter((org) =>
+    org.isActive && (isNetworkSupervisor || org.id === identity.data?.organizationId));
   const activeOpportunityCount = opportunities.filter((op) => !['won', 'lost'].includes(op.stage)).length;
   const weightedCents = opportunities
     .filter((op) => !['won', 'lost'].includes(op.stage))

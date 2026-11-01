@@ -268,7 +268,8 @@ function timestamp(value: Date): string {
   return value.toISOString();
 }
 
-async function loadOrder(id: string, tenantId: string) {
+async function loadOrder(id: string, actor: AuthContext) {
+  const tenantId = actor.tenantId;
   const [order] = await db
     .select()
     .from(fpOrders)
@@ -285,17 +286,38 @@ async function loadOrder(id: string, tenantId: string) {
       ),
     )
     .limit(1);
-  const lines = await db
+  const orderLines = await db
     .select()
     .from(fpOrderLines)
     .where(eq(fpOrderLines.orderId, id));
+  const products = orderLines.length
+    ? await db.select({
+      id: fpProducts.id,
+      supplierOrganizationId: fpProducts.supplierOrganizationId,
+    }).from(fpProducts).where(and(
+      eq(fpProducts.tenantId, tenantId),
+      inArray(fpProducts.id, orderLines.map((line) => line.productId)),
+    ))
+    : [];
+  const supplierByProductId = new Map(products.map((product) => [product.id, product.supplierOrganizationId]));
+  const networkSupervisor = isNetworkSupervisor(actor);
+  const buyerAccess = actor.organizationId === order.buyerOrganizationId;
+  const visibleLines = networkSupervisor || buyerAccess
+    ? orderLines
+    : actor.organizationId
+      ? orderLines.filter((line) => {
+        const supplierOrganizationId = supplierByProductId.get(line.productId);
+        return supplierOrganizationId === null || supplierOrganizationId === actor.organizationId;
+      })
+      : [];
+  if (!networkSupervisor && !buyerAccess && !visibleLines.length) return null;
   return {
     id: order.id,
     reference: order.reference,
     buyerOrganizationId: order.buyerOrganizationId,
     buyerName: buyer?.name ?? "Entidad de la red",
     status: order.status,
-    lines: lines.map((line) => ({
+    lines: visibleLines.map((line) => ({
       productId: line.productId,
       productName: line.productName,
       quantity: line.quantity,
@@ -303,11 +325,15 @@ async function loadOrder(id: string, tenantId: string) {
       receivedQuantity: line.receivedQuantity,
       invoicedQuantity: line.invoicedQuantity,
       unitPriceCents: line.unitPriceCents,
-      unitCostCents: line.unitCostCents,
+      unitCostCents: networkSupervisor || (!!actor.organizationId && supplierByProductId.get(line.productId) === actor.organizationId)
+        ? line.unitCostCents
+        : null,
       itemType: line.itemType,
       tracksInventory: line.tracksInventory,
     })),
-    totalCents: order.totalCents,
+    totalCents: networkSupervisor || buyerAccess
+      ? order.totalCents
+      : visibleLines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0),
     simulatedDate: order.simulatedDate,
     createdAt: timestamp(order.createdAt),
   };
@@ -380,13 +406,13 @@ async function addActivity(
   });
 }
 
-async function listOrders(tenantId: string) {
+async function listOrders(actor: AuthContext) {
   const rows = await db
     .select({ id: fpOrders.id })
     .from(fpOrders)
-    .where(eq(fpOrders.tenantId, tenantId))
+    .where(eq(fpOrders.tenantId, actor.tenantId))
     .orderBy(desc(fpOrders.createdAt));
-  const mapped = await Promise.all(rows.map((row) => loadOrder(row.id, tenantId)));
+  const mapped = await Promise.all(rows.map((row) => loadOrder(row.id, actor)));
   return mapped.filter((order): order is NonNullable<typeof order> => Boolean(order));
 }
 
@@ -409,7 +435,7 @@ router.get("/redfp360/dashboard", async (req, res): Promise<void> => {
   const actor = req.auth!;
   const tenantId = actor.tenantId;
   await ensureDemoData(tenantId);
-  const orders = await listOrders(tenantId);
+  const orders = await listOrders(actor);
   const invoices = await listInvoices(tenantId, actor);
   const products = await db
     .select()
@@ -506,17 +532,23 @@ router.get("/redfp360/products", async (req, res): Promise<void> => {
 });
 
 router.get("/redfp360/orders", async (req, res): Promise<void> => {
-  const tenantId = req.auth!.tenantId;
+  const actor = req.auth!;
+  const tenantId = actor.tenantId;
   await ensureDemoData(tenantId);
-  res.json(ListFp360OrdersResponse.parse(await listOrders(tenantId)));
+  res.json(ListFp360OrdersResponse.parse(await listOrders(actor)));
 });
 
 router.post("/redfp360/orders", async (req, res): Promise<void> => {
-  const tenantId = req.auth!.tenantId;
+  const actor = req.auth!;
+  const tenantId = actor.tenantId;
   await ensureDemoData(tenantId);
   const parsed = CreateFp360OrderBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  if (!isNetworkSupervisor(actor) && actor.organizationId !== parsed.data.buyerOrganizationId) {
+    res.status(403).json({ error: "Solo puedes crear pedidos para tu propia empresa." });
     return;
   }
   const productQuantities = new Map<string, number>();
@@ -615,7 +647,7 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
     return;
   }
   await addActivity(tenantId, "Presupuesto creado", "Nuevo pedido en borrador.", reference);
-  const order = await loadOrder(id, tenantId);
+  const order = await loadOrder(id, actor);
   if (!order) {
     res.status(500).json({ error: "No se pudo recuperar el pedido creado." });
     return;
@@ -624,7 +656,8 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
 });
 
 router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
-  const tenantId = req.auth!.tenantId;
+  const actor = req.auth!;
+  const tenantId = actor.tenantId;
   await ensureDemoData(tenantId);
   const params = ConfirmFp360OrderParams.safeParse(req.params);
   if (!params.success) {
@@ -649,6 +682,9 @@ router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
         status: 404 as const,
         error: "Pedido no encontrado.",
       };
+    }
+    if (!isNetworkSupervisor(actor) && actor.organizationId !== order.buyerOrganizationId) {
+      return { ok: false as const, status: 404 as const, error: "Pedido no encontrado." };
     }
     if (order.status !== "draft") {
       return {
@@ -712,7 +748,7 @@ router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
     "El pedido y las unidades disponibles han quedado reservados.",
     result.reference,
   );
-  const order = await loadOrder(params.data.id, tenantId);
+  const order = await loadOrder(params.data.id, actor);
   res.json(ConfirmFp360OrderResponse.parse(order));
 });
 
@@ -744,6 +780,7 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
   const requestFingerprint = operationFingerprint({
     orderId: params.data.id,
     userId: actor.userId,
+    organizationId: actor.organizationId,
     lines: [...body.data.lines].sort((a, b) => a.productId.localeCompare(b.productId)),
   });
   const result = await db.transaction(async (tx) => {
@@ -759,6 +796,11 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
     if (previousShipment) {
       if (previousShipment.requestFingerprint !== requestFingerprint) {
         return { ok: false as const, status: 409 as const, error: "La clave de operación ya se usó con otros datos." };
+      }
+      if (previousShipment.orderId !== params.data.id ||
+        (!isNetworkSupervisor(actor) &&
+          (!actor.organizationId || previousShipment.originOrganizationId !== actor.organizationId))) {
+        return { ok: false as const, status: 404 as const, error: "Expedición no encontrada." };
       }
       return { ok: true as const, reference: previousShipment.reference, replay: true as const };
     }
@@ -838,7 +880,7 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
         .from(fpOrganizations)
         .where(and(eq(fpOrganizations.id, actor.organizationId), eq(fpOrganizations.tenantId, tenantId)))
         .limit(1);
-      if (!actorOrganization || !["seller", "both"].includes(actorOrganization.role)) {
+      if (!actorOrganization || !actorOrganization.isActive || !["seller", "both"].includes(actorOrganization.role)) {
         return { ok: false as const, status: 403 as const, error: "La organización debe tener perfil vendedor para expedir pedidos." };
       }
       if (supplierIds.length && supplierIds[0] !== actor.organizationId) {
@@ -939,7 +981,7 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
       result.reference,
     );
   }
-  const order = await loadOrder(params.data.id, tenantId);
+  const order = await loadOrder(params.data.id, actor);
   res.json(DispatchFp360OrderResponse.parse(order));
 });
 
