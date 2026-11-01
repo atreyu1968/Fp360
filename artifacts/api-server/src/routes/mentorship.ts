@@ -104,7 +104,9 @@ async function priorOperation(actor: AuthContext, operationId: string, body: unk
     eq(fpMentorAudit.operationId, operationId),
   )).limit(1);
   if (!prior) return null;
-  if (prior.resourceType !== resourceType || prior.fingerprint !== fingerprint(body)) {
+  if (prior.actorUserId !== actor.userId ||
+      prior.resourceType !== resourceType ||
+      prior.fingerprint !== fingerprint(body)) {
     fail(409, "Este identificador de operación ya se usó con otros datos.");
   }
   return prior;
@@ -493,6 +495,7 @@ router.post("/redfp360/mentorship/entities", route(async (req, res) => {
       eq(fpMentorEntities.tenantId, actor.tenantId),
     )).limit(1);
     if (!entity) fail(409, "La operación anterior no tiene una entidad recuperable.");
+    await requireEntity(actor, entity.id);
     res.status(200).json(entityResponse(actor, entity));
     return;
   }

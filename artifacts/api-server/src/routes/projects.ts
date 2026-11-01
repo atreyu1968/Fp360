@@ -139,7 +139,7 @@ async function priorEvent(
     eq(fpProjectEvents.tenantId, actor.tenantId),
     eq(fpProjectEvents.operationId, operationId),
   )).limit(1);
-  if (event && event.requestFingerprint !== requestFingerprint) {
+  if (event && (event.actorUserId !== actor.userId || event.requestFingerprint !== requestFingerprint)) {
     throw new ProjectsError(409, "El identificador de operación ya se usó con otros datos.");
   }
   return event ?? null;

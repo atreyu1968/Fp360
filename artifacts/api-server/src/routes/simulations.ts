@@ -156,7 +156,10 @@ async function priorOperation(actor: AuthContext, operationId: string, campaignI
     eq(fpSimulationAuditEvents.operationId, operationId),
   )).limit(1);
   if (!prior) return false;
-  if (prior.campaignId !== campaignId || prior.eventId !== eventId || prior.action !== action) {
+  if (prior.actorUserId !== actor.userId ||
+      prior.campaignId !== campaignId ||
+      prior.eventId !== eventId ||
+      prior.action !== action) {
     fail(409, "El identificador ya se utilizó para otra operación.");
   }
   return true;

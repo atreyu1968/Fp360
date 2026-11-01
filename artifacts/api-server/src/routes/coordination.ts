@@ -204,6 +204,7 @@ async function priorOperation(
   body: unknown,
   resourceType: string,
   resourceId?: string,
+  scopeOptions: { allowPendingForTeacher?: boolean; allowRecipientForTeacher?: boolean } = {},
 ) {
   const [prior] = await db.select().from(fpCoordinationAudit).where(and(
     eq(fpCoordinationAudit.tenantId, actor.tenantId),
@@ -218,6 +219,8 @@ async function priorOperation(
       (resourceId !== undefined && prior.resourceId !== resourceId)) {
     fail(409, "Este identificador de operación ya se utilizó con otros datos.");
   }
+  const centers = await getCenterDirectory(actor.tenantId);
+  await requireCampaign(actor, prior.campaignId, centers, scopeOptions);
   return prior;
 }
 
@@ -808,7 +811,9 @@ router.post("/redfp360/intercenter/campaigns/:id/centers/:centerId/action", rout
   const id = param(req.params.id);
   const centerId = param(req.params.centerId);
   const input = api.ActOnCoordinationParticipationBody.parse(req.body);
-  const prior = await priorOperation(actor, input.operationId, input, "participation", `${id}:${centerId}`);
+  const prior = await priorOperation(actor, input.operationId, input, "participation", `${id}:${centerId}`, {
+    allowRecipientForTeacher: true,
+  });
   if (prior) {
     const [row] = await db.select().from(fpCoordinationParticipants).where(and(
       eq(fpCoordinationParticipants.tenantId, actor.tenantId),
@@ -1336,7 +1341,9 @@ router.post("/redfp360/intercenter/incidents/:id/action", route(async (req, res)
 router.post("/redfp360/intercenter/transfers", route(async (req, res) => {
   const actor = req.auth as AuthContext;
   const input = api.CreateCoordinationTransferBody.parse(req.body);
-  const prior = await priorOperation(actor, input.operationId, input, "transfer");
+  const prior = await priorOperation(actor, input.operationId, input, "transfer", undefined, {
+    allowRecipientForTeacher: true,
+  });
   if (prior) {
     const [row] = await db.select().from(fpCoordinationTransfers).where(and(
       eq(fpCoordinationTransfers.id, prior.resourceId),
@@ -1387,7 +1394,9 @@ router.put("/redfp360/intercenter/transfers/:id", route(async (req, res) => {
   const actor = req.auth as AuthContext;
   const id = param(req.params.id);
   const input = api.UpdateCoordinationTransferBody.parse(req.body);
-  const prior = await priorOperation(actor, input.operationId, input, "transfer", id);
+  const prior = await priorOperation(actor, input.operationId, input, "transfer", id, {
+    allowRecipientForTeacher: true,
+  });
   if (prior) {
     const [row] = await db.select().from(fpCoordinationTransfers).where(and(
       eq(fpCoordinationTransfers.id, id),

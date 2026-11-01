@@ -130,7 +130,7 @@ async function priorEvent(actor: AuthContext, operationId: string, requestFinger
     eq(fpHrEvents.tenantId, actor.tenantId),
     eq(fpHrEvents.operationId, operationId),
   )).limit(1);
-  if (event && event.requestFingerprint !== requestFingerprint) {
+  if (event && (event.actorUserId !== actor.userId || event.requestFingerprint !== requestFingerprint)) {
     throw new HrError(409, "El identificador de operación ya se usó con otros datos.");
   }
   return event ?? null;
