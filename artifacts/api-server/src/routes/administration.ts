@@ -6,7 +6,7 @@ import * as api from "@workspace/api-zod";
 import {
   AcceptExistingAccountInvitationBody, AcceptExistingAccountInvitationResponse,
   RejectExistingAccountInvitationBody, RejectExistingAccountInvitationResponse,
-  AcceptInvitationBody, AcceptInvitationResponse, CreateAdminInvitationBody,
+  RejectInvitationBody, AcceptInvitationBody, AcceptInvitationResponse, CreateAdminInvitationBody,
   CreateAdminInvitationResponse, InspectInvitationBody, InspectInvitationResponse,
   GetAdminSystemOverviewResponse, CreateAdminOrganizationBody, CreateAdminOrganizationResponse,
   ActOnAdminOrganizationBody, ActOnAdminOrganizationResponse, EvaluateAdminPolicyBody,
@@ -16,6 +16,8 @@ import {
   CreateAdminPrivilegeRequestBody, CreateAdminPrivilegeRequestResponse,
   ActOnAdminPrivilegeRequestBody, ActOnAdminPrivilegeRequestResponse,
   ListAdminAuditResponse, ListAdminInvitationsResponse, ListAdminUsersResponse,
+  UpdateAdminAiCoordinatorSettingsBody, UpdateAdminAiCoordinatorSettingsResponse,
+  TestAdminAiCoordinatorConnectionBody, TestAdminAiCoordinatorConnectionResponse,
   RevokeAdminInvitationParams, UpdateAdminUserBody, UpdateAdminUserParams,
   UpdateAdminUserResponse,
 } from "@workspace/api-zod";
@@ -100,7 +102,7 @@ async function priorAdminOperation(
 async function audit(
   tx: Transaction,
   tenantId: string,
-  actorUserId: string,
+  actorUserId: string | null,
   action: string,
   entityId: string,
   operationId?: string,
@@ -247,6 +249,20 @@ router.post("/auth/invitations/reject-existing", requireAuth, requireSameOrigin,
     await tx.update(fpAuthInvitations).set({ rejectedAt: new Date() })
       .where(eq(fpAuthInvitations.id, invitation.id));
     await audit(tx, invitation.tenantId, actor.userId, "invitation.rejected", invitation.id);
+  });
+  res.status(204).end();
+});
+
+router.post("/auth/invitations/reject", async (req, res): Promise<void> => {
+  const body = RejectInvitationBody.safeParse(req.body);
+  if (!body.success) fail(400, "El enlace de invitación no es válido.");
+  await db.transaction(async (tx) => {
+    const [invitation] = await tx.select().from(fpAuthInvitations)
+      .where(pendingInvitation(body.data.token)).for("update");
+    if (!invitation) fail(410, "La invitación ha caducado, se ha revocado o ya se ha utilizado.");
+    await tx.update(fpAuthInvitations).set({ rejectedAt: new Date() })
+      .where(eq(fpAuthInvitations.id, invitation.id));
+    await audit(tx, invitation.tenantId, null, "invitation.rejected", invitation.id);
   });
   res.status(204).end();
 });
@@ -512,7 +528,7 @@ router.get("/admin/system/overview", async (req, res): Promise<void> => {
   }));
 
 router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => {
-  const body = api.UpdateAdminAiCoordinatorSettingsBody.safeParse(req.body);
+  const body = UpdateAdminAiCoordinatorSettingsBody.safeParse(req.body);
   if (!body.success) fail(400, "Revisa la URL, el modelo y el estado del coordinador.");
   const actor = req.auth!;
   let baseUrl = body.data.baseUrl.trim();
@@ -553,7 +569,7 @@ router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => 
   });
   const [saved] = await db.select().from(fpAdminAiCoordinatorSettings)
     .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
-  res.json(api.UpdateAdminAiCoordinatorSettingsResponse.parse({
+  res.json(UpdateAdminAiCoordinatorSettingsResponse.parse({
     configured: Boolean(saved?.baseUrl && saved?.model),
     enabled: saved?.enabled ?? false,
     baseUrl: saved?.baseUrl ?? "",
@@ -563,7 +579,7 @@ router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => 
 });
 
 router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
-  const body = api.TestAdminAiCoordinatorConnectionBody.safeParse(req.body);
+  const body = TestAdminAiCoordinatorConnectionBody.safeParse(req.body);
   if (!body.success) fail(400, "La solicitud de prueba no es válida.");
   const actor = req.auth!;
   const [settings] = await db.select().from(fpAdminAiCoordinatorSettings)
@@ -604,7 +620,7 @@ router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
       "ai-coordinator", body.data.operationId, fingerprint,
     );
   });
-  res.json(api.TestAdminAiCoordinatorConnectionResponse.parse({
+  res.json(TestAdminAiCoordinatorConnectionResponse.parse({
     connected: true,
     model: settings.model,
     checkedAt,

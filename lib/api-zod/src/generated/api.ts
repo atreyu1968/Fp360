@@ -787,6 +787,18 @@ export const RejectExistingAccountInvitationBody = zod.object({
 export const RejectExistingAccountInvitationResponse = zod.void()
 
 
+export const rejectInvitationBodyTokenMin = 32;
+export const rejectInvitationBodyTokenMax = 128;
+
+
+
+export const RejectInvitationBody = zod.object({
+  "token": zod.string().min(rejectInvitationBodyTokenMin).max(rejectInvitationBodyTokenMax)
+})
+
+export const RejectInvitationResponse = zod.void()
+
+
 /**
  * @summary Get the simulated company dashboard
  */
