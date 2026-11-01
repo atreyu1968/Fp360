@@ -262,6 +262,7 @@ Antes de publicar una versión para uso formativo:
 5. Confirma que `/api/healthz` responde correctamente: comprueba tanto el servidor como la conexión a PostgreSQL.
 6. Si se habilita el coordinador de IA, prueba el proveedor desde el panel. Con Mistral, configura `MISTRAL_API_KEY` en los secretos del entorno publicado y confirma el aviso de transferencia del contexto simulado antes de activar. La IA solo debe modificar datos del simulador.
 7. Prueba autenticación, selección de empresa, invitaciones, permisos, documentos y los flujos económicos con cuentas de cada rol y datos ficticios antes de abrir el acceso al alumnado.
+8. Ejecuta `pnpm run test:recovery` y revisa el [procedimiento y los resultados del ensayo de recuperación](docs/recovery-drill.md). Usa exclusivamente su clúster desechable y sus datos ficticios: no acepta destinos externos. Este ensayo no sustituye una política de copias del proveedor ni demuestra la recuperación del bucket real de App Storage.
 
 La IA genera actualmente propuestas supervisadas. La autonomía simulada por empresa que active un administrador está definida como requisito de producto, pero aún requiere una implementación específica y pruebas de límites antes de habilitarla para usuarios.
 

@@ -16,3 +16,11 @@ Tests for administrative business routes should use a development-only session f
 **Why:** Protected administrator routes reject sessions until MFA is verified, and the MFA/login endpoints are rate-limited. Repeating unrelated access-control tests through setup can exhaust those limits before the tested behavior is reached.
 
 **How to apply:** Seed only the required MFA/session state in isolated development test data; never bypass these checks in application code or run such fixtures against production.
+
+## Infrastructure recovery evidence
+
+Infrastructure recovery drills are separate from the ERP's didactic backup exercise. Run them only against newly created disposable databases and fictional files. A local App Storage adapter can verify references and application access controls, but must never be reported as proof of cloud bucket recovery or provider-level privacy.
+
+**Why:** Before opening centers, a successful educational exercise or a local storage substitute can otherwise be mistaken for a verified recovery of real infrastructure.
+
+**How to apply:** Keep the evidence explicit about what was restored, isolation and cleanup. Provider IAM, anonymous object access, retention, and recovery timing need their own disposable-provider verification, never tests against user data.

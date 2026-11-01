@@ -49,6 +49,10 @@ jobs:
         run: pnpm run test:api
         env:
           NODE_ENV: test
+      - name: Enable local PostgreSQL recovery tools
+        run: echo "$(pg_config --bindir)" >> "$GITHUB_PATH"
+      - name: Restore fictional data in a disposable local cluster
+        run: pnpm run test:recovery
       - name: Test database-backed workflows
         run: |
           set -euo pipefail
