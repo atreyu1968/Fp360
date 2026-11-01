@@ -110,6 +110,26 @@ test("rejecting an invitation creates no access and allows a new invitation", {
     assert.equal(rejectResponse.status, 204);
     assert.equal(rejectResponse.headers.get("set-cookie"), null);
 
+    const inspectRejectedResponse = await fetch(`${baseUrl}/api/auth/invitations/inspect`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: baseUrl },
+      body: JSON.stringify({ token: firstInvite.token }),
+    });
+    assert.equal(inspectRejectedResponse.status, 410, "a rejected invitation cannot be inspected again");
+    assert.match((await inspectRejectedResponse.json()).message, /ya se ha utilizado/i);
+
+    const acceptRejectedResponse = await fetch(`${baseUrl}/api/auth/invitations/accept`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: baseUrl },
+      body: JSON.stringify({
+        token: firstInvite.token,
+        displayName: "Rejected invitation test",
+        password: "test-only-password-123",
+      }),
+    });
+    assert.equal(acceptRejectedResponse.status, 410, "a rejected invitation cannot be accepted again");
+    assert.match((await acceptRejectedResponse.json()).message, /ya se ha utilizado/i);
+
     const [rejected] = (await client.query(
       `SELECT rejected_at FROM fp360_auth_invitations WHERE id = $1 AND tenant_id = $2`,
       [firstInvite.invitation.id, tenantId],
