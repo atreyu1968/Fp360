@@ -319,7 +319,7 @@ router.put("/redfp360/tax/profile", route(async (request, response) => {
     eq(fpTaxEvents.operationId, input.operationId),
   )).limit(1);
   if (priorEvent) {
-    if (priorEvent.requestFingerprint !== requestFingerprint) {
+    if (priorEvent.actorUserId !== actor.userId || priorEvent.requestFingerprint !== requestFingerprint) {
       response.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
@@ -664,7 +664,7 @@ router.post("/redfp360/tax/declarations/:id/action", route(async (request, respo
     eq(fpTaxEvents.operationId, input.operationId),
   )).limit(1);
   if (priorEvent) {
-    if (priorEvent.requestFingerprint !== requestFingerprint) {
+    if (priorEvent.actorUserId !== actor.userId || priorEvent.requestFingerprint !== requestFingerprint) {
       response.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
@@ -892,7 +892,7 @@ router.post("/redfp360/tax/requirements/:id/action", route(async (request, respo
     eq(fpTaxEvents.operationId, body.data.operationId),
   )).limit(1);
   if (priorEvent) {
-    if (priorEvent.requestFingerprint !== requestFingerprint) {
+    if (priorEvent.actorUserId !== actor.userId || priorEvent.requestFingerprint !== requestFingerprint) {
       response.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }

@@ -1,10 +1,10 @@
 ---
-name: Inter-centre replay authorization
-description: Current-access checks for idempotent retries in cross-centre coordination.
+name: Idempotent replay authorization
+description: Actor identity and current scope checks for replayed operations across RED FP360 modules.
 ---
 
-An idempotent retry must revalidate the caller's current campaign visibility before returning a prior result. Matching the original user, role, organization, and request fingerprint does not prove that the user's campaign participation is still active.
+An idempotent retry must match the original actor and revalidate current resource access before returning a prior result. Matching a request fingerprint alone does not prove that the current user owns the operation or still has access to its resource.
 
-**Why:** A center can lose campaign access while its user's identity and organization remain unchanged; returning cached campaign data after that transition bypasses the current visibility policy.
+**Why:** A center can lose campaign access while its user's identity and organization remain unchanged, and a different user in the same tenant can reuse an operation key; cached results can otherwise bypass current visibility.
 
-**How to apply:** Recheck tenant-scoped campaign access on every replay path. Preserve narrowly scoped exceptions only where the normal operation explicitly allows pending or invited recipients.
+**How to apply:** Bind replay keys to the original user, then recheck tenant-scoped resource permissions before returning cached data. Preserve narrowly scoped exceptions only where the normal operation explicitly allows pending or invited recipients.

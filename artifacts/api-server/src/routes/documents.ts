@@ -266,7 +266,9 @@ async function logEvent(
     eq(fpDocumentEvents.operationId, operationId),
   )).limit(1);
   if (existing) {
-    if (existing.requestFingerprint !== eventFingerprint) throw new DocumentsError(409, "El identificador de operación ya se usó para otro cambio.");
+    if (existing.actorUserId !== actor.userId || existing.requestFingerprint !== eventFingerprint) {
+      throw new DocumentsError(409, "El identificador de operación ya se usó para otro cambio.");
+    }
     return existing;
   }
   const [event] = await tx.insert(fpDocumentEvents).values({
@@ -387,7 +389,9 @@ router.post("/redfp360/documents/dossiers", route(async (req, res) => {
       eq(fpDocumentDossiers.operationId, body.data.operationId),
     )).limit(1);
     if (prior) {
-      if (prior.requestFingerprint !== requestFingerprint) throw new DocumentsError(409, "El identificador de operación ya se usó.");
+      if (prior.createdByUserId !== actor.userId || prior.requestFingerprint !== requestFingerprint) {
+        throw new DocumentsError(409, "El identificador de operación ya se usó.");
+      }
       return prior;
     }
     const id = randomUUID();
@@ -431,7 +435,9 @@ router.post("/redfp360/documents", route(async (req, res) => {
       eq(fpDocuments.operationId, body.data.operationId),
     )).limit(1);
     if (prior) {
-      if (prior.requestFingerprint !== requestFingerprint) throw new DocumentsError(409, "El identificador de operación ya se usó.");
+      if (prior.ownerUserId !== actor.userId || prior.requestFingerprint !== requestFingerprint) {
+        throw new DocumentsError(409, "El identificador de operación ya se usó.");
+      }
       return prior;
     }
     const [dossier] = await tx.select().from(fpDocumentDossiers).where(and(
@@ -515,7 +521,9 @@ router.patch("/redfp360/documents/:documentId", route(async (req, res) => {
       eq(fpDocumentEvents.operationId, body.data.operationId),
     )).limit(1);
     if (priorEvent) {
-      if (priorEvent.documentId !== locked.id || priorEvent.requestFingerprint !== operationFingerprint) {
+      if (priorEvent.actorUserId !== actor.userId ||
+          priorEvent.documentId !== locked.id ||
+          priorEvent.requestFingerprint !== operationFingerprint) {
         throw new DocumentsError(409, "El identificador de operación ya se usó para otro cambio.");
       }
       return locked;
@@ -587,7 +595,9 @@ router.post("/redfp360/documents/templates/:templateKey/generate", route(async (
       eq(fpDocuments.operationId, body.data.operationId),
     )).limit(1);
     if (prior) {
-      if (prior.requestFingerprint !== requestFingerprint) throw new DocumentsError(409, "El identificador de operación ya se usó.");
+      if (prior.ownerUserId !== actor.userId || prior.requestFingerprint !== requestFingerprint) {
+        throw new DocumentsError(409, "El identificador de operación ya se usó.");
+      }
       return prior;
     }
     const [created] = await tx.insert(fpDocuments).values({
@@ -947,7 +957,9 @@ router.post("/redfp360/documents/:documentId/actions", route(async (req, res) =>
       eq(fpDocumentEvents.operationId, body.data.operationId),
     )).limit(1);
     if (priorEvent) {
-      if (priorEvent.documentId !== locked.id || priorEvent.requestFingerprint !== operationFingerprint) {
+      if (priorEvent.actorUserId !== actor.userId ||
+          priorEvent.documentId !== locked.id ||
+          priorEvent.requestFingerprint !== operationFingerprint) {
         throw new DocumentsError(409, "El identificador de operación ya se usó para otro cambio.");
       }
       const [current] = await tx.select().from(fpDocuments).where(eq(fpDocuments.id, locked.id)).limit(1);
@@ -1104,7 +1116,9 @@ router.post("/redfp360/documents/dossiers/:dossierId/actions", route(async (req,
       eq(fpDocumentEvents.operationId, body.data.operationId),
     )).limit(1);
     if (priorEvent) {
-      if (priorEvent.dossierId !== locked.id || priorEvent.requestFingerprint !== operationFingerprint) {
+      if (priorEvent.actorUserId !== actor.userId ||
+          priorEvent.dossierId !== locked.id ||
+          priorEvent.requestFingerprint !== operationFingerprint) {
         throw new DocumentsError(409, "El identificador de operación ya se usó para otro cambio.");
       }
       return locked;

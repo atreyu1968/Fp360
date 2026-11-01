@@ -178,7 +178,7 @@ async function priorEvent(actor: AuthContext, operationId: string, requestFinger
     eq(fpCommunicationsEvents.operationId, operationId),
   )).limit(1);
   if (!prior) return null;
-  if (prior.requestFingerprint !== requestFingerprint) {
+  if (prior.actorUserId !== actor.userId || prior.requestFingerprint !== requestFingerprint) {
     throw new CommunicationsError(409, "Este identificador ya se utilizó para otra operación.");
   }
   return prior;

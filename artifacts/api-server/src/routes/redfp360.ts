@@ -1145,7 +1145,8 @@ router.post(
         ))
         .limit(1);
       if (priorOperation) {
-        if (priorOperation.requestFingerprint !== requestFingerprint) {
+        if (priorOperation.createdByUserId !== actor.userId ||
+            priorOperation.requestFingerprint !== requestFingerprint) {
           return {
             ok: false as const,
             status: 409 as const,

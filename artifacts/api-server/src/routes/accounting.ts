@@ -433,7 +433,9 @@ async function createDraft(
     eq(fpAccountingEntries.operationId, operationId),
   )).limit(1);
   if (priorOperation) {
-    if (priorOperation.requestFingerprint !== requestFingerprint) return { error: "La clave de operación ya se utilizó con otros datos.", status: 409 as const };
+    if (priorOperation.createdByUserId !== actor.userId || priorOperation.requestFingerprint !== requestFingerprint) {
+      return { error: "La clave de operación ya se utilizó con otros datos.", status: 409 as const };
+    }
     return { entryId: priorOperation.id };
   }
   if (sourceId) {

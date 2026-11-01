@@ -6,4 +6,4 @@
 - [Hacienda official-form scope](tax-forms-scope.md) — Keep separate AEAT and ATC sections, profile-based applicability, and official templates educational-only.
 - [RED FP360 evaluation scope](redfp360-evaluation-scope.md) — Keep curriculum criteria configurable per center; grades, rubrics, recoveries, and closure remain didactic and auditable.
 - [RED FP360 administration safety](redfp360-administration-safety.md) — Keep recovery and integrations simulation-only; global privilege changes require independent administrator approval.
-- [Inter-centre replay authorization](redfp360-idempotency-access.md) — Idempotent retries must recheck current campaign visibility, not rely only on the actor recorded in the audit.
+- [Idempotent replay authorization](redfp360-idempotency-access.md) — Bind retries to the original actor and recheck current resource scope before returning stored results.

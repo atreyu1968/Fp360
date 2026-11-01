@@ -660,7 +660,9 @@ router.post("/redfp360/bank/accounts", route(async (req, res) => {
     eq(fpBankEvents.operationId, body.data.operationId),
   )).limit(1);
   if (existing[0]) {
-    if (existing[0].requestFingerprint !== requestFingerprint || !existing[0].accountId) {
+    if (existing[0].actorUserId !== actor.userId ||
+        existing[0].requestFingerprint !== requestFingerprint ||
+        !existing[0].accountId) {
       res.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
@@ -750,7 +752,7 @@ router.post("/redfp360/bank/transfers", route(async (req, res) => {
     eq(fpBankTransfers.operationId, body.data.operationId),
   )).limit(1);
   if (existing) {
-    if (existing.requestFingerprint !== requestFingerprint) {
+    if (existing.createdByUserId !== actor.userId || existing.requestFingerprint !== requestFingerprint) {
       res.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
@@ -822,7 +824,9 @@ router.post("/redfp360/bank/transfers/:id/action", route(async (req, res) => {
     eq(fpBankEvents.operationId, body.data.operationId),
   )).limit(1);
   if (existingEvent) {
-    if (existingEvent.requestFingerprint !== requestFingerprint || existingEvent.transferId !== params.data.id) {
+    if (existingEvent.actorUserId !== actor.userId ||
+        existingEvent.requestFingerprint !== requestFingerprint ||
+        existingEvent.transferId !== params.data.id) {
       res.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
@@ -959,7 +963,7 @@ router.post("/redfp360/bank/effects", route(async (req, res) => {
     eq(fpBankEffects.operationId, body.data.operationId),
   )).limit(1);
   if (existingEffect) {
-    if (existingEffect.requestFingerprint !== requestFingerprint) {
+    if (existingEffect.createdByUserId !== actor.userId || existingEffect.requestFingerprint !== requestFingerprint) {
       res.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
@@ -1071,7 +1075,7 @@ router.post("/redfp360/bank/financing", route(async (req, res) => {
     eq(fpBankFinancing.operationId, body.data.operationId),
   )).limit(1);
   if (existing) {
-    if (existing.requestFingerprint !== requestFingerprint) {
+    if (existing.createdByUserId !== actor.userId || existing.requestFingerprint !== requestFingerprint) {
       res.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
@@ -1157,7 +1161,9 @@ router.post("/redfp360/bank/financing/:id/action", route(async (req, res) => {
     eq(fpBankEvents.operationId, body.data.operationId),
   )).limit(1);
   if (existingEvent) {
-    if (existingEvent.requestFingerprint !== requestFingerprint || existingEvent.financingId !== current.id) {
+    if (existingEvent.actorUserId !== actor.userId ||
+        existingEvent.requestFingerprint !== requestFingerprint ||
+        existingEvent.financingId !== current.id) {
       res.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
