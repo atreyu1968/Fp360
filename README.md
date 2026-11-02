@@ -271,6 +271,29 @@ El flujo de GitHub Actions `.github/workflows/quality.yml` crea una base Postgre
 
 ## Preparación para producción educativa
 
+### Capacidad orientativa por red de empresas
+
+La aplicación separa la interfaz web, la API Node.js/Express, PostgreSQL y App Storage. La web compilada es estática y no necesita un servidor de aplicación dedicado; concentra la carga en la API, la base de datos y, si se usa, el proveedor de IA. Las cifras siguientes son **estimaciones iniciales de planificación**, no resultados de pruebas de carga ni garantías de capacidad. Suponen una carga educativa normal y una base de datos en un servicio separado:
+
+| Empresas simuladas en una red | API: CPU y memoria iniciales | PostgreSQL: CPU y memoria iniciales | Uso previsto |
+| --- | --- | --- | --- |
+| 1–10 | 2 vCPU, 4 GiB RAM | 2 vCPU, 4 GiB RAM | Piloto pequeño |
+| 11–50 | 4 vCPU, 8 GiB RAM | 4 vCPU, 8 GiB RAM | Varios centros con actividad habitual |
+| 51–200 | 8 vCPU, 16 GiB RAM | 8 vCPU, 16 GiB RAM | Despliegue multicentro que requiere validación de carga |
+| Más de 200 | Dimensionar después de una prueba de carga | Dimensionar según datos, índices y conexiones | Revisar arquitectura y separar trabajos pesados |
+
+No se debe dimensionar solo por el número de empresas. También influyen las sesiones concurrentes, el volumen de operaciones acumuladas, los documentos y versiones conservados, la frecuencia de consultas y la actividad simultánea de los procesos de coordinación. Antes de abrir un grupo, prueba con datos ficticios una carga al menos igual al pico esperado y mide p95 de latencia, errores, CPU, memoria, conexiones y consultas lentas; ajusta los recursos con esos resultados.
+
+#### Factores que afectan a RED FP360
+
+- Cada propuesta del coordinador reúne el estado de todas las empresas del tenant y su historial de operaciones. Ese contexto se construye en memoria; una red con muchos años de operaciones puede exigir más memoria, tiempo de consulta y capacidad de contexto que otra con el mismo número de empresas y poco historial.
+- GroqCloud se ejecuta fuera de la aplicación y no requiere GPU en el servidor de RED FP360, pero la latencia, disponibilidad, límites y consumo de tokens dependen del proveedor. Si se usa un modelo local, aloja la inferencia en un servidor aparte y dimensiona CPU/GPU y memoria según el modelo, su ventana de contexto y la concurrencia; no compartas esos recursos con PostgreSQL.
+- Mantén PostgreSQL y sus datos en almacenamiento SSD persistente, con espacio para índices, crecimiento, WAL y el procedimiento de copias definido por el operador. App Storage es independiente: su capacidad depende del tamaño y retención de documentos, no del tamaño de la RAM del API.
+- El pool PostgreSQL actual no fija un límite propio y usa el valor predeterminado de `pg.Pool` (10 conexiones por proceso). Al aumentar instancias o workers, calcula el total de conexiones contra el límite de la base de datos y configura un pooler o límites explícitos antes de escalar.
+- El planificador de autonomía simulada se inicia dentro de cada proceso API. **No aumentes las réplicas del API con el planificador activo hasta validar una coordinación distribuida**; mientras tanto, usa una sola instancia API o desactiva la autonomía programada y valida los procesos manuales.
+
+Estos tamaños sirven para iniciar la planificación, no sustituyen una prueba con la distribución real de empresas, usuarios y operaciones. Si el historial hace crecer demasiado el contexto de IA, se debe optimizar y limitar ese resumen antes de aumentar indefinidamente los recursos o el presupuesto del proveedor.
+
 Antes de publicar una versión para uso formativo:
 
 1. Exige que GitHub Actions termine correctamente; no publiques si falla el chequeo de tipos, la compilación o una prueba.
@@ -279,10 +302,10 @@ Antes de publicar una versión para uso formativo:
 4. Completa la configuración inicial con `RED_FP360_SETUP_TOKEN`, comprueba el acceso del administrador y MFA, y retira ese token de producción después del alta inicial.
 5. Confirma que `/api/healthz` responde correctamente: comprueba tanto el servidor como la conexión a PostgreSQL.
 6. Si se habilita el coordinador de IA, prueba el proveedor desde el panel. Con GroqCloud, configura `GROQ_API_KEY` en los secretos del entorno publicado y confirma el aviso de transferencia del contexto simulado antes de activar. La IA solo debe modificar datos del simulador.
-7. Prueba autenticación, selección de empresa, invitaciones, permisos, documentos y los flujos económicos con cuentas de cada rol y datos ficticios antes de abrir el acceso al alumnado.
+7. Prueba autenticación, selección de empresa, invitaciones, permisos, documentos, flujos económicos y concesión/revocación de autonomía simulada con cuentas de cada rol y datos ficticios antes de abrir el acceso al alumnado.
 8. Ejecuta `pnpm run test:recovery` y revisa el [procedimiento y los resultados del ensayo de recuperación](docs/recovery-drill.md). Usa exclusivamente su clúster desechable y sus datos ficticios: no acepta destinos externos. Este ensayo no sustituye una política de copias del proveedor ni demuestra la recuperación del bucket real de App Storage.
 
-La IA genera actualmente propuestas supervisadas. La autonomía simulada por empresa que active un administrador está definida como requisito de producto, pero aún requiere una implementación específica y pruebas de límites antes de habilitarla para usuarios.
+La generación de propuestas es supervisada. La autonomía simulada por empresa está disponible solo mediante delegación explícita de administración, limitada a operaciones didácticas autorizadas y revocable; debe probarse en el entorno publicado antes de permitir su uso formativo.
 
 ## Cambios de esquema de base de datos
 
