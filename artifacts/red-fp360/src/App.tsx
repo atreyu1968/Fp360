@@ -29,6 +29,7 @@ import type {
 } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { httpStatus } from '@/components/admin-shared';
+import { applicationModules, canOpenApplication } from '@/lib/application-modules';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
@@ -94,17 +95,6 @@ function writePaymentAttempt(key: string, value: StoredInvoicePayment | null) {
   try { if (value) sessionStorage.setItem(key, JSON.stringify(value)); else sessionStorage.removeItem(key); } catch { /* Keep the active form usable when storage is unavailable. */ }
 }
 
-const appModules = [
-  'Dirección y cuadro de mando', 'CRM y contactos', 'Ventas y facturación',
-  'Compras y aprovisionamiento', 'Productos y servicios', 'Almacén e inventario',
-  'Logística y distribución', 'Contabilidad', 'Tesorería', 'Recursos humanos',
-  'Nóminas', 'Atención al cliente', 'Proyectos y servicios', 'Gestión documental',
-  'Mercado FP360', 'Banco FP360', 'Hacienda FP360', 'Seguridad Social FP360',
-  'Empleo FP360', 'Centro de comunicaciones', 'FP360 SIM — Dirección inteligente',
-  'Portafolio profesional', 'Evaluación docente', 'Mentoría empresarial',
-  'Coordinación intercentros', 'Administración del sistema',
-];
-const implemented = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]);
 const navItems = [
   { href: '/', label: 'Inicio', icon: LayoutDashboard },
   { href: '/mercado', label: 'Mercado', icon: Globe2 },
@@ -1084,25 +1074,31 @@ function InvoicesPage({ invoices, orders, stateInvoices, stateOrders, onRefresh,
   </main>;
 }
 
-function ApplicationsPage() {
+function ApplicationsPage({ role }: { role: AuthIdentity['role'] }) {
   const [search, setSearch] = useState('');
-  const filtered = appModules.map((name, index) => ({ name, id: index + 1 })).filter((item) => item.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = applicationModules.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()));
+  const accessibleCount = applicationModules.filter((module) => canOpenApplication(module, role)).length;
   return <main className="page-content">
     <PageHeading path="/aplicaciones" />
     <SimulationNotice />
-    <div className="catalog-intro"><div className="catalog-orbit"><GraduationCap size={28} /></div><div><div className="catalog-kicker">MAPA DE CAPACIDADES · CURSO 2027—2028</div><h2>26 aplicaciones.<br /><span>Una empresa de aprendizaje.</span></h2><p>La visión funcional de RED FP360 cubre el ciclo empresarial completo. Solo las capacidades conectadas a los servicios disponibles están marcadas como disponibles en esta demo.</p></div><div className="catalog-stat"><b>06</b><span>disponibles<br />en la demo</span></div></div>
+    <div className="catalog-intro"><div className="catalog-orbit"><GraduationCap size={28} /></div><div><div className="catalog-kicker">MAPA DE CAPACIDADES · CURSO 2027—2028</div><h2>{applicationModules.length} aplicaciones.<br /><span>Una empresa de aprendizaje.</span></h2><p>Abre cada módulo para trabajar con las operaciones educativas de la red. Las acciones disponibles dependen de tu rol y de la empresa asignada.</p></div><div className="catalog-stat"><b>{String(accessibleCount).padStart(2, '0')}</b><span>accesibles<br />con tu rol</span></div></div>
     <div className="catalog-toolbar"><div><h2>Catálogo de aplicaciones</h2><p>Estado funcional actual de cada módulo de acuerdo con esta demostración.</p></div><label className="search-field"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar módulo" aria-label="Buscar módulos" data-testid="input-modules-search" /></label></div>
-    <div className="module-list">{filtered.map(({ name, id }) => {
-      const available = implemented.has(id);
+    <div className="module-list">{filtered.map((module) => {
+      const { name, id, href } = module;
+      const available = canOpenApplication(module, role);
       const icon = id === 1 ? LayoutDashboard : id === 2 ? Users : id === 3 ? ShoppingCart : id === 5 ? Package : id === 6 ? Boxes : id === 15 ? Globe2 : id === 16 ? CreditCard : id === 17 ? FileCheck2 : id === 18 ? Building2 : id >= 21 ? GraduationCap : ClipboardList;
       const Icon = icon;
-      return <article className={`module-row ${available ? 'module-live' : ''}`} key={id} data-testid={`module-${id}`}>
-        <span className="module-number">{String(id).padStart(2, '0')}</span><span className="module-icon"><Icon size={18} /></span><div className="module-copy"><b>{name}</b><small>{available ? 'Conectado a datos y operaciones simuladas' : 'Definición funcional del catálogo; aún no disponible'}</small></div>
-        <span className={available ? 'module-status module-available' : 'module-status module-planned'}><span />{available ? 'Disponible en demo' : 'Planificada'}</span>
-        {available ? <span className="module-arrow"><CheckCircle2 size={17} /></span> : <span className="module-arrow muted"><Clock3 size={16} /></span>}
-      </article>;
+      const contents = <>
+        <span className="module-number">{String(id).padStart(2, '0')}</span><span className="module-icon"><Icon size={18} /></span><div className="module-copy"><b>{name}</b><small>{available ? 'Abrir módulo · datos y operaciones simuladas' : 'Módulo disponible solo para administración'}</small></div>
+        <span className={available ? 'module-status module-available' : 'module-status module-planned'}><span />{available ? 'Abrir aplicación' : 'Acceso restringido'}</span>
+        <span className={`module-arrow${available ? '' : ' muted'}`}>{available ? <ArrowRight size={17} /> : <ShieldCheck size={16} />}</span>
+      </>;
+      return available
+        ? <Link href={href} className="module-row module-live module-link" key={id} data-testid={`module-${id}`} aria-label={`Abrir ${name}`}>{contents}</Link>
+        : <article className="module-row" key={id} data-testid={`module-${id}`}>{contents}</article>;
     })}</div>
-    <div className="catalog-footnote"><ShieldAlert size={16} /><span>“Disponible en demo” identifica pantallas y funciones enlazadas a las API suministradas. “Planificada” es una especificación futura, no una funcionalidad activa.</span></div>
+    {filtered.length === 0 && <p className="catalog-footnote">No hay aplicaciones que coincidan con la búsqueda.</p>}
+    <div className="catalog-footnote"><ShieldAlert size={16} /><span>Los enlaces abren módulos educativos conectados a la API. Los permisos de cada operación se comprueban también en el servidor.</span></div>
   </main>;
 }
 
@@ -1257,7 +1253,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       case '/crm': return <CrmPage onNotice={setNotice} />;
       case '/productos': return <CatalogPage onNotice={setNotice} />;
        case '/aplicaciones':
-       case '/apps': return <ApplicationsPage />;
+       case '/apps': return <ApplicationsPage role={identity.role} />;
        case '/documentacion':
        case '/docs': return <DocumentationPage />;
       case '/administracion': return identity.role === 'administrator' ? <AdminPage identity={identity} /> : <AdminAccessDenied />;

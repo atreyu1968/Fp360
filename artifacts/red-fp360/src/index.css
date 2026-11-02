@@ -758,6 +758,9 @@ tbody tr:hover:not(:has(.empty-state)) { background: #fbfdff; }
 .module-list { border: 1px solid var(--fp-border); background: #fff; border-radius: 9px; overflow: hidden; }
 .module-row { min-height: 63px; padding: 8px 17px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #edf1f5; }
 .module-row:last-child { border-bottom: 0; }
+.module-link { color: inherit; text-decoration: none; }
+.module-link:hover { background: #f3f8fc; }
+.module-link:focus-visible { outline: 2px solid #176ab0; outline-offset: -2px; }
 .module-number { width: 22px; color: #96a5b2; font-family: var(--app-font-mono); font-size: 9px; }
 .module-icon { width: 33px; height: 33px; border-radius: 8px; display: grid; place-items: center; color: #8497a8; background: #f1f5f8; }
 .module-live .module-icon { color: #176fd7; background: #edf5ff; }

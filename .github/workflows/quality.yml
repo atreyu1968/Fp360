@@ -50,6 +50,7 @@ jobs:
           bash scripts/install-ubuntu.sh --help >/dev/null
           bash scripts/update-ubuntu.sh --help >/dev/null
           python3 scripts/tests/test_ubuntu_updater.py
+          node --test scripts/tests/application*-links.test.mjs
           if grep -nE '^[[:space:]]*read([[:space:]]|$)' scripts/install-ubuntu.sh scripts/update-ubuntu.sh; then
             echo "Installer and updater must not read interactive input." >&2
             exit 1

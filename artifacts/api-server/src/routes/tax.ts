@@ -291,6 +291,11 @@ function simulatedDueDate(modelCode: string): string {
   return "2027-09-15";
 }
 
+function serializeTaxRecord(record: Record<string, unknown>) {
+  return Object.fromEntries(Object.entries(record).map(([key, value]) =>
+    [key, value instanceof Date ? value.toISOString() : value]));
+}
+
 router.put("/redfp360/tax/profile", route(async (request, response) => {
   const body = UpdateFp360TaxProfileBody.safeParse(request.body);
   if (!body.success) {
@@ -479,10 +484,10 @@ router.get("/redfp360/tax/overview", route(async (request, response) => {
     modelCatalog,
     summary,
     obligations,
-    declarations,
+    declarations: declarations.map(serializeTaxRecord),
     sourceDocuments: documents.documents,
-    requirements,
-    events,
+    requirements: requirements.map(serializeTaxRecord),
+    events: events.map(serializeTaxRecord),
   }));
 }));
 
@@ -555,7 +560,7 @@ router.post("/redfp360/tax/declarations", route(async (request, response) => {
       response.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
-    response.json(CreateFp360TaxDeclarationResponse.parse(prior));
+    response.json(CreateFp360TaxDeclarationResponse.parse(serializeTaxRecord(prior)));
     return;
   }
   const withholdingBaseCents = input.withholdingBaseCents
@@ -629,7 +634,7 @@ router.post("/redfp360/tax/declarations", route(async (request, response) => {
     });
     return created;
   });
-  response.status(201).json(CreateFp360TaxDeclarationResponse.parse(declaration));
+  response.status(201).json(CreateFp360TaxDeclarationResponse.parse(serializeTaxRecord(declaration)));
 }));
 
 router.post("/redfp360/tax/declarations/:id/action", route(async (request, response) => {
@@ -670,7 +675,7 @@ router.post("/redfp360/tax/declarations/:id/action", route(async (request, respo
     }
     const result = await loadDeclaration(priorEvent.declarationId ?? declaration.id, actor.tenantId);
     if (result) {
-      response.json(ActOnFp360TaxDeclarationResponse.parse(result));
+      response.json(ActOnFp360TaxDeclarationResponse.parse(serializeTaxRecord(result)));
       return;
     }
   }
@@ -799,7 +804,7 @@ router.post("/redfp360/tax/declarations/:id/action", route(async (request, respo
     });
     result = updated;
   });
-  response.json(ActOnFp360TaxDeclarationResponse.parse(result));
+  response.json(ActOnFp360TaxDeclarationResponse.parse(serializeTaxRecord(result)));
 }));
 
 router.post("/redfp360/tax/requirements", route(async (request, response) => {
@@ -828,7 +833,7 @@ router.post("/redfp360/tax/requirements", route(async (request, response) => {
       response.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
-    response.json(CreateFp360TaxRequirementResponse.parse(prior));
+    response.json(CreateFp360TaxRequirementResponse.parse(serializeTaxRecord(prior)));
     return;
   }
   const requirement = await db.transaction(async (tx) => {
@@ -859,7 +864,7 @@ router.post("/redfp360/tax/requirements", route(async (request, response) => {
     });
     return created;
   });
-  response.status(201).json(CreateFp360TaxRequirementResponse.parse(requirement));
+  response.status(201).json(CreateFp360TaxRequirementResponse.parse(serializeTaxRecord(requirement)));
 }));
 
 router.post("/redfp360/tax/requirements/:id/action", route(async (request, response) => {
@@ -900,7 +905,7 @@ router.post("/redfp360/tax/requirements/:id/action", route(async (request, respo
       eq(fpTaxRequirements.id, requirement.id), eq(fpTaxRequirements.tenantId, actor.tenantId),
     )).limit(1);
     if (saved) {
-      response.json(ActOnFp360TaxRequirementResponse.parse(saved));
+      response.json(ActOnFp360TaxRequirementResponse.parse(serializeTaxRecord(saved)));
       return;
     }
   }
@@ -937,7 +942,7 @@ router.post("/redfp360/tax/requirements/:id/action", route(async (request, respo
     });
     return saved;
   });
-  response.json(ActOnFp360TaxRequirementResponse.parse(updated));
+  response.json(ActOnFp360TaxRequirementResponse.parse(serializeTaxRecord(updated)));
 }));
 
 export default router;

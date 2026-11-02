@@ -414,7 +414,6 @@ router.get("/redfp360/projects/overview", route(async (request, response) => {
       eq(fpPurchaseReceipts.tenantId, actor.tenantId),
       eq(fpPurchaseOrders.tenantId, actor.tenantId),
       eq(fpPurchaseOrders.buyerOrganizationId, organizationId),
-      eq(fpPurchaseOrderLines.purchaseOrderId, fpPurchaseOrders.id),
       eq(fpPurchaseReceipts.status, "received"),
     )),
     db.select({
