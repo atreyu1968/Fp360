@@ -26,7 +26,7 @@ Uso:
 
 Opciones:
   --domain DOMINIO       Dominio DNS que apunta a este servidor (TLS por Caddy)
-  --upgrade-system       Ofrece una actualización APT general, con confirmación
+  --upgrade-system       Actualiza paquetes APT sin preguntas (no cambia Ubuntu)
   --backup-destination DIR
                          Punto de montaje para copias (predeterminado: /mnt/redfp360-backups)
   --backup-passphrase-file FILE
@@ -130,19 +130,10 @@ if command -v ss >/dev/null 2>&1 && ss -ltnH | awk '$4 ~ /:(80|443)$/ { found=1 
   fail "El puerto 80 o 443 ya está en uso. Libéralo o configura el proxy manualmente antes de instalar."
 fi
 
-if [[ -z "$DOMAIN" ]]; then
-  read -r -p "Dominio DNS para RED FP360 (debe apuntar a este servidor): " DOMAIN
-fi
+[[ -n "$DOMAIN" ]] || fail "Falta --domain. El instalador no es interactivo."
 [[ "$DOMAIN" =~ ^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$ ]] \
   || fail "Escribe un dominio DNS completo válido; no se admite una IP ni localhost."
 DOMAIN="${DOMAIN,,}"
-
-if ((UPGRADE_SYSTEM)); then
-  printf '\nSe ha solicitado actualizar los paquetes instalados del sistema.\n'
-  printf 'Esto puede reiniciar servicios; no cambia la versión de Ubuntu ni reinicia el servidor.\n'
-  read -r -p 'Escribe UPGRADE para confirmar: ' confirmation
-  [[ "$confirmation" == "UPGRADE" ]] || fail "Actualización del sistema cancelada."
-fi
 
 if id "$SERVICE_USER" >/dev/null 2>&1; then
   fail "Ya existe el usuario de sistema $SERVICE_USER; comprueba si hay una instalación anterior."
@@ -150,11 +141,15 @@ fi
 
 printf '\nInstalando requisitos del sistema. No se ejecutará una actualización general salvo que confirmes --upgrade-system.\n'
 export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
+export APT_LISTCHANGES_FRONTEND=none
 apt-get update
 apt-get install -y --no-install-recommends ca-certificates curl git gnupg openssl
 
 if ((UPGRADE_SYSTEM)); then
-  apt-get upgrade -y
+  apt-get upgrade -y \
+    -o Dpkg::Options::=--force-confdef \
+    -o Dpkg::Options::=--force-confold
 fi
 
 install -d -m 0755 /etc/apt/keyrings
@@ -202,9 +197,13 @@ install -d -m 0750 -o "$SERVICE_USER" -g "$SERVICE_USER" \
   "$DATA_DIR/private/uploads" "$DATA_DIR/public"
 chown "$SERVICE_USER:$SERVICE_USER" "$APP_DIR"
 
-printf 'Copiando el commit %s al directorio de instalación...\n' "$(git_repo rev-parse --short HEAD)"
+RELEASE_COMMIT="$(git_repo rev-parse HEAD)"
+printf 'Copiando el commit %s al directorio de instalación...\n' "${RELEASE_COMMIT:0:7}"
 git_repo archive --format=tar HEAD | tar -xf - -C "$APP_DIR"
 chown -R "$SERVICE_USER:$SERVICE_USER" "$APP_DIR"
+printf '%s\n' "$RELEASE_COMMIT" > /var/lib/redfp360/release
+chown root:root /var/lib/redfp360/release
+chmod 0644 /var/lib/redfp360/release
 
 DB_PASSWORD="$(openssl rand -hex 32)"
 SESSION_SECRET="$(openssl rand -hex 32)"

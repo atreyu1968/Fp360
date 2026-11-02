@@ -159,22 +159,22 @@ El instalador configura una **instalación nueva** en Ubuntu Server 22.04 o 24.0
 La primera descarga no necesita `curl` ni `git` preinstalados: instala `git` desde APT, clona el repositorio y ejecuta el instalador desde ese checkout. No uses `curl | bash`; descarga y revisa el script antes de ejecutarlo:
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y ca-certificates git
+sudo env DEBIAN_FRONTEND=noninteractive apt-get update
+sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates git
 git clone --depth 1 --branch main https://github.com/atreyu1968/Fp360.git /tmp/redfp360-bootstrap
-sed -n '1,340p' /tmp/redfp360-bootstrap/scripts/install-ubuntu.sh
+cat /tmp/redfp360-bootstrap/scripts/install-ubuntu.sh
 sudo bash /tmp/redfp360-bootstrap/scripts/install-ubuntu.sh \
-  --domain fp360.example.org
+  --domain TU_DOMINIO
 ```
 
-Sustituye el dominio por el tuyo. Para producción, revisa un commit o tag concreto en lugar de instalar una rama que puede cambiar. Si el repositorio es privado, configura acceso SSH en el servidor y usa la URL SSH; no pongas tokens de GitHub en la URL, en el script ni en el historial de shell.
+Sustituye `TU_DOMINIO` por un dominio DNS real que apunte a este servidor. El instalador no pregunta datos por consola: si falta una opción obligatoria, termina con un error. Para producción, fija un commit o tag concreto en lugar de instalar una rama que puede cambiar. Si el repositorio es privado, configura acceso SSH en el servidor y usa la URL SSH; no pongas tokens de GitHub en la URL, en el script ni en el historial de shell.
 
 ### Almacenamiento y red
 
 - En Ubuntu, los documentos se guardan en el disco del servidor, dentro de `/var/lib/redfp360/objects`. El directorio privado no se publica directamente: las descargas pasan por la API y sus comprobaciones de acceso.
 - El script `scripts/backup-ubuntu.sh` crea una copia cifrada única de PostgreSQL y `/var/lib/redfp360/objects`, deteniendo brevemente la API para coordinarlos. Ejecuta el ensayo de restauración con `restore-drill` antes de confiar en las copias. Consulta [el procedimiento de copias y recuperación en Ubuntu](docs/ubuntu-backups.md) para proteger la clave, elegir destino, definir retención y recuperar los datos. Replit conserva su almacenamiento administrado en sus propios despliegues.
 - Configura el DNS del dominio hacia el servidor y permite tráfico entrante en los puertos 80 y 443. Caddy obtiene y renueva el certificado TLS. El instalador no cambia el firewall, no reinicia el servidor y no ejecuta una actualización general de Ubuntu.
-- `--upgrade-system` ofrece actualizar paquetes del sistema, pero pide escribir `UPGRADE` antes de hacerlo. No cambia la versión de Ubuntu. El instalador se detiene en versiones distintas de 22.04 o 24.04; no ejecuta `do-release-upgrade`.
+- `--upgrade-system` actualiza los paquetes APT en modo no interactivo cuando se incluye expresamente. No cambia la versión de Ubuntu ni reinicia el servidor. El instalador se detiene en versiones distintas de 22.04 o 24.04; no ejecuta `do-release-upgrade`.
 
 ### Alta inicial y límites del instalador
 
@@ -189,7 +189,19 @@ sudo /opt/redfp360/scripts/finalize-ubuntu-setup.sh
 
 La clave `GROQ_API_KEY` no se copia desde Replit ni se configura automáticamente. Si habilitas GroqCloud, introdúcela únicamente en el entorno seguro del servidor. La autonomía usa un solo proceso API en esta instalación.
 
-Este instalador no configura ni programa copias externas, no abre puertos del firewall y no actualiza una instalación existente. Define el destino externo y su retención, y ensaya la restauración antes de admitir centros o datos de uso real. Para actualizaciones de versión, crea y verifica primero una copia de PostgreSQL y `/var/lib/redfp360/objects`; no vuelvas a ejecutar este instalador sobre una instalación existente.
+El instalador programa una copia diaria, pero no monta el destino externo, crea la frase secreta ni abre puertos del firewall. Configura el destino externo y ensaya la restauración antes de admitir centros o datos de uso real. Para actualizar, usa `scripts/update-ubuntu.sh`; no vuelvas a ejecutar el instalador sobre una instalación existente.
+
+### Actualizar una instalación existente
+
+El actualizador no es interactivo y descarga la referencia indicada de GitHub. Valida la compilación, exige que el destino externo de copias esté montado y que exista el archivo de frase secreta, crea una copia cifrada antes de cambiar el código y comprueba la salud de la API. Si la API no arranca, intenta restaurar la versión anterior del código:
+
+```bash
+sudo /opt/redfp360/scripts/update-ubuntu.sh --ref main
+```
+
+No ejecuta `drizzle-kit push` ni modifica la base de datos. Si detecta cambios en el esquema, se detiene antes de la copia y del despliegue; esos cambios necesitan una migración de datos revisada. Conserva hasta dos directorios de código anteriores en `/opt/redfp360.rollback.*`. Las actualizaciones de paquetes del sistema son una opción separada del instalador (`--upgrade-system`).
+
+El instalador programa copias diarias, pero no monta el destino externo ni crea la frase secreta. Antes de la primera copia correcta, configura ambos según [el procedimiento de copias y recuperación en Ubuntu](docs/ubuntu-backups.md). Si faltan al ejecutar el actualizador, este falla sin tocar la instalación.
 
 ## Configuración y secretos
 

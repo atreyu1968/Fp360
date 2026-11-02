@@ -43,6 +43,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Typecheck and build production artifacts
         run: pnpm run build
+      - name: Validate non-interactive Ubuntu installer and updater
+        run: |
+          set -euo pipefail
+          bash -n scripts/install-ubuntu.sh scripts/update-ubuntu.sh scripts/finalize-ubuntu-setup.sh
+          bash scripts/install-ubuntu.sh --help >/dev/null
+          bash scripts/update-ubuntu.sh --help >/dev/null
+          if grep -nE '^[[:space:]]*read([[:space:]]|$)' scripts/install-ubuntu.sh scripts/update-ubuntu.sh; then
+            echo "Installer and updater must not read interactive input." >&2
+            exit 1
+          fi
       - name: Create isolated test schema
         run: pnpm --filter @workspace/db run push
       - name: Test API routes
