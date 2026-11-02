@@ -20,9 +20,9 @@ Uso:
   sudo /opt/redfp360/scripts/update-ubuntu.sh [--ref RAMA_O_TAG]
 
 La actualización valida el build, compara el esquema, exige una copia externa
-cifrada y conserva hasta dos versiones anteriores del código. Si el esquema de
-la base cambia, se detiene antes de modificar la instalación: no aplica cambios
-de base de datos automáticamente.
+cifrada y conserva hasta dos versiones anteriores del código. Solo aplica
+migraciones versionadas y compatibles con la versión anterior, dentro de una
+transacción. Rechaza cambios de esquema sin historial revisado.
 USAGE
 }
 
@@ -42,6 +42,16 @@ wait_for_health() {
   done
   return 1
 }
+
+apply_database_migrations() (
+  set -a
+  # Root reads the private environment; DATABASE_URL is never a CLI argument.
+  source "$CONFIG_DIR/api.env"
+  set +a
+  export RED_FP360_MIGRATION_TARGET=ubuntu-local
+  runuser -u "$SERVICE_USER" -- env HOME="$DATA_DIR" \
+    node "$REPO_DIR/lib/db/scripts/migrate-ubuntu.mjs" apply --from "$APP_DIR/lib/db"
+)
 
 while (($#)); do
   case "$1" in
@@ -80,6 +90,10 @@ done
   || fail "No encuentro una instalación válida en $APP_DIR."
 [[ -d "$APP_DIR/lib/db/src/schema" && -d "$CONFIG_DIR" && -d "$DATA_DIR/objects" ]] \
   || fail "La instalación no contiene el esquema, la configuración o los documentos esperados."
+[[ -f "$CONFIG_DIR/api.env" && "$(stat -c '%u' "$CONFIG_DIR/api.env")" == "0" ]] \
+  || fail "Falta la configuración privada de la API, propiedad de root."
+api_mode="$(stat -c '%a' "$CONFIG_DIR/api.env")"
+(( (8#$api_mode & 077) == 0 )) || fail "La configuración de la API debe ser privada."
 id "$SERVICE_USER" >/dev/null 2>&1 \
   || fail "No existe el usuario de servicio $SERVICE_USER."
 [[ -f "$APP_DIR/scripts/backup-ubuntu.sh" ]] \
@@ -120,6 +134,7 @@ REPO_DIR="$STAGE/source"
 ROLLBACK_DIR="/opt/redfp360.rollback.${TIMESTAMP}.$$"
 FAILED_DIR="/opt/redfp360.failed.${TIMESTAMP}.$$"
 ROLLBACK_ACTIVE=0
+SERVICE_STOPPED=0
 NEW_RELEASE_FILE=""
 
 cleanup() {
@@ -143,6 +158,11 @@ cleanup() {
       printf 'ERROR: no se pudo restaurar automáticamente el código desde %s.\n' "$ROLLBACK_DIR" >&2
       status=1
     fi
+  elif [[ "$status" -ne 0 && "$SERVICE_STOPPED" -eq 1 ]]; then
+    if ! systemctl start "$SERVICE_NAME" >/dev/null 2>&1 || ! wait_for_health; then
+      printf 'ERROR: no se pudo reactivar la API anterior tras el fallo de migración.\n' >&2
+      status=1
+    fi
   fi
   if [[ -n "${STAGE:-}" && -d "$STAGE" ]]; then
     rm -rf -- "$STAGE"
@@ -160,7 +180,7 @@ printf 'Descargando RED FP360, referencia %s...\n' "$REF"
 runuser -u "$SERVICE_USER" -- env HOME="$DATA_DIR" \
   git clone --depth 1 --branch "$REF" "$REPOSITORY" "$REPO_DIR"
 
-printf 'Comprobando que no hay cambios de esquema de base de datos...\n'
+printf 'Comprobando el historial de esquema de base de datos...\n'
 [[ -d "$REPO_DIR/lib/db/src/schema" && -f "$REPO_DIR/lib/db/drizzle.config.ts" ]] \
   || fail "La referencia descargada no contiene el esquema de base de datos."
 NEW_COMMIT="$(runuser -u "$SERVICE_USER" -- env HOME="$DATA_DIR" git -C "$REPO_DIR" rev-parse HEAD)"
@@ -168,16 +188,17 @@ if [[ -r "$DATA_DIR/release" && "$(cat "$DATA_DIR/release")" == "$NEW_COMMIT" ]]
   printf 'RED FP360 ya está en %s; no hay cambios que aplicar.\n' "$NEW_COMMIT"
   exit 0
 fi
-if ! diff -qr "$APP_DIR/lib/db/src/schema" "$REPO_DIR/lib/db/src/schema" >/dev/null \
-  || ! cmp -s "$APP_DIR/lib/db/drizzle.config.ts" "$REPO_DIR/lib/db/drizzle.config.ts"; then
-  fail "La referencia cambia el esquema de datos. Se requiere una migración revisada; producción no se ha modificado."
-fi
+[[ -f "$REPO_DIR/lib/db/scripts/migrate-ubuntu.mjs" ]] \
+  || fail "La referencia no contiene el mecanismo de migraciones revisadas."
 
 printf 'Instalando dependencias y compilando la versión nueva...\n'
 runuser -u "$SERVICE_USER" -- env HOME="$DATA_DIR" \
   pnpm --dir "$REPO_DIR" install --frozen-lockfile
 runuser -u "$SERVICE_USER" -- env HOME="$DATA_DIR" PORT=19362 BASE_PATH=/ \
   pnpm --dir "$REPO_DIR" run build
+
+runuser -u "$SERVICE_USER" -- env HOME="$DATA_DIR" \
+  node "$REPO_DIR/lib/db/scripts/migrate-ubuntu.mjs" plan --from "$APP_DIR/lib/db"
 
 printf 'Creando copia externa cifrada antes de actualizar...\n'
 "$APP_DIR/scripts/backup-ubuntu.sh" backup \
@@ -193,6 +214,9 @@ flock -n 8 || fail "Hay una copia de seguridad o mantenimiento en curso."
 rm -rf -- "$REPO_DIR/.git"
 
 systemctl stop "$SERVICE_NAME"
+SERVICE_STOPPED=1
+printf 'Aplicando migraciones compatibles en una transacción...\n'
+apply_database_migrations
 mv "$APP_DIR" "$ROLLBACK_DIR"
 ROLLBACK_ACTIVE=1
 if ! mv "$REPO_DIR" "$APP_DIR"; then
@@ -215,6 +239,7 @@ chmod 0644 "$NEW_RELEASE_FILE"
 mv "$NEW_RELEASE_FILE" "$DATA_DIR/release"
 NEW_RELEASE_FILE=""
 ROLLBACK_ACTIVE=0
+SERVICE_STOPPED=0
 
 mapfile -t old_rollbacks < <(find /opt -mindepth 1 -maxdepth 1 -type d -name 'redfp360.rollback.*' -printf '%f\n' | sort -r | tail -n +3)
 for old_rollback in "${old_rollbacks[@]}"; do

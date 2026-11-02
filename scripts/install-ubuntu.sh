@@ -249,7 +249,7 @@ printf 'DATABASE_URL=postgres://%s:%s@127.0.0.1:5432/%s\n' \
 chown "$SERVICE_USER:$SERVICE_USER" "$DB_INIT_ENV"
 chmod 0600 "$DB_INIT_ENV"
 runuser -u "$SERVICE_USER" -- bash -c \
-  'set -a; . "$1"; set +a; pnpm --dir "$2" --filter @workspace/db run push' \
+  'set -a; . "$1"; set +a; export RED_FP360_MIGRATION_TARGET=ubuntu-local; node "$2/lib/db/scripts/migrate-ubuntu.mjs" initialize' \
   _ "$DB_INIT_ENV" "$APP_DIR"
 rm -f "$DB_INIT_ENV"
 runuser -u "$SERVICE_USER" -- env PORT=19362 BASE_PATH=/ pnpm --dir "$APP_DIR" run build

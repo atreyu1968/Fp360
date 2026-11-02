@@ -44,6 +44,9 @@ class UpdaterTests(unittest.TestCase):
             f"RED_FP360_BACKUP_DESTINATION={self.root}/backups\n"
             f"RED_FP360_BACKUP_PASSPHRASE_FILE={self.root}/passphrase\n"
         )
+        (self.config / "api.env").write_text("DATABASE_URL=postgres://localhost/redfp360\n")
+        (self.fixture / "lib/db/scripts").mkdir()
+        (self.fixture / "lib/db/scripts/migrate-ubuntu.mjs").touch()
         (self.app / "scripts").mkdir()
         self.executable(self.app / "scripts/backup-ubuntu.sh", """
 echo backup >> "$TEST_EVENTS"
@@ -75,6 +78,20 @@ esac
         self.executable(self.bin / "pnpm", """
 echo build >> "$TEST_EVENTS"
 [[ "$TEST_SCENARIO" != build-fail ]]
+""")
+        self.executable(self.bin / "node", """
+echo "migration-$2" >> "$TEST_EVENTS"
+if [[ "$2" == plan ]]; then
+  if grep -q changed "$TEST_FIXTURE/lib/db/src/schema/index.ts" \
+      && [[ "$TEST_SCENARIO" != approved-migration ]]; then
+    exit 1
+  fi
+elif [[ "$2" == apply ]]; then
+  [[ "$TEST_SCENARIO" != migration-fail ]] || exit 1
+  touch "$TEST_ROOT/migrated"
+else
+  exit 1
+fi
 """)
         self.executable(self.bin / "systemctl", """
 echo "$*" >> "$TEST_EVENTS"
@@ -136,6 +153,23 @@ fi
         self.assertEqual((self.data / "objects/document").read_text(),
                          "keep this document")
         self.assertIn("backup", self.events.read_text())
+        events = self.events.read_text()
+        self.assertLess(events.index("backup"), events.index("stop redfp360"))
+        self.assertLess(events.index("stop redfp360"), events.index("migration-apply"))
+        self.assertLess(events.index("migration-apply"), events.index("start redfp360"))
+
+    def test_reviewed_schema_change_is_applied_while_the_api_is_stopped(self):
+        (self.fixture / "lib/db/src/schema/index.ts").write_text("changed")
+        result = self.run_update("approved-migration")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue((self.root / "migrated").exists())
+        self.assertTrue((self.app / "new-marker").exists())
+
+    def test_migration_failure_restarts_the_unchanged_old_application(self):
+        result = self.run_update("migration-fail")
+        self.assertNotEqual(result.returncode, 0)
+        self.assert_old_untouched()
+        self.assertFalse((self.root / "migrated").exists())
 
     def test_schema_change_stops_before_backup_or_deployment(self):
         (self.fixture / "lib/db/src/schema/index.ts").write_text("changed")

@@ -1,0 +1,11 @@
+{
+  "format": 1,
+  "states": [
+    {
+      "schemaHash": "4962fb61dcc8d8fc75d9ccfc6fd6383c58f31f9244468fa81219b0559e9bc875",
+      "snapshot": "0000-baseline.sql",
+      "sha256": "41891db38dc7bec14806cae3cd05b676800e729202a24eb22b942e4658a8c49f"
+    }
+  ],
+  "migrations": []
+}

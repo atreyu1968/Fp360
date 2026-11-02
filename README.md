@@ -178,7 +178,7 @@ Sustituye `TU_DOMINIO` por un dominio DNS real que apunte a este servidor. El in
 
 ### Alta inicial y límites del instalador
 
-El servicio API queda vinculado a `127.0.0.1:8080`; Caddy sirve la web y enruta `/api`. La base inicial se crea como una base nueva y aislada. El `push` de esquema solo se ejecuta contra esa base recién creada, nunca contra una base proporcionada por el usuario.
+El servicio API queda vinculado a `127.0.0.1:8080`; Caddy sirve la web y enruta `/api`. La base inicial se crea como una base nueva y aislada. El inicializador verifica que está vacía, crea el esquema revisado y aplica el historial de migraciones en una transacción. Nunca reinicializa una base con datos ni ejecuta `push --force`.
 
 El token de alta inicial se guarda solo para root en `/root/redfp360-setup-token`. Léelo por consola segura para crear la cuenta administradora. Cuando termines, retira el token y reinicia el servicio:
 
@@ -199,7 +199,9 @@ El actualizador no es interactivo y descarga la referencia indicada de GitHub. V
 sudo /opt/redfp360/scripts/update-ubuntu.sh --ref main
 ```
 
-No ejecuta `drizzle-kit push` ni modifica la base de datos. Si detecta cambios en el esquema, se detiene antes de la copia y del despliegue; esos cambios necesitan una migración de datos revisada. Conserva hasta dos directorios de código anteriores en `/opt/redfp360.rollback.*`. Las actualizaciones de paquetes del sistema son una opción separada del instalador (`--upgrade-system`).
+No ejecuta `drizzle-kit push`. Después de la copia previa y con la API detenida, aplica automáticamente las migraciones versionadas de la publicación. Comprueba sus hashes, el historial aplicado y el esquema real; todas las migraciones pendientes se ejecutan en una sola transacción. Si fallan, PostgreSQL revierte los cambios y se reactiva la versión anterior. Solo admite ampliaciones compatibles: tablas, tipos e índices nuevos y columnas opcionales sin restricciones sobre los datos existentes. Los cambios destructivos, modificaciones sin historial y discrepancias con el esquema revisado se rechazan sin preguntas.
+
+Si el esquema se actualiza correctamente pero la aplicación nueva falla, se restaura el código anterior **sin deshacer la ampliación del esquema ni borrar datos**. El historial permite reintentar sin repetir las migraciones. Conserva hasta dos directorios de código anteriores en `/opt/redfp360.rollback.*`. Las actualizaciones de paquetes del sistema son una opción separada del instalador (`--upgrade-system`). Consulta el [procedimiento de migraciones Ubuntu](docs/ubuntu-migrations.md), incluido cómo preparar nuevas publicaciones y sus límites. Este mecanismo no se utiliza en el arranque de la API, el build ni la publicación de Replit.
 
 El instalador programa copias diarias, pero no monta el destino externo ni crea la frase secreta. Antes de la primera copia correcta, configura ambos según [el procedimiento de copias y recuperación en Ubuntu](docs/ubuntu-backups.md). Si faltan al ejecutar el actualizador, este falla sin tocar la instalación.
 
