@@ -794,7 +794,7 @@ router.post("/redfp360/simulations/campaigns", requireSimulationWriteAccess, rou
   if (!canReview(actor.role) && actor.organizationId !== data.ownerOrganizationId) {
     fail(403, "Solo puedes crear campañas para tu propia empresa.");
   }
-  await assertOrganizations(actor, [data.ownerOrganizationId, ...data.participantOrganizationIds]);
+  await assertOrganizations(actor, data.participantOrganizationIds);
   if (personalChannel.test(data.operationId)) fail(400, "El identificador no puede contener datos de contacto.");
   const [prior] = await db.select().from(fpSimulationCampaigns).where(and(
     eq(fpSimulationCampaigns.tenantId, actor.tenantId),

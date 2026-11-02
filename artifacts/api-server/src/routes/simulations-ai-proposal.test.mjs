@@ -305,6 +305,70 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
       [result.campaign.id, tenantId],
     );
     assert.deepEqual(persistedDraft.rows, [{ title: "Coordinación de suministro ficticia", status: "draft" }]);
+
+    const manualOperationId = `manual-draft-${randomUUID()}`;
+    const manualRequestBody = {
+      operationId: manualOperationId,
+      ownerOrganizationId: organizationA,
+      participantOrganizationIds: [organizationA, organizationB],
+      title: "Campaña manual de suministro",
+      description: "Borrador educativo creado manualmente para comprobar reintentos.",
+      mode: "manual",
+      durationWeeks: 2,
+      difficulty: "medium",
+      startDate: "2027-09-20",
+      endDate: "2027-10-04",
+    };
+    const createManualCampaign = (body) => fetch(`${baseUrl}/api/redfp360/simulations/campaigns`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    const manualResponse = await createManualCampaign(manualRequestBody);
+    const manualCampaign = await manualResponse.json();
+    assert.equal(manualResponse.status, 201, JSON.stringify(manualCampaign));
+    assert.equal(manualCampaign.status, "draft");
+    assert.equal(manualCampaign.mode, "manual");
+
+    const manualReplayResponse = await createManualCampaign(manualRequestBody);
+    assert.equal(manualReplayResponse.status, 201);
+    const manualReplay = await manualReplayResponse.json();
+    assert.deepEqual(manualReplay, manualCampaign, "an identical manual retry must return the original draft");
+
+    const manualRecordCounts = async () => (await client.query(
+      `SELECT
+         (SELECT COUNT(*)::int
+          FROM fp360_simulation_campaigns
+          WHERE tenant_id = $1 AND operation_id = $2) AS campaigns,
+         (SELECT COUNT(*)::int
+          FROM fp360_simulation_audit_events
+          WHERE tenant_id = $1 AND campaign_id = $3 AND operation_id = $2 AND action = 'created') AS creation_audits`,
+      [tenantId, manualOperationId, manualCampaign.id],
+    )).rows[0];
+    const manualCountsBeforeConflict = { campaigns: 1, creation_audits: 1 };
+    assert.deepEqual(await manualRecordCounts(), manualCountsBeforeConflict,
+      "a manual retry must leave one campaign and one creation audit");
+
+    const manualConflictResponse = await createManualCampaign({
+      ...manualRequestBody,
+      title: "Campaña manual modificada",
+    });
+    assert.equal(manualConflictResponse.status, 409);
+    assert.deepEqual(await manualRecordCounts(), manualCountsBeforeConflict,
+      "conflicting reuse must not add or alter campaign or creation-audit records");
+    const savedManualCampaign = await client.query(
+      `SELECT id, title, description, status, mode
+       FROM fp360_simulation_campaigns
+       WHERE tenant_id = $1 AND operation_id = $2`,
+      [tenantId, manualOperationId],
+    );
+    assert.deepEqual(savedManualCampaign.rows, [{
+      id: manualCampaign.id,
+      title: manualRequestBody.title,
+      description: manualRequestBody.description,
+      status: "draft",
+      mode: "manual",
+    }]);
   } finally {
     if (child && child.exitCode === null) {
       child.kill("SIGTERM");
