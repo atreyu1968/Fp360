@@ -518,7 +518,7 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
   endDateValue.setUTCDate(endDateValue.getUTCDate() + data.durationWeeks * 7);
   const endDate = endDateValue.toISOString().slice(0, 10);
   if (endDate > SIMULATION_END) fail(400, "La duración supera el periodo disponible del escenario.");
-  await assertOrganizations(actor, [data.ownerOrganizationId, ...data.participantOrganizationIds]);
+  await assertOrganizations(actor, data.participantOrganizationIds);
 
   const inputFingerprint = createHash("sha256").update(JSON.stringify(data)).digest("hex");
   const [priorCampaign] = await db.select().from(fpSimulationCampaigns).where(and(
