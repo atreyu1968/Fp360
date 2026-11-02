@@ -18,7 +18,6 @@ export const fpSocialSecurityWorkers = pgTable(
     id: text("id").primaryKey(),
     tenantId: text("tenant_id").notNull(),
     organizationId: text("organization_id").notNull().references(() => fpOrganizations.id),
-    hrEmployeeId: text("hr_employee_id"),
     workerRef: text("worker_ref").notNull(),
     contributionGroup: integer("contribution_group").notNull(),
     contractType: text("contract_type").notNull(),
@@ -32,6 +31,7 @@ export const fpSocialSecurityWorkers = pgTable(
     createdByName: text("created_by_name").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    hrEmployeeId: text("hr_employee_id"),
   },
   (table) => [
     uniqueIndex("fp360_social_security_worker_ref_unique").on(table.tenantId, table.organizationId, table.workerRef),
@@ -77,7 +77,6 @@ export const fpSocialSecuritySettlements = pgTable(
     id: text("id").primaryKey(),
     tenantId: text("tenant_id").notNull(),
     organizationId: text("organization_id").notNull().references(() => fpOrganizations.id),
-    sourcePayrollRunId: text("source_payroll_run_id"),
     periodKey: text("period_key").notNull(),
     workerIds: jsonb("worker_ids").$type<string[]>().notNull(),
     workerCount: integer("worker_count").notNull(),
@@ -94,6 +93,7 @@ export const fpSocialSecuritySettlements = pgTable(
     reviewedByName: text("reviewed_by_name"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    sourcePayrollRunId: text("source_payroll_run_id"),
   },
   (table) => [
     uniqueIndex("fp360_social_security_settlement_period_unique").on(table.tenantId, table.organizationId, table.periodKey),

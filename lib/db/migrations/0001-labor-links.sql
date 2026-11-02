@@ -903,7 +903,6 @@ CREATE TABLE "fp360_social_security_settlements" (
 	"id" text PRIMARY KEY NOT NULL,
 	"tenant_id" text NOT NULL,
 	"organization_id" text NOT NULL,
-	"source_payroll_run_id" text,
 	"period_key" text NOT NULL,
 	"worker_ids" jsonb NOT NULL,
 	"worker_count" integer NOT NULL,
@@ -919,14 +918,14 @@ CREATE TABLE "fp360_social_security_settlements" (
 	"reviewed_by_user_id" text,
 	"reviewed_by_name" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"source_payroll_run_id" text
 );
 
 CREATE TABLE "fp360_social_security_workers" (
 	"id" text PRIMARY KEY NOT NULL,
 	"tenant_id" text NOT NULL,
 	"organization_id" text NOT NULL,
-	"hr_employee_id" text,
 	"worker_ref" text NOT NULL,
 	"contribution_group" integer NOT NULL,
 	"contract_type" text NOT NULL,
@@ -939,7 +938,8 @@ CREATE TABLE "fp360_social_security_workers" (
 	"created_by_user_id" text NOT NULL,
 	"created_by_name" text NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"hr_employee_id" text
 );
 
 CREATE TABLE "fp360_hr_absences" (

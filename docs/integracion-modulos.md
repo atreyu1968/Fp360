@@ -73,10 +73,11 @@ La separación visual entre ATC/Canarias y AEAT/Estatal se observó en navegador
 | Pedidos → Logística → Facturas | Hay referencias y controles de entrega en el código y enlaces entre pantallas. No se reprodujo en navegador una operación completa en esta revisión. |
 | Facturas/cobros/compras → Contabilidad | La contabilidad recoge fuentes comerciales de forma explícita; una operación comercial no equivale por sí sola a un asiento contabilizado. |
 | Facturas de venta y compra → Hacienda | El módulo fiscal consulta documentos comerciales por periodo. La prueba añadió cobertura del panel fiscal con datos y eventos. |
-| RR. HH. → Nóminas | Nóminas utiliza empleados e incidencias de RR. HH. Revisión de código, no ciclo laboral completo ejecutado. |
-| RR. HH./Nóminas → Seguridad Social | Existe navegación, pero Seguridad Social mantiene trabajadores y liquidaciones propios. No se encontró una vinculación directa con los empleados o ejecuciones de nómina. |
-| Nóminas → Contabilidad | No se encontró una fuente contable específica de nóminas. Las fuentes actuales son manuales, facturas comerciales, cobros y reversiones. |
-| Nóminas → retenciones fiscales | No se encontró alimentación directa desde nóminas a las declaraciones de retenciones; sus importes se gestionan por separado. |
+| RR. HH. → Nóminas | Nóminas utiliza empleados e incidencias de RR. HH. Sigue pendiente ejecutar y probar el ciclo laboral completo. |
+| RR. HH. → Seguridad Social | La ficha de trabajador puede vincularse con un empleado activo de RR. HH. La referencia y el grupo de cotización se toman de esa ficha; solo se conservan identificadores ficticios. |
+| Nóminas → Seguridad Social | Una ejecución cerrada de nómina puede alimentar un borrador mensual con sus líneas aprobadas. Se validan empresa, periodo y trabajadores; la revisión de la liquidación sigue siendo independiente. Se conserva la referencia a la ejecución de origen y el formulario manual sigue disponible. |
+| Nóminas → Contabilidad | Aún no existe una fuente contable específica de nóminas. Las fuentes actuales son manuales, facturas comerciales, cobros y reversiones. |
+| Nóminas → retenciones AEAT | Aún no existe alimentación directa desde nóminas a borradores de retenciones estatales; esos importes se gestionan por separado. |
 | Documentos y formación | Las pantallas y API están montadas y cargaron; no se crearon documentos, evidencias, evaluaciones o campañas para probar todo su ciclo. |
 | Coordinación e IA | Los accesos existen. No se ejecutó una propuesta o ciclo de IA ni se verificó su efecto económico entre empresas en esta revisión. |
 
@@ -84,6 +85,8 @@ La separación visual entre ATC/Canarias y AEAT/Estatal se observó en navegador
 
 ```bash
 node --test scripts/tests/application*-links.test.mjs
+pnpm --filter @workspace/db run migrations:plan
+pnpm --filter @workspace/db run test:ubuntu-migrations
 pnpm --filter @workspace/red-fp360 run typecheck
 pnpm --filter @workspace/api-server run typecheck
 NODE_ENV=test node --test \
@@ -98,8 +101,8 @@ configurados. No deben dirigirse a producción.
 
 ## Próxima integración prioritaria
 
-Vincular empleados de RR. HH. con los trabajadores de Seguridad Social y
-proporcionar fuentes revisables desde nóminas para cotizaciones, retenciones
-y asientos contables. Debe conservar referencias, permisos por empresa,
-aprobaciones, idempotencia y trazabilidad; no debe convertir una nómina en
-un pago, asiento o presentación fiscal automática sin el flujo autorizado.
+Crear fuentes revisables de nóminas para Contabilidad y para los borradores de
+retenciones de la AEAT. Después, continuar comprobando e integrando las demás
+relaciones del ERP. Cada enlace debe conservar referencias, permisos por
+empresa, aprobaciones, idempotencia y trazabilidad; una nómina no debe
+convertirse en un pago, asiento o presentación fiscal sin el flujo autorizado.

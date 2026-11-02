@@ -6,6 +6,7 @@
 - [Hacienda official-form scope](tax-forms-scope.md) — Keep separate AEAT and ATC sections, profile-based applicability, and official templates educational-only.
 - [RED FP360 evaluation scope](redfp360-evaluation-scope.md) — Keep curriculum criteria configurable per center; grades, rubrics, recoveries, and closure remain didactic and auditable.
 - [RED FP360 administration safety](redfp360-administration-safety.md) — Keep recovery and integrations simulation-only; global privilege changes require independent administrator approval.
+- [RED FP360 module integration](redfp360-module-integration.md) — Connect ERP modules through auditable, organization-scoped source links, not navigation alone.
 - [Idempotent replay authorization](redfp360-idempotency-access.md) — Bind retries to the original actor and recheck current resource scope before returning stored results.
 - [Coordinación económica con IA](redfp360-ai-economic-coordinator.md) — La IA establece situaciones para las empresas y coordina el sistema económico interconectado.
 - [Validación tras actualizar dependencias](dependency-validation.md) — Fuerza la regeneración de declaraciones TypeScript tras cambios mayores de dependencias de tipos.

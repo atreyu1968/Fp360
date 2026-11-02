@@ -7,9 +7,9 @@
       "sha256": "41891db38dc7bec14806cae3cd05b676800e729202a24eb22b942e4658a8c49f"
     },
     {
-      "schemaHash": "f7b69bf6b80acde66998a77a07277ae26775dcf716d8c826c6b98adb6bc7810d",
+      "schemaHash": "b817bde1c27d27e283b16fffa6337e34f0752f2a8a3ae99dbcf1bde2dccaac78",
       "snapshot": "0001-labor-links.sql",
-      "sha256": "e213a3fc4a6f9cce41e0eeff3073993dddd7741f4dbf75b359b145bb91f1c9ad"
+      "sha256": "ec544ca77a2e98c5b8adb5ea31b2cc21a6811bd44b1b535d74eaaa9183e0fcbb"
     }
   ],
   "migrations": [
