@@ -1535,6 +1535,14 @@ export interface AdminAiCoordinatorSettings {
   updatedAt: string | null;
 }
 
+export interface AdminGroqAiModelCatalog {
+  /**
+     * @items.minLength 1
+     * @items.maxLength 120
+     */
+  models: string[];
+}
+
 export type AdminPolicyPermission = typeof AdminPolicyPermission[keyof typeof AdminPolicyPermission];
 
 

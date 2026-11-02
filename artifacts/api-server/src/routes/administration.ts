@@ -28,7 +28,7 @@ import {
 } from "@workspace/db";
 import { hashPassword } from "../lib/passwords";
 import { checkLocalAiEndpoint, normalizeLocalAiBaseUrl } from "../lib/local-ai";
-import { checkGroqAiEndpoint } from "../lib/groq-ai";
+import { checkGroqAiEndpoint, listGroqAiModels } from "../lib/groq-ai";
 import { hashSessionToken, issueAuthSession, requireAuth, requireSameOrigin, type AuthContext } from "../middlewares/auth";
 
 import aiDelegationsRouter from "./ai-delegations";
@@ -607,6 +607,19 @@ router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => 
     groqApiKeyConfigured: Boolean(process.env.GROQ_API_KEY),
     updatedAt: saved?.updatedAt.toISOString() ?? null,
   }));
+});
+
+router.get("/admin/ai-coordinator/groq-models", async (req, res): Promise<void> => {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) fail(503, "Falta configurar GROQ_API_KEY en los Secretos del proyecto.");
+  try {
+    const models = await listGroqAiModels(apiKey);
+    res.setHeader("Cache-Control", "no-store");
+    res.json(api.ListAdminGroqAiModelsResponse.parse({ models }));
+  } catch (error) {
+    req.log.warn({ tenantId: req.auth!.tenantId }, "GroqCloud model catalog query failed");
+    fail(502, "No se pudo consultar el catálogo de GroqCloud. Revisa la clave y la disponibilidad de la API.");
+  }
 });
 
 router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {

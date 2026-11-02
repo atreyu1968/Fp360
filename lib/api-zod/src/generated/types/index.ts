@@ -18,6 +18,7 @@ export * from './adminBackupDatasetCounts';
 export * from './adminBackupExercise';
 export * from './adminBackupExerciseInput';
 export * from './adminBackupExerciseStatus';
+export * from './adminGroqAiModelCatalog';
 export * from './adminHealthStatus';
 export * from './adminHealthStatusApiStatus';
 export * from './adminHealthStatusDatabaseStatus';

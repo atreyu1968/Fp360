@@ -458,6 +458,15 @@ export const UpdateAdminAiCoordinatorSettingsResponse = zod.object({
 })
 
 
+export const listAdminGroqAiModelsResponseModelsItemMax = 120;
+
+
+
+export const ListAdminGroqAiModelsResponse = zod.object({
+  "models": zod.array(zod.string().min(1).max(listAdminGroqAiModelsResponseModelsItemMax))
+})
+
+
 export const testAdminAiCoordinatorConnectionBodyOperationIdMin = 8;
 export const testAdminAiCoordinatorConnectionBodyOperationIdMax = 100;
 

@@ -312,6 +312,19 @@ paths:
         "400": { description: Invalid endpoint or model }
         "403": { description: Administrator required }
         "503": { description: AI provider key is not configured }
+  /admin/ai-coordinator/groq-models:
+    get:
+      operationId: listAdminGroqAiModels
+      tags: [administration]
+      responses:
+        "200":
+          description: GroqCloud model identifiers accessible to the configured server credential
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminGroqAiModelCatalog" }
+        "403": { description: Administrator required }
+        "502": { description: GroqCloud model catalog unavailable }
+        "503": { description: GroqCloud API key is not configured }
   /admin/ai-coordinator/test:
     post:
       operationId: testAdminAiCoordinatorConnection
@@ -5823,6 +5836,13 @@ components:
         model: { type: string, maxLength: 120 }
         groqApiKeyConfigured: { type: boolean }
         updatedAt: { type: ["string", "null"], format: date-time }
+    AdminGroqAiModelCatalog:
+      type: object
+      required: [models]
+      properties:
+        models:
+          type: array
+          items: { type: string, minLength: 1, maxLength: 120 }
     AdminPolicyPermission:
       type: string
       enum: [system_admin, network_admin, manage_center_accounts, manage_scenario_settings, run_backup_exercise, manage_intercenter_campaigns, manage_company_operations, work_assigned_cases]

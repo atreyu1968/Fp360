@@ -32,6 +32,7 @@ import type {
   AdminAiCoordinatorSettingsInput,
   AdminBackupExercise,
   AdminBackupExerciseInput,
+  AdminGroqAiModelCatalog,
   AdminIntegrationStatus,
   AdminOperationInput,
   AdminOrganization,
@@ -1953,6 +1954,101 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getUpdateAdminAiCoordinatorSettingsMutationOptions(options), queryClient);
     }
+
+export const getListAdminGroqAiModelsUrl = () => {
+
+
+
+
+  return `/api/admin/ai-coordinator/groq-models`
+}
+
+export const listAdminGroqAiModels = async ( options?: Parameters<typeof customFetch>[1]): Promise<AdminGroqAiModelCatalog> => {
+
+  return customFetch<AdminGroqAiModelCatalog>(getListAdminGroqAiModelsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminGroqAiModelsQueryKey = () => {
+    return [
+    `/api/admin/ai-coordinator/groq-models`
+    ] as const;
+    }
+
+
+export const getListAdminGroqAiModelsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminGroqAiModels>>, TError = ErrorType<void>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminGroqAiModels>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminGroqAiModelsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminGroqAiModels>>> = ({ signal }) => listAdminGroqAiModels({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminGroqAiModels>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListAdminGroqAiModelsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminGroqAiModels>>>
+export type ListAdminGroqAiModelsQueryError = ErrorType<void>
+
+
+export function useListAdminGroqAiModels<TData = Awaited<ReturnType<typeof listAdminGroqAiModels>>, TError = ErrorType<void>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminGroqAiModels>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAdminGroqAiModels>>,
+          TError,
+          Awaited<ReturnType<typeof listAdminGroqAiModels>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAdminGroqAiModels<TData = Awaited<ReturnType<typeof listAdminGroqAiModels>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminGroqAiModels>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAdminGroqAiModels>>,
+          TError,
+          Awaited<ReturnType<typeof listAdminGroqAiModels>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAdminGroqAiModels<TData = Awaited<ReturnType<typeof listAdminGroqAiModels>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminGroqAiModels>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListAdminGroqAiModels<TData = Awaited<ReturnType<typeof listAdminGroqAiModels>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdminGroqAiModels>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListAdminGroqAiModelsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getTestAdminAiCoordinatorConnectionUrl = () => {
 

@@ -11,7 +11,7 @@ import {
   getListAdminPrivilegeRequestsQueryKey, getListAdminUsersQueryKey, useActOnAdminOrganization,
   useActOnAdminPrivilegeRequest, useCheckAdminIntegration, useCreateAdminBackupExercise,
   useCreateAdminInvitation, useCreateAdminOrganization, useCreateAdminPrivilegeRequest,
-  useCreateAdminScenarioVersion, useEvaluateAdminPolicy, useGetAdminSystemOverview,
+  useCreateAdminScenarioVersion, useEvaluateAdminPolicy, useGetAdminSystemOverview, useListAdminGroqAiModels,
   useListAdminAudit, useListAdminInvitations, useListAdminPrivilegeRequests, useListAdminUsers,
   useRevokeAdminInvitation, useTestAdminAiCoordinatorConnection, useUpdateAdminAiCoordinatorSettings,
   useUpdateAdminUser,
@@ -100,6 +100,15 @@ function explainMutation(error: unknown, fallback: string) {
   if (status === 403) return 'Acción no permitida para este perfil.';
   if (status === 409) return 'El estado ha cambiado. Actualiza los datos antes de continuar.';
   if (status === 400 || status === 422) return 'Revisa los datos introducidos e inténtalo de nuevo.';
+  return fallback;
+}
+function explainApiMessage(error: unknown, fallback: string) {
+  if (error && typeof error === 'object' && 'data' in error) {
+    const data = (error as { data?: unknown }).data;
+    if (data && typeof data === 'object' && 'message' in data && typeof data.message === 'string') {
+      return data.message;
+    }
+  }
   return fallback;
 }
 
@@ -293,6 +302,7 @@ function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t:
   const check = useCheckAdminIntegration();
   const saveAi = useUpdateAdminAiCoordinatorSettings();
   const testAi = useTestAdminAiCoordinatorConnection();
+  const groqModels = useListAdminGroqAiModels({ query: { enabled: false, retry: false } });
   const [aiEnabled, setAiEnabled] = useState(data.aiCoordinator.enabled);
   const [aiProvider, setAiProvider] = useState(data.aiCoordinator.provider);
   const [aiModel, setAiModel] = useState(data.aiCoordinator.model);
@@ -328,7 +338,7 @@ function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t:
             <select value={aiProvider} onChange={event => {
               const provider: 'local' | 'groqcloud' = event.target.value === 'groqcloud' ? 'groqcloud' : 'local';
               setAiProvider(provider);
-              setAiModel(provider === 'groqcloud' ? 'openai/gpt-oss-20b' : '');
+              setAiModel('');
               setGroqDataAcknowledged(false);
             }}>
               <option value="local">Endpoint local o privado</option>
@@ -339,12 +349,17 @@ function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t:
             <input name="localAiBaseUrl" type="url" required={aiEnabled} maxLength={512}
               defaultValue={data.aiCoordinator.baseUrl} placeholder="http://127.0.0.1:11434/v1" />
           </label>}
-          <label>{aiProvider === 'groqcloud' ? 'Modelo de GroqCloud' : 'Modelo local'}
+          {aiProvider === 'groqcloud' ? <label>Modelo de GroqCloud
+            <select required={aiEnabled} value={aiModel} onChange={event => setAiModel(event.target.value)}>
+              <option value="">Selecciona un modelo</option>
+              {aiModel && !groqModels.data?.models.includes(aiModel) && <option value={aiModel}>{aiModel} · guardado</option>}
+              {groqModels.data?.models.map(model => <option key={model} value={model}>{model}</option>)}
+            </select>
+          </label> : <label>Modelo local
             <input name="localAiModel" required={aiEnabled} maxLength={120}
-              value={aiModel}
-              onChange={event => setAiModel(event.target.value)}
-              placeholder={aiProvider === 'groqcloud' ? 'openai/gpt-oss-20b' : 'Nombre exacto del modelo'} />
-          </label>
+              value={aiModel} onChange={event => setAiModel(event.target.value)}
+              placeholder="Nombre exacto del modelo" />
+          </label>}
         </div>
         <label className="ac-ai-toggle"><input type="checkbox" checked={aiEnabled} onChange={event => setAiEnabled(event.target.checked)} />
           Activar generación supervisada de propuestas</label>
@@ -356,6 +371,18 @@ function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t:
             Clave GROQ_API_KEY: {data.aiCoordinator.groqApiKeyConfigured ? 'configurada en el servidor' : 'no configurada en Secretos'}.
             No se guarda en la base de datos ni se muestra en esta consola.
           </p>
+          <div className="ac-ai-config-actions">
+            <button className="ac-button" type="button"
+              disabled={groqModels.isFetching || !data.aiCoordinator.groqApiKeyConfigured}
+              onClick={() => void groqModels.refetch()}>
+              <RefreshCw size={14} /> {groqModels.isFetching ? 'Consultando…' : groqModels.data ? 'Actualizar modelos' : 'Consultar modelos'}
+            </button>
+            {!data.aiCoordinator.groqApiKeyConfigured && <span className="ac-ai-note">Configura GROQ_API_KEY en Secretos para consultar los modelos.</span>}
+            {groqModels.isError && <span className="ac-ai-note" role="alert">{explainApiMessage(groqModels.error, 'No se pudo consultar el catálogo de GroqCloud. Inténtalo de nuevo más tarde.')}</span>}
+            {groqModels.isSuccess && <span className="ac-ai-note" role="status">
+              {groqModels.data.models.length ? `${groqModels.data.models.length} modelos disponibles.` : 'GroqCloud no devolvió modelos disponibles.'}
+            </span>}
+          </div>
           {aiEnabled && <label className="ac-ai-toggle">
             <input type="checkbox" checked={groqDataAcknowledged}
               onChange={event => setGroqDataAcknowledged(event.target.checked)} />
