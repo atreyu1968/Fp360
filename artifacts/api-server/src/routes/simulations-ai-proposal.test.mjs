@@ -154,12 +154,43 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
       `SELECT COUNT(*)::int AS count FROM fp360_simulation_campaigns WHERE tenant_id = $1`,
       [tenantId],
     )).rows[0].count);
+    const savedProposalRecordCounts = async () => (await client.query(
+      `SELECT
+        (SELECT COUNT(*)::int FROM fp360_simulation_campaigns WHERE tenant_id = $1) AS campaigns,
+        (SELECT COUNT(*)::int FROM fp360_simulation_events WHERE tenant_id = $1) AS events,
+        (SELECT COUNT(*)::int FROM fp360_simulation_audit_events WHERE tenant_id = $1) AS audits`,
+      [tenantId],
+    )).rows[0];
 
     await writeFile(responseFile, JSON.stringify({ content: "{" }));
     const invalidJsonResponse = await propose(requestBody(`invalid-json-${randomUUID()}`));
     const invalidJsonBody = await invalidJsonResponse.json();
     assert.equal(invalidJsonResponse.status, 502, JSON.stringify(invalidJsonBody));
     assert.equal(await savedCampaignCount(), 0, "invalid provider JSON must not create a campaign");
+
+    const genericProviderError = "El proveedor de IA no pudo generar una propuesta válida. Comprueba su disponibilidad y el tamaño de contexto.";
+    const providerHttpDetail = "upstream-provider-internal-detail";
+    await writeFile(responseFile, JSON.stringify({
+      status: 503,
+      body: { error: { message: providerHttpDetail } },
+    }));
+    const providerHttpResponse = await propose(requestBody(`provider-http-error-${randomUUID()}`));
+    const providerHttpBody = await providerHttpResponse.json();
+    assert.equal(providerHttpResponse.status, 502);
+    assert.deepEqual(providerHttpBody, { error: genericProviderError });
+    assert.equal(JSON.stringify(providerHttpBody).includes(providerHttpDetail), false);
+    assert.deepEqual(await savedProposalRecordCounts(), { campaigns: 0, events: 0, audits: 0 },
+      "an HTTP error from Groq must not leave campaign, event, or audit records");
+
+    const providerTransportDetail = "upstream-connection-internal-detail";
+    await writeFile(responseFile, JSON.stringify({ transportError: providerTransportDetail }));
+    const providerTransportResponse = await propose(requestBody(`provider-transport-error-${randomUUID()}`));
+    const providerTransportBody = await providerTransportResponse.json();
+    assert.equal(providerTransportResponse.status, 502);
+    assert.deepEqual(providerTransportBody, { error: genericProviderError });
+    assert.equal(JSON.stringify(providerTransportBody).includes(providerTransportDetail), false);
+    assert.deepEqual(await savedProposalRecordCounts(), { campaigns: 0, events: 0, audits: 0 },
+      "a connection error to Groq must not leave campaign, event, or audit records");
 
     await writeFile(responseFile, JSON.stringify({ content: JSON.stringify({ title: "Plan incompleto" }) }));
     const incompleteResponse = await propose(requestBody(`incomplete-${randomUUID()}`));

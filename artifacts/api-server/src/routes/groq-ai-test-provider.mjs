@@ -16,6 +16,15 @@ globalThis.fetch = async (input, options = {}) => {
     requestBody,
   }));
   const fakeResponse = JSON.parse(readFileSync(process.env.GROQ_TEST_RESPONSE_FILE, "utf8"));
+  if (typeof fakeResponse.transportError === "string") {
+    throw new Error(fakeResponse.transportError);
+  }
+  if (Number.isInteger(fakeResponse.status)) {
+    return new Response(JSON.stringify(fakeResponse.body ?? {}), {
+      status: fakeResponse.status,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   return new Response(JSON.stringify({
     choices: [{ message: { content: fakeResponse.content } }],
   }), {
