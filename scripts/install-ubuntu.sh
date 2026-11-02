@@ -73,6 +73,9 @@ while (($#)); do
 done
 
 [[ "${EUID}" -eq 0 ]] || fail "Ejecuta el instalador con sudo."
+exec </dev/null
+export GIT_TERMINAL_PROMPT=0
+export CI=true
 [[ "$BACKUP_DESTINATION" =~ ^/[A-Za-z0-9_./-]+$ ]] \
   || fail "--backup-destination debe ser una ruta absoluta sin espacios ni caracteres especiales."
 [[ "$BACKUP_DESTINATION" != "/var/lib/redfp360" && "$BACKUP_DESTINATION" != "/var/lib/redfp360/"* ]] \

@@ -46,9 +46,10 @@ jobs:
       - name: Validate non-interactive Ubuntu installer and updater
         run: |
           set -euo pipefail
-          bash -n scripts/install-ubuntu.sh scripts/update-ubuntu.sh scripts/finalize-ubuntu-setup.sh
+          bash -n scripts/install-ubuntu.sh scripts/update-ubuntu.sh scripts/backup-ubuntu.sh scripts/finalize-ubuntu-setup.sh
           bash scripts/install-ubuntu.sh --help >/dev/null
           bash scripts/update-ubuntu.sh --help >/dev/null
+          python3 scripts/tests/test_ubuntu_updater.py
           if grep -nE '^[[:space:]]*read([[:space:]]|$)' scripts/install-ubuntu.sh scripts/update-ubuntu.sh; then
             echo "Installer and updater must not read interactive input." >&2
             exit 1

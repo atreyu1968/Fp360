@@ -171,6 +171,9 @@ backup() {
   require_command systemctl
   require_command runuser
   require_command findmnt
+  require_command flock
+  exec 8>/run/lock/redfp360-maintenance.lock
+  flock -n 8 || fail "Hay una actualización o copia de seguridad en curso."
 
   resolved_destination="$(realpath -e -- "$destination")"
   [[ "$resolved_destination" != /var/lib/redfp360 && "$resolved_destination" != /var/lib/redfp360/* ]] \

@@ -161,7 +161,7 @@ La primera descarga no necesita `curl` ni `git` preinstalados: instala `git` des
 ```bash
 sudo env DEBIAN_FRONTEND=noninteractive apt-get update
 sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates git
-git clone --depth 1 --branch main https://github.com/atreyu1968/Fp360.git /tmp/redfp360-bootstrap
+env GIT_TERMINAL_PROMPT=0 git clone --depth 1 --branch main https://github.com/atreyu1968/Fp360.git /tmp/redfp360-bootstrap
 cat /tmp/redfp360-bootstrap/scripts/install-ubuntu.sh
 sudo bash /tmp/redfp360-bootstrap/scripts/install-ubuntu.sh \
   --domain TU_DOMINIO

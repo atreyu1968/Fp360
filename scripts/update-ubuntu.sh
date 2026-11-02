@@ -31,6 +31,18 @@ fail() {
   exit 1
 }
 
+wait_for_health() {
+  local attempt
+  for attempt in $(seq 1 30); do
+    if systemctl is-active --quiet "$SERVICE_NAME" \
+      && curl --fail --silent --connect-timeout 2 --max-time 5 "$HEALTH_URL" >/dev/null; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
 while (($#)); do
   case "$1" in
     --ref)
@@ -49,6 +61,9 @@ while (($#)); do
 done
 
 [[ "${EUID}" -eq 0 ]] || fail "Ejecuta el actualizador con sudo."
+exec </dev/null
+export GIT_TERMINAL_PROMPT=0
+export CI=true
 [[ "$REF" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] \
   || fail "--ref debe ser una rama o etiqueta Git válida."
 if ! git check-ref-format --branch "$REF" >/dev/null 2>&1 \
@@ -102,25 +117,26 @@ mode="$(stat -c '%a' "$BACKUP_PASSPHRASE_FILE")"
 STAGE="$(mktemp -d /opt/.redfp360-update.XXXXXX)"
 chown "$SERVICE_USER:$SERVICE_USER" "$STAGE"
 REPO_DIR="$STAGE/source"
-ROLLBACK_DIR="/opt/redfp360.rollback.${TIMESTAMP}"
-FAILED_DIR="/opt/redfp360.failed.${TIMESTAMP}"
+ROLLBACK_DIR="/opt/redfp360.rollback.${TIMESTAMP}.$$"
+FAILED_DIR="/opt/redfp360.failed.${TIMESTAMP}.$$"
 ROLLBACK_ACTIVE=0
 NEW_RELEASE_FILE=""
 
 cleanup() {
   local status=$?
   trap - EXIT
+  set +e
   if [[ "$status" -ne 0 && "$ROLLBACK_ACTIVE" -eq 1 && -d "$ROLLBACK_DIR" ]]; then
     systemctl stop "$SERVICE_NAME" >/dev/null 2>&1 || true
     if [[ -d "$APP_DIR" ]]; then
       mv "$APP_DIR" "$FAILED_DIR" 2>/dev/null || true
     fi
-    if mv "$ROLLBACK_DIR" "$APP_DIR"; then
-      if systemctl start "$SERVICE_NAME" >/dev/null 2>&1; then
+    if [[ ! -e "$APP_DIR" ]] && mv "$ROLLBACK_DIR" "$APP_DIR"; then
+      if systemctl start "$SERVICE_NAME" >/dev/null 2>&1 && wait_for_health; then
         printf 'Se restauró automáticamente el código anterior desde %s.\n' "$ROLLBACK_DIR" >&2
         ROLLBACK_ACTIVE=0
       else
-        printf 'ERROR: restaura manualmente el código desde %s; la API no pudo arrancar.\n' "$ROLLBACK_DIR" >&2
+        printf 'ERROR: el código anterior está en %s, pero la API no pudo arrancar.\n' "$APP_DIR" >&2
         status=1
       fi
     else
@@ -137,6 +153,8 @@ cleanup() {
   exit "$status"
 }
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 printf 'Descargando RED FP360, referencia %s...\n' "$REF"
 runuser -u "$SERVICE_USER" -- env HOME="$DATA_DIR" \
@@ -145,7 +163,7 @@ runuser -u "$SERVICE_USER" -- env HOME="$DATA_DIR" \
 printf 'Comprobando que no hay cambios de esquema de base de datos...\n'
 [[ -d "$REPO_DIR/lib/db/src/schema" && -f "$REPO_DIR/lib/db/drizzle.config.ts" ]] \
   || fail "La referencia descargada no contiene el esquema de base de datos."
-NEW_COMMIT="$(git -C "$REPO_DIR" rev-parse HEAD)"
+NEW_COMMIT="$(runuser -u "$SERVICE_USER" -- env HOME="$DATA_DIR" git -C "$REPO_DIR" rev-parse HEAD)"
 if [[ -r "$DATA_DIR/release" && "$(cat "$DATA_DIR/release")" == "$NEW_COMMIT" ]]; then
   printf 'RED FP360 ya está en %s; no hay cambios que aplicar.\n' "$NEW_COMMIT"
   exit 0
@@ -168,13 +186,17 @@ printf 'Creando copia externa cifrada antes de actualizar...\n'
 systemctl is-active --quiet "$SERVICE_NAME" \
   || fail "La API no se recuperó después de la copia; la versión instalada no se ha cambiado."
 
+# The backup process has released this same lock. If a scheduled/manual backup
+# wins the race, leave the installed code unchanged instead of overlapping it.
+exec 8>/run/lock/redfp360-maintenance.lock
+flock -n 8 || fail "Hay una copia de seguridad o mantenimiento en curso."
 rm -rf -- "$REPO_DIR/.git"
 
 systemctl stop "$SERVICE_NAME"
 mv "$APP_DIR" "$ROLLBACK_DIR"
 ROLLBACK_ACTIVE=1
 if ! mv "$REPO_DIR" "$APP_DIR"; then
-  fail "No se pudo activar la versión nueva; se restauró el código anterior."
+  fail "No se pudo activar la versión nueva; se intentará restaurar el código anterior."
 fi
 chown -R "$SERVICE_USER:$SERVICE_USER" "$APP_DIR"
 
@@ -182,15 +204,7 @@ if ! systemctl start "$SERVICE_NAME"; then
   fail "La API no arrancó con la versión nueva; se restaurará el código anterior."
 fi
 
-healthy=0
-for _ in $(seq 1 30); do
-  if curl --fail --silent "$HEALTH_URL" >/dev/null; then
-    healthy=1
-    break
-  fi
-  sleep 2
-done
-if [[ "$healthy" -ne 1 ]]; then
+if ! wait_for_health; then
   fail "La API nueva no pasó la comprobación de salud; se restaurará el código anterior."
 fi
 
