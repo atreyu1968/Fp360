@@ -273,7 +273,9 @@ Completa el alta inicial del administrador y ejecuta:
   sudo ${APP_DIR}/scripts/finalize-ubuntu-setup.sh
 
 Los documentos privados se guardan en ${DATA_DIR}; inclúyelos en las copias de
-seguridad junto con PostgreSQL. Abre los puertos 80 y 443 en el firewall de red;
+seguridad junto con PostgreSQL. Para copias cifradas coordinadas y un ensayo de
+restauración, consulta ${APP_DIR}/docs/ubuntu-backups.md. Abre los puertos 80 y
+443 en el firewall de red;
 el instalador no modifica el firewall ni reinicia el host.
 La autonomía usa un único proceso API en esta instalación.
 DONE

@@ -172,7 +172,7 @@ Sustituye el dominio por el tuyo. Para producción, revisa un commit o tag concr
 ### Almacenamiento y red
 
 - En Ubuntu, los documentos se guardan en el disco del servidor, dentro de `/var/lib/redfp360/objects`. El directorio privado no se publica directamente: las descargas pasan por la API y sus comprobaciones de acceso.
-- Incluye `/var/lib/redfp360/objects` y PostgreSQL en el mismo plan de copias de seguridad; verifica periódicamente que puedas restaurar ambos. Replit conserva su almacenamiento administrado en sus propios despliegues.
+- El script `scripts/backup-ubuntu.sh` crea una copia cifrada única de PostgreSQL y `/var/lib/redfp360/objects`, deteniendo brevemente la API para coordinarlos. Ejecuta el ensayo de restauración con `restore-drill` antes de confiar en las copias. Consulta [el procedimiento de copias y recuperación en Ubuntu](docs/ubuntu-backups.md) para proteger la clave, elegir destino, definir retención y recuperar los datos. Replit conserva su almacenamiento administrado en sus propios despliegues.
 - Configura el DNS del dominio hacia el servidor y permite tráfico entrante en los puertos 80 y 443. Caddy obtiene y renueva el certificado TLS. El instalador no cambia el firewall, no reinicia el servidor y no ejecuta una actualización general de Ubuntu.
 - `--upgrade-system` ofrece actualizar paquetes del sistema, pero pide escribir `UPGRADE` antes de hacerlo. No cambia la versión de Ubuntu. El instalador se detiene en versiones distintas de 22.04 o 24.04; no ejecuta `do-release-upgrade`.
 
@@ -189,7 +189,7 @@ sudo /opt/redfp360/scripts/finalize-ubuntu-setup.sh
 
 La clave `GROQ_API_KEY` no se copia desde Replit ni se configura automáticamente. Si habilitas GroqCloud, introdúcela únicamente en el entorno seguro del servidor. La autonomía usa un solo proceso API en esta instalación.
 
-Este instalador no configura copias externas, no abre puertos del firewall y no actualiza una instalación existente. Define y prueba esos procedimientos antes de admitir centros o datos de uso real. Para actualizaciones de versión, respalda primero PostgreSQL y `/var/lib/redfp360/objects`; no vuelvas a ejecutar este instalador sobre una instalación existente.
+Este instalador no configura ni programa copias externas, no abre puertos del firewall y no actualiza una instalación existente. Define el destino externo y su retención, y ensaya la restauración antes de admitir centros o datos de uso real. Para actualizaciones de versión, crea y verifica primero una copia de PostgreSQL y `/var/lib/redfp360/objects`; no vuelvas a ejecutar este instalador sobre una instalación existente.
 
 ## Configuración y secretos
 
