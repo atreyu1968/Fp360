@@ -162,20 +162,17 @@ La primera descarga no necesita `curl` ni `git` preinstalados: instala `git` des
 sudo apt-get update
 sudo apt-get install -y ca-certificates git
 git clone --depth 1 --branch main https://github.com/atreyu1968/Fp360.git /tmp/redfp360-bootstrap
-less /tmp/redfp360-bootstrap/scripts/install-ubuntu.sh
+sed -n '1,340p' /tmp/redfp360-bootstrap/scripts/install-ubuntu.sh
 sudo bash /tmp/redfp360-bootstrap/scripts/install-ubuntu.sh \
-  --domain fp360.example.org \
-  --bucket red-fp360-production \
-  --gcs-key /root/red-fp360-service-account.json
+  --domain fp360.example.org
 ```
 
-Sustituye el dominio, bucket y ruta por los tuyos. Para producción, revisa un commit o tag concreto en lugar de instalar una rama que puede cambiar. Si el repositorio es privado, configura acceso SSH en el servidor y usa la URL SSH; no pongas tokens de GitHub en la URL, en el script ni en el historial de shell.
+Sustituye el dominio por el tuyo. Para producción, revisa un commit o tag concreto en lugar de instalar una rama que puede cambiar. Si el repositorio es privado, configura acceso SSH en el servidor y usa la URL SSH; no pongas tokens de GitHub en la URL, en el script ni en el historial de shell.
 
-### Requisitos previos de almacenamiento y red
+### Almacenamiento y red
 
-- Crea previamente un bucket privado de Google Cloud Storage y una cuenta de servicio con permisos de objetos en ese bucket. Copia su archivo JSON al servidor por un canal seguro, fuera del repositorio. El instalador guarda una copia con permisos restringidos en `/etc/redfp360/`.
-- La instalación independiente usa ADC de Google Cloud (`RED_FP360_STORAGE_BACKEND=gcs`). Replit continúa usando su servicio auxiliar por defecto. No marques el bucket como público; los documentos privados se sirven mediante la autorización de la API.
-- El instalador escribe un ejemplo de CORS en `/etc/redfp360/gcs-cors.json`. Configura el bucket para aceptar cargas desde el dominio publicado. Revisa las reglas actuales antes de aplicar el archivo, porque una sustitución de CORS podría eliminar reglas preexistentes.
+- En Ubuntu, los documentos se guardan en el disco del servidor, dentro de `/var/lib/redfp360/objects`. El directorio privado no se publica directamente: las descargas pasan por la API y sus comprobaciones de acceso.
+- Incluye `/var/lib/redfp360/objects` y PostgreSQL en el mismo plan de copias de seguridad; verifica periódicamente que puedas restaurar ambos. Replit conserva su almacenamiento administrado en sus propios despliegues.
 - Configura el DNS del dominio hacia el servidor y permite tráfico entrante en los puertos 80 y 443. Caddy obtiene y renueva el certificado TLS. El instalador no cambia el firewall, no reinicia el servidor y no ejecuta una actualización general de Ubuntu.
 - `--upgrade-system` ofrece actualizar paquetes del sistema, pero pide escribir `UPGRADE` antes de hacerlo. No cambia la versión de Ubuntu. El instalador se detiene en versiones distintas de 22.04 o 24.04; no ejecuta `do-release-upgrade`.
 
@@ -192,7 +189,7 @@ sudo /opt/redfp360/scripts/finalize-ubuntu-setup.sh
 
 La clave `GROQ_API_KEY` no se copia desde Replit ni se configura automáticamente. Si habilitas GroqCloud, introdúcela únicamente en el entorno seguro del servidor. La autonomía usa un solo proceso API en esta instalación.
 
-Este instalador no crea la cuenta de Google Cloud, no configura copias externas ni recuperación de App Storage, no abre puertos del firewall y no actualiza una instalación existente. Define y prueba esos procedimientos antes de admitir centros o datos de uso real. Para actualizaciones de versión, respalda primero PostgreSQL y los objetos; no vuelvas a ejecutar este instalador sobre una instalación existente.
+Este instalador no configura copias externas, no abre puertos del firewall y no actualiza una instalación existente. Define y prueba esos procedimientos antes de admitir centros o datos de uso real. Para actualizaciones de versión, respalda primero PostgreSQL y `/var/lib/redfp360/objects`; no vuelvas a ejecutar este instalador sobre una instalación existente.
 
 ## Configuración y secretos
 
@@ -204,16 +201,17 @@ Los valores secretos deben guardarse en Replit Secrets o en un gestor seguro equ
 | `SESSION_SECRET` | Firma de sesiones y derivación de material criptográfico para la autenticación multifactor. Obligatoria para la autenticación. |
 | `RED_FP360_SETUP_TOKEN` | Autoriza el endpoint de configuración inicial `/auth/setup`. No es una contraseña de uso diario; limita su exposición y guárdalo como secreto. |
 | `PUBLIC_OBJECT_SEARCH_PATHS` | Rutas públicas separadas por comas para el servicio de almacenamiento de objetos, cuando se habiliten recursos públicos. |
-| `PRIVATE_OBJECT_DIR` | Directorio o prefijo privado usado por las cargas de documentos. |
-| `RED_FP360_STORAGE_BACKEND` | `replit` por defecto en Replit; usa `gcs` en una instalación propia de Google Cloud Storage. |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Ruta al JSON de cuenta de servicio de Google Cloud, solo para el backend `gcs`. |
+| `PRIVATE_OBJECT_DIR` | Prefijo privado de Replit; en modo local se deriva de `LOCAL_OBJECT_STORAGE_DIR`. |
+| `RED_FP360_STORAGE_BACKEND` | `replit` por defecto en Replit; `local` para almacenar los documentos en el disco privado del servidor Ubuntu. |
+| `LOCAL_OBJECT_STORAGE_DIR` | Raíz del almacenamiento local de objetos; debe ser una ruta absoluta y escribible por el servicio API. |
+| `PUBLIC_BASE_URL` | URL HTTPS pública del servidor; se usa para generar enlaces temporales de carga local. |
 | `HOST` | Dirección de escucha del API. En instalación propia, `127.0.0.1` para que solo Caddy acceda al proceso. |
 | `PORT` | Puerto del proceso API. Vite recibe el puerto de los workflows y usa valores propios para compilaciones fuera de Replit. |
 | `BASE_PATH` | Prefijo de publicación de Vite. Replit lo establece en los workflows; las compilaciones usan `/` para la web y `/__mockup` para la sandbox si no se indica otro valor. |
 | `NODE_ENV` | Distingue desarrollo y producción; en producción activa, entre otros controles, cookies seguras. |
 | `LOG_LEVEL` | Nivel de logging del API; por defecto se utiliza `info`. |
 | `API_BASE_URL` | Solo para pruebas de integración de `lib/db`; por defecto apunta a `http://127.0.0.1:8080/api`. |
-| `DEFAULT_OBJECT_STORAGE_BUCKET_ID` | Identificador del bucket privado de App Storage que usa el servicio de documentos. |
+| `DEFAULT_OBJECT_STORAGE_BUCKET_ID` | Identificador interno de App Storage administrado por Replit; no se necesita en Ubuntu. |
 
 El endpoint de configuración inicial falla de forma cerrada si `RED_FP360_SETUP_TOKEN` no está configurado. No compartas su valor ni lo incluyas en una URL pública.
 
@@ -349,7 +347,7 @@ Antes de publicar una versión para uso formativo:
 5. Confirma que `/api/healthz` responde correctamente: comprueba tanto el servidor como la conexión a PostgreSQL.
 6. Si se habilita el coordinador de IA, prueba el proveedor desde el panel. Con GroqCloud, configura `GROQ_API_KEY` en los secretos del entorno publicado y confirma el aviso de transferencia del contexto simulado antes de activar. La IA solo debe modificar datos del simulador.
 7. Prueba autenticación, selección de empresa, invitaciones, permisos, documentos, flujos económicos y concesión/revocación de autonomía simulada con cuentas de cada rol y datos ficticios antes de abrir el acceso al alumnado.
-8. Ejecuta `pnpm run test:recovery` y revisa el [procedimiento y los resultados del ensayo de recuperación](docs/recovery-drill.md). Usa exclusivamente su clúster desechable y sus datos ficticios: no acepta destinos externos. Este ensayo no sustituye una política de copias del proveedor ni demuestra la recuperación del bucket real de App Storage.
+8. Ejecuta `pnpm run test:recovery` y revisa el [procedimiento y los resultados del ensayo de recuperación](docs/recovery-drill.md). Usa exclusivamente su clúster desechable y sus datos ficticios: no acepta destinos externos. Este ensayo no sustituye una política de copias del proveedor ni demuestra la recuperación del almacenamiento real administrado por Replit.
 
 La generación de propuestas es supervisada. La autonomía simulada por empresa está disponible solo mediante delegación explícita de administración, limitada a operaciones didácticas autorizadas y revocable; debe probarse en el entorno publicado antes de permitir su uso formativo.
 

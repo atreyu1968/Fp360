@@ -24,10 +24,12 @@ import portfoliosRouter from "./portfolios";
 import evaluationsRouter from "./evaluations";
 import mentorshipRouter from "./mentorship";
 import coordinationRouter from "./coordination";
+import objectUploadsRouter from "./object-uploads";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(objectUploadsRouter);
 router.use(authRouter);
 router.use(administrationRouter);
 router.use(catalogRouter);

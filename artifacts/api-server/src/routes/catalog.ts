@@ -475,12 +475,22 @@ router.get("/redfp360/products/:id/documents/:documentId/download", async (req, 
     if (error instanceof ObjectNotFoundError) fail(404, "No se ha encontrado el archivo.");
     throw error;
   }
-  const [downloadURL] = await file.getSignedUrl({
+  const downloadURL = await objectStorageService.getSignedDownloadURL(file, {
     action: "read",
     expires: Date.now() + 5 * 60 * 1000,
     responseDisposition: "attachment",
   });
-  res.redirect(302, downloadURL);
+  if (downloadURL) {
+    res.redirect(302, downloadURL);
+    return;
+  }
+  const [metadata] = await file.getMetadata();
+  const [fileBytes] = await file.download();
+  const filename = (document.originalName || "documento").replace(/["\\\r\n]/g, "_");
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Content-Type", String(metadata.contentType || "application/octet-stream"));
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.send(fileBytes);
 });
 
 router.delete("/redfp360/products/:id/documents/:documentId", async (req, res): Promise<void> => {

@@ -9,4 +9,4 @@
 - [Idempotent replay authorization](redfp360-idempotency-access.md) — Bind retries to the original actor and recheck current resource scope before returning stored results.
 - [Coordinación económica con IA](redfp360-ai-economic-coordinator.md) — La IA establece situaciones para las empresas y coordina el sistema económico interconectado.
 - [Validación tras actualizar dependencias](dependency-validation.md) — Fuerza la regeneración de declaraciones TypeScript tras cambios mayores de dependencias de tipos.
-- [Autoinstalador desde GitHub](redfp360-github-installer.md) — Crear un instalador de RED FP360 que se distribuya desde el repositorio del proyecto.
+- [Autoinstalador desde GitHub](redfp360-github-installer.md) — Ubuntu propio usa documentos privados en disco local; Replit mantiene su almacenamiento administrado.

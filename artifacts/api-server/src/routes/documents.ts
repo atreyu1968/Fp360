@@ -908,14 +908,21 @@ router.get("/redfp360/documents/:documentId/versions/:versionId/download", route
     if (error instanceof ObjectNotFoundError) throw new DocumentsError(404, "No se encontró el archivo almacenado.");
     throw error;
   }
-  const [downloadURL] = await file.getSignedUrl({
+  const downloadURL = await objectStorageService.getSignedDownloadURL(file, {
     action: "read",
     expires: Date.now() + 5 * 60 * 1000,
     responseDisposition: "attachment",
     responseType: "application/octet-stream",
   });
   res.setHeader("Cache-Control", "no-store");
-  res.redirect(302, downloadURL);
+  if (downloadURL) {
+    res.redirect(302, downloadURL);
+    return;
+  }
+  res.setHeader("Content-Type", "application/octet-stream");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  const [fileBytes] = await file.download();
+  res.send(fileBytes);
 }));
 
 router.post("/redfp360/documents/:documentId/access-log", route(async (req, res) => {

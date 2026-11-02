@@ -1,10 +1,18 @@
 import { randomUUID } from 'crypto';
 import { Readable } from 'stream';
-import { File, Storage } from '@google-cloud/storage';
+import { Storage } from '@google-cloud/storage';
+import path from 'node:path';
+import {
+  createLocalUploadUrl,
+  LocalObjectFile,
+  localObjectFilePath,
+  writeLocalUpload,
+} from './localObjectStorage';
 
 import {
   canAccessObject,
   getObjectAclPolicy,
+  ObjectAclFile,
   ObjectAclPolicy,
   ObjectPermission,
   setObjectAclPolicy,
@@ -13,11 +21,11 @@ import {
 const REPLIT_SIDECAR_ENDPOINT = 'http://127.0.0.1:1106';
 const STORAGE_BACKEND = process.env.RED_FP360_STORAGE_BACKEND || 'replit';
 
-if (STORAGE_BACKEND !== 'replit' && STORAGE_BACKEND !== 'gcs') {
-  throw new Error('RED_FP360_STORAGE_BACKEND must be either "replit" or "gcs".');
+if (STORAGE_BACKEND !== 'replit' && STORAGE_BACKEND !== 'local') {
+  throw new Error('RED_FP360_STORAGE_BACKEND must be either "replit" or "local".');
 }
 
-export const objectStorageClient = STORAGE_BACKEND === 'replit'
+export const objectStorageClient: Storage | null = STORAGE_BACKEND === 'replit'
   ? new Storage({
       credentials: {
         audience: 'replit',
@@ -35,7 +43,14 @@ export const objectStorageClient = STORAGE_BACKEND === 'replit'
       },
       projectId: '',
     })
-  : new Storage();
+  : null;
+
+export interface StoredObjectFile extends ObjectAclFile {
+  download(...args: any[]): Promise<any>;
+  createReadStream(...args: any[]): Readable;
+  delete(...args: any[]): Promise<any>;
+  getSignedUrl?(...args: any[]): Promise<any>;
+}
 
 export class ObjectNotFoundError extends Error {
   constructor() {
@@ -60,30 +75,41 @@ export class ObjectStorageService {
     );
     if (paths.length === 0) {
       throw new Error(
-        "PUBLIC_OBJECT_SEARCH_PATHS not set. Create a bucket in 'Object Storage' " +
-          'tool and set PUBLIC_OBJECT_SEARCH_PATHS env var (comma-separated paths).',
+        'PUBLIC_OBJECT_SEARCH_PATHS is not set; configure one or more public storage paths.',
       );
     }
     return paths;
   }
 
   getPrivateObjectDir(): string {
+    if (STORAGE_BACKEND === 'local') {
+      return path.join(getLocalStorageRoot(), 'private');
+    }
     const dir = process.env.PRIVATE_OBJECT_DIR || '';
     if (!dir) {
       throw new Error(
-        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
-          'tool and set PRIVATE_OBJECT_DIR env var.',
+        'PRIVATE_OBJECT_DIR is not set; configure the private object storage path.',
       );
     }
     return dir;
   }
 
-  async searchPublicObject(filePath: string): Promise<File | null> {
+  async searchPublicObject(filePath: string): Promise<StoredObjectFile | null> {
     for (const searchPath of this.getPublicObjectSearchPaths()) {
-      const fullPath = `${searchPath}/${filePath}`;
+      if (STORAGE_BACKEND === 'local') {
+        const publicDir = path.resolve(searchPath);
+        const localPath = path.resolve(publicDir, filePath);
+        if (localPath !== publicDir && !localPath.startsWith(`${publicDir}${path.sep}`)) {
+          continue;
+        }
+        const file = new LocalObjectFile(localPath, localPath);
+        const [exists] = await file.exists();
+        if (exists) return file;
+        continue;
+      }
 
-      const { bucketName, objectName } = parseObjectPath(fullPath);
-      const bucket = objectStorageClient.bucket(bucketName);
+      const { bucketName, objectName } = parseObjectPath(`${searchPath}/${filePath}`);
+      const bucket = getReplitClient().bucket(bucketName);
       const file = bucket.file(objectName);
 
       const [exists] = await file.exists();
@@ -96,7 +122,7 @@ export class ObjectStorageService {
   }
 
   async downloadObject(
-    file: File,
+    file: StoredObjectFile,
     cacheTtlSec: number = 3600,
   ): Promise<Response> {
     const [metadata] = await file.getMetadata();
@@ -119,6 +145,14 @@ export class ObjectStorageService {
   }
 
   async getObjectEntityUploadURL(): Promise<string> {
+    if (STORAGE_BACKEND === 'local') {
+      return createLocalUploadUrl({
+        baseUrl: process.env.PUBLIC_BASE_URL || '',
+        objectId: randomUUID(),
+        secret: process.env.SESSION_SECRET || '',
+      });
+    }
+
     const privateObjectDir = this.getPrivateObjectDir();
     if (!privateObjectDir) {
       throw new Error(
@@ -140,9 +174,19 @@ export class ObjectStorageService {
     });
   }
 
-  async getObjectEntityFile(objectPath: string): Promise<File> {
+  async getObjectEntityFile(objectPath: string): Promise<StoredObjectFile> {
     if (!objectPath.startsWith('/objects/')) {
       throw new ObjectNotFoundError();
+    }
+
+    if (STORAGE_BACKEND === 'local') {
+      const objectFile = new LocalObjectFile(
+        localObjectFilePath(getLocalStorageRoot(), objectPath),
+        objectPath,
+      );
+      const [exists] = await objectFile.exists();
+      if (!exists) throw new ObjectNotFoundError();
+      return objectFile;
     }
 
     const parts = objectPath.slice(1).split('/');
@@ -157,7 +201,7 @@ export class ObjectStorageService {
     }
     const objectEntityPath = `${entityDir}${entityId}`;
     const { bucketName, objectName } = parseObjectPath(objectEntityPath);
-    const bucket = objectStorageClient.bucket(bucketName);
+    const bucket = getReplitClient().bucket(bucketName);
     const objectFile = bucket.file(objectName);
     const [exists] = await objectFile.exists();
     if (!exists) {
@@ -167,6 +211,15 @@ export class ObjectStorageService {
   }
 
   normalizeObjectEntityPath(rawPath: string): string {
+    if (STORAGE_BACKEND === 'local') {
+      const url = new URL(rawPath, process.env.PUBLIC_BASE_URL || 'http://localhost');
+      const uploadMatch = url.pathname.match(
+        /^\/api\/storage\/uploads\/([a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12})$/i,
+      );
+      if (uploadMatch) return `/objects/uploads/${uploadMatch[1]}`;
+      return url.pathname;
+    }
+
     if (!rawPath.startsWith('https://storage.googleapis.com/')) {
       return rawPath;
     }
@@ -185,6 +238,46 @@ export class ObjectStorageService {
 
     const entityId = rawObjectPath.slice(objectEntityDir.length);
     return `/objects/${entityId}`;
+  }
+
+  async writeLocalUpload({
+    objectId,
+    source,
+    expectedSize,
+    contentType,
+  }: {
+    objectId: string;
+    source: Readable;
+    expectedSize: number;
+    contentType: string;
+  }): Promise<void> {
+    if (STORAGE_BACKEND !== 'local') {
+      throw new Error('Local uploads are only available with the local storage backend.');
+    }
+    await writeLocalUpload({
+      rootDir: getLocalStorageRoot(),
+      objectId,
+      source,
+      expectedSize,
+      contentType,
+    });
+  }
+
+  async getSignedDownloadURL(
+    file: StoredObjectFile,
+    options: Record<string, unknown>,
+  ): Promise<string | null> {
+    if (STORAGE_BACKEND === 'local') return null;
+    if (!file.getSignedUrl) throw new Error('Object storage does not support signed download URLs.');
+    const [url] = await file.getSignedUrl(options);
+    if (typeof url !== 'string' || !url.startsWith('https://')) {
+      throw new Error('Object storage returned an invalid signed download URL.');
+    }
+    return url;
+  }
+
+  get isLocalBackend(): boolean {
+    return STORAGE_BACKEND === 'local';
   }
 
   async trySetObjectEntityAclPolicy(
@@ -207,7 +300,7 @@ export class ObjectStorageService {
     requestedPermission,
   }: {
     userId?: string;
-    objectFile: File;
+    objectFile: StoredObjectFile;
     requestedPermission?: ObjectPermission;
   }): Promise<boolean> {
     return canAccessObject({
@@ -239,6 +332,21 @@ function parseObjectPath(path: string): {
   };
 }
 
+function getReplitClient(): Storage {
+  if (!objectStorageClient) {
+    throw new Error('The Replit object storage client is not available in local mode.');
+  }
+  return objectStorageClient;
+}
+
+function getLocalStorageRoot(): string {
+  const root = process.env.LOCAL_OBJECT_STORAGE_DIR || '';
+  if (!path.isAbsolute(root)) {
+    throw new Error('LOCAL_OBJECT_STORAGE_DIR must be an absolute path in local mode.');
+  }
+  return path.resolve(root);
+}
+
 async function signObjectURL({
   bucketName,
   objectName,
@@ -250,28 +358,7 @@ async function signObjectURL({
   method: 'GET' | 'PUT' | 'DELETE' | 'HEAD';
   ttlSec: number;
 }): Promise<string> {
-  if (STORAGE_BACKEND === 'gcs') {
-    const action = method === 'PUT'
-      ? 'write'
-      : method === 'DELETE'
-        ? 'delete'
-        : method === 'HEAD'
-          ? 'metadata'
-          : 'read';
-    const [signedUrl] = await objectStorageClient
-      .bucket(bucketName)
-      .file(objectName)
-      .getSignedUrl({
-        version: 'v4',
-        action,
-        expires: Date.now() + ttlSec * 1000,
-      });
-    if (!signedUrl.startsWith('https://')) {
-      throw new Error('Google Cloud Storage returned an invalid signed URL.');
-    }
-    return signedUrl;
-  }
-
+  getReplitClient();
   const request = {
     bucket_name: bucketName,
     object_name: objectName,
