@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { and, asc, eq, inArray, isNull, lte } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { Router, type ErrorRequestHandler, type Request, type RequestHandler, type Response } from "express";
 import * as api from "@workspace/api-zod";
 import {
@@ -526,6 +526,7 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
     eq(fpSimulationCampaigns.operationId, data.operationId),
   )).limit(1);
   if (priorCampaign) {
+    if (priorCampaign.createdByUserId !== actor.userId) fail(409, "El identificador ya se utilizó para otra operación.");
     const [marker] = await db.select().from(fpSimulationAuditEvents).where(and(
       eq(fpSimulationAuditEvents.tenantId, actor.tenantId),
       eq(fpSimulationAuditEvents.campaignId, priorCampaign.id),
@@ -682,7 +683,38 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
   }
 
   const campaignId = randomUUID();
-  const createdCampaign = await db.transaction(async (tx) => {
+  const savedProposal = await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`fp360-ai-proposal:${actor.tenantId}:${data.operationId}`}))`);
+    const [concurrentCampaign] = await tx.select().from(fpSimulationCampaigns).where(and(
+      eq(fpSimulationCampaigns.tenantId, actor.tenantId),
+      eq(fpSimulationCampaigns.operationId, data.operationId),
+    )).limit(1);
+    if (concurrentCampaign) {
+      if (concurrentCampaign.createdByUserId !== actor.userId) fail(409, "El identificador ya se utilizó para otra operación.");
+      const [marker] = await tx.select().from(fpSimulationAuditEvents).where(and(
+        eq(fpSimulationAuditEvents.tenantId, actor.tenantId),
+        eq(fpSimulationAuditEvents.campaignId, concurrentCampaign.id),
+        eq(fpSimulationAuditEvents.action, "ai:proposal_generated"),
+      )).limit(1);
+      let markerData: { inputFingerprint?: string; snapshotAt?: string; networkCompanyCount?: number } = {};
+      try {
+        markerData = marker ? JSON.parse(marker.detail) as typeof markerData : {};
+      } catch { /* An invalid audit record must not be treated as an idempotent replay. */ }
+      if (!marker || markerData.inputFingerprint !== inputFingerprint) {
+        fail(409, "El identificador ya se utilizó para otra operación.");
+      }
+      const concurrentEvents = await tx.select().from(fpSimulationEvents).where(and(
+        eq(fpSimulationEvents.tenantId, actor.tenantId),
+        eq(fpSimulationEvents.campaignId, concurrentCampaign.id),
+      )).orderBy(asc(fpSimulationEvents.simulatedDate), asc(fpSimulationEvents.createdAt));
+      return {
+        campaign: concurrentCampaign,
+        events: concurrentEvents,
+        snapshotAt: markerData.snapshotAt,
+        networkCompanyCount: markerData.networkCompanyCount,
+      };
+    }
+
     const [created] = await tx.insert(fpSimulationCampaigns).values({
       id: campaignId,
       tenantId: actor.tenantId,
@@ -725,17 +757,22 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
       operationCount: network.operationHistory.length,
       model: settings.model,
     }));
-    return created;
+    return {
+      campaign: created,
+      events: null,
+      snapshotAt: network.snapshotAt,
+      networkCompanyCount: network.companyCount,
+    };
   });
-  const storedEvents = await db.select().from(fpSimulationEvents).where(and(
-    eq(fpSimulationEvents.tenantId, actor.tenantId),
-    eq(fpSimulationEvents.campaignId, createdCampaign.id),
-  )).orderBy(asc(fpSimulationEvents.simulatedDate), asc(fpSimulationEvents.createdAt));
+  const storedEvents = savedProposal.events ?? await db.select().from(fpSimulationEvents).where(and(
+      eq(fpSimulationEvents.tenantId, actor.tenantId),
+      eq(fpSimulationEvents.campaignId, savedProposal.campaign.id),
+    )).orderBy(asc(fpSimulationEvents.simulatedDate), asc(fpSimulationEvents.createdAt));
   res.status(201).json(api.GenerateFp360AiSimulationProposalResponse.parse({
-    campaign: await campaignOutput(createdCampaign),
+    campaign: await campaignOutput(savedProposal.campaign),
     events: await Promise.all(storedEvents.map(eventOutput)),
-    networkSnapshotAt: network.snapshotAt,
-    networkCompanyCount: network.companyCount,
+    networkSnapshotAt: savedProposal.snapshotAt,
+    networkCompanyCount: savedProposal.networkCompanyCount,
     approvalRequired: true,
     simulationOnly: true,
   }));

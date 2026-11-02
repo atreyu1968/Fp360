@@ -198,6 +198,7 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
     assert.equal(await savedCampaignCount(), 0, "an incomplete plan must not create a partial campaign");
 
     await writeFile(responseFile, JSON.stringify({
+      delayMs: 200,
       content: JSON.stringify({
         title: "Coordinación de suministro ficticia",
         description: "Propuesta educativa para practicar una operación entre dos empresas.",
@@ -225,9 +226,20 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
     }));
     const operationId = `valid-draft-${randomUUID()}`;
     const validRequestBody = requestBody(operationId);
-    const validResponse = await propose(validRequestBody);
-    assert.equal(validResponse.status, 201);
-    const result = await validResponse.json();
+    const concurrentResponses = await Promise.all([
+      propose(validRequestBody),
+      propose(validRequestBody),
+    ]);
+    assert.deepEqual(concurrentResponses.map((response) => response.status), [201, 201]);
+    const concurrentResults = await Promise.all(concurrentResponses.map((response) => response.json()));
+    const result = concurrentResults[0];
+    assert.equal(concurrentResults[1].campaign.id, result.campaign.id,
+      "simultaneous retries must return the same campaign");
+    assert.deepEqual(
+      concurrentResults[1].events.map((event) => event.id),
+      result.events.map((event) => event.id),
+      "simultaneous retries must return the same saved events",
+    );
     assert.equal(result.campaign.status, "draft");
     assert.equal(result.campaign.mode, "supervised");
     assert.equal(result.approvalRequired, true);

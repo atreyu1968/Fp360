@@ -16,6 +16,9 @@ globalThis.fetch = async (input, options = {}) => {
     requestBody,
   }));
   const fakeResponse = JSON.parse(readFileSync(process.env.GROQ_TEST_RESPONSE_FILE, "utf8"));
+  if (Number.isInteger(fakeResponse.delayMs) && fakeResponse.delayMs > 0) {
+    await new Promise((resolve) => setTimeout(resolve, fakeResponse.delayMs));
+  }
   if (typeof fakeResponse.transportError === "string") {
     throw new Error(fakeResponse.transportError);
   }
