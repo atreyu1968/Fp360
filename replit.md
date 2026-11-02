@@ -35,7 +35,7 @@ ERP educativo para centros de Formación Profesional de Canarias. Las empresas, 
 
 - La autenticación es propia de RED FP360; no usar Clerk.
 - Los cambios de negocio son simulaciones educativas, auditables y acotadas al tenant y empresa autorizados.
-- El coordinador IA usa el estado de red y el historial de operaciones; el endpoint local es la opción predeterminada y Mistral es externo y optativo, con confirmación del administrador. La clave vive en Secretos, nunca en la base de datos.
+- El coordinador IA usa el estado de red y el historial de operaciones; el endpoint local es la opción predeterminada y GroqCloud es externo y optativo, con confirmación del administrador. La clave vive en Secretos, nunca en la base de datos.
 - La fiscalidad debe separar obligaciones estatales AEAT de las canarias ATC; el uso de modelos oficiales es didáctico, no una presentación real.
 - La producción con PostgreSQL administrado por Replit recibe cambios de esquema mediante el diff de Publish. Nunca ejecutar `push` desde despliegue o contra producción.
 

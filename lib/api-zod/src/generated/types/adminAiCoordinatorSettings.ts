@@ -15,7 +15,7 @@ export interface AdminAiCoordinatorSettings {
   baseUrl: string;
   /** @maxLength 120 */
   model: string;
-  mistralApiKeyConfigured: boolean;
+  groqApiKeyConfigured: boolean;
   /** @nullable */
   updatedAt: string | null;
 }

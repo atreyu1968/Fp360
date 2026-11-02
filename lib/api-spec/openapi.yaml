@@ -311,6 +311,7 @@ paths:
               schema: { $ref: "#/components/schemas/AdminAiCoordinatorSettings" }
         "400": { description: Invalid endpoint or model }
         "403": { description: Administrator required }
+        "503": { description: AI provider key is not configured }
   /admin/ai-coordinator/test:
     post:
       operationId: testAdminAiCoordinatorConnection
@@ -329,6 +330,7 @@ paths:
         "403": { description: Administrator required }
         "409": { description: AI provider is not configured }
         "502": { description: Configured AI provider unavailable }
+        "503": { description: AI provider key is not configured }
   /admin/ai-coordinator/delegations:
     get:
       operationId: listAdminAiDelegations
@@ -5812,14 +5814,14 @@ components:
           items: { $ref: "#/components/schemas/AiDelegationRun" }
     AdminAiCoordinatorSettings:
       type: object
-      required: [configured, enabled, provider, baseUrl, model, mistralApiKeyConfigured, updatedAt]
+      required: [configured, enabled, provider, baseUrl, model, groqApiKeyConfigured, updatedAt]
       properties:
         configured: { type: boolean }
         enabled: { type: boolean }
-        provider: { type: string, enum: [local, mistral] }
+        provider: { type: string, enum: [local, groqcloud] }
         baseUrl: { type: string, maxLength: 512 }
         model: { type: string, maxLength: 120 }
-        mistralApiKeyConfigured: { type: boolean }
+        groqApiKeyConfigured: { type: boolean }
         updatedAt: { type: ["string", "null"], format: date-time }
     AdminPolicyPermission:
       type: string
@@ -5904,12 +5906,12 @@ components:
       properties:
         operationId: { type: string, minLength: 8, maxLength: 100 }
         enabled: { type: boolean }
-        provider: { type: string, enum: [local, mistral] }
+        provider: { type: string, enum: [local, groqcloud] }
         baseUrl: { type: string, maxLength: 512 }
         model: { type: string, maxLength: 120 }
         externalDataTransferAcknowledged:
           type: boolean
-          description: Required to enable Mistral because network-level simulated economic context is sent to the external provider.
+          description: Required to enable GroqCloud because network-level simulated economic context is sent to the external provider.
     AdminAiCoordinatorConnectionTestInput:
       type: object
       required: [operationId]

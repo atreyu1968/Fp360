@@ -198,13 +198,13 @@ El endpoint de configuración inicial falla de forma cerrada si `RED_FP360_SETUP
 - Edita primero el contrato OpenAPI cuando cambie la forma pública de una petición o respuesta. No edites manualmente los archivos generados: vuelve a ejecutar `codegen` y valida los paquetes.
 - Las operaciones financieras y fiscales tienen alcance de simulación. Las API no son una pasarela para presentar declaraciones o enviar operaciones reales.
 
-## Coordinador económico con IA local o Mistral
+## Coordinador económico con IA local o GroqCloud
 
 El coordinador crea propuestas didácticas de campañas y eventos para conectar el trabajo de varias empresas simuladas. Por defecto requiere aprobación humana. La administración puede delegar una empresa concreta para ejecutar únicamente las operaciones didácticas autorizadas abajo. No ejecuta pedidos, pagos, cambios de stock, asientos, declaraciones ni trámites reales.
 
 ### Delegar una empresa y recuperar su control
 
-En **Administración → Integraciones → Autonomía simulada por empresa**, selecciona la empresa, marca los permisos y confirma la autorización explícita. No basta con elegir la modalidad autónoma de una campaña. La delegación requiere el proveedor local; Mistral sigue disponible para generar propuestas supervisadas, no para los ciclos autónomos.
+En **Administración → Integraciones → Autonomía simulada por empresa**, selecciona la empresa, marca los permisos y confirma la autorización explícita. No basta con elegir la modalidad autónoma de una campaña. La delegación requiere el proveedor local; GroqCloud sigue disponible para generar propuestas supervisadas, no para los ciclos autónomos.
 
 - `create_simulated_document`: crea borradores de notas didácticas, sintéticos, privados para la empresa y descargables desde Documentación. Nunca confirma documentos automáticamente.
 - `complete_simulation_event`: vincula un documento ficticio ya confirmado, visible en la empresa y del tipo exigido, y completa un evento publicado de una campaña activa. No actúa sobre eventos futuros, con precondiciones pendientes o con evidencia ya vinculada.
@@ -223,21 +223,21 @@ node --test lib/db/tests/ai-delegations.test.mjs
 ### Configuración
 
 1. Entra con una cuenta administradora y abre **Integraciones → Coordinador económico con IA**.
-2. Elige **Endpoint local o privado** o **Mistral API** desde el panel:
+2. Elige **Endpoint local o privado** o **GroqCloud API** desde el panel:
    - Para un endpoint local compatible con OpenAI, introduce su URL base, por ejemplo:
    - Ollama: `http://127.0.0.1:11434/v1`
    - LM Studio: `http://127.0.0.1:1234/v1`
-   - Para Mistral, el endpoint oficial es fijo (`https://api.mistral.ai/v1`); indica el identificador del modelo, por ejemplo `mistral-small-latest`.
-3. Para activar Mistral, configura `MISTRAL_API_KEY` en **Tools → Secrets** y confirma en el panel que el contexto económico simulado se enviará a ese proveedor. La clave no se guarda en PostgreSQL ni se devuelve al navegador.
-4. Activa la generación supervisada, guarda y usa **Probar conexión guardada**. El endpoint local responde a `GET /models`; Mistral se verifica con `GET /v1/models`.
+   - Para GroqCloud, el endpoint oficial es fijo (`https://api.groq.com/openai/v1`); indica un ID de modelo vigente, como `openai/gpt-oss-20b`.
+3. Para activar GroqCloud, configura `GROQ_API_KEY` en **Tools → Secrets** y confirma en el panel que el contexto económico simulado se enviará a ese proveedor. La clave no se guarda en PostgreSQL ni se devuelve al navegador.
+4. Activa la generación supervisada, guarda y usa **Probar conexión guardada**. El endpoint local responde a `GET /models`; GroqCloud se verifica con `GET /models` en el endpoint oficial.
 
-El servidor llama a `POST /chat/completions` para modelos locales y a `POST https://api.mistral.ai/v1/chat/completions` para Mistral, solicitando una respuesta JSON. Las URL locales solo admiten hosts locales o privados y rechazan credenciales incrustadas, parámetros de URL y redirecciones. La dirección debe ser accesible desde el proceso del API; `127.0.0.1` se refiere al servidor/contenedor del API, no al navegador del usuario. Si el modelo se ejecuta en otro equipo, usa un nombre de host o una dirección privada accesible desde ese proceso.
+El servidor llama a `POST /chat/completions` para modelos locales y a `POST https://api.groq.com/openai/v1/chat/completions` para GroqCloud, solicitando una respuesta JSON. Las URL locales solo admiten hosts locales o privados y rechazan credenciales incrustadas, parámetros de URL y redirecciones. La dirección debe ser accesible desde el proceso del API; `127.0.0.1` se refiere al servidor/contenedor del API, no al navegador del usuario. Si el modelo se ejecuta en otro equipo, usa un nombre de host o una dirección privada accesible desde ese proceso.
 
 ### Contexto, acceso y aprobación
 
 - Antes de cada generación, el servidor reúne empresas de todo el tenant, indicadores actuales de pedidos, compras, facturas, cobros, inventario, contabilidad y declaraciones, junto con el historial económico y los eventos de auditoría disponibles.
-- El historial se filtra en el servidor: no se envían nombres personales, datos de contacto, credenciales ni descripciones libres de expedientes. Para Mistral, los nombres de empresas y centros se sustituyen por etiquetas; se envían el objetivo introducido por el docente, el resumen económico simulado y el historial estructurado. El servidor rechaza objetivos con teléfonos o correos, y el administrador confirma que no añadirá datos personales.
-- Con el endpoint local, el contexto se queda en el endpoint configurado. Con Mistral, la información simulada se envía al proveedor únicamente cuando el administrador lo selecciona, lo activa y confirma la advertencia.
+- El historial se filtra en el servidor: no se envían nombres personales, datos de contacto, credenciales ni descripciones libres de expedientes. Para GroqCloud, los nombres de empresas y centros se sustituyen por etiquetas; se envían el objetivo introducido por el docente, el resumen económico simulado y el historial estructurado. El servidor rechaza objetivos con teléfonos o correos, y el administrador confirma que no añadirá datos personales.
+- Con el endpoint local, el contexto se queda en el endpoint configurado. Con GroqCloud, la información simulada se envía al proveedor únicamente cuando el administrador lo selecciona, lo activa y confirma la advertencia.
 - Solo perfiles docentes y administradores pueden solicitar esta vista completa de la red. Los eventos propuestos se limitan a las empresas participantes y cada empresa seleccionada recibe al menos uno.
 - La IA crea una campaña en estado **Borrador** y eventos **Pendientes**. Una persona debe enviar la campaña a revisión y aprobarla; los eventos también requieren aprobación antes de publicarse al alumnado.
 - La respuesta registra la fecha del contexto y el número de empresas conocidas por el coordinador. Si el endpoint o el modelo no están disponibles, la generación falla explícitamente y no crea una campaña parcial.
@@ -278,7 +278,7 @@ Antes de publicar una versión para uso formativo:
 3. Comprueba que producción usa su conexión `DATABASE_URL` correcta, un `SESSION_SECRET` propio del entorno y las variables de App Storage necesarias. No copies la conexión de desarrollo a producción. Verifica que los documentos privados no tengan rutas públicas.
 4. Completa la configuración inicial con `RED_FP360_SETUP_TOKEN`, comprueba el acceso del administrador y MFA, y retira ese token de producción después del alta inicial.
 5. Confirma que `/api/healthz` responde correctamente: comprueba tanto el servidor como la conexión a PostgreSQL.
-6. Si se habilita el coordinador de IA, prueba el proveedor desde el panel. Con Mistral, configura `MISTRAL_API_KEY` en los secretos del entorno publicado y confirma el aviso de transferencia del contexto simulado antes de activar. La IA solo debe modificar datos del simulador.
+6. Si se habilita el coordinador de IA, prueba el proveedor desde el panel. Con GroqCloud, configura `GROQ_API_KEY` en los secretos del entorno publicado y confirma el aviso de transferencia del contexto simulado antes de activar. La IA solo debe modificar datos del simulador.
 7. Prueba autenticación, selección de empresa, invitaciones, permisos, documentos y los flujos económicos con cuentas de cada rol y datos ficticios antes de abrir el acceso al alumnado.
 8. Ejecuta `pnpm run test:recovery` y revisa el [procedimiento y los resultados del ensayo de recuperación](docs/recovery-drill.md). Usa exclusivamente su clúster desechable y sus datos ficticios: no acepta destinos externos. Este ensayo no sustituye una política de copias del proveedor ni demuestra la recuperación del bucket real de App Storage.
 

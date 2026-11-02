@@ -19,6 +19,6 @@ export interface AdminAiCoordinatorSettingsInput {
   baseUrl: string;
   /** @maxLength 120 */
   model: string;
-  /** Required to enable Mistral because network-level simulated economic context is sent to the external provider. */
+  /** Required to enable GroqCloud because network-level simulated economic context is sent to the external provider. */
   externalDataTransferAcknowledged: boolean;
 }

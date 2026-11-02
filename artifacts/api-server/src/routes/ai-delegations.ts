@@ -63,7 +63,7 @@ router.put("/:organizationId", async (req, res) => {
       const [settings] = await tx.select().from(fpAdminAiCoordinatorSettings)
         .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).for("share");
       if (!settings?.enabled) fail(409, "Configura y activa antes el coordinador local.");
-      if (settings.provider !== "local") fail(409, "La delegación autónoma requiere el proveedor local; Mistral solo genera propuestas supervisadas.");
+      if (settings.provider !== "local") fail(409, "La delegación autónoma requiere el proveedor local; GroqCloud solo genera propuestas supervisadas.");
     }
     const values = {
       enabled: data.enabled, allowedOperations, revision: (current?.revision ?? 0) + 1,

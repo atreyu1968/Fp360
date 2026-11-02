@@ -95,6 +95,6 @@ function DelegationControls({ companyId, active, providerEnabled, grant, done }:
           onClick={() => save(false)}>Revocar y recuperar control</button>
       </>}
     </div>
-    {!providerEnabled && <p>El proveedor local debe estar seleccionado y activado para delegar o ejecutar. Mistral sigue disponible para propuestas supervisadas. La revocación sigue disponible.</p>}
+    {!providerEnabled && <p>El proveedor local debe estar seleccionado y activado para delegar o ejecutar. GroqCloud sigue disponible para propuestas supervisadas. La revocación sigue disponible.</p>}
   </>;
 }

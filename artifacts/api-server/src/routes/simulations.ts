@@ -34,7 +34,7 @@ import {
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 import { normalizeLocalAiBaseUrl, requestLocalAiJson } from "../lib/local-ai";
-import { requestMistralAiJson } from "../lib/mistral-ai";
+import { requestGroqAiJson } from "../lib/groq-ai";
 
 const router: Router = Router();
 const SIMULATION_START = "2027-01-01";
@@ -556,10 +556,13 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
   if (!settings?.enabled || !settings.model || (settings.provider === "local" && !settings.baseUrl)) {
     fail(503, "El administrador debe configurar y activar un proveedor de IA antes de generar propuestas.");
   }
+  if (settings.provider !== "local" && settings.provider !== "groqcloud") {
+    fail(503, "El proveedor guardado ya no está disponible. El administrador debe seleccionar un proveedor válido.");
+  }
   let baseUrl = "";
-  const mistralApiKey = settings.provider === "mistral" ? process.env.MISTRAL_API_KEY : undefined;
-  if (settings.provider === "mistral" && !mistralApiKey) {
-    fail(503, "Falta configurar MISTRAL_API_KEY en los Secretos del proyecto.");
+  const groqApiKey = settings.provider === "groqcloud" ? process.env.GROQ_API_KEY : undefined;
+  if (settings.provider === "groqcloud" && !groqApiKey) {
+    fail(503, "Falta configurar GROQ_API_KEY en los Secretos del proyecto.");
   }
   if (settings.provider === "local") {
     try {
@@ -579,12 +582,12 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
     .filter((company) => participantSet.has(company.id))
     .map((company) => ({
       id: company.id,
-      name: settings.provider === "mistral"
+      name: settings.provider === "groqcloud"
         ? companyAliases.get(company.id) ?? "Empresa simulada"
         : company.name,
     }));
   if (participantNames.length !== participantSet.size) fail(400, "No se pudieron resolver todas las empresas participantes.");
-  const networkForProvider = settings.provider === "mistral"
+  const networkForProvider = settings.provider === "groqcloud"
     ? {
       ...network,
       companies: network.companies.map((company, index) => ({
@@ -604,7 +607,7 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
     "Usa solo los IDs de empresa participante indicados y asigna al menos un evento a cada una.",
     "Ordena los eventos cronológicamente; expresa dependencias entre empresas en preconditions.",
     "No incluyas datos personales, correos, teléfonos, credenciales ni texto de expedientes.",
-    ...(settings.provider === "mistral" ? ["Las empresas externas se identifican con etiquetas anónimas; no intentes deducir nombres reales."] : []),
+    ...(settings.provider === "groqcloud" ? ["Las empresas externas se identifican con etiquetas anónimas; no intentes deducir nombres reales."] : []),
     "Devuelve exclusivamente un objeto JSON: {title, description, events:[{organizationId,title,eventType,description,preconditions,requiredDocumentType,simulatedDate}]}",
     "eventType solo puede ser offer, late_payment, stock_break, claim, financing, service_incident u other.",
     "requiredDocumentType debe ser una cadena breve o null; preconditions debe ser una lista de textos breves.",
@@ -625,8 +628,8 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
   });
   let rawPlan: unknown;
   try {
-    rawPlan = settings.provider === "mistral"
-      ? await requestMistralAiJson({ model: settings.model, apiKey: mistralApiKey! }, systemPrompt, userPrompt)
+    rawPlan = settings.provider === "groqcloud"
+      ? await requestGroqAiJson({ model: settings.model, apiKey: groqApiKey! }, systemPrompt, userPrompt)
       : await requestLocalAiJson({ baseUrl, model: settings.model }, systemPrompt, userPrompt);
   } catch (error) {
     req.log.warn({ tenantId: actor.tenantId, provider: settings.provider, model: settings.model }, "AI proposal generation failed");

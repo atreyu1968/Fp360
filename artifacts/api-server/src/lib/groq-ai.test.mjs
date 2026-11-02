@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { checkMistralAiEndpoint, requestMistralAiJson } from "./mistral-ai.ts";
+import { checkGroqAiEndpoint, requestGroqAiJson } from "./groq-ai.ts";
 
-test("Mistral connection check sends the key only to the fixed models endpoint", async () => {
+test("GroqCloud connection check sends the key only to the fixed models endpoint", async () => {
   const originalFetch = globalThis.fetch;
   let captured;
   globalThis.fetch = async (url, options) => {
@@ -14,8 +14,8 @@ test("Mistral connection check sends the key only to the fixed models endpoint",
   };
 
   try {
-    await checkMistralAiEndpoint({ model: "mistral-small-latest", apiKey: "test-only-key" });
-    assert.equal(captured.url, "https://api.mistral.ai/v1/models");
+    await checkGroqAiEndpoint({ model: "openai/gpt-oss-20b", apiKey: "test-only-key" });
+    assert.equal(captured.url, "https://api.groq.com/openai/v1/models");
     assert.equal(captured.options.method, "GET");
     assert.equal(captured.options.redirect, "error");
     assert.equal(new Headers(captured.options.headers).get("authorization"), "Bearer test-only-key");
@@ -24,7 +24,7 @@ test("Mistral connection check sends the key only to the fixed models endpoint",
   }
 });
 
-test("Mistral proposal requests use JSON mode and parse only the assistant content", async () => {
+test("GroqCloud proposal requests use JSON mode and parse only assistant content", async () => {
   const originalFetch = globalThis.fetch;
   let captured;
   globalThis.fetch = async (url, options) => {
@@ -38,17 +38,18 @@ test("Mistral proposal requests use JSON mode and parse only the assistant conte
   };
 
   try {
-    const result = await requestMistralAiJson(
-      { model: "mistral-small-latest", apiKey: "test-only-key" },
+    const result = await requestGroqAiJson(
+      { model: "openai/gpt-oss-20b", apiKey: "test-only-key" },
       "Devuelve JSON.",
       '{"request":"test"}',
     );
     const requestBody = JSON.parse(captured.options.body);
-    assert.equal(captured.url, "https://api.mistral.ai/v1/chat/completions");
+    assert.equal(captured.url, "https://api.groq.com/openai/v1/chat/completions");
     assert.equal(captured.options.method, "POST");
     assert.equal(captured.options.redirect, "error");
     assert.equal(new Headers(captured.options.headers).get("authorization"), "Bearer test-only-key");
     assert.deepEqual(requestBody.response_format, { type: "json_object" });
+    assert.equal(requestBody.max_completion_tokens, 10_000);
     assert.equal(requestBody.stream, false);
     assert.deepEqual(result, { title: "Escenario didáctico", events: [] });
   } finally {
@@ -56,7 +57,7 @@ test("Mistral proposal requests use JSON mode and parse only the assistant conte
   }
 });
 
-test("Mistral errors are sanitized and an empty key never makes a request", async () => {
+test("GroqCloud errors are sanitized and an empty key never makes a request", async () => {
   const originalFetch = globalThis.fetch;
   let callCount = 0;
   globalThis.fetch = async () => {
@@ -66,13 +67,13 @@ test("Mistral errors are sanitized and an empty key never makes a request", asyn
 
   try {
     await assert.rejects(
-      checkMistralAiEndpoint({ model: "mistral-small-latest", apiKey: "" }),
-      /Falta la clave de API de Mistral/,
+      checkGroqAiEndpoint({ model: "openai/gpt-oss-20b", apiKey: "" }),
+      /Falta la clave de API de GroqCloud/,
     );
     assert.equal(callCount, 0);
     await assert.rejects(
-      checkMistralAiEndpoint({ model: "mistral-small-latest", apiKey: "test-only-key" }),
-      /Mistral no aceptó la comprobación de conexión/,
+      checkGroqAiEndpoint({ model: "openai/gpt-oss-20b", apiKey: "test-only-key" }),
+      /GroqCloud no aceptó la comprobación de conexión/,
     );
     assert.equal(callCount, 1);
   } finally {

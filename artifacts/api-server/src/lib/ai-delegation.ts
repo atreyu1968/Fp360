@@ -36,7 +36,7 @@ async function currentAuthority(tx: Transaction, tenantId: string, organizationI
   const [settings] = await tx.select().from(fpAdminAiCoordinatorSettings)
     .where(eq(fpAdminAiCoordinatorSettings.tenantId, tenantId)).for("share");
   if (!settings?.enabled) delegationFail(409, "El coordinador de IA está desactivado.");
-  if (settings.provider !== "local") delegationFail(409, "La delegación autónoma requiere un coordinador local. Mistral solo genera propuestas supervisadas.");
+  if (settings.provider !== "local") delegationFail(409, "La delegación autónoma requiere un coordinador local. GroqCloud solo genera propuestas supervisadas.");
   return { delegation, settings };
 }
 

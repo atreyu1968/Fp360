@@ -296,7 +296,7 @@ function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t:
   const [aiEnabled, setAiEnabled] = useState(data.aiCoordinator.enabled);
   const [aiProvider, setAiProvider] = useState(data.aiCoordinator.provider);
   const [aiModel, setAiModel] = useState(data.aiCoordinator.model);
-  const [mistralDataAcknowledged, setMistralDataAcknowledged] = useState(false);
+  const [groqDataAcknowledged, setGroqDataAcknowledged] = useState(false);
   const saveCoordinator = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -309,7 +309,7 @@ function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t:
           ? String(form.get('localAiBaseUrl') ?? '')
           : data.aiCoordinator.baseUrl,
         model: aiModel,
-        externalDataTransferAcknowledged: mistralDataAcknowledged,
+        externalDataTransferAcknowledged: groqDataAcknowledged,
       },
     }, {
       onSuccess: () => {
@@ -326,45 +326,45 @@ function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t:
         <div className="ac-ai-config-grid">
           <label>Proveedor de IA
             <select value={aiProvider} onChange={event => {
-              const provider: 'local' | 'mistral' = event.target.value === 'mistral' ? 'mistral' : 'local';
+              const provider: 'local' | 'groqcloud' = event.target.value === 'groqcloud' ? 'groqcloud' : 'local';
               setAiProvider(provider);
-              setAiModel(provider === 'mistral' ? 'mistral-small-latest' : '');
-              setMistralDataAcknowledged(false);
+              setAiModel(provider === 'groqcloud' ? 'openai/gpt-oss-20b' : '');
+              setGroqDataAcknowledged(false);
             }}>
               <option value="local">Endpoint local o privado</option>
-              <option value="mistral">Mistral API</option>
+              <option value="groqcloud">GroqCloud API</option>
             </select>
           </label>
           {aiProvider === 'local' && <label>URL base local
             <input name="localAiBaseUrl" type="url" required={aiEnabled} maxLength={512}
               defaultValue={data.aiCoordinator.baseUrl} placeholder="http://127.0.0.1:11434/v1" />
           </label>}
-          <label>{aiProvider === 'mistral' ? 'Modelo de Mistral' : 'Modelo local'}
+          <label>{aiProvider === 'groqcloud' ? 'Modelo de GroqCloud' : 'Modelo local'}
             <input name="localAiModel" required={aiEnabled} maxLength={120}
               value={aiModel}
               onChange={event => setAiModel(event.target.value)}
-              placeholder={aiProvider === 'mistral' ? 'mistral-small-latest' : 'Nombre exacto del modelo'} />
+              placeholder={aiProvider === 'groqcloud' ? 'openai/gpt-oss-20b' : 'Nombre exacto del modelo'} />
           </label>
         </div>
         <label className="ac-ai-toggle"><input type="checkbox" checked={aiEnabled} onChange={event => setAiEnabled(event.target.checked)} />
           Activar generación supervisada de propuestas</label>
-        {aiProvider === 'mistral' && <>
+        {aiProvider === 'groqcloud' && <>
           <p className="ac-ai-note">
-            Endpoint oficial: https://api.mistral.ai/v1.
+            Endpoint oficial fijo: https://api.groq.com/openai/v1.
           </p>
           <p className="ac-ai-note">
-            Clave MISTRAL_API_KEY: {data.aiCoordinator.mistralApiKeyConfigured ? 'configurada en el servidor' : 'no configurada en Secretos'}.
+            Clave GROQ_API_KEY: {data.aiCoordinator.groqApiKeyConfigured ? 'configurada en el servidor' : 'no configurada en Secretos'}.
             No se guarda en la base de datos ni se muestra en esta consola.
           </p>
           {aiEnabled && <label className="ac-ai-toggle">
-            <input type="checkbox" checked={mistralDataAcknowledged}
-              onChange={event => setMistralDataAcknowledged(event.target.checked)} />
-            Confirmo que Mistral recibirá el objetivo, el resumen económico simulado y el historial de operaciones de la red. No incluiré datos personales en el objetivo.
+            <input type="checkbox" checked={groqDataAcknowledged}
+              onChange={event => setGroqDataAcknowledged(event.target.checked)} />
+            Confirmo que GroqCloud recibirá el objetivo, el resumen económico simulado y el historial de operaciones de la red. No incluiré datos personales en el objetivo.
           </label>}
         </>}
         <div className="ac-ai-config-actions">
           <button className="ac-button ac-primary" type="submit" disabled={saveAi.isPending ||
-            (aiProvider === 'mistral' && aiEnabled && (!data.aiCoordinator.mistralApiKeyConfigured || !mistralDataAcknowledged))}>
+            (aiProvider === 'groqcloud' && aiEnabled && (!data.aiCoordinator.groqApiKeyConfigured || !groqDataAcknowledged))}>
             {saveAi.isPending ? 'Guardando…' : 'Guardar configuración'}
           </button>
           <button className="ac-button" type="button" disabled={testAi.isPending || !data.aiCoordinator.enabled}
@@ -377,11 +377,11 @@ function IntegrationsView({ data, done }: { data: AdminSystemOverview; done: (t:
           <Badge tone={data.aiCoordinator.enabled ? 'good' : 'neutral'}>{data.aiCoordinator.enabled ? 'Activada' : 'Desactivada'}</Badge>
         </div>
         <p className="ac-ai-note">
-          Compatible con endpoints locales OpenAI, como Ollama o LM Studio. Mistral recibe el objetivo y el contexto económico simulado con nombres de empresas y centros sustituidos por etiquetas; no se envían contactos ni descripciones libres del historial.
+          Compatible con endpoints locales OpenAI, como Ollama o LM Studio. GroqCloud recibe el objetivo y el contexto económico simulado con nombres de empresas y centros sustituidos por etiquetas; no se envían contactos ni descripciones libres del historial.
         </p>
       </form>
     </Panel>
-    <div className="ac-simulation"><Network size={16} /><span><b>Integraciones empresariales simuladas.</b> Mistral solo se contacta cuando el administrador lo selecciona y activa expresamente.</span><span className="ac-sim-tag">IA OPTATIVA</span></div>
+    <div className="ac-simulation"><Network size={16} /><span><b>Integraciones empresariales simuladas.</b> GroqCloud solo se contacta cuando el administrador lo selecciona y activa expresamente.</span><span className="ac-sim-tag">IA OPTATIVA</span></div>
     <Panel title="Integraciones previstas" note="Las comprobaciones solo actualizan el estado de demostración."><div className="ac-integrations">{data.integrations.map(item => <article key={item.id} className="ac-integration-card"><div className="ac-integration-top"><span className="ac-service-icon"><Network size={17} /></span><Badge tone={item.status === 'simulation_only' ? 'blue' : 'neutral'}>{readable(item.status)}</Badge></div><h3>{item.name}</h3><p>{item.description}</p><div className="ac-integration-meta"><span>{item.simulationOnly ? 'Sin llamadas externas' : 'Estado de catálogo'}</span><small>{item.checkedAt ? `Última comprobación: ${dateTime(item.checkedAt)}` : 'Sin comprobación registrada'}</small></div><button className="ac-button" disabled={check.isPending || !item.simulationOnly} onClick={() => check.mutate({ integrationId: item.id, data: { operationId: newOperationId() } }, { onSuccess: () => { void qc.invalidateQueries({ queryKey: getGetAdminSystemOverviewQueryKey() }); done(`Comprobación simulada registrada para ${item.name}.`, 'success'); }, onError: e => done(explainMutation(e, 'No se pudo registrar la comprobación.'), 'error') })}><RefreshCw size={14} /> Comprobar estado simulado</button></article>)}{!data.integrations.length && <div className="ac-empty"><b>No hay integraciones en catálogo</b><p>Las capacidades incorporadas aparecerán aquí.</p></div>}</div></Panel>
      <Panel title="Preparación de despliegue" note="La consola no gestiona infraestructura ni despliegues."><div className="ac-deploy-row"><span className="ac-service-icon"><Server size={17} /></span><div><b>Modo de operación</b><small>Desarrollo funcional · datos y procesos de formación</small></div><Badge tone="blue">Solo entorno educativo</Badge></div><div className="ac-callout"><Lock size={15} /><p>Las claves API se guardan en Secretos del proyecto, nunca en esta consola ni en la base de datos.</p></div></Panel>
   </div>;

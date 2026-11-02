@@ -11,5 +11,5 @@ export type AdminAiCoordinatorSettingsProvider = typeof AdminAiCoordinatorSettin
 
 export const AdminAiCoordinatorSettingsProvider = {
   local: 'local',
-  mistral: 'mistral',
+  groqcloud: 'groqcloud',
 } as const;

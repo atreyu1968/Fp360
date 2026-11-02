@@ -1519,7 +1519,7 @@ export type AdminAiCoordinatorSettingsProvider = typeof AdminAiCoordinatorSettin
 
 export const AdminAiCoordinatorSettingsProvider = {
   local: 'local',
-  mistral: 'mistral',
+  groqcloud: 'groqcloud',
 } as const;
 
 export interface AdminAiCoordinatorSettings {
@@ -1530,7 +1530,7 @@ export interface AdminAiCoordinatorSettings {
   baseUrl: string;
   /** @maxLength 120 */
   model: string;
-  mistralApiKeyConfigured: boolean;
+  groqApiKeyConfigured: boolean;
   /** @nullable */
   updatedAt: string | null;
 }
@@ -1641,7 +1641,7 @@ export type AdminAiCoordinatorSettingsInputProvider = typeof AdminAiCoordinatorS
 
 export const AdminAiCoordinatorSettingsInputProvider = {
   local: 'local',
-  mistral: 'mistral',
+  groqcloud: 'groqcloud',
 } as const;
 
 export interface AdminAiCoordinatorSettingsInput {
@@ -1656,7 +1656,7 @@ export interface AdminAiCoordinatorSettingsInput {
   baseUrl: string;
   /** @maxLength 120 */
   model: string;
-  /** Required to enable Mistral because network-level simulated economic context is sent to the external provider. */
+  /** Required to enable GroqCloud because network-level simulated economic context is sent to the external provider. */
   externalDataTransferAcknowledged: boolean;
 }
 
