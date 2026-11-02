@@ -223,7 +223,9 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
         ],
       }),
     }));
-    const validResponse = await propose(requestBody(`valid-draft-${randomUUID()}`));
+    const operationId = `valid-draft-${randomUUID()}`;
+    const validRequestBody = requestBody(operationId);
+    const validResponse = await propose(validRequestBody);
     assert.equal(validResponse.status, 201);
     const result = await validResponse.json();
     assert.equal(result.campaign.status, "draft");
@@ -255,6 +257,42 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
     assert.equal(storedEvents.rowCount, 2);
     assert.ok(storedEvents.rows.every((event) => event.status === "proposed"));
     assert.equal(await savedCampaignCount(), 1);
+
+    const savedRecordCounts = async () => {
+      const counts = await client.query(
+        `SELECT
+           (SELECT COUNT(*)::int FROM fp360_simulation_campaigns WHERE tenant_id = $1) AS campaigns,
+           (SELECT COUNT(*)::int FROM fp360_simulation_events WHERE tenant_id = $1) AS events,
+           (SELECT COUNT(*)::int FROM fp360_simulation_audit_events WHERE tenant_id = $1) AS audits`,
+        [tenantId],
+      );
+      return counts.rows[0];
+    };
+    const countsBeforeRetry = await savedRecordCounts();
+    assert.deepEqual(countsBeforeRetry, { campaigns: 1, events: 2, audits: 4 });
+
+    const replayResponse = await propose(validRequestBody);
+    assert.equal(replayResponse.status, 201);
+    const replay = await replayResponse.json();
+    assert.equal(replay.campaign.id, result.campaign.id);
+    assert.deepEqual(
+      replay.events.map((event) => event.id),
+      result.events.map((event) => event.id),
+    );
+    assert.deepEqual(await savedRecordCounts(), countsBeforeRetry, "an identical retry must not create campaigns, events, or audit records");
+
+    const conflictingResponse = await propose({
+      ...validRequestBody,
+      objective: "Proponer un objetivo ficticio diferente para la misma operación.",
+    });
+    assert.equal(conflictingResponse.status, 409);
+    assert.deepEqual(await savedRecordCounts(), countsBeforeRetry, "conflicting reuse must not alter the saved draft");
+
+    const persistedDraft = await client.query(
+      `SELECT title, status FROM fp360_simulation_campaigns WHERE id = $1 AND tenant_id = $2`,
+      [result.campaign.id, tenantId],
+    );
+    assert.deepEqual(persistedDraft.rows, [{ title: "Coordinación de suministro ficticia", status: "draft" }]);
   } finally {
     if (child && child.exitCode === null) {
       child.kill("SIGTERM");
