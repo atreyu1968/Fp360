@@ -5375,6 +5375,8 @@ export const Fp360SocialSecurityWorkerStatus = {
 export interface Fp360SocialSecurityWorker {
   id: string;
   organizationId: string;
+  /** @nullable */
+  hrEmployeeId: string | null;
   workerRef: string;
   /**
      * @minimum 1
@@ -5410,6 +5412,8 @@ export const Fp360SocialSecurityWorkerInputContractType = {
 export interface Fp360SocialSecurityWorkerInput {
   /** @minLength 1 */
   organizationId: string;
+  /** @minLength 1 */
+  hrEmployeeId?: string;
   /**
      * @minimum 1
      * @maximum 11
@@ -5601,6 +5605,8 @@ export const Fp360SocialSecuritySettlementStatus = {
 export interface Fp360SocialSecuritySettlement {
   id: string;
   organizationId: string;
+  /** @nullable */
+  sourcePayrollRunId: string | null;
   /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   periodKey: string;
   workerRefs: string[];
@@ -5627,11 +5633,51 @@ export interface Fp360SocialSecuritySettlementInput {
   organizationId: string;
   /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   periodKey: string;
+  /** @minLength 1 */
+  payrollRunId?: string;
   /**
      * @minLength 8
      * @maxLength 120
      */
   operationId: string;
+}
+
+export type Fp360SocialSecurityHrEmployeeContractType = typeof Fp360SocialSecurityHrEmployeeContractType[keyof typeof Fp360SocialSecurityHrEmployeeContractType];
+
+
+export const Fp360SocialSecurityHrEmployeeContractType = {
+  indefinite: 'indefinite',
+  temporary: 'temporary',
+  part_time: 'part_time',
+  training: 'training',
+} as const;
+
+export interface Fp360SocialSecurityHrEmployee {
+  id: string;
+  workerRef: string;
+  /**
+     * @minimum 1
+     * @maximum 11
+     */
+  contributionGroup: number;
+  contractType: Fp360SocialSecurityHrEmployeeContractType;
+  startDate: string;
+  /** @nullable */
+  endDate: string | null;
+  /** @minimum 0 */
+  annualSalaryCents: number;
+}
+
+export interface Fp360SocialSecurityPayrollSource {
+  id: string;
+  /** @pattern ^2027-(0[1-9]|1[0-2])$ */
+  periodKey: string;
+  /** @minimum 1 */
+  version: number;
+  /** @minimum 0 */
+  employeeCount: number;
+  /** @minimum 0 */
+  grossTotalCents: number;
 }
 
 export type Fp360SocialSecuritySettlementReviewInputAction = typeof Fp360SocialSecuritySettlementReviewInputAction[keyof typeof Fp360SocialSecuritySettlementReviewInputAction];
@@ -5677,6 +5723,8 @@ export interface Fp360SocialSecurityOverview {
   organizationId: string;
   simulatedDate: string;
   workers: Fp360SocialSecurityWorker[];
+  availableHrEmployees: Fp360SocialSecurityHrEmployee[];
+  availablePayrollRuns: Fp360SocialSecurityPayrollSource[];
   movements: Fp360SocialSecurityMovement[];
   settlements: Fp360SocialSecuritySettlement[];
   events: Fp360SocialSecurityEvent[];

@@ -11,6 +11,8 @@ import type { Fp360SocialSecurityWorkerStatus } from './fp360SocialSecurityWorke
 export interface Fp360SocialSecurityWorker {
   id: string;
   organizationId: string;
+  /** @nullable */
+  hrEmployeeId: string | null;
   workerRef: string;
   /**
      * @minimum 1

@@ -21,6 +21,8 @@ import {
 import {
   db,
   fpOrganizations,
+  fpHrEmployees,
+  fpPayrollRuns,
   fpSocialSecurityEvents,
   fpSocialSecurityMovements,
   fpSocialSecuritySettlements,
@@ -100,6 +102,7 @@ function workerResponse(worker: typeof fpSocialSecurityWorkers.$inferSelect) {
   return {
     id: worker.id,
     organizationId: worker.organizationId,
+    hrEmployeeId: worker.hrEmployeeId,
     workerRef: worker.workerRef,
     contributionGroup: worker.contributionGroup,
     contractType: worker.contractType,
@@ -156,6 +159,7 @@ async function settlementResponse(
   return {
     id: settlement.id,
     organizationId: settlement.organizationId,
+    sourcePayrollRunId: settlement.sourcePayrollRunId,
     periodKey: settlement.periodKey,
     workerRefs: settlement.workerIds.map((id) => refMap.get(id)).filter((ref): ref is string => Boolean(ref)),
     workerCount: settlement.workerCount,
@@ -209,7 +213,7 @@ router.get("/redfp360/social-security/overview", route(async (request, response)
     response.status(403).json({ error: "No tienes acceso a la organización seleccionada." });
     return;
   }
-  const [workers, movements, settlements, events] = await Promise.all([
+  const [workers, movements, settlements, events, hrEmployees, payrollRuns] = await Promise.all([
     db.select().from(fpSocialSecurityWorkers).where(and(
       eq(fpSocialSecurityWorkers.tenantId, actor.tenantId),
       eq(fpSocialSecurityWorkers.organizationId, organizationId),
@@ -226,12 +230,42 @@ router.get("/redfp360/social-security/overview", route(async (request, response)
       eq(fpSocialSecurityEvents.tenantId, actor.tenantId),
       eq(fpSocialSecurityEvents.organizationId, organizationId),
     )).orderBy(desc(fpSocialSecurityEvents.createdAt)).limit(100),
+    db.select().from(fpHrEmployees).where(and(
+      eq(fpHrEmployees.tenantId, actor.tenantId),
+      eq(fpHrEmployees.organizationId, organizationId),
+      eq(fpHrEmployees.status, "active"),
+    )).orderBy(fpHrEmployees.workerRef),
+    db.select({
+      id: fpPayrollRuns.id,
+      periodKey: fpPayrollRuns.periodKey,
+      version: fpPayrollRuns.version,
+      employeeCount: fpPayrollRuns.employeeCount,
+      grossTotalCents: fpPayrollRuns.grossTotalCents,
+      status: fpPayrollRuns.status,
+    }).from(fpPayrollRuns).where(and(
+      eq(fpPayrollRuns.tenantId, actor.tenantId),
+      eq(fpPayrollRuns.organizationId, organizationId),
+    )).orderBy(desc(fpPayrollRuns.periodKey), desc(fpPayrollRuns.version)),
   ]);
+  const linkedEmployeeIds = new Set(workers.map((worker) => worker.hrEmployeeId).filter((id): id is string => id !== null));
+  const attachedPayrollRunIds = new Set(settlements.map((settlement) => settlement.sourcePayrollRunId).filter((id): id is string => id !== null));
   const workerRefById = new Map(workers.map((worker) => [worker.id, worker.workerRef]));
   const responseBody = {
     organizationId,
     simulatedDate: SIMULATED_DATE,
     workers: workers.map(workerResponse),
+    availableHrEmployees: hrEmployees.filter((employee) => !linkedEmployeeIds.has(employee.id)).map((employee) => ({
+      id: employee.id,
+      workerRef: employee.workerRef,
+      contributionGroup: employee.contributionGroup,
+      contractType: employee.contractType,
+      startDate: employee.startDate,
+      endDate: employee.endDate,
+      annualSalaryCents: employee.annualSalaryCents,
+    })),
+    availablePayrollRuns: payrollRuns.filter((run) =>
+      ["closed", "issued", "payment_prepared", "paid_simulated"].includes(run.status)
+      && !attachedPayrollRunIds.has(run.id)).map(({ status: _status, ...run }) => run),
     movements: movements.map((movement) => movementResponse(movement, workerRefById.get(movement.workerId) ?? "TRABAJADOR SIMULADO")),
     settlements: await Promise.all(settlements.map((settlement) => settlementResponse(settlement, actor.tenantId))),
     events: events.map((event) => ({
@@ -270,6 +304,27 @@ router.post("/redfp360/social-security/workers", route(async (request, response)
     response.status(400).json({ error: "La fecha debe pertenecer al escenario 2027." });
     return;
   }
+  const linkedEmployee = input.hrEmployeeId ? (await db.select().from(fpHrEmployees).where(and(
+    eq(fpHrEmployees.id, input.hrEmployeeId),
+    eq(fpHrEmployees.tenantId, actor.tenantId),
+    eq(fpHrEmployees.organizationId, organizationId),
+    eq(fpHrEmployees.status, "active"),
+  )).limit(1))[0] : undefined;
+  if (input.hrEmployeeId && !linkedEmployee) {
+    response.status(404).json({ error: "No se encontró una persona activa de Recursos Humanos para esa empresa." });
+    return;
+  }
+  if (linkedEmployee) {
+    const [existingLinkedWorker] = await db.select({ id: fpSocialSecurityWorkers.id }).from(fpSocialSecurityWorkers).where(and(
+      eq(fpSocialSecurityWorkers.tenantId, actor.tenantId),
+      eq(fpSocialSecurityWorkers.organizationId, organizationId),
+      eq(fpSocialSecurityWorkers.hrEmployeeId, linkedEmployee.id),
+    )).limit(1);
+    if (existingLinkedWorker) {
+      response.status(409).json({ error: "La persona ya tiene un registro de Seguridad Social vinculado." });
+      return;
+    }
+  }
   const requestFingerprint = fingerprint(input);
   const [existingMovement] = await db.select().from(fpSocialSecurityMovements).where(and(
     eq(fpSocialSecurityMovements.tenantId, actor.tenantId),
@@ -297,10 +352,12 @@ router.post("/redfp360/social-security/workers", route(async (request, response)
       id: randomUUID(),
       tenantId: actor.tenantId,
       organizationId,
-      workerRef,
-      contributionGroup: input.contributionGroup,
-      contractType: input.contractType,
-      startDate: input.startDate,
+      hrEmployeeId: linkedEmployee?.id ?? null,
+      workerRef: linkedEmployee?.workerRef ?? workerRef,
+      contributionGroup: linkedEmployee?.contributionGroup ?? input.contributionGroup,
+      contractType: linkedEmployee?.contractType ?? input.contractType,
+      startDate: linkedEmployee?.startDate ?? input.startDate,
+      endDate: linkedEmployee?.endDate ?? null,
       monthlyContributionBaseCents: input.monthlyContributionBaseCents,
       employerContributionCents: input.employerContributionCents,
       workerContributionCents: input.workerContributionCents,
@@ -581,19 +638,74 @@ router.post("/redfp360/social-security/settlements", route(async (request, respo
     response.status(409).json({ error: "No hay registros activos o con vigencia en ese mes para generar el resumen." });
     return;
   }
+  let sourcePayrollRun: typeof fpPayrollRuns.$inferSelect | null = null;
+  let selectedWorkers = eligible;
+  let workerCount = eligible.length;
+  let contributionBaseCents = eligible.reduce((sum, worker) => sum + worker.monthlyContributionBaseCents, 0);
+  let employerContributionCents = eligible.reduce((sum, worker) => sum + worker.employerContributionCents, 0);
+  let workerContributionCents = eligible.reduce((sum, worker) => sum + worker.workerContributionCents, 0);
+  if (input.payrollRunId) {
+    const [payrollRun] = await db.select().from(fpPayrollRuns).where(and(
+      eq(fpPayrollRuns.id, input.payrollRunId),
+      eq(fpPayrollRuns.tenantId, actor.tenantId),
+      eq(fpPayrollRuns.organizationId, organizationId),
+    )).limit(1);
+    if (!payrollRun) {
+      response.status(404).json({ error: "No se encontró la nómina de esa empresa." });
+      return;
+    }
+    if (payrollRun.periodKey !== input.periodKey
+      || !["closed", "issued", "payment_prepared", "paid_simulated"].includes(payrollRun.status)) {
+      response.status(409).json({ error: "Solo se pueden importar nóminas del mismo mes ya cerradas y revisadas." });
+      return;
+    }
+    const [existingSource] = await db.select({ id: fpSocialSecuritySettlements.id }).from(fpSocialSecuritySettlements).where(and(
+      eq(fpSocialSecuritySettlements.tenantId, actor.tenantId),
+      eq(fpSocialSecuritySettlements.organizationId, organizationId),
+      eq(fpSocialSecuritySettlements.sourcePayrollRunId, payrollRun.id),
+    )).limit(1);
+    if (existingSource) {
+      response.status(409).json({ error: "Esta nómina ya está vinculada a un resumen mensual." });
+      return;
+    }
+    const payrollEmployeeIds = payrollRun.receiptLines.map((line) => line.employeeId);
+    if (new Set(payrollEmployeeIds).size !== payrollEmployeeIds.length) {
+      response.status(409).json({ error: "La nómina contiene referencias laborales duplicadas; revísala antes de importar." });
+      return;
+    }
+    selectedWorkers = payrollEmployeeIds.length ? await db.select().from(fpSocialSecurityWorkers).where(and(
+      eq(fpSocialSecurityWorkers.tenantId, actor.tenantId),
+      eq(fpSocialSecurityWorkers.organizationId, organizationId),
+      inArray(fpSocialSecurityWorkers.hrEmployeeId, payrollEmployeeIds),
+      eq(fpSocialSecurityWorkers.status, "active"),
+    )) : [];
+    if (selectedWorkers.length !== payrollRun.receiptLines.length
+      || selectedWorkers.some((worker) => worker.startDate > monthEnd || (worker.endDate !== null && worker.endDate < monthStart))) {
+      response.status(409).json({ error: "Vincula y aprueba en Seguridad Social a todas las personas incluidas en la nómina antes de importarla." });
+      return;
+    }
+    const selectedWorkerIds = new Set(selectedWorkers.map((worker) => worker.hrEmployeeId));
+    const payrollLines = payrollRun.receiptLines.filter((line) => selectedWorkerIds.has(line.employeeId));
+    sourcePayrollRun = payrollRun;
+    workerCount = payrollLines.length;
+    contributionBaseCents = payrollLines.reduce((sum, line) => sum + line.contributionBaseCents, 0);
+    employerContributionCents = payrollLines.reduce((sum, line) => sum + line.employerContributionCents, 0);
+    workerContributionCents = payrollLines.reduce((sum, line) => sum + line.workerContributionCents, 0);
+  }
   const now = new Date();
   const settlement = await db.transaction(async (tx) => {
     const [created] = await tx.insert(fpSocialSecuritySettlements).values({
       id: randomUUID(),
       tenantId: actor.tenantId,
       organizationId,
+      sourcePayrollRunId: sourcePayrollRun?.id ?? null,
       periodKey: input.periodKey,
-      workerIds: eligible.map((worker) => worker.id),
-      workerCount: eligible.length,
-      contributionBaseCents: eligible.reduce((sum, worker) => sum + worker.monthlyContributionBaseCents, 0),
-      employerContributionCents: eligible.reduce((sum, worker) => sum + worker.employerContributionCents, 0),
-      workerContributionCents: eligible.reduce((sum, worker) => sum + worker.workerContributionCents, 0),
-      totalContributionCents: eligible.reduce((sum, worker) => sum + worker.employerContributionCents + worker.workerContributionCents, 0),
+      workerIds: selectedWorkers.map((worker) => worker.id),
+      workerCount,
+      contributionBaseCents,
+      employerContributionCents,
+      workerContributionCents,
+      totalContributionCents: employerContributionCents + workerContributionCents,
       status: "draft",
       operationId: input.operationId,
       requestFingerprint,
@@ -606,8 +718,10 @@ router.post("/redfp360/social-security/settlements", route(async (request, respo
     await appendEvent(tx, actor, organizationId, {
       operationId: input.operationId,
       requestFingerprint,
-      eventType: "settlement_created",
-      description: `Resumen educativo ${input.periodKey} creado para ${eligible.length} registro(s) simulado(s).`,
+      eventType: sourcePayrollRun ? "settlement_from_payroll" : "settlement_created",
+      description: sourcePayrollRun
+        ? `Resumen educativo ${input.periodKey} importado desde nómina ${sourcePayrollRun.id} v${sourcePayrollRun.version}.`
+        : `Resumen educativo ${input.periodKey} creado para ${selectedWorkers.length} registro(s) simulado(s).`,
     });
     return created;
   });

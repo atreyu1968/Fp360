@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Fp360SocialSecurityEvent } from './fp360SocialSecurityEvent';
+import type { Fp360SocialSecurityHrEmployee } from './fp360SocialSecurityHrEmployee';
 import type { Fp360SocialSecurityMovement } from './fp360SocialSecurityMovement';
 import type { Fp360SocialSecurityOverviewSummary } from './fp360SocialSecurityOverviewSummary';
+import type { Fp360SocialSecurityPayrollSource } from './fp360SocialSecurityPayrollSource';
 import type { Fp360SocialSecuritySettlement } from './fp360SocialSecuritySettlement';
 import type { Fp360SocialSecurityWorker } from './fp360SocialSecurityWorker';
 
@@ -15,6 +17,8 @@ export interface Fp360SocialSecurityOverview {
   organizationId: string;
   simulatedDate: string;
   workers: Fp360SocialSecurityWorker[];
+  availableHrEmployees: Fp360SocialSecurityHrEmployee[];
+  availablePayrollRuns: Fp360SocialSecurityPayrollSource[];
   movements: Fp360SocialSecurityMovement[];
   settlements: Fp360SocialSecuritySettlement[];
   events: Fp360SocialSecurityEvent[];

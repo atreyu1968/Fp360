@@ -7714,10 +7714,11 @@ components:
             contractsExpiringSoon: { type: integer, minimum: 0 }
     Fp360SocialSecurityWorker:
       type: object
-      required: [id, organizationId, workerRef, contributionGroup, contractType, startDate, endDate, monthlyContributionBaseCents, employerContributionCents, workerContributionCents, status, createdByName, createdAt, updatedAt]
+      required: [id, organizationId, hrEmployeeId, workerRef, contributionGroup, contractType, startDate, endDate, monthlyContributionBaseCents, employerContributionCents, workerContributionCents, status, createdByName, createdAt, updatedAt]
       properties:
         id: { type: string }
         organizationId: { type: string }
+        hrEmployeeId: { type: ["string", "null"] }
         workerRef: { type: string }
         contributionGroup: { type: integer, minimum: 1, maximum: 11 }
         contractType: { type: string, enum: [indefinite, temporary, part_time, training] }
@@ -7735,6 +7736,7 @@ components:
       required: [organizationId, contributionGroup, contractType, startDate, monthlyContributionBaseCents, employerContributionCents, workerContributionCents, operationId]
       properties:
         organizationId: { type: string, minLength: 1 }
+        hrEmployeeId: { type: string, minLength: 1 }
         contributionGroup: { type: integer, minimum: 1, maximum: 11 }
         contractType: { type: string, enum: [indefinite, temporary, part_time, training] }
         startDate: { type: string, format: date }
@@ -7783,10 +7785,11 @@ components:
         operationId: { type: string, minLength: 8, maxLength: 120 }
     Fp360SocialSecuritySettlement:
       type: object
-      required: [id, organizationId, periodKey, workerRefs, workerCount, contributionBaseCents, employerContributionCents, workerContributionCents, totalContributionCents, status, createdByName, reviewedByName, createdAt, updatedAt]
+      required: [id, organizationId, sourcePayrollRunId, periodKey, workerRefs, workerCount, contributionBaseCents, employerContributionCents, workerContributionCents, totalContributionCents, status, createdByName, reviewedByName, createdAt, updatedAt]
       properties:
         id: { type: string }
         organizationId: { type: string }
+        sourcePayrollRunId: { type: ["string", "null"] }
         periodKey: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' }
         workerRefs: { type: array, items: { type: string } }
         workerCount: { type: integer, minimum: 0 }
@@ -7805,7 +7808,28 @@ components:
       properties:
         organizationId: { type: string, minLength: 1 }
         periodKey: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' }
+        payrollRunId: { type: string, minLength: 1 }
         operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360SocialSecurityHrEmployee:
+      type: object
+      required: [id, workerRef, contributionGroup, contractType, startDate, endDate, annualSalaryCents]
+      properties:
+        id: { type: string }
+        workerRef: { type: string }
+        contributionGroup: { type: integer, minimum: 1, maximum: 11 }
+        contractType: { type: string, enum: [indefinite, temporary, part_time, training] }
+        startDate: { type: string, format: date }
+        endDate: { type: ["string", "null"], format: date }
+        annualSalaryCents: { type: integer, minimum: 0 }
+    Fp360SocialSecurityPayrollSource:
+      type: object
+      required: [id, periodKey, version, employeeCount, grossTotalCents]
+      properties:
+        id: { type: string }
+        periodKey: { type: string, pattern: '^2027-(0[1-9]|1[0-2])$' }
+        version: { type: integer, minimum: 1 }
+        employeeCount: { type: integer, minimum: 0 }
+        grossTotalCents: { type: integer, minimum: 0 }
     Fp360SocialSecuritySettlementReviewInput:
       type: object
       required: [action, operationId]
@@ -7824,11 +7848,13 @@ components:
         createdAt: { type: string, format: date-time }
     Fp360SocialSecurityOverview:
       type: object
-      required: [organizationId, simulatedDate, workers, movements, settlements, events, summary]
+      required: [organizationId, simulatedDate, workers, availableHrEmployees, availablePayrollRuns, movements, settlements, events, summary]
       properties:
         organizationId: { type: string }
         simulatedDate: { type: string, format: date }
         workers: { type: array, items: { $ref: "#/components/schemas/Fp360SocialSecurityWorker" } }
+        availableHrEmployees: { type: array, items: { $ref: "#/components/schemas/Fp360SocialSecurityHrEmployee" } }
+        availablePayrollRuns: { type: array, items: { $ref: "#/components/schemas/Fp360SocialSecurityPayrollSource" } }
         movements: { type: array, items: { $ref: "#/components/schemas/Fp360SocialSecurityMovement" } }
         settlements: { type: array, items: { $ref: "#/components/schemas/Fp360SocialSecuritySettlement" } }
         events: { type: array, items: { $ref: "#/components/schemas/Fp360SocialSecurityEvent" } }

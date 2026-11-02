@@ -11123,6 +11123,16 @@ export const getFp360SocialSecurityOverviewResponseWorkersItemEmployerContributi
 
 export const getFp360SocialSecurityOverviewResponseWorkersItemWorkerContributionCentsMin = 0;
 
+export const getFp360SocialSecurityOverviewResponseAvailableHrEmployeesItemContributionGroupMax = 11;
+
+export const getFp360SocialSecurityOverviewResponseAvailableHrEmployeesItemAnnualSalaryCentsMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseAvailablePayrollRunsItemPeriodKeyRegExp = new RegExp('^2027-(0[1-9]|1[0-2])$');
+
+export const getFp360SocialSecurityOverviewResponseAvailablePayrollRunsItemEmployeeCountMin = 0;
+
+export const getFp360SocialSecurityOverviewResponseAvailablePayrollRunsItemGrossTotalCentsMin = 0;
+
 export const getFp360SocialSecurityOverviewResponseMovementsItemContributionGroupMax = 11;
 
 export const getFp360SocialSecurityOverviewResponseMovementsItemMonthlyContributionBaseCentsMin = 0;
@@ -11160,6 +11170,7 @@ export const GetFp360SocialSecurityOverviewResponse = zod.object({
   "workers": zod.array(zod.object({
   "id": zod.string(),
   "organizationId": zod.string(),
+  "hrEmployeeId": zod.string().nullable(),
   "workerRef": zod.string(),
   "contributionGroup": zod.int().min(1).max(getFp360SocialSecurityOverviewResponseWorkersItemContributionGroupMax),
   "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
@@ -11172,6 +11183,22 @@ export const GetFp360SocialSecurityOverviewResponse = zod.object({
   "createdByName": zod.string(),
   "createdAt": zod.iso.datetime({"offset":true}),
   "updatedAt": zod.iso.datetime({"offset":true})
+})),
+  "availableHrEmployees": zod.array(zod.object({
+  "id": zod.string(),
+  "workerRef": zod.string(),
+  "contributionGroup": zod.int().min(1).max(getFp360SocialSecurityOverviewResponseAvailableHrEmployeesItemContributionGroupMax),
+  "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
+  "startDate": zod.iso.date(),
+  "endDate": zod.iso.date().nullable(),
+  "annualSalaryCents": zod.int().min(getFp360SocialSecurityOverviewResponseAvailableHrEmployeesItemAnnualSalaryCentsMin)
+})),
+  "availablePayrollRuns": zod.array(zod.object({
+  "id": zod.string(),
+  "periodKey": zod.string().regex(getFp360SocialSecurityOverviewResponseAvailablePayrollRunsItemPeriodKeyRegExp),
+  "version": zod.int().min(1),
+  "employeeCount": zod.int().min(getFp360SocialSecurityOverviewResponseAvailablePayrollRunsItemEmployeeCountMin),
+  "grossTotalCents": zod.int().min(getFp360SocialSecurityOverviewResponseAvailablePayrollRunsItemGrossTotalCentsMin)
 })),
   "movements": zod.array(zod.object({
   "id": zod.string(),
@@ -11195,6 +11222,7 @@ export const GetFp360SocialSecurityOverviewResponse = zod.object({
   "settlements": zod.array(zod.object({
   "id": zod.string(),
   "organizationId": zod.string(),
+  "sourcePayrollRunId": zod.string().nullable(),
   "periodKey": zod.string().regex(getFp360SocialSecurityOverviewResponseSettlementsItemPeriodKeyRegExp),
   "workerRefs": zod.array(zod.string()),
   "workerCount": zod.int().min(getFp360SocialSecurityOverviewResponseSettlementsItemWorkerCountMin),
@@ -11230,6 +11258,7 @@ export const GetFp360SocialSecurityOverviewResponse = zod.object({
  * @summary Create a fictional worker and a pending simulated registration
  */
 
+
 export const createFp360SocialSecurityWorkerBodyContributionGroupMax = 11;
 
 export const createFp360SocialSecurityWorkerBodyMonthlyContributionBaseCentsMin = 0;
@@ -11248,6 +11277,7 @@ export const createFp360SocialSecurityWorkerBodyOperationIdMax = 120;
 
 export const CreateFp360SocialSecurityWorkerBody = zod.object({
   "organizationId": zod.string().min(1),
+  "hrEmployeeId": zod.string().min(1).optional(),
   "contributionGroup": zod.int().min(1).max(createFp360SocialSecurityWorkerBodyContributionGroupMax),
   "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
   "startDate": zod.iso.date(),
@@ -11270,6 +11300,7 @@ export const createFp360SocialSecurityWorkerResponseWorkerContributionCentsMin =
 export const CreateFp360SocialSecurityWorkerResponse = zod.object({
   "id": zod.string(),
   "organizationId": zod.string(),
+  "hrEmployeeId": zod.string().nullable(),
   "workerRef": zod.string(),
   "contributionGroup": zod.int().min(1).max(createFp360SocialSecurityWorkerResponseContributionGroupMax),
   "contractType": zod.enum(['indefinite', 'temporary', 'part_time', 'training']),
@@ -11409,6 +11440,7 @@ export const ReviewFp360SocialSecurityMovementResponse = zod.object({
  */
 
 export const createFp360SocialSecuritySettlementBodyPeriodKeyRegExp = new RegExp('^\\d{4}-(0[1-9]|1[0-2])$');
+
 export const createFp360SocialSecuritySettlementBodyOperationIdMin = 8;
 export const createFp360SocialSecuritySettlementBodyOperationIdMax = 120;
 
@@ -11417,6 +11449,7 @@ export const createFp360SocialSecuritySettlementBodyOperationIdMax = 120;
 export const CreateFp360SocialSecuritySettlementBody = zod.object({
   "organizationId": zod.string().min(1),
   "periodKey": zod.string().regex(createFp360SocialSecuritySettlementBodyPeriodKeyRegExp),
+  "payrollRunId": zod.string().min(1).optional(),
   "operationId": zod.string().min(createFp360SocialSecuritySettlementBodyOperationIdMin).max(createFp360SocialSecuritySettlementBodyOperationIdMax)
 })
 
@@ -11436,6 +11469,7 @@ export const createFp360SocialSecuritySettlementResponseTotalContributionCentsMi
 export const CreateFp360SocialSecuritySettlementResponse = zod.object({
   "id": zod.string(),
   "organizationId": zod.string(),
+  "sourcePayrollRunId": zod.string().nullable(),
   "periodKey": zod.string().regex(createFp360SocialSecuritySettlementResponsePeriodKeyRegExp),
   "workerRefs": zod.array(zod.string()),
   "workerCount": zod.int().min(createFp360SocialSecuritySettlementResponseWorkerCountMin),
@@ -11487,6 +11521,7 @@ export const reviewFp360SocialSecuritySettlementResponseTotalContributionCentsMi
 export const ReviewFp360SocialSecuritySettlementResponse = zod.object({
   "id": zod.string(),
   "organizationId": zod.string(),
+  "sourcePayrollRunId": zod.string().nullable(),
   "periodKey": zod.string().regex(reviewFp360SocialSecuritySettlementResponsePeriodKeyRegExp),
   "workerRefs": zod.array(zod.string()),
   "workerCount": zod.int().min(reviewFp360SocialSecuritySettlementResponseWorkerCountMin),

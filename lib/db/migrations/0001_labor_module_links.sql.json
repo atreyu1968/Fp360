@@ -1,0 +1,4 @@
+[
+  "ALTER TABLE fp360_social_security_workers ADD COLUMN hr_employee_id text;",
+  "ALTER TABLE fp360_social_security_settlements ADD COLUMN source_payroll_run_id text;"
+]

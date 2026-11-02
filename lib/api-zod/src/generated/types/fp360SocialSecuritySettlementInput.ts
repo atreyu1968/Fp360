@@ -11,6 +11,8 @@ export interface Fp360SocialSecuritySettlementInput {
   organizationId: string;
   /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   periodKey: string;
+  /** @minLength 1 */
+  payrollRunId?: string;
   /**
      * @minLength 8
      * @maxLength 120

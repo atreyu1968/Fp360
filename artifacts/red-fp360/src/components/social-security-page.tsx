@@ -60,9 +60,9 @@ function Skeleton() {
   return <div className="ss-skeleton" role="status" aria-label="Cargando información"><span /><span /><span /><span /></div>;
 }
 
-function MoneyFields({ prefix = '', optional = false }: { prefix?: string; optional?: boolean }) {
+function MoneyFields({ prefix = '', optional = false, includeBase = true }: { prefix?: string; optional?: boolean; includeBase?: boolean }) {
   return <>
-    <label>{prefix}Base mensual introducida (EUR)<input name="monthlyContributionBase" type="number" min="0" step="0.01" required={!optional} placeholder={optional ? 'Sin cambio' : '0,00'} /></label>
+    {includeBase && <label>{prefix}Base mensual introducida (EUR)<input name="monthlyContributionBase" type="number" min="0" step="0.01" required={!optional} placeholder={optional ? 'Sin cambio' : '0,00'} /></label>}
     <label>{prefix}Importe empresa introducido (EUR)<input name="employerContribution" type="number" min="0" step="0.01" required={!optional} placeholder={optional ? 'Sin cambio' : '0,00'} /></label>
     <label>{prefix}Importe trabajador introducido (EUR)<input name="workerContribution" type="number" min="0" step="0.01" required={!optional} placeholder={optional ? 'Sin cambio' : '0,00'} /></label>
   </>;
@@ -77,6 +77,9 @@ export function SocialSecurityPage({ identity, organizations = [], onNotice }: P
   const [formError, setFormError] = useState('');
   const [actionError, setActionError] = useState('');
   const [busyId, setBusyId] = useState('');
+  const [selectedHrEmployeeId, setSelectedHrEmployeeId] = useState('');
+  const [selectedPayrollRunId, setSelectedPayrollRunId] = useState('');
+  const [settlementPeriod, setSettlementPeriod] = useState('');
   const organizationId = identity.organizationId ?? selectedOrganizationId;
   const canChooseOrganization = !identity.organizationId && canTeach;
   const queryKey = getGetFp360SocialSecurityOverviewQueryKey({ organizationId });
@@ -90,6 +93,10 @@ export function SocialSecurityPage({ identity, organizations = [], onNotice }: P
   const workers = useMemo(() => overview?.workers ?? [], [overview?.workers]);
   const movements = useMemo(() => overview?.movements ?? [], [overview?.movements]);
   const settlements = useMemo(() => overview?.settlements ?? [], [overview?.settlements]);
+  const availableHrEmployees = overview?.availableHrEmployees ?? [];
+  const availablePayrollRuns = overview?.availablePayrollRuns ?? [];
+  const selectedHrEmployee = availableHrEmployees.find((employee) => employee.id === selectedHrEmployeeId);
+  const selectedPayrollRun = availablePayrollRuns.find((run) => run.id === selectedPayrollRunId);
   const events = useMemo(() => [...(overview?.events ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [overview?.events]);
   const invalidate = () => { if (organizationId) void client.invalidateQueries({ queryKey }); };
   const retry = () => invalidate();
@@ -104,21 +111,29 @@ export function SocialSecurityPage({ identity, organizations = [], onNotice }: P
     if (!organizationId || readOnly) return;
     const form = event.currentTarget;
     const data = new FormData(form);
-    const group = Number(data.get('contributionGroup'));
-    const startDate = String(data.get('startDate') ?? '');
-    const amounts = ['monthlyContributionBase', 'employerContribution', 'workerContribution'].map((field) => Number(data.get(field)));
+    const hrEmployee = availableHrEmployees.find((employee) => employee.id === selectedHrEmployeeId);
+    const group = hrEmployee?.contributionGroup ?? Number(data.get('contributionGroup'));
+    const startDate = hrEmployee?.startDate ?? String(data.get('startDate') ?? '');
+    const amounts = [
+      hrEmployee ? 0 : Number(data.get('monthlyContributionBase')),
+      Number(data.get('employerContribution')),
+      Number(data.get('workerContribution')),
+    ];
     if (!Number.isInteger(group) || group < 1 || group > 11 || !startDate.startsWith('2027') || amounts.some((amount) => !Number.isFinite(amount) || amount < 0)) {
       setFormError('Revisa el grupo (1–11), la fecha de 2027 y los importes didácticos.');
       return;
     }
     setFormError('');
     createWorker.mutate({ data: {
-      organizationId, contributionGroup: group, contractType: String(data.get('contractType')) as Contract,
-      startDate, monthlyContributionBaseCents: centsFromInput(data.get('monthlyContributionBase')),
+      organizationId, ...(hrEmployee ? { hrEmployeeId: hrEmployee.id } : {}),
+      contributionGroup: group,
+      contractType: hrEmployee?.contractType ?? String(data.get('contractType')) as Contract,
+      startDate,
+      monthlyContributionBaseCents: hrEmployee ? Math.round(hrEmployee.annualSalaryCents / 12) : centsFromInput(data.get('monthlyContributionBase')),
       employerContributionCents: centsFromInput(data.get('employerContribution')),
       workerContributionCents: centsFromInput(data.get('workerContribution')), operationId: operationId(),
     } }, {
-      onSuccess: () => { invalidate(); form.reset(); setFormError(''); onNotice('Registro laboral ficticio creado. La referencia la genera el servidor.'); },
+      onSuccess: () => { invalidate(); form.reset(); setSelectedHrEmployeeId(''); setFormError(''); onNotice('Registro ficticio vinculado a Recursos Humanos; las cuotas siguen siendo datos educativos.'); },
       onError: (error) => setFormError(errorText(error, 'No se pudo crear el registro ficticio.')),
     });
   };
@@ -165,11 +180,11 @@ export function SocialSecurityPage({ identity, organizations = [], onNotice }: P
     event.preventDefault();
     if (!organizationId || readOnly) return;
     const form = event.currentTarget;
-    const periodKey = String(new FormData(form).get('periodKey') ?? '');
+    const periodKey = settlementPeriod;
     if (!/^2027-(0[1-9]|1[0-2])$/.test(periodKey)) { setFormError('Elige un mes del escenario 2027.'); return; }
     setFormError('');
-    createSettlement.mutate({ data: { organizationId, periodKey, operationId: operationId() } }, {
-      onSuccess: () => { invalidate(); form.reset(); setFormError(''); onNotice('Resumen mensual educativo creado con datos introducidos.'); },
+    createSettlement.mutate({ data: { organizationId, periodKey, ...(selectedPayrollRunId ? { payrollRunId: selectedPayrollRunId } : {}), operationId: operationId() } }, {
+      onSuccess: () => { invalidate(); form.reset(); setSelectedPayrollRunId(''); setSettlementPeriod(''); setFormError(''); onNotice(selectedPayrollRunId ? 'Nómina cerrada importada a un borrador de cotización educativa para su revisión.' : 'Resumen mensual educativo creado con datos introducidos.'); },
       onError: (error) => setFormError(errorText(error, 'No se pudo crear el resumen mensual.')),
     });
   };
@@ -230,13 +245,22 @@ export function SocialSecurityPage({ identity, organizations = [], onNotice }: P
           {view === 'workers' && <div className="ss-work-grid">
             <section className="ss-panel"><header className="ss-section-head"><div><span className="ss-eyebrow">REGISTROS FICTICIOS</span><h2>Crear registro laboral</h2><p>El servidor asignará automáticamente una referencia FPSS. No uses nombres ni identificadores personales.</p></div></header>
               <form className="ss-form" onSubmit={submitWorker}>
-                <label>Grupo de cotización<select name="contributionGroup" defaultValue="1" required>{Array.from({ length: 11 }, (_, i) => <option key={i + 1} value={i + 1}>Grupo {i + 1}</option>)}</select></label>
-                <label>Tipo de contrato<select name="contractType" defaultValue="indefinite" required>{Object.entries(contractLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
-                <label>Fecha de inicio<input name="startDate" type="date" min="2027-01-01" max="2027-12-31" required /></label>
-                <MoneyFields />
+                <label>Vincular desde Recursos Humanos<select value={selectedHrEmployeeId} onChange={(event) => setSelectedHrEmployeeId(event.target.value)}><option value="">Registro manual sin vínculo</option>{availableHrEmployees.map((employee) => <option key={employee.id} value={employee.id}>{employee.workerRef} · grupo {employee.contributionGroup}</option>)}</select></label>
+                {selectedHrEmployee ? <>
+                  <p className="ss-form-note">Se tomarán del expediente laboral la referencia, el grupo, el contrato, la fecha y la base mensual educativa. Las cuotas siguen siendo importes didácticos manuales.</p>
+                  <input type="hidden" name="contributionGroup" value={selectedHrEmployee.contributionGroup} />
+                  <input type="hidden" name="contractType" value={selectedHrEmployee.contractType} />
+                  <input type="hidden" name="startDate" value={selectedHrEmployee.startDate} />
+                  <MoneyFields includeBase={false} />
+                </> : <>
+                  <label>Grupo de cotización<select name="contributionGroup" defaultValue="1" required>{Array.from({ length: 11 }, (_, i) => <option key={i + 1} value={i + 1}>Grupo {i + 1}</option>)}</select></label>
+                  <label>Tipo de contrato<select name="contractType" defaultValue="indefinite" required>{Object.entries(contractLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+                  <label>Fecha de inicio<input name="startDate" type="date" min="2027-01-01" max="2027-12-31" required /></label>
+                  <MoneyFields />
+                </>}
                 {formError && <p className="ss-form-error" role="alert"><CircleAlert size={14} />{formError}</p>}
                 <p className="ss-form-note"><ShieldAlert size={14} />Importes de uso didáctico introducidos manualmente. El sistema no calcula tipos, cuotas ni porcentajes.</p>
-                <button className="ss-button primary" type="submit" disabled={readOnly || createWorker.isPending}><Plus size={15} />{createWorker.isPending ? 'Creando registro…' : 'Crear registro ficticio'}</button>
+                <button className="ss-button primary" type="submit" disabled={readOnly || createWorker.isPending}><Plus size={15} />{createWorker.isPending ? 'Creando registro…' : selectedHrEmployee ? 'Vincular persona de RR. HH.' : 'Crear registro ficticio'}</button>
               </form>
             </section>
             <section className="ss-panel"><header className="ss-section-head"><div><span className="ss-eyebrow">PERSONAS SIMULADAS · SIN DATOS PERSONALES</span><h2>Registros laborales</h2><p>Identificados únicamente por la referencia generada por el servidor.</p></div><span className="ss-count">{workers.length} registros</span></header>
@@ -258,7 +282,15 @@ export function SocialSecurityPage({ identity, organizations = [], onNotice }: P
           </div>}
           {view === 'settlements' && <div className="ss-settlement-grid">
             <section className="ss-panel ss-settlement-create"><header className="ss-section-head"><div><span className="ss-eyebrow">PERIODO LIMITADO AL ESCENARIO</span><h2>Preparar resumen mensual</h2><p>Resumen educativo agregado; no es un documento RNT/RLC oficial.</p></div></header>
-              <form className="ss-form" onSubmit={submitSettlement}><label>Mes de 2027<select name="periodKey" defaultValue="" required><option value="">Selecciona un periodo</option>{yearMonths.map((month) => <option key={month} value={month}>{new Intl.DateTimeFormat('es-ES', { month: 'long', timeZone: 'UTC' }).format(new Date(`${month}-01T00:00:00Z`))} 2027</option>)}</select></label>
+              <form className="ss-form" onSubmit={submitSettlement}>
+                <label>Nómina cerrada (opcional)<select value={selectedPayrollRunId} onChange={(event) => {
+                  const runId = event.target.value;
+                  setSelectedPayrollRunId(runId);
+                  const run = availablePayrollRuns.find((item) => item.id === runId);
+                  if (run) setSettlementPeriod(run.periodKey);
+                }}><option value="">Introducir importes desde registros</option>{availablePayrollRuns.map((run) => <option key={run.id} value={run.id}>{run.periodKey} · v{run.version} · {run.employeeCount} personas</option>)}</select></label>
+                {selectedPayrollRun && <p className="ss-form-note">Los importes se obtendrán de la nómina cerrada. Deben existir registros activos vinculados para todas sus personas. La importación crea un borrador, no un envío ni un pago.</p>}
+                <label>Mes de 2027<select name="periodKey" value={settlementPeriod} disabled={Boolean(selectedPayrollRunId)} onChange={(event) => setSettlementPeriod(event.target.value)} required><option value="">Selecciona un periodo</option>{yearMonths.map((month) => <option key={month} value={month}>{new Intl.DateTimeFormat('es-ES', { month: 'long', timeZone: 'UTC' }).format(new Date(`${month}-01T00:00:00Z`))} 2027</option>)}</select></label>
                 {formError && <p className="ss-form-error" role="alert"><CircleAlert size={14} />{formError}</p>}
                 <p className="ss-form-note"><ShieldAlert size={14} />Importes introducidos por el usuario; no se calculan ni verifican cuotas, porcentajes o prorrateos.</p>
                 <button className="ss-button primary" type="submit" disabled={readOnly || createSettlement.isPending}><FilePlus2 size={15} />{createSettlement.isPending ? 'Preparando…' : 'Crear resumen educativo'}</button>
@@ -291,7 +323,7 @@ function MovementCard({ movement, canTeach, busy, onReview }: { movement: Fp360S
 function SettlementCard({ settlement, canTeach, busy, onAction }: { settlement: Fp360SocialSecuritySettlement; canTeach: boolean; busy: boolean; onAction: (settlement: Fp360SocialSecuritySettlement, action: 'review' | 'close') => void }) {
   return <article className="ss-settlement-card"><div className="ss-settlement-head"><div><small>PERIODO EDUCATIVO</small><b>{settlement.periodKey}</b></div><Status value={settlement.status} /></div>
     <div className="ss-settlement-values"><span>Registros<strong>{settlement.workerCount}</strong></span><span>Base introducida<strong>{euro(settlement.contributionBaseCents)}</strong></span><span>Importe empresa<strong>{euro(settlement.employerContributionCents)}</strong></span><span>Importe trabajador<strong>{euro(settlement.workerContributionCents)}</strong></span><span className="total">Total informado<strong>{euro(settlement.totalContributionCents)}</strong></span></div>
-    <div className="ss-settlement-foot"><span>Creado por {settlement.createdByName}{settlement.reviewedByName ? ` · Revisado por ${settlement.reviewedByName}` : ''}</span><time>{dateLabel(settlement.updatedAt)}</time></div>
+    <div className="ss-settlement-foot"><span>{settlement.sourcePayrollRunId ? 'Importado desde nómina cerrada · ' : ''}Creado por {settlement.createdByName}{settlement.reviewedByName ? ` · Revisado por ${settlement.reviewedByName}` : ''}</span><time>{dateLabel(settlement.updatedAt)}</time></div>
     {canTeach && settlement.status !== 'closed_simulated' && <div className="ss-card-actions">{settlement.status === 'draft' && <button type="button" onClick={() => onAction(settlement, 'review')} disabled={busy}><BadgeCheck size={13} /> Revisar</button>}{settlement.status === 'reviewed' && <button type="button" className="emphasis" onClick={() => onAction(settlement, 'close')} disabled={busy}>Cerrar en simulación</button>}</div>}
   </article>;
 }

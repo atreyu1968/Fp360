@@ -10,6 +10,8 @@ import type { Fp360SocialSecuritySettlementStatus } from './fp360SocialSecurityS
 export interface Fp360SocialSecuritySettlement {
   id: string;
   organizationId: string;
+  /** @nullable */
+  sourcePayrollRunId: string | null;
   /** @pattern ^\d{4}-(0[1-9]|1[0-2])$ */
   periodKey: string;
   workerRefs: string[];

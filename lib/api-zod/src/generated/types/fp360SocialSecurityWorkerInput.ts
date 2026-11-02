@@ -10,6 +10,8 @@ import type { Fp360SocialSecurityWorkerInputContractType } from './fp360SocialSe
 export interface Fp360SocialSecurityWorkerInput {
   /** @minLength 1 */
   organizationId: string;
+  /** @minLength 1 */
+  hrEmployeeId?: string;
   /**
      * @minimum 1
      * @maximum 11

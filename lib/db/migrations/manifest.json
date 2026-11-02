@@ -5,7 +5,19 @@
       "schemaHash": "4962fb61dcc8d8fc75d9ccfc6fd6383c58f31f9244468fa81219b0559e9bc875",
       "snapshot": "0000-baseline.sql",
       "sha256": "41891db38dc7bec14806cae3cd05b676800e729202a24eb22b942e4658a8c49f"
+    },
+    {
+      "schemaHash": "f7b69bf6b80acde66998a77a07277ae26775dcf716d8c826c6b98adb6bc7810d",
+      "snapshot": "0001-labor-links.sql",
+      "sha256": "e213a3fc4a6f9cce41e0eeff3073993dddd7741f4dbf75b359b145bb91f1c9ad"
     }
   ],
-  "migrations": []
+  "migrations": [
+    {
+      "id": "0001_labor_module_links",
+      "file": "0001_labor_module_links.sql.json",
+      "sha256": "b3b577ecf32a1021d878fb21024c549a93fddd1425d9dc93f64d009be23bdcb4",
+      "backwardsCompatible": true
+    }
+  ]
 }
