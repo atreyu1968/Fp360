@@ -54,6 +54,47 @@ intenta reiniciar la API. El resultado es un archivo
 del mismo paquete cifrado. Protege también el directorio de destino y limita su
 acceso a administradores autorizados.
 
+## Programación y aviso de retrasos
+
+El instalador de Ubuntu activa un temporizador de systemd para ejecutar una copia
+diaria a las 00:00 (hora local). Personaliza la frecuencia durante la instalación
+con `--backup-frequency`, por ejemplo `daily`, `weekly` o una expresión válida
+de `systemd.time`. También puedes elegir el punto de montaje y la ruta del archivo
+de frase secreta con `--backup-destination` y `--backup-passphrase-file`.
+
+La ruta configurada debe ser el propio punto de montaje, no una carpeta dentro de
+él. El trabajo programado compara el montaje real con esa ruta antes de crear
+archivos; si el disco o montaje remoto falta, no escribe en el sistema de archivos
+local y el servicio queda registrado como fallido. El instalador prepara el
+directorio de montaje si aún no existe, pero no monta ni configura el dispositivo.
+El archivo de frase secreta debe existir antes de la primera ejecución.
+
+El instalador permite cambiar el límite de retraso con
+`--backup-max-age-hours` (36 horas de forma predeterminada). Consulta la última
+ejecución y el estado de antigüedad con:
+
+```sh
+sudo /opt/redfp360/scripts/backup-ubuntu.sh status --max-age-hours 36
+systemctl list-timers redfp360-backup.timer
+sudo journalctl -u redfp360-backup.service
+```
+
+El archivo de estado se guarda en el disco local de la instalación, no en el
+destino externo. Tras cada copia correcta muestra y actualiza la fecha UTC del
+último éxito. Si falla una ejecución y la última copia supera el límite, el
+registro del servicio contiene un aviso para revisar el montaje y el servicio.
+Si nunca hubo una copia satisfactoria, también informa de ello. Los avisos se
+consultan en el registro local de systemd; el instalador no envía correo ni
+notificaciones a servicios externos. Para cambiar la frecuencia después de
+instalar, edita `OnCalendar` en
+`/etc/systemd/system/redfp360-backup.timer` y ejecuta:
+
+```sh
+sudo systemd-analyze calendar 'weekly'
+sudo systemctl daemon-reload
+sudo systemctl restart redfp360-backup.timer
+```
+
 ## Retención y comprobación periódica
 
 Como política inicial, conserva **30 copias diarias y 12 copias mensuales** en

@@ -6,15 +6,21 @@ APP_SERVICE="redfp360"
 DB_NAME="redfp360"
 OBJECT_ROOT="/var/lib/redfp360/objects"
 BACKUP_FORMAT="redfp360-backup-v1"
+DEFAULT_STATUS_FILE="/var/lib/redfp360/backup-status"
 
 usage() {
   cat <<'USAGE'
 Uso:
   sudo scripts/backup-ubuntu.sh backup --destination DIR --passphrase-file FILE
+  sudo scripts/backup-ubuntu.sh scheduled-backup --destination DIR --passphrase-file FILE
+    [--status-file FILE] [--max-age-hours HOURS]
+  sudo scripts/backup-ubuntu.sh status [--status-file FILE] [--max-age-hours HOURS]
   sudo scripts/backup-ubuntu.sh restore-drill --backup FILE --passphrase-file FILE
 
 backup crea un único archivo cifrado con PostgreSQL y /var/lib/redfp360/objects.
 La API se detiene durante la captura para mantener coherentes los datos y archivos.
+scheduled-backup exige que el destino sea exactamente un punto de montaje.
+status informa del último éxito y avisa si supera la antigüedad máxima.
 restore-drill restaura en una base temporal, comprueba referencias a archivos y
 elimina la base y los archivos temporales al terminar. No modifica la instalación.
 
@@ -96,13 +102,61 @@ check_backup_files() {
     || fail "Formato de copia no compatible."
 }
 
+validate_status_file() {
+  local file="$1"
+  [[ "$file" = /* ]] || fail "El archivo de estado debe usar una ruta absoluta."
+  [[ ! -L "$file" ]] || fail "El archivo de estado no puede ser un enlace simbólico."
+  [[ -d "$(dirname -- "$file")" && ! -L "$(dirname -- "$file")" ]] \
+    || fail "El directorio del archivo de estado debe existir y no ser un enlace simbólico."
+}
+
+write_backup_status() {
+  local file="$1" timestamp temporary
+  validate_status_file "$file"
+  timestamp="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+  temporary="$(mktemp "$(dirname -- "$file")/.redfp360-backup-status.XXXXXXXX")"
+  chmod 0600 "$temporary"
+  printf '%s\n' "$timestamp" > "$temporary"
+  mv -f -- "$temporary" "$file"
+  printf 'Último respaldo satisfactorio: %s UTC.\n' "$timestamp"
+}
+
+show_backup_status() {
+  local file="$1" max_age_hours="$2" timestamp timestamp_epoch now_epoch age_seconds
+  [[ "$max_age_hours" =~ ^[1-9][0-9]*$ ]] && ((max_age_hours <= 87600)) \
+    || fail "--max-age-hours debe ser un entero entre 1 y 87600."
+  validate_status_file "$file"
+  if [[ ! -f "$file" ]]; then
+    printf 'No hay ningún respaldo satisfactorio registrado.\n' >&2
+    printf 'AVISO: no existe una copia reciente; comprueba el montaje y configura el respaldo.\n' >&2
+    return 1
+  fi
+  timestamp="$(cat -- "$file")"
+  [[ "$timestamp" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] \
+    || fail "El estado del último respaldo no contiene una fecha válida."
+  timestamp_epoch="$(date -u -d "$timestamp" +%s 2>/dev/null)" \
+    || fail "No se pudo interpretar la fecha del último respaldo."
+  now_epoch="$(date -u +%s)"
+  ((timestamp_epoch <= now_epoch)) || fail "La fecha del último respaldo está en el futuro."
+  age_seconds=$((now_epoch - timestamp_epoch))
+  printf 'Último respaldo satisfactorio: %s UTC.\n' "$timestamp"
+  if ((age_seconds > max_age_hours * 3600)); then
+    printf 'AVISO: el último respaldo supera el límite de %s horas; comprueba systemctl status redfp360-backup.service y el montaje externo.\n' \
+      "$max_age_hours" >&2
+    return 1
+  fi
+  printf 'El respaldo está dentro del límite de %s horas.\n' "$max_age_hours"
+}
+
 backup() {
-  local destination="" passphrase_file="" backup_dir archive_name staged_archive resolved_destination mount_target
+  local destination="" passphrase_file="" backup_dir archive_name staged_archive resolved_destination mount_target status_file="$DEFAULT_STATUS_FILE" require_mountpoint=0
   require_root
   while (($#)); do
     case "$1" in
       --destination) (($# >= 2)) || fail "--destination requiere un directorio."; destination="$2"; shift 2 ;;
       --passphrase-file) (($# >= 2)) || fail "--passphrase-file requiere un archivo."; passphrase_file="$2"; shift 2 ;;
+      --status-file) (($# >= 2)) || fail "--status-file requiere un archivo."; status_file="$2"; shift 2 ;;
+      --require-mountpoint) require_mountpoint=1; shift ;;
       *) fail "Opción desconocida: $1" ;;
     esac
   done
@@ -125,6 +179,11 @@ backup() {
     || fail "No se pudo identificar el volumen de destino."
   [[ "$mount_target" != "/" ]] \
     || fail "El destino debe estar en un volumen montado aparte, no en el sistema de archivos raíz."
+  if ((require_mountpoint)); then
+    [[ "$(realpath -e -- "$mount_target")" == "$resolved_destination" ]] \
+      || fail "El punto de montaje externo esperado no está montado en $resolved_destination."
+  fi
+  validate_status_file "$status_file"
   destination="$resolved_destination"
   backup_dir="$destination/redfp360"
   [[ ! -L "$backup_dir" ]] || fail "El directorio de copias no puede ser un enlace simbólico."
@@ -172,6 +231,44 @@ backup() {
   mv -- "$staged_archive" "$backup_dir/$archive_name"
   printf 'Copia cifrada creada: %s/%s\n' "$backup_dir" "$archive_name"
   printf 'Verifica que el archivo aparezca en tu política externa de retención.\n'
+  write_backup_status "$status_file"
+}
+
+scheduled_backup() {
+  local destination="" passphrase_file="" status_file="$DEFAULT_STATUS_FILE" max_age_hours=36
+  require_root
+  while (($#)); do
+    case "$1" in
+      --destination) (($# >= 2)) || fail "--destination requiere un directorio."; destination="$2"; shift 2 ;;
+      --passphrase-file) (($# >= 2)) || fail "--passphrase-file requiere un archivo."; passphrase_file="$2"; shift 2 ;;
+      --status-file) (($# >= 2)) || fail "--status-file requiere un archivo."; status_file="$2"; shift 2 ;;
+      --max-age-hours) (($# >= 2)) || fail "--max-age-hours requiere un número."; max_age_hours="$2"; shift 2 ;;
+      *) fail "Opción desconocida: $1" ;;
+    esac
+  done
+  [[ -n "$destination" ]] || fail "Indica --destination."
+  [[ -n "$passphrase_file" ]] || fail "Indica --passphrase-file."
+  if (backup --destination "$destination" --passphrase-file "$passphrase_file" \
+      --status-file "$status_file" --require-mountpoint); then
+    show_backup_status "$status_file" "$max_age_hours"
+  else
+    local backup_status=$?
+    show_backup_status "$status_file" "$max_age_hours" || true
+    return "$backup_status"
+  fi
+}
+
+status() {
+  local status_file="$DEFAULT_STATUS_FILE" max_age_hours=36
+  require_root
+  while (($#)); do
+    case "$1" in
+      --status-file) (($# >= 2)) || fail "--status-file requiere un archivo."; status_file="$2"; shift 2 ;;
+      --max-age-hours) (($# >= 2)) || fail "--max-age-hours requiere un número."; max_age_hours="$2"; shift 2 ;;
+      *) fail "Opción desconocida: $1" ;;
+    esac
+  done
+  show_backup_status "$status_file" "$max_age_hours"
 }
 
 restore_drill() {
@@ -265,6 +362,8 @@ command="$1"
 shift
 case "$command" in
   backup) backup "$@" ;;
+  scheduled-backup) scheduled_backup "$@" ;;
+  status) status "$@" ;;
   restore-drill) restore_drill "$@" ;;
   --help|-h|help) usage ;;
   *) usage >&2; fail "Comando desconocido: $command" ;;

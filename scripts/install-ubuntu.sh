@@ -12,6 +12,10 @@ SERVICE_NAME="redfp360"
 SETUP_TOKEN_FILE="/root/redfp360-setup-token"
 UPGRADE_SYSTEM=0
 DOMAIN=""
+BACKUP_DESTINATION="/mnt/redfp360-backups"
+BACKUP_PASSPHRASE_FILE="/root/redfp360-backup.passphrase"
+BACKUP_FREQUENCY="daily"
+BACKUP_MAX_AGE_HOURS="36"
 
 usage() {
   cat <<'USAGE'
@@ -23,6 +27,14 @@ Uso:
 Opciones:
   --domain DOMINIO       Dominio DNS que apunta a este servidor (TLS por Caddy)
   --upgrade-system       Ofrece una actualización APT general, con confirmación
+  --backup-destination DIR
+                         Punto de montaje para copias (predeterminado: /mnt/redfp360-backups)
+  --backup-passphrase-file FILE
+                         Archivo de frase secreta (predeterminado: /root/redfp360-backup.passphrase)
+  --backup-frequency CALENDAR
+                         Frecuencia systemd (predeterminado: daily)
+  --backup-max-age-hours HOURS
+                         Antigüedad máxima antes de avisar (predeterminado: 36)
   --help                 Muestra esta ayuda
 
 No borra ni reemplaza instalaciones existentes. El checkout debe contener
@@ -42,6 +54,18 @@ while (($#)); do
     --domain)
       (($# >= 2)) || fail "--domain necesita un valor."
       DOMAIN="$2"; shift 2 ;;
+    --backup-destination)
+      (($# >= 2)) || fail "--backup-destination necesita un valor."
+      BACKUP_DESTINATION="$2"; shift 2 ;;
+    --backup-passphrase-file)
+      (($# >= 2)) || fail "--backup-passphrase-file necesita un valor."
+      BACKUP_PASSPHRASE_FILE="$2"; shift 2 ;;
+    --backup-frequency)
+      (($# >= 2)) || fail "--backup-frequency necesita un valor."
+      BACKUP_FREQUENCY="$2"; shift 2 ;;
+    --backup-max-age-hours)
+      (($# >= 2)) || fail "--backup-max-age-hours necesita un valor."
+      BACKUP_MAX_AGE_HOURS="$2"; shift 2 ;;
     --upgrade-system) UPGRADE_SYSTEM=1; shift ;;
     --help|-h) usage; exit 0 ;;
     *) fail "Opción desconocida: $1" ;;
@@ -49,6 +73,20 @@ while (($#)); do
 done
 
 [[ "${EUID}" -eq 0 ]] || fail "Ejecuta el instalador con sudo."
+[[ "$BACKUP_DESTINATION" =~ ^/[A-Za-z0-9_./-]+$ ]] \
+  || fail "--backup-destination debe ser una ruta absoluta sin espacios ni caracteres especiales."
+[[ "$BACKUP_DESTINATION" != "/var/lib/redfp360" && "$BACKUP_DESTINATION" != "/var/lib/redfp360/"* ]] \
+  || fail "El destino de copias no puede estar dentro de los datos originales."
+[[ "$BACKUP_PASSPHRASE_FILE" =~ ^/[A-Za-z0-9_./-]+$ ]] \
+  || fail "--backup-passphrase-file debe ser una ruta absoluta sin espacios ni caracteres especiales."
+[[ "$BACKUP_MAX_AGE_HOURS" =~ ^[1-9][0-9]*$ ]] && ((BACKUP_MAX_AGE_HOURS <= 87600)) \
+  || fail "--backup-max-age-hours debe ser un entero entre 1 y 87600."
+[[ "$BACKUP_FREQUENCY" != *$'\n'* && "$BACKUP_FREQUENCY" != *$'\r'* ]] \
+  || fail "--backup-frequency no puede contener saltos de línea."
+command -v systemd-analyze >/dev/null 2>&1 \
+  || fail "No encuentro systemd-analyze para validar la frecuencia de las copias."
+systemd-analyze calendar "$BACKUP_FREQUENCY" >/dev/null \
+  || fail "La frecuencia indicada en --backup-frequency no es válida para systemd."
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
@@ -76,6 +114,10 @@ esac
 [[ ! -e /var/lib/redfp360 ]] || fail "/var/lib/redfp360 ya existe. El instalador no sobrescribirá datos existentes."
 [[ ! -e "/etc/systemd/system/${SERVICE_NAME}.service" ]] \
   || fail "Ya existe el servicio ${SERVICE_NAME}; no se modificará."
+for backup_unit in redfp360-backup.service redfp360-backup.timer; do
+  [[ ! -e "/etc/systemd/system/${backup_unit}" ]] \
+    || fail "Ya existe /etc/systemd/system/${backup_unit}; no se modificará."
+done
 if [[ -s /etc/caddy/Caddyfile ]] || systemctl is-active --quiet caddy 2>/dev/null; then
   fail "Ya existe una configuración/instancia de Caddy. El instalador no la sobrescribirá."
 fi
@@ -152,6 +194,9 @@ fi
 useradd --system --home-dir "$APP_DIR" --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER"
 install -d -m 0755 "$APP_DIR"
 install -d -m 0750 -o root -g "$SERVICE_USER" "$CONFIG_DIR"
+if [[ ! -d "$BACKUP_DESTINATION" ]]; then
+  install -d -m 0755 -o root -g root "$BACKUP_DESTINATION"
+fi
 install -d -m 0750 -o "$SERVICE_USER" -g "$SERVICE_USER" \
   /var/lib/redfp360 "$DATA_DIR" "$DATA_DIR/private" \
   "$DATA_DIR/private/uploads" "$DATA_DIR/public"
@@ -184,6 +229,13 @@ PUBLIC_BASE_URL=https://${DOMAIN}
 ENV
 chown root:root "$CONFIG_DIR/api.env"
 chmod 0600 "$CONFIG_DIR/api.env"
+cat > "$CONFIG_DIR/backup.env" <<BACKUP_ENV
+RED_FP360_BACKUP_DESTINATION=${BACKUP_DESTINATION}
+RED_FP360_BACKUP_PASSPHRASE_FILE=${BACKUP_PASSPHRASE_FILE}
+RED_FP360_BACKUP_MAX_AGE_HOURS=${BACKUP_MAX_AGE_HOURS}
+BACKUP_ENV
+chown root:root "$CONFIG_DIR/backup.env"
+chmod 0600 "$CONFIG_DIR/backup.env"
 printf '%s\n' "$SETUP_TOKEN" > "$SETUP_TOKEN_FILE"
 chmod 0600 "$SETUP_TOKEN_FILE"
 
@@ -231,6 +283,35 @@ WantedBy=multi-user.target
 UNIT
 chmod 0644 "/etc/systemd/system/${SERVICE_NAME}.service"
 
+cat > /etc/systemd/system/redfp360-backup.service <<UNIT
+[Unit]
+Description=Crear copia cifrada coordinada de RED FP360
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+EnvironmentFile=${CONFIG_DIR}/backup.env
+ExecStart=${APP_DIR}/scripts/backup-ubuntu.sh scheduled-backup --destination \${RED_FP360_BACKUP_DESTINATION} --passphrase-file \${RED_FP360_BACKUP_PASSPHRASE_FILE} --status-file /var/lib/redfp360/backup-status --max-age-hours \${RED_FP360_BACKUP_MAX_AGE_HOURS}
+UNIT
+chmod 0644 /etc/systemd/system/redfp360-backup.service
+
+cat > /etc/systemd/system/redfp360-backup.timer <<UNIT
+[Unit]
+Description=Programar copias cifradas de RED FP360
+
+[Timer]
+OnCalendar=${BACKUP_FREQUENCY}
+Persistent=true
+AccuracySec=1min
+Unit=redfp360-backup.service
+
+[Install]
+WantedBy=timers.target
+UNIT
+chmod 0644 /etc/systemd/system/redfp360-backup.timer
+
 cat > /etc/caddy/Caddyfile <<CADDY
 ${DOMAIN} {
 	encode zstd gzip
@@ -259,6 +340,7 @@ for _ in $(seq 1 30); do
 done
 [[ "$healthy" -eq 1 ]] || fail "La API no pasó /api/healthz. Revisa: journalctl -u ${SERVICE_NAME}."
 
+systemctl enable --now redfp360-backup.timer
 systemctl enable --now caddy
 systemctl reload caddy
 
@@ -273,8 +355,10 @@ Completa el alta inicial del administrador y ejecuta:
   sudo ${APP_DIR}/scripts/finalize-ubuntu-setup.sh
 
 Los documentos privados se guardan en ${DATA_DIR}; inclúyelos en las copias de
-seguridad junto con PostgreSQL. Para copias cifradas coordinadas y un ensayo de
-restauración, consulta ${APP_DIR}/docs/ubuntu-backups.md. Abre los puertos 80 y
+seguridad junto con PostgreSQL. Se ha programado una copia ${BACKUP_FREQUENCY}
+en ${BACKUP_DESTINATION}; monta el almacenamiento externo y crea el archivo de
+frase secreta indicado en ${BACKUP_PASSPHRASE_FILE}. Para configurar y comprobar
+la copia y realizar un ensayo de restauración, consulta ${APP_DIR}/docs/ubuntu-backups.md. Abre los puertos 80 y
 443 en el firewall de red;
 el instalador no modifica el firewall ni reinicia el host.
 La autonomía usa un único proceso API en esta instalación.
