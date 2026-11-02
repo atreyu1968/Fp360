@@ -11,24 +11,31 @@ import {
 } from './objectAcl';
 
 const REPLIT_SIDECAR_ENDPOINT = 'http://127.0.0.1:1106';
+const STORAGE_BACKEND = process.env.RED_FP360_STORAGE_BACKEND || 'replit';
 
-export const objectStorageClient = new Storage({
-  credentials: {
-    audience: 'replit',
-    subject_token_type: 'access_token',
-    token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
-    type: 'external_account',
-    credential_source: {
-      url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
-      format: {
-        type: 'json',
-        subject_token_field_name: 'access_token',
+if (STORAGE_BACKEND !== 'replit' && STORAGE_BACKEND !== 'gcs') {
+  throw new Error('RED_FP360_STORAGE_BACKEND must be either "replit" or "gcs".');
+}
+
+export const objectStorageClient = STORAGE_BACKEND === 'replit'
+  ? new Storage({
+      credentials: {
+        audience: 'replit',
+        subject_token_type: 'access_token',
+        token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
+        type: 'external_account',
+        credential_source: {
+          url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
+          format: {
+            type: 'json',
+            subject_token_field_name: 'access_token',
+          },
+        },
+        universe_domain: 'googleapis.com',
       },
-    },
-    universe_domain: 'googleapis.com',
-  },
-  projectId: '',
-});
+      projectId: '',
+    })
+  : new Storage();
 
 export class ObjectNotFoundError extends Error {
   constructor() {
@@ -243,6 +250,28 @@ async function signObjectURL({
   method: 'GET' | 'PUT' | 'DELETE' | 'HEAD';
   ttlSec: number;
 }): Promise<string> {
+  if (STORAGE_BACKEND === 'gcs') {
+    const action = method === 'PUT'
+      ? 'write'
+      : method === 'DELETE'
+        ? 'delete'
+        : method === 'HEAD'
+          ? 'metadata'
+          : 'read';
+    const [signedUrl] = await objectStorageClient
+      .bucket(bucketName)
+      .file(objectName)
+      .getSignedUrl({
+        version: 'v4',
+        action,
+        expires: Date.now() + ttlSec * 1000,
+      });
+    if (!signedUrl.startsWith('https://')) {
+      throw new Error('Google Cloud Storage returned an invalid signed URL.');
+    }
+    return signedUrl;
+  }
+
   const request = {
     bucket_name: bucketName,
     object_name: objectName,

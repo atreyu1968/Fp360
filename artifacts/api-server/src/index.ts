@@ -21,7 +21,9 @@ if (!Number.isInteger(port) || port <= 0 || port > 65_535) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const server = app.listen(port, (err) => {
+const host = process.env["HOST"] || "0.0.0.0";
+
+const server = app.listen(port, host, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
     process.exit(1);
