@@ -56,15 +56,19 @@ make_work_dir() {
 
 cleanup() {
   local status=$?
-  if [[ -n "${STAGED_ARCHIVE:-}" && -e "$STAGED_ARCHIVE" ]]; then
-    rm -f -- "$STAGED_ARCHIVE"
-  fi
   if [[ "${APP_STOPPED:-0}" -eq 1 ]]; then
     if ! systemctl start "$APP_SERVICE" || ! systemctl is-active --quiet "$APP_SERVICE"; then
       printf 'ERROR: la API no pudo reiniciarse automáticamente; revisa systemctl status %s.\n' "$APP_SERVICE" >&2
       status=1
     else
+      APP_STOPPED=0
       printf 'La API se reinició después de una salida anticipada.\n' >&2
+    fi
+  fi
+  if [[ -n "${STAGED_ARCHIVE:-}" && -e "$STAGED_ARCHIVE" ]]; then
+    if ! rm -f -- "$STAGED_ARCHIVE"; then
+      printf 'ERROR: no se pudo eliminar la copia temporal incompleta: %s\n' "$STAGED_ARCHIVE" >&2
+      status=1
     fi
   fi
   if [[ -n "${DRILL_DB:-}" ]]; then
@@ -251,6 +255,10 @@ SQL
     "$DRILL_DB" "$verified"
   printf 'El ensayo no ha modificado la base de producción ni el directorio de objetos.\n'
 }
+
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+  return 0
+fi
 
 [[ $# -gt 0 ]] || { usage >&2; exit 2; }
 command="$1"
