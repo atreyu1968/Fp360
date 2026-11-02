@@ -1446,15 +1446,101 @@ export interface AdminIntegrationStatus {
   simulationOnly: boolean;
 }
 
+export type AiDelegationOperation = typeof AiDelegationOperation[keyof typeof AiDelegationOperation];
+
+
+export const AiDelegationOperation = {
+  create_simulated_document: 'create_simulated_document',
+  complete_simulation_event: 'complete_simulation_event',
+} as const;
+
+export interface AiDelegationInput {
+  operationId: string;
+  enabled: boolean;
+  /** @minimum 0 */
+  expectedRevision: number;
+  /** @maxItems 2 */
+  allowedOperations: AiDelegationOperation[];
+}
+
+export interface AiDelegation {
+  organizationId: string;
+  enabled: boolean;
+  allowedOperations: AiDelegationOperation[];
+  revision: number;
+  serviceActorId: string;
+  updatedAt: string;
+}
+
+export interface AiDelegationRunInput {
+  operationId: string;
+}
+
+export type AiDelegationRunStatus = typeof AiDelegationRunStatus[keyof typeof AiDelegationRunStatus];
+
+
+export const AiDelegationRunStatus = {
+  running: 'running',
+  applied: 'applied',
+  cancelled: 'cancelled',
+  failed: 'failed',
+} as const;
+
+export interface AiDelegationRun {
+  id: string;
+  organizationId: string;
+  serviceActorId: string;
+  revision: number;
+  status: AiDelegationRunStatus;
+  detail: string;
+  createdAt: string;
+  requestedBy: string;
+  /** @nullable */
+  model: string | null;
+  /** @nullable */
+  snapshotAt: string | null;
+  /** @nullable */
+  contextHash: string | null;
+  /** @nullable */
+  companyCount: number | null;
+  /** @nullable */
+  operationCount: number | null;
+  /** @nullable */
+  finishedAt: string | null;
+}
+
+export interface AiDelegationOverview {
+  delegations: AiDelegation[];
+  runs: AiDelegationRun[];
+}
+
+export type AdminAiCoordinatorSettingsProvider = typeof AdminAiCoordinatorSettingsProvider[keyof typeof AdminAiCoordinatorSettingsProvider];
+
+
+export const AdminAiCoordinatorSettingsProvider = {
+  local: 'local',
+  groqcloud: 'groqcloud',
+} as const;
+
 export interface AdminAiCoordinatorSettings {
   configured: boolean;
   enabled: boolean;
+  provider: AdminAiCoordinatorSettingsProvider;
   /** @maxLength 512 */
   baseUrl: string;
   /** @maxLength 120 */
   model: string;
+  groqApiKeyConfigured: boolean;
   /** @nullable */
   updatedAt: string | null;
+}
+
+export interface AdminGroqAiModelCatalog {
+  /**
+     * @items.minLength 1
+     * @items.maxLength 120
+     */
+  models: string[];
 }
 
 export type AdminPolicyPermission = typeof AdminPolicyPermission[keyof typeof AdminPolicyPermission];
@@ -1558,6 +1644,14 @@ export interface AdminScenarioVersionInput {
   settings: AdminScenarioSettings;
 }
 
+export type AdminAiCoordinatorSettingsInputProvider = typeof AdminAiCoordinatorSettingsInputProvider[keyof typeof AdminAiCoordinatorSettingsInputProvider];
+
+
+export const AdminAiCoordinatorSettingsInputProvider = {
+  local: 'local',
+  groqcloud: 'groqcloud',
+} as const;
+
 export interface AdminAiCoordinatorSettingsInput {
   /**
      * @minLength 8
@@ -1565,10 +1659,13 @@ export interface AdminAiCoordinatorSettingsInput {
      */
   operationId: string;
   enabled: boolean;
+  provider: AdminAiCoordinatorSettingsInputProvider;
   /** @maxLength 512 */
   baseUrl: string;
   /** @maxLength 120 */
   model: string;
+  /** Required to enable GroqCloud because network-level simulated economic context is sent to the external provider. */
+  externalDataTransferAcknowledged: boolean;
 }
 
 export interface AdminAiCoordinatorConnectionTestInput {
@@ -9093,28 +9190,28 @@ export interface CoordinationOverview {
 }
 
 export type GetPortfolioOverviewParams = {
-campaignId?: string;
+  campaignId?: string;
 };
 
 export type GetEvaluationOverviewParams = {
-campaignId?: string;
+  campaignId?: string;
 };
 
 export type GetMentorshipOverviewParams = {
-campaignId?: string;
+  campaignId?: string;
 };
 
 export type GetCoordinationOverviewParams = {
-campaignId?: string;
+  campaignId?: string;
 };
 
 export type GetFp360DirectionOverviewParams = {
-periodStart?: string;
-periodEnd?: string;
+  periodStart?: string;
+  periodEnd?: string;
 };
 
 export type UpsertFp360DirectionThresholdParams = {
-key: UpsertFp360DirectionThresholdKey;
+  key: UpsertFp360DirectionThresholdKey;
 };
 
 export type UpsertFp360DirectionThresholdKey = typeof UpsertFp360DirectionThresholdKey[keyof typeof UpsertFp360DirectionThresholdKey];
@@ -9126,13 +9223,13 @@ export const UpsertFp360DirectionThresholdKey = {
 } as const;
 
 export type ListFp360DirectionObjectivesParams = {
-periodStart?: string;
-periodEnd?: string;
+  periodStart?: string;
+  periodEnd?: string;
 };
 
 export type ListFp360DirectionEventsParams = {
-entityType?: ListFp360DirectionEventsEntityType;
-entityId?: string;
+  entityType?: ListFp360DirectionEventsEntityType;
+  entityId?: string;
 };
 
 export type ListFp360DirectionEventsEntityType = typeof ListFp360DirectionEventsEntityType[keyof typeof ListFp360DirectionEventsEntityType];
@@ -9147,35 +9244,29 @@ export const ListFp360DirectionEventsEntityType = {
 } as const;
 
 export type GetFp360AccountingOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
+  /** @minLength 1 */
+  organizationId: string;
 };
 
 export type GetFp360AccountingYearEndSummaryParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
-/**
- * @minimum 2000
- * @maximum 2100
- */
-fiscalYear: number;
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+   * @minimum 2000
+   * @maximum 2100
+   */
+  fiscalYear: number;
 };
 
 export type ExportFp360AccountingCsvParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
-/**
- * @minimum 2000
- * @maximum 2100
- */
-fiscalYear: number;
-book: ExportFp360AccountingCsvBook;
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+   * @minimum 2000
+   * @maximum 2100
+   */
+  fiscalYear: number;
+  book: ExportFp360AccountingCsvBook;
 };
 
 export type ExportFp360AccountingCsvBook = typeof ExportFp360AccountingCsvBook[keyof typeof ExportFp360AccountingCsvBook];
@@ -9187,94 +9278,66 @@ export const ExportFp360AccountingCsvBook = {
 } as const;
 
 export type GetFp360BankOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
+  /** @minLength 1 */
+  organizationId: string;
 };
 
 export type GetFp360BankReconciliationParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
-fromDate: string;
-toDate: string;
+  /** @minLength 1 */
+  organizationId: string;
+  fromDate: string;
+  toDate: string;
 };
 
 export type GetFp360TaxOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
+  /** @minLength 1 */
+  organizationId: string;
 };
 
 export type GetFp360PayrollOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
+  /** @minLength 1 */
+  organizationId: string;
 };
 
 export type GetFp360ProjectsOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
+  /** @minLength 1 */
+  organizationId: string;
 };
 
 export type GetFp360CustomerServiceOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
+  /** @minLength 1 */
+  organizationId: string;
 };
 
 export type GetFp360EmploymentCommunicationsParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
+  /** @minLength 1 */
+  organizationId: string;
 };
 
 export type GetFp360CommunicationsOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
-/**
- * @maxLength 100
- */
-search?: string;
+  /** @minLength 1 */
+  organizationId: string;
+  /** @maxLength 100 */
+  search?: string;
 };
 
 export type GetFp360HrOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
+  /** @minLength 1 */
+  organizationId: string;
 };
 
 export type GetFp360SocialSecurityOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
+  /** @minLength 1 */
+  organizationId: string;
 };
 
 export type GetFp360DocumentsOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
-/**
- * @minLength 1
- */
-documentId?: string;
-/**
- * @maxLength 120
- */
-search?: string;
+  /** @minLength 1 */
+  organizationId: string;
+  /** @minLength 1 */
+  documentId?: string;
+  /** @maxLength 120 */
+  search?: string;
 };
 
 export type LogFp360DocumentAccess201 = {

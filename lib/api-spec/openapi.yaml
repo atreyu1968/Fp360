@@ -29,6 +29,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+        "503":
+          description: API dependencies are unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
   /auth/status:
     get:
       security: []
@@ -176,6 +182,19 @@ paths:
           description: Session ended
         "401":
           description: Sign-in required
+  /auth/membership/leave:
+    post:
+      operationId: leaveCurrentNetwork
+      tags: [auth]
+      summary: Leave the network used by the current session
+      description: Removes only the current network membership and its sessions; other memberships remain unchanged.
+      responses:
+        "204":
+          description: Current network membership ended and audited
+        "401":
+          description: Sign-in required
+        "409":
+          description: Membership is inactive or this would remove the last active administrator
   /admin/users:
     get:
       operationId: listAdminUsers
@@ -286,12 +305,26 @@ paths:
             schema: { $ref: "#/components/schemas/AdminAiCoordinatorSettingsInput" }
       responses:
         "200":
-          description: Local AI endpoint configuration without credentials
+          description: AI provider configuration without credentials
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminAiCoordinatorSettings" }
         "400": { description: Invalid endpoint or model }
         "403": { description: Administrator required }
+        "503": { description: AI provider key is not configured }
+  /admin/ai-coordinator/groq-models:
+    get:
+      operationId: listAdminGroqAiModels
+      tags: [administration]
+      responses:
+        "200":
+          description: GroqCloud model identifiers accessible to the configured server credential
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminGroqAiModelCatalog" }
+        "403": { description: Administrator required }
+        "502": { description: GroqCloud model catalog unavailable }
+        "503": { description: GroqCloud API key is not configured }
   /admin/ai-coordinator/test:
     post:
       operationId: testAdminAiCoordinatorConnection
@@ -303,13 +336,67 @@ paths:
             schema: { $ref: "#/components/schemas/AdminAiCoordinatorConnectionTestInput" }
       responses:
         "200":
-          description: Local model endpoint responded
+          description: Configured AI provider responded
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminAiCoordinatorConnectionTestResult" }
         "403": { description: Administrator required }
         "409": { description: AI provider is not configured }
-        "502": { description: Local model endpoint unavailable }
+        "502": { description: Configured AI provider unavailable }
+        "503": { description: AI provider key is not configured }
+  /admin/ai-coordinator/delegations:
+    get:
+      operationId: listAdminAiDelegations
+      tags: [administration]
+      responses:
+        "200":
+          description: Company delegations and recent execution audit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiDelegationOverview" }
+  /admin/ai-coordinator/delegations/{organizationId}:
+    put:
+      operationId: updateAdminAiDelegation
+      tags: [administration]
+      parameters:
+        - in: path
+          name: organizationId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AiDelegationInput" }
+      responses:
+        "200":
+          description: Delegation saved or revoked; old executions cannot commit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiDelegation" }
+        "403": { description: Administrator required }
+        "409": { description: Stale revision or conflicting operation }
+  /admin/ai-coordinator/delegations/{organizationId}/run:
+    post:
+      operationId: runAdminAiDelegation
+      tags: [administration]
+      parameters:
+        - in: path
+          name: organizationId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AiDelegationRunInput" }
+      responses:
+        "200":
+          description: Audited simulation-only execution
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiDelegationRun" }
+        "409": { description: Delegation revoked or cycle already running }
   /admin/organizations:
     post:
       operationId: createAdminOrganization
@@ -423,7 +510,7 @@ paths:
       tags: [administration]
       responses:
         "200":
-          description: Two-person global privilege change requests
+          description: Pending and decided privilege requests in the authenticated administrator's network only
           content:
             application/json:
               schema:
@@ -440,13 +527,13 @@ paths:
             schema: { $ref: "#/components/schemas/AdminPrivilegeRequestInput" }
       responses:
         "201":
-          description: Request awaiting review by another administrator
+          description: Valid privilege change request awaiting review by a different administrator in the same network
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminPrivilegeRequest" }
         "400": { description: Invalid request }
         "403": { description: Administrator required }
-        "409": { description: Duplicate account or request }
+        "409": { description: "Duplicate or ineligible target account, or an existing pending request" }
   /admin/privilege-requests/{id}/action:
     post:
       operationId: actOnAdminPrivilegeRequest
@@ -460,13 +547,13 @@ paths:
             schema: { $ref: "#/components/schemas/AdminPrivilegeRequestActionInput" }
       responses:
         "200":
-          description: Reviewed request; administrator invitation token is disclosed only once
+          description: Reviewed request; approval is restricted to another administrator in the same network, and any invitation token is disclosed only once
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminPrivilegeRequestActionResult" }
         "403": { description: Administrator required }
-        "404": { description: Request not found }
-        "409": { description: A different administrator must review a pending request }
+        "404": { description: Request not found in the authenticated administrator's network }
+        "409": { description: "Requester cannot approve their own request, request is no longer pending, or approval would remove the last active administrator" }
   /auth/invitations/inspect:
     post:
       security: []
@@ -594,8 +681,8 @@ paths:
         "400": { description: Invalid proposal request }
         "403": { description: Network-wide review role required }
         "409": { description: Operation identifier already used }
-        "502": { description: Local AI endpoint returned an invalid proposal }
-        "503": { description: Local AI endpoint is not configured }
+        "502": { description: AI provider returned an invalid proposal }
+        "503": { description: AI provider is not configured }
   /redfp360/simulations/campaigns:
     post:
       operationId: createFp360SimulationCampaign
@@ -5677,15 +5764,85 @@ components:
         status: { type: string, enum: [not_configured, simulation_only] }
         checkedAt: { type: ["string", "null"], format: date-time }
         simulationOnly: { type: boolean }
+    AiDelegationOperation:
+      type: string
+      enum: [create_simulated_document, complete_simulation_event]
+    AiDelegationInput:
+      type: object
+      additionalProperties: false
+      required: [operationId, enabled, allowedOperations, expectedRevision]
+      properties:
+        operationId: { type: string, format: uuid }
+        enabled: { type: boolean }
+        expectedRevision: { type: integer, minimum: 0 }
+        allowedOperations:
+          type: array
+          uniqueItems: true
+          maxItems: 2
+          items: { $ref: "#/components/schemas/AiDelegationOperation" }
+    AiDelegation:
+      type: object
+      required: [organizationId, enabled, allowedOperations, revision, serviceActorId, updatedAt]
+      properties:
+        organizationId: { type: string }
+        enabled: { type: boolean }
+        allowedOperations:
+          type: array
+          items: { $ref: "#/components/schemas/AiDelegationOperation" }
+        revision: { type: integer }
+        serviceActorId: { type: string }
+        updatedAt: { type: string, format: date-time }
+    AiDelegationRunInput:
+      type: object
+      required: [operationId]
+      properties:
+        operationId: { type: string, format: uuid }
+    AiDelegationRun:
+      type: object
+      required: [id, organizationId, serviceActorId, status, detail, createdAt, revision, requestedBy, model, snapshotAt, contextHash, companyCount, operationCount, finishedAt]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        serviceActorId: { type: string }
+        revision: { type: integer }
+        status: { type: string, enum: [running, applied, cancelled, failed] }
+        detail: { type: string }
+        createdAt: { type: string, format: date-time }
+        requestedBy: { type: string }
+        model: { type: ["string", "null"] }
+        snapshotAt: { type: ["string", "null"], format: date-time }
+        contextHash: { type: ["string", "null"] }
+        companyCount: { type: ["integer", "null"] }
+        operationCount: { type: ["integer", "null"] }
+        finishedAt: { type: ["string", "null"], format: date-time }
+    AiDelegationOverview:
+      type: object
+      required: [delegations, runs]
+      properties:
+        delegations:
+          type: array
+          items: { $ref: "#/components/schemas/AiDelegation" }
+        runs:
+          type: array
+          items: { $ref: "#/components/schemas/AiDelegationRun" }
     AdminAiCoordinatorSettings:
       type: object
-      required: [configured, enabled, baseUrl, model, updatedAt]
+      required: [configured, enabled, provider, baseUrl, model, groqApiKeyConfigured, updatedAt]
       properties:
         configured: { type: boolean }
         enabled: { type: boolean }
+        provider: { type: string, enum: [local, groqcloud] }
         baseUrl: { type: string, maxLength: 512 }
         model: { type: string, maxLength: 120 }
+        groqApiKeyConfigured: { type: boolean }
         updatedAt: { type: ["string", "null"], format: date-time }
+    AdminGroqAiModelCatalog:
+      type: object
+      required: [models]
+      properties:
+        models:
+          type: array
+          items: { type: string, minLength: 1, maxLength: 120 }
     AdminPolicyPermission:
       type: string
       enum: [system_admin, network_admin, manage_center_accounts, manage_scenario_settings, run_backup_exercise, manage_intercenter_campaigns, manage_company_operations, work_assigned_cases]
@@ -5765,12 +5922,16 @@ components:
         settings: { $ref: "#/components/schemas/AdminScenarioSettings" }
     AdminAiCoordinatorSettingsInput:
       type: object
-      required: [operationId, enabled, baseUrl, model]
+      required: [operationId, enabled, provider, baseUrl, model, externalDataTransferAcknowledged]
       properties:
         operationId: { type: string, minLength: 8, maxLength: 100 }
         enabled: { type: boolean }
+        provider: { type: string, enum: [local, groqcloud] }
         baseUrl: { type: string, maxLength: 512 }
         model: { type: string, maxLength: 120 }
+        externalDataTransferAcknowledged:
+          type: boolean
+          description: Required to enable GroqCloud because network-level simulated economic context is sent to the external provider.
     AdminAiCoordinatorConnectionTestInput:
       type: object
       required: [operationId]

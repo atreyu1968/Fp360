@@ -7,5 +7,5 @@
  */
 
 export type GetPortfolioOverviewParams = {
-campaignId?: string;
+  campaignId?: string;
 };

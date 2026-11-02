@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import {
   Activity, Archive, ArrowDownLeft, ArrowRight, BadgeCheck, Banknote, BarChart3, Bell, BriefcaseBusiness,
@@ -15,7 +15,7 @@ import {
   useListFp360Organizations, useListFp360Products, useRecordFp360Payment,
   useResolveFp360LogisticsIncident, useUpdateFp360LogisticsRoute,
   getGetAuthStatusQueryKey, getGetCurrentIdentityQueryKey, useGetAuthStatus,
-  useGetCurrentIdentity, useLogout,
+  useGetCurrentIdentity, useLeaveCurrentNetwork, useLogout,
 } from '@workspace/api-client-react';
 import type {
   AuthIdentity,
@@ -28,36 +28,38 @@ import type {
   Fp360Product,
 } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { httpStatus } from '@/components/admin-shared';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter, Link } from 'wouter';
-import { AuthExperience } from '@/components/auth-experience';
-import { AdminMfaExperience } from '@/components/mfa-experience';
-import { AdminAccessDenied, AdminPage } from '@/components/admin-page';
-import { AcceptInvitation } from '@/components/accept-invitation';
-import { CatalogPage } from '@/components/catalog-page';
-import { OrganizationsDirectory } from '@/components/organizations-directory';
-import { CrmPage } from '@/components/crm-page';
-import { PurchasesPage } from '@/components/purchases-page';
-import DirectionPage from '@/components/direction/DirectionPage';
-import { AccountingPage } from '@/components/accounting-page';
-import { TreasuryPage } from '@/components/treasury-page';
-import { BankPage } from '@/components/bank-page';
-import { HaciendaPage } from '@/components/hacienda-page';
-import { SocialSecurityPage } from '@/components/social-security-page';
-import { HumanResourcesPage } from '@/components/human-resources-page';
-import { EmploymentPage } from '@/components/employment-page';
-import { CommunicationsPage } from '@/components/communications-page';
-import SimulationCampaignsPage from '@/components/simulation-campaigns-page';
-import PortfolioPage from '@/components/portfolio-page';
-import EvaluationPage from '@/components/evaluation-page';
-import MentorshipPage from '@/components/mentorship-page';
-import CoordinationPage from '@/components/coordination-page';
-import { PayrollPage } from '@/components/payroll-page';
-import { CustomerServicePage } from '@/components/customer-service-page';
-import { ProjectsServicesPage } from '@/components/projects-services-page';
-import { DocumentManagementPage } from '@/components/document-management-page';
+const AuthExperience = lazy(() => import('@/components/auth-experience').then(module => ({ default: module.AuthExperience })));
+const AdminMfaExperience = lazy(() => import('@/components/mfa-experience').then(module => ({ default: module.AdminMfaExperience })));
+const AdminAccessDenied = lazy(() => import('@/components/admin-page').then(module => ({ default: module.AdminAccessDenied })));
+const AdminPage = lazy(() => import('@/components/admin-page').then(module => ({ default: module.AdminPage })));
+const AcceptInvitation = lazy(() => import('@/components/accept-invitation').then(module => ({ default: module.AcceptInvitation })));
+const CatalogPage = lazy(() => import('@/components/catalog-page').then(module => ({ default: module.CatalogPage })));
+const OrganizationsDirectory = lazy(() => import('@/components/organizations-directory').then(module => ({ default: module.OrganizationsDirectory })));
+const CrmPage = lazy(() => import('@/components/crm-page').then(module => ({ default: module.CrmPage })));
+const PurchasesPage = lazy(() => import('@/components/purchases-page').then(module => ({ default: module.PurchasesPage })));
+const DirectionPage = lazy(() => import('@/components/direction/DirectionPage'));
+const AccountingPage = lazy(() => import('@/components/accounting-page').then(module => ({ default: module.AccountingPage })));
+const TreasuryPage = lazy(() => import('@/components/treasury-page').then(module => ({ default: module.TreasuryPage })));
+const BankPage = lazy(() => import('@/components/bank-page').then(module => ({ default: module.BankPage })));
+const HaciendaPage = lazy(() => import('@/components/hacienda-page').then(module => ({ default: module.HaciendaPage })));
+const SocialSecurityPage = lazy(() => import('@/components/social-security-page').then(module => ({ default: module.SocialSecurityPage })));
+const HumanResourcesPage = lazy(() => import('@/components/human-resources-page').then(module => ({ default: module.HumanResourcesPage })));
+const EmploymentPage = lazy(() => import('@/components/employment-page').then(module => ({ default: module.EmploymentPage })));
+const CommunicationsPage = lazy(() => import('@/components/communications-page').then(module => ({ default: module.CommunicationsPage })));
+const SimulationCampaignsPage = lazy(() => import('@/components/simulation-campaigns-page'));
+const PortfolioPage = lazy(() => import('@/components/portfolio-page'));
+const EvaluationPage = lazy(() => import('@/components/evaluation-page'));
+const MentorshipPage = lazy(() => import('@/components/mentorship-page'));
+const CoordinationPage = lazy(() => import('@/components/coordination-page'));
+const PayrollPage = lazy(() => import('@/components/payroll-page').then(module => ({ default: module.PayrollPage })));
+const CustomerServicePage = lazy(() => import('@/components/customer-service-page').then(module => ({ default: module.CustomerServicePage })));
+const ProjectsServicesPage = lazy(() => import('@/components/projects-services-page').then(module => ({ default: module.ProjectsServicesPage })));
+const DocumentManagementPage = lazy(() => import('@/components/document-management-page').then(module => ({ default: module.DocumentManagementPage })));
 import '@/components/treasury-page.css';
 
 const queryClient = new QueryClient();
@@ -1213,6 +1215,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
   const [mobileNav, setMobileNav] = useState(false);
   const [notice, setNotice] = useState('');
   const logout = useLogout();
+  const leaveNetwork = useLeaveCurrentNetwork();
   const organizationsQuery = useListFp360Organizations<Organization[]>();
   const productsQuery = useListFp360Products<Product[]>();
   const ordersQuery = useListFp360Orders<Order[]>();
@@ -1270,7 +1273,28 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       <div className="nav-caption">ESPACIO DE TRABAJO</div>
       <nav className="main-nav" aria-label="Navegación principal">{[...navItems, ...(identity.role === 'administrator' ? [{ href: '/administracion', label: 'Administración del sistema', icon: ShieldCheck }] : [])].map(({ href, label, icon: Icon }) => <Link href={href} key={href} className={`nav-link ${location === href ? 'nav-active' : ''}`} onClick={() => setMobileNav(false)} aria-current={location === href ? 'page' : undefined}><Icon size={18} strokeWidth={1.8} /><span>{label}</span>{href === '/aplicaciones' && <span className="nav-count">26</span>}</Link>)}</nav>
       <div className="sidebar-bottom"><div className="help-card"><div className="help-icon"><LifeBuoy size={17} /></div><b>¿Primera vez por aquí?</b><p>Consulta la guía de aprendizaje de la red.</p><Link href="/documentacion" onClick={() => setMobileNav(false)}>Abrir recursos <ArrowRight size={13} /></Link></div>
-         <div className="profile-chip"><span className="profile-avatar">{identityInitials(identity)}</span><span><b>{identity.displayName}</b><small>{roleLabel(identity.role)}</small></span><button className="profile-logout" type="button" disabled={logout.isPending} onClick={() => logout.mutate(undefined, { onSuccess: () => { clearBusinessCache(); void queryClient.resetQueries({ queryKey: getGetCurrentIdentityQueryKey(), exact: true }); setLocation('/sign-in'); }, onError: () => setNotice('No se pudo cerrar la sesión. Comprueba la conexión e inténtalo de nuevo.') })} aria-label="Cerrar sesión" title="Cerrar sesión" data-testid="button-logout"><ArrowRight size={15} /></button></div>
+         <div className="profile-chip"><span className="profile-avatar">{identityInitials(identity)}</span><span><b>{identity.displayName}</b><small>{roleLabel(identity.role)}</small></span><button className="profile-logout" type="button" disabled={logout.isPending || leaveNetwork.isPending} onClick={() => logout.mutate(undefined, { onSuccess: () => { clearBusinessCache(); void queryClient.resetQueries({ queryKey: getGetCurrentIdentityQueryKey(), exact: true }); setLocation('/sign-in'); }, onError: () => setNotice('No se pudo cerrar la sesión. Comprueba la conexión e inténtalo de nuevo.') })} aria-label="Cerrar sesión" title="Cerrar sesión" data-testid="button-logout"><ArrowRight size={15} /></button></div>
+         <button className="profile-leave-network" type="button" disabled={leaveNetwork.isPending || logout.isPending} data-testid="button-leave-network" onClick={() => {
+           const confirmed = window.confirm('¿Quieres dejar la red activa? Solo se quitará esta pertenencia; tu cuenta y tus accesos a otras redes seguirán activos. No podrás salir si eres la última persona administradora activa.');
+           if (!confirmed) return;
+           leaveNetwork.mutate(undefined, {
+             onSuccess: () => {
+               clearBusinessCache();
+               void queryClient.resetQueries({ queryKey: getGetCurrentIdentityQueryKey(), exact: true });
+               setLocation('/sign-in');
+             },
+             onError: (error) => {
+               const data = error && typeof error === 'object' && 'data' in error ? error.data : null;
+               const candidateMessage = data && typeof data === 'object' && 'message' in data
+                 ? (data as { message?: unknown }).message
+                 : null;
+               const message = typeof candidateMessage === 'string' ? candidateMessage : null;
+               setNotice(httpStatus(error) === 409
+                 ? message ?? 'No se puede completar la salida porque el estado de la pertenencia ha cambiado.'
+                 : 'No se pudo dejar la red. Comprueba la conexión e inténtalo de nuevo.');
+             },
+           });
+         }}>{leaveNetwork.isPending ? 'Saliendo de la red…' : 'Salir de esta red'}</button>
       </div>
     </aside>
     {mobileNav && <button className="mobile-scrim" aria-label="Cerrar menú" onClick={() => setMobileNav(false)} />}
@@ -1278,7 +1302,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       <header className="topbar"><div className="topbar-left"><button className="mobile-menu icon-button" aria-label="Abrir menú" onClick={() => setMobileNav(true)}><Menu size={20} /></button><div className="topbar-path"><span>Curso 2027–2028</span><i>/</i><b>Simulación intercentros</b></div></div>
         <div className="topbar-right"><span className="environment-pill"><span /> SIMULACIÓN · SIN OPERACIONES REALES</span><button className="top-icon" aria-label="Notificaciones de demostración" title="Sin notificaciones"><Bell size={17} /><i /></button><span className="top-divider" /><span className="top-user" aria-label={identity.displayName}>{identityInitials(identity)}</span></div>
       </header>
-      <div className="content-scroll redfp-scroll"><Switch>
+      <div className="content-scroll redfp-scroll"><Suspense fallback={<div className="module-loading" role="status" aria-live="polite">Cargando módulo…</div>}><Switch>
         <Route path="/">{page}</Route>
         <Route path="/mercado">{page}</Route>
         <Route path="/ventas">{page}</Route>
@@ -1312,7 +1336,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
         <Route path="/docs">{page}</Route>
         <Route path="/administracion">{page}</Route>
         <Route component={NotFound} />
-      </Switch></div>
+      </Switch></Suspense></div>
       <footer className="app-footer"><span>RED FP360 <i>·</i> Entorno educativo de prácticas</span><span>Sin conexión a sistemas reales <b>·</b> © 2027</span></footer>
     </div>
     <ToastMessage message={notice} onClose={() => setNotice('')} />
@@ -1412,6 +1436,6 @@ function Router() {
   return <AuthRouter />;
 }
 function App() {
-  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router /></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
+  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Suspense fallback={<AuthLoading />}><Router /></Suspense></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
 }
 export default App;

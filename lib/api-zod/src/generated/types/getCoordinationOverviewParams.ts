@@ -7,5 +7,5 @@
  */
 
 export type GetCoordinationOverviewParams = {
-campaignId?: string;
+  campaignId?: string;
 };

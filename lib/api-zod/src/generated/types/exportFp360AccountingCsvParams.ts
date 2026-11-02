@@ -8,14 +8,12 @@
 import type { ExportFp360AccountingCsvBook } from './exportFp360AccountingCsvBook';
 
 export type ExportFp360AccountingCsvParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
-/**
- * @minimum 2000
- * @maximum 2100
- */
-fiscalYear: number;
-book: ExportFp360AccountingCsvBook;
+  /** @minLength 1 */
+  organizationId: string;
+  /**
+   * @minimum 2000
+   * @maximum 2100
+   */
+  fiscalYear: number;
+  book: ExportFp360AccountingCsvBook;
 };

@@ -8,5 +8,5 @@
 import type { UpsertFp360DirectionThresholdKey } from './upsertFp360DirectionThresholdKey';
 
 export type UpsertFp360DirectionThresholdParams = {
-key: UpsertFp360DirectionThresholdKey;
+  key: UpsertFp360DirectionThresholdKey;
 };

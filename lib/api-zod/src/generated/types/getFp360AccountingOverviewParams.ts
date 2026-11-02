@@ -7,8 +7,6 @@
  */
 
 export type GetFp360AccountingOverviewParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
+  /** @minLength 1 */
+  organizationId: string;
 };

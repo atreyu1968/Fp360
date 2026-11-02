@@ -14,6 +14,7 @@ El proyecto se desarrolla como un monorepo PNPM con una interfaz web, una API Ex
 - [Requisitos](#requisitos)
 - [Ejecución en Replit](#ejecución-en-replit)
 - [Ejecución local](#ejecución-local)
+- [Instalación en Ubuntu desde GitHub](#instalación-en-ubuntu-desde-github)
 - [Configuración y secretos](#configuración-y-secretos)
 - [Autenticación y permisos](#autenticación-y-permisos)
 - [Datos y persistencia](#datos-y-persistencia)
@@ -139,8 +140,8 @@ Comandos habituales:
 # Comprobación de tipos del workspace
 pnpm run typecheck
 
-# Compilar todos los paquetes; Vite necesita PORT y BASE_PATH
-PORT=5173 BASE_PATH=/ pnpm run build
+# Compilar y validar todos los paquetes
+pnpm run build
 
 # Compilar únicamente la interfaz web
 PORT=5173 BASE_PATH=/ pnpm --filter @workspace/red-fp360 run build
@@ -150,6 +151,45 @@ pnpm --filter @workspace/api-spec run codegen
 ```
 
 La API requiere `PORT` también al arrancar. Su workflow de desarrollo construye el servidor antes de iniciarlo.
+
+## Instalación en Ubuntu desde GitHub
+
+El instalador configura una **instalación nueva** en Ubuntu Server 22.04 o 24.04. Instala Node.js 24, PNPM 10.26.1, PostgreSQL 16 y Caddy; crea una base de datos local vacía, compila la aplicación, configura un servicio `systemd` y publica la web detrás de HTTPS. No sobrescribe una instalación ni una base con el mismo nombre.
+
+La primera descarga no necesita `curl` ni `git` preinstalados: instala `git` desde APT, clona el repositorio y ejecuta el instalador desde ese checkout. No uses `curl | bash`; descarga y revisa el script antes de ejecutarlo:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates git
+git clone --depth 1 --branch main https://github.com/atreyu1968/Fp360.git /tmp/redfp360-bootstrap
+sed -n '1,340p' /tmp/redfp360-bootstrap/scripts/install-ubuntu.sh
+sudo bash /tmp/redfp360-bootstrap/scripts/install-ubuntu.sh \
+  --domain fp360.example.org
+```
+
+Sustituye el dominio por el tuyo. Para producción, revisa un commit o tag concreto en lugar de instalar una rama que puede cambiar. Si el repositorio es privado, configura acceso SSH en el servidor y usa la URL SSH; no pongas tokens de GitHub en la URL, en el script ni en el historial de shell.
+
+### Almacenamiento y red
+
+- En Ubuntu, los documentos se guardan en el disco del servidor, dentro de `/var/lib/redfp360/objects`. El directorio privado no se publica directamente: las descargas pasan por la API y sus comprobaciones de acceso.
+- El script `scripts/backup-ubuntu.sh` crea una copia cifrada única de PostgreSQL y `/var/lib/redfp360/objects`, deteniendo brevemente la API para coordinarlos. Ejecuta el ensayo de restauración con `restore-drill` antes de confiar en las copias. Consulta [el procedimiento de copias y recuperación en Ubuntu](docs/ubuntu-backups.md) para proteger la clave, elegir destino, definir retención y recuperar los datos. Replit conserva su almacenamiento administrado en sus propios despliegues.
+- Configura el DNS del dominio hacia el servidor y permite tráfico entrante en los puertos 80 y 443. Caddy obtiene y renueva el certificado TLS. El instalador no cambia el firewall, no reinicia el servidor y no ejecuta una actualización general de Ubuntu.
+- `--upgrade-system` ofrece actualizar paquetes del sistema, pero pide escribir `UPGRADE` antes de hacerlo. No cambia la versión de Ubuntu. El instalador se detiene en versiones distintas de 22.04 o 24.04; no ejecuta `do-release-upgrade`.
+
+### Alta inicial y límites del instalador
+
+El servicio API queda vinculado a `127.0.0.1:8080`; Caddy sirve la web y enruta `/api`. La base inicial se crea como una base nueva y aislada. El `push` de esquema solo se ejecuta contra esa base recién creada, nunca contra una base proporcionada por el usuario.
+
+El token de alta inicial se guarda solo para root en `/root/redfp360-setup-token`. Léelo por consola segura para crear la cuenta administradora. Cuando termines, retira el token y reinicia el servicio:
+
+```bash
+sudo cat /root/redfp360-setup-token
+sudo /opt/redfp360/scripts/finalize-ubuntu-setup.sh
+```
+
+La clave `GROQ_API_KEY` no se copia desde Replit ni se configura automáticamente. Si habilitas GroqCloud, introdúcela únicamente en el entorno seguro del servidor. La autonomía usa un solo proceso API en esta instalación.
+
+Este instalador no configura ni programa copias externas, no abre puertos del firewall y no actualiza una instalación existente. Define el destino externo y su retención, y ensaya la restauración antes de admitir centros o datos de uso real. Para actualizaciones de versión, crea y verifica primero una copia de PostgreSQL y `/var/lib/redfp360/objects`; no vuelvas a ejecutar este instalador sobre una instalación existente.
 
 ## Configuración y secretos
 
@@ -161,12 +201,17 @@ Los valores secretos deben guardarse en Replit Secrets o en un gestor seguro equ
 | `SESSION_SECRET` | Firma de sesiones y derivación de material criptográfico para la autenticación multifactor. Obligatoria para la autenticación. |
 | `RED_FP360_SETUP_TOKEN` | Autoriza el endpoint de configuración inicial `/auth/setup`. No es una contraseña de uso diario; limita su exposición y guárdalo como secreto. |
 | `PUBLIC_OBJECT_SEARCH_PATHS` | Rutas públicas separadas por comas para el servicio de almacenamiento de objetos, cuando se habiliten recursos públicos. |
-| `PRIVATE_OBJECT_DIR` | Directorio o prefijo privado usado por las cargas de documentos. |
-| `PORT` | Puerto del proceso. La API y las configuraciones Vite lo requieren; Replit lo proporciona en los workflows. |
-| `BASE_PATH` | Prefijo de publicación de las aplicaciones Vite, incluida la web y la sandbox de maquetas. Replit lo proporciona en los workflows. |
+| `PRIVATE_OBJECT_DIR` | Prefijo privado de Replit; en modo local se deriva de `LOCAL_OBJECT_STORAGE_DIR`. |
+| `RED_FP360_STORAGE_BACKEND` | `replit` por defecto en Replit; `local` para almacenar los documentos en el disco privado del servidor Ubuntu. |
+| `LOCAL_OBJECT_STORAGE_DIR` | Raíz del almacenamiento local de objetos; debe ser una ruta absoluta y escribible por el servicio API. |
+| `PUBLIC_BASE_URL` | URL HTTPS pública del servidor; se usa para generar enlaces temporales de carga local. |
+| `HOST` | Dirección de escucha del API. En instalación propia, `127.0.0.1` para que solo Caddy acceda al proceso. |
+| `PORT` | Puerto del proceso API. Vite recibe el puerto de los workflows y usa valores propios para compilaciones fuera de Replit. |
+| `BASE_PATH` | Prefijo de publicación de Vite. Replit lo establece en los workflows; las compilaciones usan `/` para la web y `/__mockup` para la sandbox si no se indica otro valor. |
 | `NODE_ENV` | Distingue desarrollo y producción; en producción activa, entre otros controles, cookies seguras. |
 | `LOG_LEVEL` | Nivel de logging del API; por defecto se utiliza `info`. |
 | `API_BASE_URL` | Solo para pruebas de integración de `lib/db`; por defecto apunta a `http://127.0.0.1:8080/api`. |
+| `DEFAULT_OBJECT_STORAGE_BUCKET_ID` | Identificador interno de App Storage administrado por Replit; no se necesita en Ubuntu. |
 
 El endpoint de configuración inicial falla de forma cerrada si `RED_FP360_SETUP_TOKEN` no está configurado. No compartas su valor ni lo incluyas en una URL pública.
 
@@ -174,6 +219,7 @@ El endpoint de configuración inicial falla de forma cerrada si `RED_FP360_SETUP
 
 - RED FP360 usa **autenticación propia de la aplicación**. No usa Clerk.
 - El servidor gestiona el inicio y cierre de sesión, las sesiones y las rutas de MFA/TOTP.
+- TOTP mantiene HMAC-SHA1 de RFC 4226/6238 para compatibilidad con autenticadores. El aviso estático sobre SHA-1 debe revisarse en ese contexto: no se usa SHA-1 para contraseñas ni para cifrar secretos; cambiar el algoritmo sin migrar los registros existentes rompería los códigos MFA.
 - Las cookies de sesión son `HttpOnly` y `SameSite=Lax`; en producción se marcan como `Secure`.
 - La API valida el rol y el alcance de organización/empresa en el servidor. Ocultar una opción en la interfaz no sustituye a la comprobación de permisos del API.
 - Las invitaciones y los permisos administrativos tienen controles adicionales. Los enlaces de invitación deben compartirse por un canal seguro y no registrarse en logs.
@@ -196,37 +242,63 @@ El endpoint de configuración inicial falla de forma cerrada si `RED_FP360_SETUP
 - Edita primero el contrato OpenAPI cuando cambie la forma pública de una petición o respuesta. No edites manualmente los archivos generados: vuelve a ejecutar `codegen` y valida los paquetes.
 - Las operaciones financieras y fiscales tienen alcance de simulación. Las API no son una pasarela para presentar declaraciones o enviar operaciones reales.
 
-## Coordinador económico con IA local
+## Coordinador económico con IA local o GroqCloud
 
-El coordinador crea propuestas didácticas de campañas y eventos para conectar el trabajo de varias empresas simuladas. No ejecuta pedidos, pagos, cambios de stock, asientos, declaraciones ni otras operaciones del ERP.
+El coordinador crea propuestas didácticas de campañas y eventos para conectar el trabajo de varias empresas simuladas. Por defecto requiere aprobación humana. La administración puede delegar una empresa concreta para ejecutar únicamente las operaciones didácticas autorizadas abajo. No ejecuta pedidos, pagos, cambios de stock, asientos, declaraciones ni trámites reales.
+
+### Delegar una empresa y recuperar su control
+
+En **Administración → Integraciones → Autonomía simulada por empresa**, selecciona la empresa, marca los permisos y confirma la autorización explícita. No basta con elegir la modalidad autónoma de una campaña. La delegación requiere el proveedor local; GroqCloud sigue disponible para generar propuestas supervisadas, no para los ciclos autónomos.
+
+- `create_simulated_document`: crea borradores de notas didácticas, sintéticos, privados para la empresa y descargables desde Documentación. Nunca confirma documentos automáticamente.
+- `complete_simulation_event`: vincula un documento ficticio ya confirmado, visible en la empresa y del tipo exigido, y completa un evento publicado de una campaña activa. No actúa sobre eventos futuros, con precondiciones pendientes o con evidencia ya vinculada.
+- Cada empresa tiene un identificador de servicio sin cuenta de acceso ni sesión. El servicio solo puede escribir mediante estas dos operaciones, dentro de su tenant y empresa. La IA consulta el estado y el historial de toda la red antes de cada ciclo, pero no recibe identidades ni contactos personales.
+- El servidor revisa las delegaciones cada 30 segundos y programa un ciclo cada cinco minutos (hasta tres acciones por ciclo). **Ejecutar ciclo ahora** permite adelantarlo. El modelo puede decidir no actuar.
+- **Revocar y recuperar control** cancela los ciclos pendientes inmediatamente. Una respuesta que llegue tarde no puede guardar cambios, ni siquiera si después se vuelve a delegar la empresa. Lo ya registrado se conserva.
+- Cambiar los permisos también invalida los ciclos pendientes. Las revisiones evitan sobrescribir cambios de otra sesión. Los identificadores de operación, los bloqueos por empresa y la detección de notas idénticas impiden duplicados.
+- La actividad administrativa conserva quién delegó/revocó y los permisos exactos. Cada ciclo registra el actor de servicio, revisión, modelo, fecha y huella del contexto completo, volumen del historial, resultado y documentos/eventos afectados. Los fallos no aplican cambios parciales.
+
+Prueba de integración con un modelo local ficticio y tenants temporales, con el API en ejecución:
+
+```sh
+node --test lib/db/tests/ai-delegations.test.mjs
+```
 
 ### Configuración
 
 1. Entra con una cuenta administradora y abre **Integraciones → Coordinador económico con IA**.
-2. Introduce la URL base de un endpoint local compatible con la API OpenAI, por ejemplo:
+2. Elige **Endpoint local o privado** o **GroqCloud API** desde el panel:
+   - Para un endpoint local compatible con OpenAI, introduce su URL base, por ejemplo:
    - Ollama: `http://127.0.0.1:11434/v1`
    - LM Studio: `http://127.0.0.1:1234/v1`
-3. Escribe el nombre exacto del modelo, activa el coordinador y guarda.
-4. Usa **Probar conexión guardada**. El servicio debe responder a `GET /models`.
+   - Para GroqCloud, el endpoint oficial es fijo (`https://api.groq.com/openai/v1`); indica un ID de modelo vigente, como `openai/gpt-oss-20b`.
+3. Para activar GroqCloud, configura `GROQ_API_KEY` en **Tools → Secrets** y confirma en el panel que el contexto económico simulado se enviará a ese proveedor. La clave no se guarda en PostgreSQL ni se devuelve al navegador.
+4. Activa la generación supervisada, guarda y usa **Probar conexión guardada**. El endpoint local responde a `GET /models`; GroqCloud se verifica con `GET /models` en el endpoint oficial.
 
-El servidor llama a `POST /chat/completions` para generar propuestas. La configuración no guarda claves API: solo admite hosts locales o de red privada, y rechaza credenciales incrustadas, parámetros de URL y redirecciones. La dirección debe ser accesible desde el proceso del API; `127.0.0.1` se refiere al servidor/contenedor del API, no al navegador del usuario. Si el modelo se ejecuta en otro equipo, usa un nombre de host o una dirección privada accesible desde ese proceso.
+El servidor llama a `POST /chat/completions` para modelos locales y a `POST https://api.groq.com/openai/v1/chat/completions` para GroqCloud, solicitando una respuesta JSON. Las URL locales solo admiten hosts locales o privados y rechazan credenciales incrustadas, parámetros de URL y redirecciones. La dirección debe ser accesible desde el proceso del API; `127.0.0.1` se refiere al servidor/contenedor del API, no al navegador del usuario. Si el modelo se ejecuta en otro equipo, usa un nombre de host o una dirección privada accesible desde ese proceso.
 
 ### Contexto, acceso y aprobación
 
 - Antes de cada generación, el servidor reúne empresas de todo el tenant, indicadores actuales de pedidos, compras, facturas, cobros, inventario, contabilidad y declaraciones, junto con el historial económico y los eventos de auditoría disponibles.
-- El historial se filtra en el servidor: no se envían nombres personales, datos de contacto, credenciales ni descripciones libres de expedientes. El contexto se entrega al endpoint local configurado; no se envía a un proveedor alojado por RED FP360.
+- El historial se filtra en el servidor: no se envían nombres personales, datos de contacto, credenciales ni descripciones libres de expedientes. Para GroqCloud, los nombres de empresas y centros se sustituyen por etiquetas; se envían el objetivo introducido por el docente, el resumen económico simulado y el historial estructurado. El servidor rechaza objetivos con teléfonos o correos, y el administrador confirma que no añadirá datos personales.
+- Con el endpoint local, el contexto se queda en el endpoint configurado. Con GroqCloud, la información simulada se envía al proveedor únicamente cuando el administrador lo selecciona, lo activa y confirma la advertencia.
 - Solo perfiles docentes y administradores pueden solicitar esta vista completa de la red. Los eventos propuestos se limitan a las empresas participantes y cada empresa seleccionada recibe al menos uno.
 - La IA crea una campaña en estado **Borrador** y eventos **Pendientes**. Una persona debe enviar la campaña a revisión y aprobarla; los eventos también requieren aprobación antes de publicarse al alumnado.
 - La respuesta registra la fecha del contexto y el número de empresas conocidas por el coordinador. Si el endpoint o el modelo no están disponibles, la generación falla explícitamente y no crea una campaña parcial.
 
 ## Pruebas y validaciones
 
+Los validadores compartidos usan Zod 4 y se regeneran con Orval. Tras actualizar una dependencia que cambie los tipos públicos, ejecuta `pnpm exec tsc --build --force` una vez para evitar declaraciones incrementales antiguas antes de comprobar el proyecto.
+
 ```bash
 # Tipos de librerías y artefactos
 pnpm run typecheck
 
-# Pruebas unitarias del API
-pnpm --filter @workspace/api-server run test
+# Pruebas de rutas del API (requieren PostgreSQL de desarrollo)
+pnpm run test:api
+
+# Pruebas de base de datos (requieren PostgreSQL de desarrollo y el API en PORT=8080)
+pnpm run test:db-integration
 
 # Prueba de límites de acceso entre empresas
 pnpm --filter @workspace/db run test:catalog-access
@@ -235,9 +307,49 @@ pnpm --filter @workspace/db run test:catalog-access
 pnpm --filter @workspace/db run test:accounting-export
 ```
 
-Las pruebas de `lib/db` que acceden a PostgreSQL requieren `DATABASE_URL`. Las pruebas HTTP de integración necesitan además que el API de desarrollo esté levantado; se puede cambiar su base con `API_BASE_URL`. Los tests se protegen para no ejecutarse con `NODE_ENV=production`.
+Las pruebas de `lib/db` que acceden a PostgreSQL requieren `DATABASE_URL`. Las pruebas HTTP de integración necesitan además que el API esté levantado en `PORT=8080`; se puede cambiar su base con `API_BASE_URL`. Los tests se protegen para no ejecutarse con `NODE_ENV=production`.
 
 Hay pruebas adicionales en `lib/db/tests/` para catálogo, compras, CRM y administración. Antes de ejecutarlas, revisa sus requisitos y confirma que apuntan a una base de desarrollo.
+
+El flujo de GitHub Actions `.github/workflows/quality.yml` crea una base PostgreSQL temporal y ejecuta compilación, pruebas del API e integraciones de base de datos en cada push y pull request. Nunca reutiliza la base de datos del entorno de desarrollo o producción.
+
+## Preparación para producción educativa
+
+### Capacidad orientativa por red de empresas
+
+La aplicación separa la interfaz web, la API Node.js/Express, PostgreSQL y App Storage. La web compilada es estática y no necesita un servidor de aplicación dedicado; concentra la carga en la API, la base de datos y, si se usa, el proveedor de IA. Las cifras siguientes son **estimaciones iniciales de planificación**, no resultados de pruebas de carga ni garantías de capacidad. Suponen una carga educativa normal y una base de datos en un servicio separado:
+
+| Empresas simuladas en una red | API: CPU y memoria iniciales | PostgreSQL: CPU y memoria iniciales | Uso previsto |
+| --- | --- | --- | --- |
+| 1–10 | 2 vCPU, 4 GiB RAM | 2 vCPU, 4 GiB RAM | Piloto pequeño |
+| 11–50 | 4 vCPU, 8 GiB RAM | 4 vCPU, 8 GiB RAM | Varios centros con actividad habitual |
+| 51–200 | 8 vCPU, 16 GiB RAM | 8 vCPU, 16 GiB RAM | Despliegue multicentro que requiere validación de carga |
+| Más de 200 | Dimensionar después de una prueba de carga | Dimensionar según datos, índices y conexiones | Revisar arquitectura y separar trabajos pesados |
+
+No se debe dimensionar solo por el número de empresas. También influyen las sesiones concurrentes, el volumen de operaciones acumuladas, los documentos y versiones conservados, la frecuencia de consultas y la actividad simultánea de los procesos de coordinación. Antes de abrir un grupo, prueba con datos ficticios una carga al menos igual al pico esperado y mide p95 de latencia, errores, CPU, memoria, conexiones y consultas lentas; ajusta los recursos con esos resultados.
+
+#### Factores que afectan a RED FP360
+
+- Cada propuesta del coordinador reúne el estado de todas las empresas del tenant y su historial de operaciones. Ese contexto se construye en memoria; una red con muchos años de operaciones puede exigir más memoria, tiempo de consulta y capacidad de contexto que otra con el mismo número de empresas y poco historial.
+- GroqCloud se ejecuta fuera de la aplicación y no requiere GPU en el servidor de RED FP360, pero la latencia, disponibilidad, límites y consumo de tokens dependen del proveedor. Si se usa un modelo local, aloja la inferencia en un servidor aparte y dimensiona CPU/GPU y memoria según el modelo, su ventana de contexto y la concurrencia; no compartas esos recursos con PostgreSQL.
+- Mantén PostgreSQL y sus datos en almacenamiento SSD persistente, con espacio para índices, crecimiento, WAL y el procedimiento de copias definido por el operador. App Storage es independiente: su capacidad depende del tamaño y retención de documentos, no del tamaño de la RAM del API.
+- El pool PostgreSQL actual no fija un límite propio y usa el valor predeterminado de `pg.Pool` (10 conexiones por proceso). Al aumentar instancias o workers, calcula el total de conexiones contra el límite de la base de datos y configura un pooler o límites explícitos antes de escalar.
+- El planificador de autonomía simulada se inicia dentro de cada proceso API. **No aumentes las réplicas del API con el planificador activo hasta validar una coordinación distribuida**; mientras tanto, usa una sola instancia API o desactiva la autonomía programada y valida los procesos manuales.
+
+Estos tamaños sirven para iniciar la planificación, no sustituyen una prueba con la distribución real de empresas, usuarios y operaciones. Si el historial hace crecer demasiado el contexto de IA, se debe optimizar y limitar ese resumen antes de aumentar indefinidamente los recursos o el presupuesto del proveedor.
+
+Antes de publicar una versión para uso formativo:
+
+1. Exige que GitHub Actions termine correctamente; no publiques si falla el chequeo de tipos, la compilación o una prueba.
+2. Si se usa PostgreSQL administrado por Replit, revisa el diff de esquema que presenta **Publish** y confirma cualquier renombre conscientemente; Replit aplica ese diff a producción. No ejecutes `push` ni `push-force` contra producción. Para una base externa, define y ensaya su proceso de migración aparte: Publish no cambia su esquema.
+3. Comprueba que producción usa su conexión `DATABASE_URL` correcta, un `SESSION_SECRET` propio del entorno y las variables de App Storage necesarias. No copies la conexión de desarrollo a producción. Verifica que los documentos privados no tengan rutas públicas.
+4. Completa la configuración inicial con `RED_FP360_SETUP_TOKEN`, comprueba el acceso del administrador y MFA, y retira ese token de producción después del alta inicial.
+5. Confirma que `/api/healthz` responde correctamente: comprueba tanto el servidor como la conexión a PostgreSQL.
+6. Si se habilita el coordinador de IA, prueba el proveedor desde el panel. Con GroqCloud, configura `GROQ_API_KEY` en los secretos del entorno publicado y confirma el aviso de transferencia del contexto simulado antes de activar. La IA solo debe modificar datos del simulador.
+7. Prueba autenticación, selección de empresa, invitaciones, permisos, documentos, flujos económicos y concesión/revocación de autonomía simulada con cuentas de cada rol y datos ficticios antes de abrir el acceso al alumnado.
+8. Ejecuta `pnpm run test:recovery` y revisa el [procedimiento y los resultados del ensayo de recuperación](docs/recovery-drill.md). Usa exclusivamente su clúster desechable y sus datos ficticios: no acepta destinos externos. Este ensayo no sustituye una política de copias del proveedor ni demuestra la recuperación del almacenamiento real administrado por Replit.
+
+La generación de propuestas es supervisada. La autonomía simulada por empresa está disponible solo mediante delegación explícita de administración, limitada a operaciones didácticas autorizadas y revocable; debe probarse en el entorno publicado antes de permitir su uso formativo.
 
 ## Cambios de esquema de base de datos
 
@@ -248,9 +360,9 @@ El paquete `@workspace/db` expone estos comandos:
 pnpm --filter @workspace/db run push
 ```
 
-`push` aplica cambios a la base indicada por `DATABASE_URL`; úsalo únicamente en desarrollo tras revisar el diff y confirmar el destino. Existe `push-force`, pero puede eliminar o alterar datos: **no lo ejecutes en producción ni como solución automática**. Antes de cambios destructivos, conserva una copia recuperable y obtén autorización explícita.
+`push` sincroniza la base indicada por `DATABASE_URL`; úsalo solo para desarrollo o para una base de prueba desechable. `push-force` puede eliminar o alterar datos: **no lo ejecutes en producción ni como solución automática**.
 
-La configuración actual define el esquema Drizzle como fuente de verdad y no incluye una carpeta de migraciones versionadas en este paquete.
+Con PostgreSQL administrado por Replit, Publish compara el esquema de desarrollo con el de producción, muestra los cambios y solicita confirmación para renombres. No añadas DDL al arranque ni un hook de despliegue que ejecute `push`. Si la aplicación se configura para usar PostgreSQL externo, el equipo debe mantener un proceso de migración específico para ese proveedor antes de publicar código que dependa del cambio.
 
 ## Archivos y almacenamiento de objetos
 

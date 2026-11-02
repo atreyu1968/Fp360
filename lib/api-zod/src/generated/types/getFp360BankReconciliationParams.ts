@@ -7,10 +7,8 @@
  */
 
 export type GetFp360BankReconciliationParams = {
-/**
- * @minLength 1
- */
-organizationId: string;
-fromDate: string;
-toDate: string;
+  /** @minLength 1 */
+  organizationId: string;
+  fromDate: string;
+  toDate: string;
 };

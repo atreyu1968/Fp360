@@ -28,7 +28,10 @@ import {
 } from "@workspace/db";
 import { hashPassword } from "../lib/passwords";
 import { checkLocalAiEndpoint, normalizeLocalAiBaseUrl } from "../lib/local-ai";
+import { checkGroqAiEndpoint, listGroqAiModels } from "../lib/groq-ai";
 import { hashSessionToken, issueAuthSession, requireAuth, requireSameOrigin, type AuthContext } from "../middlewares/auth";
+
+import aiDelegationsRouter from "./ai-delegations";
 
 const router: IRouter = Router();
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -253,7 +256,7 @@ router.post("/auth/invitations/reject-existing", requireAuth, requireSameOrigin,
   res.status(204).end();
 });
 
-router.post("/auth/invitations/reject", async (req, res): Promise<void> => {
+router.post("/auth/invitations/reject", requireSameOrigin, async (req, res): Promise<void> => {
   const body = RejectInvitationBody.safeParse(req.body);
   if (!body.success) fail(400, "El enlace de invitación no es válido.");
   await db.transaction(async (tx) => {
@@ -303,6 +306,7 @@ router.post("/auth/invitations/accept", async (req, res): Promise<void> => {
 });
 
 router.use("/admin", requireAuth, administratorOnly, requireSameOrigin);
+router.use("/admin/ai-coordinator/delegations", aiDelegationsRouter);
 
 router.get("/admin/users", async (req, res): Promise<void> => {
   const users = await db.select({
@@ -517,39 +521,63 @@ router.get("/admin/system/overview", async (req, res): Promise<void> => {
     privilegeRequests: requestRows.map(privilegeRequestView),
     integrations,
     aiCoordinator: {
-      configured: Boolean(aiSettings[0]?.baseUrl && aiSettings[0]?.model),
+      configured: Boolean(aiSettings[0]?.model && (aiSettings[0]?.provider === "groqcloud" || aiSettings[0]?.baseUrl)),
       enabled: aiSettings[0]?.enabled ?? false,
+      provider: aiSettings[0]?.provider === "groqcloud" ? "groqcloud" : "local",
       baseUrl: aiSettings[0]?.baseUrl ?? "",
       model: aiSettings[0]?.model ?? "",
+      groqApiKeyConfigured: Boolean(process.env.GROQ_API_KEY),
       updatedAt: aiSettings[0]?.updatedAt.toISOString() ?? null,
     },
     policyMatrix,
     simulationOnly: true,
   }));
+});
 
 router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => {
   const body = UpdateAdminAiCoordinatorSettingsBody.safeParse(req.body);
-  if (!body.success) fail(400, "Revisa la URL, el modelo y el estado del coordinador.");
+  if (!body.success) fail(400, "Revisa el proveedor, la URL, el modelo y el estado del coordinador.");
   const actor = req.auth!;
+  const provider = body.data.provider;
   let baseUrl = body.data.baseUrl.trim();
   const model = body.data.model.trim();
-  if (body.data.enabled && (!baseUrl || !model)) fail(400, "Indica una URL local y un modelo antes de activar el coordinador.");
-  if (baseUrl) {
+  if (body.data.enabled && !model) fail(400, "Indica un modelo antes de activar el coordinador.");
+  if (provider === "groqcloud" && body.data.enabled && !body.data.externalDataTransferAcknowledged) {
+    fail(400, "Confirma que el contexto económico simulado se enviará a GroqCloud antes de activarlo.");
+  }
+  if (provider === "groqcloud" && body.data.enabled && !process.env.GROQ_API_KEY) {
+    fail(503, "Falta configurar GROQ_API_KEY en los Secretos del proyecto.");
+  }
+  if (provider === "local" && body.data.enabled && !baseUrl) {
+    fail(400, "Indica una URL local antes de activar el coordinador.");
+  }
+  if (provider === "local" && baseUrl) {
     try {
       baseUrl = normalizeLocalAiBaseUrl(baseUrl);
     } catch (error) {
       fail(400, error instanceof Error ? error.message : "La URL local no es válida.");
     }
   }
-  if (body.data.enabled && model.length < 1) fail(400, "Indica el nombre del modelo local.");
+  if (provider === "groqcloud") {
+    const [existing] = await db.select({ baseUrl: fpAdminAiCoordinatorSettings.baseUrl })
+      .from(fpAdminAiCoordinatorSettings).where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
+    baseUrl = existing?.baseUrl ?? "";
+  }
   const action = "ai.coordinator.settings.updated";
-  const fingerprint = requestFingerprint({ enabled: body.data.enabled, baseUrl, model });
+  const fingerprint = requestFingerprint({
+    enabled: body.data.enabled,
+    provider,
+    baseUrl,
+    model,
+    externalDataTransferAcknowledged: provider === "groqcloud" && body.data.externalDataTransferAcknowledged,
+  });
   await db.transaction(async (tx) => {
     await lockAdministration(tx, actor);
     if (await priorAdminOperation(tx, actor, body.data.operationId, action, fingerprint)) return;
     await tx.insert(fpAdminAiCoordinatorSettings).values({
       id: randomUUID(),
       tenantId: actor.tenantId,
+      provider,
       baseUrl,
       model,
       enabled: body.data.enabled,
@@ -558,6 +586,7 @@ router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => 
     }).onConflictDoUpdate({
       target: fpAdminAiCoordinatorSettings.tenantId,
       set: {
+        provider,
         baseUrl,
         model,
         enabled: body.data.enabled,
@@ -570,12 +599,27 @@ router.put("/admin/ai-coordinator/settings", async (req, res): Promise<void> => 
   const [saved] = await db.select().from(fpAdminAiCoordinatorSettings)
     .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
   res.json(UpdateAdminAiCoordinatorSettingsResponse.parse({
-    configured: Boolean(saved?.baseUrl && saved?.model),
+    configured: Boolean(saved?.model && (saved?.provider === "groqcloud" || saved?.baseUrl)),
     enabled: saved?.enabled ?? false,
+    provider: saved?.provider ?? "local",
     baseUrl: saved?.baseUrl ?? "",
     model: saved?.model ?? "",
+    groqApiKeyConfigured: Boolean(process.env.GROQ_API_KEY),
     updatedAt: saved?.updatedAt.toISOString() ?? null,
   }));
+});
+
+router.get("/admin/ai-coordinator/groq-models", async (req, res): Promise<void> => {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) fail(503, "Falta configurar GROQ_API_KEY en los Secretos del proyecto.");
+  try {
+    const models = await listGroqAiModels(apiKey);
+    res.setHeader("Cache-Control", "no-store");
+    res.json(api.ListAdminGroqAiModelsResponse.parse({ models }));
+  } catch (error) {
+    req.log.warn({ tenantId: req.auth!.tenantId }, "GroqCloud model catalog query failed");
+    fail(502, "No se pudo consultar el catálogo de GroqCloud. Revisa la clave y la disponibilidad de la API.");
+  }
 });
 
 router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
@@ -584,11 +628,14 @@ router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
   const actor = req.auth!;
   const [settings] = await db.select().from(fpAdminAiCoordinatorSettings)
     .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
-  if (!settings?.enabled || !settings.baseUrl || !settings.model) {
-    fail(409, "Configura y activa primero un endpoint local de IA.");
+  if (!settings?.enabled || !settings.model || (settings.provider === "local" && !settings.baseUrl)) {
+    fail(409, "Configura y activa primero un proveedor de IA.");
+  }
+  if (settings.provider !== "local" && settings.provider !== "groqcloud") {
+    fail(409, "El proveedor guardado ya no está disponible. Selecciona y guarda un proveedor válido.");
   }
   const action = "ai.coordinator.connection.tested";
-  const fingerprint = requestFingerprint({ model: settings.model });
+  const fingerprint = requestFingerprint({ provider: settings.provider, model: settings.model });
   const [priorTest] = await db.select().from(fpAuthAudit).where(and(
     eq(fpAuthAudit.tenantId, actor.tenantId),
     eq(fpAuthAudit.operationId, body.data.operationId),
@@ -606,10 +653,17 @@ router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
     return;
   }
   try {
-    await checkLocalAiEndpoint({ baseUrl: settings.baseUrl, model: settings.model });
-  } catch {
-    req.log.warn({ tenantId: actor.tenantId }, "Local AI endpoint check failed");
-    fail(502, "No se pudo conectar con el endpoint local. Comprueba su disponibilidad y la ruta /models.");
+    if (settings.provider === "groqcloud") {
+      const apiKey = process.env.GROQ_API_KEY;
+      if (!apiKey) fail(503, "Falta configurar GROQ_API_KEY en los Secretos del proyecto.");
+      await checkGroqAiEndpoint({ model: settings.model, apiKey });
+    } else await checkLocalAiEndpoint({ baseUrl: settings.baseUrl, model: settings.model });
+  } catch (error) {
+    if (error instanceof AccessError) throw error;
+    req.log.warn({ tenantId: actor.tenantId, provider: settings.provider, model: settings.model }, "AI provider connection check failed");
+    fail(502, settings.provider === "groqcloud"
+      ? "No se pudo conectar con GroqCloud. Revisa la clave, el modelo y el acceso a la API."
+      : "No se pudo conectar con el endpoint local. Comprueba su disponibilidad y la ruta /models.");
   }
   const checkedAt = new Date().toISOString();
   await db.transaction(async (tx) => {
@@ -624,9 +678,8 @@ router.post("/admin/ai-coordinator/test", async (req, res): Promise<void> => {
     connected: true,
     model: settings.model,
     checkedAt,
-    message: "La API local respondió correctamente.",
+    message: settings.provider === "groqcloud" ? "La API de GroqCloud respondió correctamente." : "La API local respondió correctamente.",
   }));
-});
 });
 
 router.post("/admin/organizations", async (req, res): Promise<void> => {

@@ -5,6 +5,7 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminAiCoordinatorSettingsInputProvider } from './adminAiCoordinatorSettingsInputProvider';
 
 export interface AdminAiCoordinatorSettingsInput {
   /**
@@ -13,8 +14,11 @@ export interface AdminAiCoordinatorSettingsInput {
      */
   operationId: string;
   enabled: boolean;
+  provider: AdminAiCoordinatorSettingsInputProvider;
   /** @maxLength 512 */
   baseUrl: string;
   /** @maxLength 120 */
   model: string;
+  /** Required to enable GroqCloud because network-level simulated economic context is sent to the external provider. */
+  externalDataTransferAcknowledged: boolean;
 }

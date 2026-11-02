@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { and, asc, eq, inArray, isNull, lte } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { Router, type ErrorRequestHandler, type Request, type RequestHandler, type Response } from "express";
 import * as api from "@workspace/api-zod";
 import {
@@ -34,6 +34,7 @@ import {
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 import { normalizeLocalAiBaseUrl, requestLocalAiJson } from "../lib/local-ai";
+import { requestGroqAiJson } from "../lib/groq-ai";
 
 const router: Router = Router();
 const SIMULATION_START = "2027-01-01";
@@ -79,7 +80,7 @@ function sanitizedAuditOperation(module: string, value: unknown): NetworkOperati
   };
 }
 
-async function networkSituationSnapshot(tenantId: string) {
+export async function networkSituationSnapshot(tenantId: string) {
   const eventQueries: Array<Promise<{ module: string; rows: unknown[] }>> = [
     db.select().from(fpAccountingEvents).where(eq(fpAccountingEvents.tenantId, tenantId)).then((rows) => ({ module: "contabilidad", rows })),
     db.select().from(fpBankEvents).where(eq(fpBankEvents.tenantId, tenantId)).then((rows) => ({ module: "tesoreria", rows })),
@@ -332,7 +333,7 @@ function safeScenarioText(...values: Array<string | null | undefined>): void {
 
 function safeAiScenarioText(...values: Array<string | null | undefined>): void {
   if (values.some((value) => value && personalChannel.test(value))) {
-    fail(502, "La IA local devolvió datos de contacto; la propuesta no se guardó.");
+    fail(502, "El proveedor de IA devolvió datos de contacto; la propuesta no se guardó.");
   }
 }
 
@@ -517,7 +518,7 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
   endDateValue.setUTCDate(endDateValue.getUTCDate() + data.durationWeeks * 7);
   const endDate = endDateValue.toISOString().slice(0, 10);
   if (endDate > SIMULATION_END) fail(400, "La duración supera el periodo disponible del escenario.");
-  await assertOrganizations(actor, [data.ownerOrganizationId, ...data.participantOrganizationIds]);
+  await assertOrganizations(actor, data.participantOrganizationIds);
 
   const inputFingerprint = createHash("sha256").update(JSON.stringify(data)).digest("hex");
   const [priorCampaign] = await db.select().from(fpSimulationCampaigns).where(and(
@@ -525,6 +526,7 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
     eq(fpSimulationCampaigns.operationId, data.operationId),
   )).limit(1);
   if (priorCampaign) {
+    if (priorCampaign.createdByUserId !== actor.userId) fail(409, "El identificador ya se utilizó para otra operación.");
     const [marker] = await db.select().from(fpSimulationAuditEvents).where(and(
       eq(fpSimulationAuditEvents.tenantId, actor.tenantId),
       eq(fpSimulationAuditEvents.campaignId, priorCampaign.id),
@@ -552,22 +554,51 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
 
   const [settings] = await db.select().from(fpAdminAiCoordinatorSettings)
     .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
-  if (!settings?.enabled || !settings.baseUrl || !settings.model) {
-    fail(503, "El administrador debe configurar y activar una IA local antes de generar propuestas.");
+  if (!settings?.enabled || !settings.model || (settings.provider === "local" && !settings.baseUrl)) {
+    fail(503, "El administrador debe configurar y activar un proveedor de IA antes de generar propuestas.");
   }
-  let baseUrl: string;
-  try {
-    baseUrl = normalizeLocalAiBaseUrl(settings.baseUrl);
-  } catch {
-    fail(503, "La configuración del endpoint local de IA no es válida.");
+  if (settings.provider !== "local" && settings.provider !== "groqcloud") {
+    fail(503, "El proveedor guardado ya no está disponible. El administrador debe seleccionar un proveedor válido.");
+  }
+  let baseUrl = "";
+  const groqApiKey = settings.provider === "groqcloud" ? process.env.GROQ_API_KEY : undefined;
+  if (settings.provider === "groqcloud" && !groqApiKey) {
+    fail(503, "Falta configurar GROQ_API_KEY en los Secretos del proyecto.");
+  }
+  if (settings.provider === "local") {
+    try {
+      baseUrl = normalizeLocalAiBaseUrl(settings.baseUrl);
+    } catch {
+      fail(503, "La configuración del endpoint local de IA no es válida.");
+    }
   }
   const network = await networkSituationSnapshot(actor.tenantId);
   if (!network.companyCount) fail(400, "No hay empresas registradas en la red.");
   const participantSet = new Set(data.participantOrganizationIds);
+  const companyAliases = new Map(network.companies.map((company, index) => [
+    company.id,
+    `Empresa ${String(index + 1).padStart(2, "0")}`,
+  ]));
   const participantNames = network.companies
     .filter((company) => participantSet.has(company.id))
-    .map((company) => ({ id: company.id, name: company.name }));
+    .map((company) => ({
+      id: company.id,
+      name: settings.provider === "groqcloud"
+        ? companyAliases.get(company.id) ?? "Empresa simulada"
+        : company.name,
+    }));
   if (participantNames.length !== participantSet.size) fail(400, "No se pudieron resolver todas las empresas participantes.");
+  const networkForProvider = settings.provider === "groqcloud"
+    ? {
+      ...network,
+      companies: network.companies.map((company, index) => ({
+        ...Object.fromEntries(
+          Object.entries(company).filter(([key]) => !["name", "center", "island"].includes(key)),
+        ),
+        label: companyAliases.get(company.id) ?? `Empresa ${index + 1}`,
+      })),
+    }
+    : network;
 
   const systemPrompt = [
     "Eres el coordinador didáctico de RED FP360, un ERP educativo con una red de empresas simuladas.",
@@ -577,6 +608,7 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
     "Usa solo los IDs de empresa participante indicados y asigna al menos un evento a cada una.",
     "Ordena los eventos cronológicamente; expresa dependencias entre empresas en preconditions.",
     "No incluyas datos personales, correos, teléfonos, credenciales ni texto de expedientes.",
+    ...(settings.provider === "groqcloud" ? ["Las empresas externas se identifican con etiquetas anónimas; no intentes deducir nombres reales."] : []),
     "Devuelve exclusivamente un objeto JSON: {title, description, events:[{organizationId,title,eventType,description,preconditions,requiredDocumentType,simulatedDate}]}",
     "eventType solo puede ser offer, late_payment, stock_break, claim, financing, service_incident u other.",
     "requiredDocumentType debe ser una cadena breve o null; preconditions debe ser una lista de textos breves.",
@@ -593,21 +625,23 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
       exactEventCount: data.eventCount,
       simulatedToday: SIMULATION_TODAY,
     },
-    networkSnapshotAndCompleteOperationHistory: network,
+    networkSnapshotAndCompleteOperationHistory: networkForProvider,
   });
   let rawPlan: unknown;
   try {
-    rawPlan = await requestLocalAiJson({ baseUrl, model: settings.model }, systemPrompt, userPrompt);
+    rawPlan = settings.provider === "groqcloud"
+      ? await requestGroqAiJson({ model: settings.model, apiKey: groqApiKey! }, systemPrompt, userPrompt)
+      : await requestLocalAiJson({ baseUrl, model: settings.model }, systemPrompt, userPrompt);
   } catch (error) {
-    req.log.warn({ tenantId: actor.tenantId, model: settings.model, error }, "Local AI proposal generation failed");
-    fail(502, "La IA local no pudo generar una propuesta válida. Comprueba el servicio y el tamaño de contexto disponible.");
+    req.log.warn({ tenantId: actor.tenantId, provider: settings.provider, model: settings.model }, "AI proposal generation failed");
+    fail(502, "El proveedor de IA no pudo generar una propuesta válida. Comprueba su disponibilidad y el tamaño de contexto.");
   }
-  if (!rawPlan || typeof rawPlan !== "object") fail(502, "La IA local devolvió una propuesta no válida.");
+  if (!rawPlan || typeof rawPlan !== "object") fail(502, "El proveedor de IA devolvió una propuesta no válida.");
   const plan = rawPlan as Record<string, unknown>;
   if (typeof plan.title !== "string" || typeof plan.description !== "string" || !Array.isArray(plan.events)) {
-    fail(502, "La IA local no devolvió todos los campos requeridos.");
+    fail(502, "El proveedor de IA no devolvió todos los campos requeridos.");
   }
-  if (plan.events.length !== data.eventCount) fail(502, "La IA local no generó el número de eventos solicitado.");
+  if (plan.events.length !== data.eventCount) fail(502, "El proveedor de IA no generó el número de eventos solicitado.");
   safeAiScenarioText(plan.title, plan.description);
   const parsedCampaign = api.CreateFp360SimulationCampaignBody.safeParse({
     operationId: data.operationId,
@@ -649,7 +683,38 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
   }
 
   const campaignId = randomUUID();
-  const createdCampaign = await db.transaction(async (tx) => {
+  const savedProposal = await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`fp360-ai-proposal:${actor.tenantId}:${data.operationId}`}))`);
+    const [concurrentCampaign] = await tx.select().from(fpSimulationCampaigns).where(and(
+      eq(fpSimulationCampaigns.tenantId, actor.tenantId),
+      eq(fpSimulationCampaigns.operationId, data.operationId),
+    )).limit(1);
+    if (concurrentCampaign) {
+      if (concurrentCampaign.createdByUserId !== actor.userId) fail(409, "El identificador ya se utilizó para otra operación.");
+      const [marker] = await tx.select().from(fpSimulationAuditEvents).where(and(
+        eq(fpSimulationAuditEvents.tenantId, actor.tenantId),
+        eq(fpSimulationAuditEvents.campaignId, concurrentCampaign.id),
+        eq(fpSimulationAuditEvents.action, "ai:proposal_generated"),
+      )).limit(1);
+      let markerData: { inputFingerprint?: string; snapshotAt?: string; networkCompanyCount?: number } = {};
+      try {
+        markerData = marker ? JSON.parse(marker.detail) as typeof markerData : {};
+      } catch { /* An invalid audit record must not be treated as an idempotent replay. */ }
+      if (!marker || markerData.inputFingerprint !== inputFingerprint) {
+        fail(409, "El identificador ya se utilizó para otra operación.");
+      }
+      const concurrentEvents = await tx.select().from(fpSimulationEvents).where(and(
+        eq(fpSimulationEvents.tenantId, actor.tenantId),
+        eq(fpSimulationEvents.campaignId, concurrentCampaign.id),
+      )).orderBy(asc(fpSimulationEvents.simulatedDate), asc(fpSimulationEvents.createdAt));
+      return {
+        campaign: concurrentCampaign,
+        events: concurrentEvents,
+        snapshotAt: markerData.snapshotAt,
+        networkCompanyCount: markerData.networkCompanyCount,
+      };
+    }
+
     const [created] = await tx.insert(fpSimulationCampaigns).values({
       id: campaignId,
       tenantId: actor.tenantId,
@@ -692,17 +757,22 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
       operationCount: network.operationHistory.length,
       model: settings.model,
     }));
-    return created;
+    return {
+      campaign: created,
+      events: null,
+      snapshotAt: network.snapshotAt,
+      networkCompanyCount: network.companyCount,
+    };
   });
-  const storedEvents = await db.select().from(fpSimulationEvents).where(and(
-    eq(fpSimulationEvents.tenantId, actor.tenantId),
-    eq(fpSimulationEvents.campaignId, createdCampaign.id),
-  )).orderBy(asc(fpSimulationEvents.simulatedDate), asc(fpSimulationEvents.createdAt));
+  const storedEvents = savedProposal.events ?? await db.select().from(fpSimulationEvents).where(and(
+      eq(fpSimulationEvents.tenantId, actor.tenantId),
+      eq(fpSimulationEvents.campaignId, savedProposal.campaign.id),
+    )).orderBy(asc(fpSimulationEvents.simulatedDate), asc(fpSimulationEvents.createdAt));
   res.status(201).json(api.GenerateFp360AiSimulationProposalResponse.parse({
-    campaign: await campaignOutput(createdCampaign),
+    campaign: await campaignOutput(savedProposal.campaign),
     events: await Promise.all(storedEvents.map(eventOutput)),
-    networkSnapshotAt: network.snapshotAt,
-    networkCompanyCount: network.companyCount,
+    networkSnapshotAt: savedProposal.snapshotAt,
+    networkCompanyCount: savedProposal.networkCompanyCount,
     approvalRequired: true,
     simulationOnly: true,
   }));
@@ -724,7 +794,7 @@ router.post("/redfp360/simulations/campaigns", requireSimulationWriteAccess, rou
   if (!canReview(actor.role) && actor.organizationId !== data.ownerOrganizationId) {
     fail(403, "Solo puedes crear campañas para tu propia empresa.");
   }
-  await assertOrganizations(actor, [data.ownerOrganizationId, ...data.participantOrganizationIds]);
+  await assertOrganizations(actor, data.participantOrganizationIds);
   if (personalChannel.test(data.operationId)) fail(400, "El identificador no puede contener datos de contacto.");
   const [prior] = await db.select().from(fpSimulationCampaigns).where(and(
     eq(fpSimulationCampaigns.tenantId, actor.tenantId),

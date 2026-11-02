@@ -458,6 +458,9 @@
 .profile-logout { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 6px; color: #6e8295; background: transparent; cursor: pointer; transform: rotate(180deg); }
 .profile-logout:hover { color: #b0443c; background: #fff0ee; }
 .profile-logout:disabled { opacity: .5; cursor: wait; }
+.profile-leave-network { width: 100%; margin: 0 0 3px; padding: 5px 10px; border: 0; border-radius: 6px; color: #7a8998; background: transparent; text-align: left; font: inherit; font-size: 10px; cursor: pointer; }
+.profile-leave-network:hover { color: #a33d38; background: #fff4f2; }
+.profile-leave-network:disabled { opacity: .55; cursor: wait; }
 .environment-pill { letter-spacing: .015em; }
 @keyframes auth-pulse { 0%, 100% { opacity: .64; } 50% { opacity: 1; } }
 @media (max-width: 820px) {
