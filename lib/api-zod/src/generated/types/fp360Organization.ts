@@ -5,6 +5,7 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+import type { Fp360OrganizationActivity } from './fp360OrganizationActivity';
 import type { Fp360OrganizationRole } from './fp360OrganizationRole';
 
 export interface Fp360Organization {
@@ -14,4 +15,19 @@ export interface Fp360Organization {
   island: string;
   role: Fp360OrganizationRole;
   isActive: boolean;
+  activity: Fp360OrganizationActivity;
+  commercialName: string;
+  address: string;
+  municipality: string;
+  postalCode: string;
+  businessEmail: string;
+  businessPhone: string;
+  /** Identificador ficticio con prefijo SIM; no válido para trámites. */
+  cif: string;
+  /** Identificador ficticio con prefijo SIM; no válido para trámites. */
+  socialSecurityNumber: string;
+  /** Régimen de práctica asignado por actividad; no válido para gestión real. */
+  socialSecurityRegime: string;
+  /** @nullable */
+  logoUrl: string | null;
 }

@@ -325,6 +325,8 @@ import type {
   MentorSessionAction,
   MentorSessionInput,
   MentorshipOverview,
+  OrganizationLogoUploadInput,
+  OrganizationLogoUploadUrl,
   PortfolioActionInput,
   PortfolioCriterion,
   PortfolioCriterionInput,
@@ -10081,6 +10083,252 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getUpdateFp360OrganizationMutationOptions(options), queryClient);
     }
+
+export const getRequestFp360OrganizationLogoUploadUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/organizations/${id}/logo-upload`
+}
+
+export const requestFp360OrganizationLogoUpload = async (id: string,
+    organizationLogoUploadInput: OrganizationLogoUploadInput, options?: Parameters<typeof customFetch>[1]): Promise<OrganizationLogoUploadUrl> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<OrganizationLogoUploadUrl>(getRequestFp360OrganizationLogoUploadUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(organizationLogoUploadInput)
+  }
+);}
+
+
+
+
+
+export const getRequestFp360OrganizationLogoUploadMutationKey = () => ['requestFp360OrganizationLogoUpload'] as const;
+
+export const getRequestFp360OrganizationLogoUploadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestFp360OrganizationLogoUpload>>, TError,RequestFp360OrganizationLogoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestFp360OrganizationLogoUpload>>, TError,RequestFp360OrganizationLogoUploadMutationVariables, TContext> => {
+
+const mutationKey = getRequestFp360OrganizationLogoUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestFp360OrganizationLogoUpload>>, RequestFp360OrganizationLogoUploadMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  requestFp360OrganizationLogoUpload(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestFp360OrganizationLogoUploadMutationResult = NonNullable<Awaited<ReturnType<typeof requestFp360OrganizationLogoUpload>>>
+    export type RequestFp360OrganizationLogoUploadMutationBody = BodyType<OrganizationLogoUploadInput>
+    export type RequestFp360OrganizationLogoUploadMutationError = ErrorType<void>
+    export type RequestFp360OrganizationLogoUploadMutationVariables = {id: string;data: BodyType<OrganizationLogoUploadInput>}
+
+    export const useRequestFp360OrganizationLogoUpload = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestFp360OrganizationLogoUpload>>, TError,RequestFp360OrganizationLogoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof requestFp360OrganizationLogoUpload>>,
+        TError,
+        RequestFp360OrganizationLogoUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestFp360OrganizationLogoUploadMutationOptions(options), queryClient);
+    }
+
+export const getCompleteFp360OrganizationLogoUploadUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/organizations/${id}/logo-complete`
+}
+
+export const completeFp360OrganizationLogoUpload = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Fp360Organization> => {
+
+  return customFetch<Fp360Organization>(getCompleteFp360OrganizationLogoUploadUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompleteFp360OrganizationLogoUploadMutationKey = () => ['completeFp360OrganizationLogoUpload'] as const;
+
+export const getCompleteFp360OrganizationLogoUploadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeFp360OrganizationLogoUpload>>, TError,CompleteFp360OrganizationLogoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeFp360OrganizationLogoUpload>>, TError,CompleteFp360OrganizationLogoUploadMutationVariables, TContext> => {
+
+const mutationKey = getCompleteFp360OrganizationLogoUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeFp360OrganizationLogoUpload>>, CompleteFp360OrganizationLogoUploadMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  completeFp360OrganizationLogoUpload(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteFp360OrganizationLogoUploadMutationResult = NonNullable<Awaited<ReturnType<typeof completeFp360OrganizationLogoUpload>>>
+
+    export type CompleteFp360OrganizationLogoUploadMutationError = ErrorType<void>
+    export type CompleteFp360OrganizationLogoUploadMutationVariables = {id: string}
+
+    export const useCompleteFp360OrganizationLogoUpload = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeFp360OrganizationLogoUpload>>, TError,CompleteFp360OrganizationLogoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof completeFp360OrganizationLogoUpload>>,
+        TError,
+        CompleteFp360OrganizationLogoUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteFp360OrganizationLogoUploadMutationOptions(options), queryClient);
+    }
+
+export const getGetFp360OrganizationLogoUrl = (id: string,) => {
+
+
+
+
+  return `/api/redfp360/organizations/${id}/logo`
+}
+
+export const getFp360OrganizationLogo = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetFp360OrganizationLogoUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360OrganizationLogoQueryKey = (id: string,) => {
+    return [
+    `/api/redfp360/organizations/${id}/logo`
+    ] as const;
+    }
+
+
+export const getGetFp360OrganizationLogoQueryOptions = <TData = Awaited<ReturnType<typeof getFp360OrganizationLogo>>, TError = ErrorType<void>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360OrganizationLogo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360OrganizationLogoQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360OrganizationLogo>>> = ({ signal }) => getFp360OrganizationLogo(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360OrganizationLogo>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360OrganizationLogoQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360OrganizationLogo>>>
+export type GetFp360OrganizationLogoQueryError = ErrorType<void>
+
+
+export function useGetFp360OrganizationLogo<TData = Awaited<ReturnType<typeof getFp360OrganizationLogo>>, TError = ErrorType<void>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360OrganizationLogo>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360OrganizationLogo>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360OrganizationLogo>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360OrganizationLogo<TData = Awaited<ReturnType<typeof getFp360OrganizationLogo>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360OrganizationLogo>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360OrganizationLogo>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360OrganizationLogo>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360OrganizationLogo<TData = Awaited<ReturnType<typeof getFp360OrganizationLogo>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360OrganizationLogo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetFp360OrganizationLogo<TData = Awaited<ReturnType<typeof getFp360OrganizationLogo>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360OrganizationLogo>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360OrganizationLogoQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListFp360ProductsUrl = () => {
 

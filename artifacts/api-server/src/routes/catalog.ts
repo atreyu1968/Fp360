@@ -3,6 +3,7 @@ import { and, desc, eq, gt, isNull, ne, sql } from "drizzle-orm";
 import { Router, type ErrorRequestHandler, type IRouter } from "express";
 import {
   AdjustFp360StockBody, AdjustFp360StockParams, AdjustFp360StockResponse,
+  CompleteFp360OrganizationLogoUploadParams, CompleteFp360OrganizationLogoUploadResponse,
   CompleteFp360ProductDocumentUploadParams, CompleteFp360ProductDocumentUploadResponse,
   CreateFp360OrganizationBody, CreateFp360OrganizationResponse,
   CreateFp360ProductBody, CreateFp360ProductResponse,
@@ -12,6 +13,8 @@ import {
   ListFp360ProductPriceVersionsParams, ListFp360ProductPriceVersionsResponse,
   RequestFp360ProductDocumentUploadUrlBody, RequestFp360ProductDocumentUploadUrlParams,
   RequestFp360ProductDocumentUploadUrlResponse,
+  RequestFp360OrganizationLogoUploadBody, RequestFp360OrganizationLogoUploadParams,
+  RequestFp360OrganizationLogoUploadResponse,
   ListFp360StockAdjustmentsParams, ListFp360StockAdjustmentsResponse,
   UpdateFp360OrganizationBody, UpdateFp360OrganizationParams, UpdateFp360OrganizationResponse,
   UpdateFp360ProductBody, UpdateFp360ProductParams, UpdateFp360ProductResponse,
@@ -19,12 +22,15 @@ import {
 import { db, fpActivity, fpAuthInvitations, fpAuthMemberships, fpOrganizations, fpProducts, fpProductDocuments, fpProductPriceVersions, fpStockAdjustments } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
+import { toFp360OrganizationDto } from "../lib/fp360-organization-profile";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const SIMULATED_DATE = "2027-09-15";
 const MAX_PRODUCT_DOCUMENT_BYTES = 10 * 1024 * 1024;
+const MAX_ORGANIZATION_LOGO_BYTES = 2 * 1024 * 1024;
+const ORGANIZATION_LOGO_CONTENT_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const DOCUMENT_EXTENSIONS: Record<string, string[]> = {
   "application/pdf": [".pdf"],
   "image/jpeg": [".jpg", ".jpeg"],
@@ -97,7 +103,7 @@ router.post("/redfp360/organizations", async (req, res): Promise<void> => {
     await activity(tx, actor, "Empresa creada", `Alta de ${created.name} en el directorio simulado.`, created.id);
     return created;
   });
-  res.status(201).json(CreateFp360OrganizationResponse.parse(organization));
+  res.status(201).json(CreateFp360OrganizationResponse.parse(toFp360OrganizationDto(organization)));
 });
 
 router.patch("/redfp360/organizations/:id", async (req, res): Promise<void> => {
@@ -140,7 +146,112 @@ router.patch("/redfp360/organizations/:id", async (req, res): Promise<void> => {
     await activity(tx, actor, "Empresa actualizada", `Se ha actualizado la ficha de ${name}; se conserva su historial.`, previous.id);
     return updated;
   });
-  res.json(UpdateFp360OrganizationResponse.parse(organization));
+  res.json(UpdateFp360OrganizationResponse.parse(toFp360OrganizationDto(organization)));
+});
+
+router.post("/redfp360/organizations/:id/logo-upload", async (req, res): Promise<void> => {
+  const params = RequestFp360OrganizationLogoUploadParams.safeParse(req.params);
+  const body = RequestFp360OrganizationLogoUploadBody.safeParse(req.body);
+  if (!params.success || !body.success) fail(400, "Selecciona una imagen PNG, JPG o WebP de hasta 2 MB.");
+  const actor = req.auth!;
+  const [organization] = await db.select().from(fpOrganizations).where(and(
+    eq(fpOrganizations.id, params.data.id),
+    eq(fpOrganizations.tenantId, actor.tenantId),
+  )).limit(1);
+  if (!organization || (!isNetworkSupervisor(actor) && organization.id !== actor.organizationId)) {
+    fail(404, "Empresa no encontrada en tu organización.");
+  }
+  if (!ORGANIZATION_LOGO_CONTENT_TYPES.has(body.data.contentType) ||
+      body.data.size > MAX_ORGANIZATION_LOGO_BYTES) {
+    fail(400, "El logo debe ser PNG, JPG o WebP y no superar 2 MB.");
+  }
+  const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+  const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+  if (!/^\/objects\/uploads\/[a-f0-9-]{36}$/i.test(objectPath)) {
+    throw new Error("Object storage returned an unexpected private object path.");
+  }
+  await db.update(fpOrganizations).set({
+    logoPendingObjectPath: objectPath,
+    logoPendingContentType: body.data.contentType,
+    logoPendingSizeBytes: body.data.size,
+    logoPendingUserId: actor.userId,
+  }).where(and(
+    eq(fpOrganizations.id, organization.id),
+    eq(fpOrganizations.tenantId, actor.tenantId),
+  ));
+  res.json(RequestFp360OrganizationLogoUploadResponse.parse({ uploadURL }));
+});
+
+router.post("/redfp360/organizations/:id/logo-complete", async (req, res): Promise<void> => {
+  const params = CompleteFp360OrganizationLogoUploadParams.safeParse(req.params);
+  if (!params.success) fail(400, "Empresa no válida.");
+  const actor = req.auth!;
+  const [organization] = await db.select().from(fpOrganizations).where(and(
+    eq(fpOrganizations.id, params.data.id),
+    eq(fpOrganizations.tenantId, actor.tenantId),
+  )).limit(1);
+  if (!organization || (!isNetworkSupervisor(actor) && organization.id !== actor.organizationId)) {
+    fail(404, "Empresa no encontrada en tu organización.");
+  }
+  if (!organization.logoPendingObjectPath || !organization.logoPendingContentType ||
+      organization.logoPendingSizeBytes === null || organization.logoPendingUserId !== actor.userId) {
+    fail(409, "No hay una carga de logo pendiente para esta sesión.");
+  }
+  const objectPath = organization.logoPendingObjectPath;
+  let file;
+  try {
+    file = await objectStorageService.getObjectEntityFile(objectPath);
+  } catch (error) {
+    if (error instanceof ObjectNotFoundError) fail(404, "No se ha encontrado el logo cargado.");
+    throw error;
+  }
+  const [metadata] = await file.getMetadata();
+  const actualSize = Number(metadata.size);
+  const actualContentType = String(metadata.contentType ?? "");
+  if (!Number.isSafeInteger(actualSize) || actualSize !== organization.logoPendingSizeBytes ||
+      actualSize > MAX_ORGANIZATION_LOGO_BYTES ||
+      actualContentType !== organization.logoPendingContentType ||
+      !ORGANIZATION_LOGO_CONTENT_TYPES.has(actualContentType)) {
+    try {
+      await file.delete({ ignoreNotFound: true });
+    } catch (error) {
+      req.log.error({ err: error, organizationId: organization.id }, "Could not remove an invalid organization logo upload");
+    }
+    await db.update(fpOrganizations).set({
+      logoPendingObjectPath: null,
+      logoPendingContentType: null,
+      logoPendingSizeBytes: null,
+      logoPendingUserId: null,
+    }).where(and(
+      eq(fpOrganizations.id, organization.id),
+      eq(fpOrganizations.tenantId, actor.tenantId),
+      eq(fpOrganizations.logoPendingObjectPath, objectPath),
+    ));
+    fail(400, "El archivo cargado no coincide con el tipo o tamaño declarado.");
+  }
+  const [updated] = await db.update(fpOrganizations).set({
+    logoObjectPath: objectPath,
+    logoContentType: organization.logoPendingContentType,
+    logoPendingObjectPath: null,
+    logoPendingContentType: null,
+    logoPendingSizeBytes: null,
+    logoPendingUserId: null,
+  }).where(and(
+    eq(fpOrganizations.id, organization.id),
+    eq(fpOrganizations.tenantId, actor.tenantId),
+    eq(fpOrganizations.logoPendingObjectPath, objectPath),
+    eq(fpOrganizations.logoPendingUserId, actor.userId),
+  )).returning();
+  if (!updated) fail(409, "La carga del logo cambió. Vuelve a intentarlo.");
+  if (organization.logoObjectPath && organization.logoObjectPath !== objectPath) {
+    try {
+      const previousLogo = await objectStorageService.getObjectEntityFile(organization.logoObjectPath);
+      await previousLogo.delete({ ignoreNotFound: true });
+    } catch (error) {
+      req.log.warn({ err: error, organizationId: organization.id }, "Could not remove the replaced organization logo");
+    }
+  }
+  res.json(CompleteFp360OrganizationLogoUploadResponse.parse(toFp360OrganizationDto(updated)));
 });
 
 router.post("/redfp360/products", async (req, res): Promise<void> => {

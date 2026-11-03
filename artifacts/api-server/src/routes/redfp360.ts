@@ -40,9 +40,12 @@ import {
   fpProducts,
   fpProjectBillings,
 } from "@workspace/db";
+import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
+import { toFp360OrganizationDto } from "../lib/fp360-organization-profile";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 
 const router: IRouter = Router();
+const organizationObjectStorage = new ObjectStorageService();
 router.use(requireAuth);
 router.use(requireSimulationWriteAccess);
 const DEMO_TENANT_ID = "red-fp360-demo";
@@ -529,16 +532,41 @@ router.get("/redfp360/organizations", async (req, res): Promise<void> => {
     .orderBy(fpOrganizations.name);
   res.json(
     ListFp360OrganizationsResponse.parse(
-      organizations.map((organization) => ({
-        id: organization.id,
-        name: organization.name,
-        center: organization.center,
-        island: organization.island,
-        role: organization.role,
-        isActive: organization.isActive,
-      })),
+      organizations.map(toFp360OrganizationDto),
     ),
   );
+});
+
+router.get("/redfp360/organizations/:id/logo", async (req, res): Promise<void> => {
+  const [organization] = await db
+    .select()
+    .from(fpOrganizations)
+    .where(and(
+      eq(fpOrganizations.id, req.params.id),
+      eq(fpOrganizations.tenantId, req.auth!.tenantId),
+    ))
+    .limit(1);
+  if (!organization?.logoObjectPath || !organization.logoContentType) {
+    res.status(404).json({ error: "Logo no encontrado." });
+    return;
+  }
+  try {
+    const file = await organizationObjectStorage.getObjectEntityFile(organization.logoObjectPath);
+    const [contents] = await file.download();
+    res.set({
+      "Content-Type": organization.logoContentType,
+      "Content-Disposition": "inline",
+      "Cache-Control": "private, max-age=300",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "default-src 'none'; sandbox",
+    }).status(200).send(contents);
+  } catch (error) {
+    if (error instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "Logo no encontrado." });
+      return;
+    }
+    throw error;
+  }
 });
 
 router.get("/redfp360/products", async (req, res): Promise<void> => {

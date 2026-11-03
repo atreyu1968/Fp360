@@ -4039,7 +4039,18 @@ export const ListFp360OrganizationsResponseItem = zod.object({
   "center": zod.string(),
   "island": zod.string(),
   "role": zod.enum(['seller', 'buyer', 'both']),
-  "isActive": zod.boolean()
+  "isActive": zod.boolean(),
+  "activity": zod.enum(['commerce', 'services', 'manufacturing', 'hospitality', 'agriculture', 'fishing', 'other']),
+  "commercialName": zod.string(),
+  "address": zod.string(),
+  "municipality": zod.string(),
+  "postalCode": zod.string(),
+  "businessEmail": zod.string(),
+  "businessPhone": zod.string(),
+  "cif": zod.string().describe('Identificador ficticio con prefijo SIM; no válido para trámites.'),
+  "socialSecurityNumber": zod.string().describe('Identificador ficticio con prefijo SIM; no válido para trámites.'),
+  "socialSecurityRegime": zod.string().describe('Régimen de práctica asignado por actividad; no válido para gestión real.'),
+  "logoUrl": zod.string().nullable()
 })
 export const ListFp360OrganizationsResponse = zod.array(ListFp360OrganizationsResponseItem)
 
@@ -4048,13 +4059,32 @@ export const createFp360OrganizationBodyNameMax = 150;
 
 export const createFp360OrganizationBodyCenterMax = 150;
 
+export const createFp360OrganizationBodyCommercialNameMax = 150;
+
+export const createFp360OrganizationBodyAddressMax = 200;
+
+export const createFp360OrganizationBodyMunicipalityMax = 100;
+
+export const createFp360OrganizationBodyPostalCodeMax = 12;
+
+export const createFp360OrganizationBodyBusinessEmailMax = 150;
+
+export const createFp360OrganizationBodyBusinessPhoneMax = 40;
+
 
 
 export const CreateFp360OrganizationBody = zod.object({
   "name": zod.string().min(1).max(createFp360OrganizationBodyNameMax),
   "center": zod.string().min(1).max(createFp360OrganizationBodyCenterMax),
   "island": zod.enum(['Tenerife', 'Gran Canaria', 'Lanzarote', 'Fuerteventura', 'La Palma', 'La Gomera', 'El Hierro', 'La Graciosa']),
-  "role": zod.enum(['seller', 'buyer', 'both'])
+  "role": zod.enum(['seller', 'buyer', 'both']),
+  "activity": zod.enum(['commerce', 'services', 'manufacturing', 'hospitality', 'agriculture', 'fishing', 'other']),
+  "commercialName": zod.string().max(createFp360OrganizationBodyCommercialNameMax).optional(),
+  "address": zod.string().max(createFp360OrganizationBodyAddressMax).optional(),
+  "municipality": zod.string().max(createFp360OrganizationBodyMunicipalityMax).optional(),
+  "postalCode": zod.string().max(createFp360OrganizationBodyPostalCodeMax).optional(),
+  "businessEmail": zod.string().max(createFp360OrganizationBodyBusinessEmailMax).optional(),
+  "businessPhone": zod.string().max(createFp360OrganizationBodyBusinessPhoneMax).optional()
 })
 
 export const CreateFp360OrganizationResponse = zod.object({
@@ -4063,7 +4093,18 @@ export const CreateFp360OrganizationResponse = zod.object({
   "center": zod.string(),
   "island": zod.string(),
   "role": zod.enum(['seller', 'buyer', 'both']),
-  "isActive": zod.boolean()
+  "isActive": zod.boolean(),
+  "activity": zod.enum(['commerce', 'services', 'manufacturing', 'hospitality', 'agriculture', 'fishing', 'other']),
+  "commercialName": zod.string(),
+  "address": zod.string(),
+  "municipality": zod.string(),
+  "postalCode": zod.string(),
+  "businessEmail": zod.string(),
+  "businessPhone": zod.string(),
+  "cif": zod.string().describe('Identificador ficticio con prefijo SIM; no válido para trámites.'),
+  "socialSecurityNumber": zod.string().describe('Identificador ficticio con prefijo SIM; no válido para trámites.'),
+  "socialSecurityRegime": zod.string().describe('Régimen de práctica asignado por actividad; no válido para gestión real.'),
+  "logoUrl": zod.string().nullable()
 })
 
 
@@ -4075,6 +4116,18 @@ export const updateFp360OrganizationBodyNameMax = 150;
 
 export const updateFp360OrganizationBodyCenterMax = 150;
 
+export const updateFp360OrganizationBodyCommercialNameMax = 150;
+
+export const updateFp360OrganizationBodyAddressMax = 200;
+
+export const updateFp360OrganizationBodyMunicipalityMax = 100;
+
+export const updateFp360OrganizationBodyPostalCodeMax = 12;
+
+export const updateFp360OrganizationBodyBusinessEmailMax = 150;
+
+export const updateFp360OrganizationBodyBusinessPhoneMax = 40;
+
 
 
 export const UpdateFp360OrganizationBody = zod.object({
@@ -4082,7 +4135,14 @@ export const UpdateFp360OrganizationBody = zod.object({
   "center": zod.string().min(1).max(updateFp360OrganizationBodyCenterMax).optional(),
   "island": zod.enum(['Tenerife', 'Gran Canaria', 'Lanzarote', 'Fuerteventura', 'La Palma', 'La Gomera', 'El Hierro', 'La Graciosa']).optional(),
   "role": zod.enum(['seller', 'buyer', 'both']).optional(),
-  "isActive": zod.boolean().optional()
+  "isActive": zod.boolean().optional(),
+  "activity": zod.enum(['commerce', 'services', 'manufacturing', 'hospitality', 'agriculture', 'fishing', 'other']).optional(),
+  "commercialName": zod.string().max(updateFp360OrganizationBodyCommercialNameMax).optional(),
+  "address": zod.string().max(updateFp360OrganizationBodyAddressMax).optional(),
+  "municipality": zod.string().max(updateFp360OrganizationBodyMunicipalityMax).optional(),
+  "postalCode": zod.string().max(updateFp360OrganizationBodyPostalCodeMax).optional(),
+  "businessEmail": zod.string().max(updateFp360OrganizationBodyBusinessEmailMax).optional(),
+  "businessPhone": zod.string().max(updateFp360OrganizationBodyBusinessPhoneMax).optional()
 })
 
 export const UpdateFp360OrganizationResponse = zod.object({
@@ -4091,8 +4151,69 @@ export const UpdateFp360OrganizationResponse = zod.object({
   "center": zod.string(),
   "island": zod.string(),
   "role": zod.enum(['seller', 'buyer', 'both']),
-  "isActive": zod.boolean()
+  "isActive": zod.boolean(),
+  "activity": zod.enum(['commerce', 'services', 'manufacturing', 'hospitality', 'agriculture', 'fishing', 'other']),
+  "commercialName": zod.string(),
+  "address": zod.string(),
+  "municipality": zod.string(),
+  "postalCode": zod.string(),
+  "businessEmail": zod.string(),
+  "businessPhone": zod.string(),
+  "cif": zod.string().describe('Identificador ficticio con prefijo SIM; no válido para trámites.'),
+  "socialSecurityNumber": zod.string().describe('Identificador ficticio con prefijo SIM; no válido para trámites.'),
+  "socialSecurityRegime": zod.string().describe('Régimen de práctica asignado por actividad; no válido para gestión real.'),
+  "logoUrl": zod.string().nullable()
 })
+
+
+export const RequestFp360OrganizationLogoUploadParams = zod.object({
+  "id": zod.string()
+})
+
+export const requestFp360OrganizationLogoUploadBodySizeMax = 2097152;
+
+
+
+export const RequestFp360OrganizationLogoUploadBody = zod.object({
+  "contentType": zod.enum(['image/png', 'image/jpeg', 'image/webp']),
+  "size": zod.int().min(1).max(requestFp360OrganizationLogoUploadBodySizeMax)
+})
+
+export const RequestFp360OrganizationLogoUploadResponse = zod.object({
+  "uploadURL": zod.url()
+})
+
+
+export const CompleteFp360OrganizationLogoUploadParams = zod.object({
+  "id": zod.string()
+})
+
+export const CompleteFp360OrganizationLogoUploadResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "center": zod.string(),
+  "island": zod.string(),
+  "role": zod.enum(['seller', 'buyer', 'both']),
+  "isActive": zod.boolean(),
+  "activity": zod.enum(['commerce', 'services', 'manufacturing', 'hospitality', 'agriculture', 'fishing', 'other']),
+  "commercialName": zod.string(),
+  "address": zod.string(),
+  "municipality": zod.string(),
+  "postalCode": zod.string(),
+  "businessEmail": zod.string(),
+  "businessPhone": zod.string(),
+  "cif": zod.string().describe('Identificador ficticio con prefijo SIM; no válido para trámites.'),
+  "socialSecurityNumber": zod.string().describe('Identificador ficticio con prefijo SIM; no válido para trámites.'),
+  "socialSecurityRegime": zod.string().describe('Régimen de práctica asignado por actividad; no válido para gestión real.'),
+  "logoUrl": zod.string().nullable()
+})
+
+
+export const GetFp360OrganizationLogoParams = zod.object({
+  "id": zod.string()
+})
+
+export const GetFp360OrganizationLogoResponse = zod.unknown()
 
 
 /**

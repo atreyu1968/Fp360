@@ -28,6 +28,19 @@ export const Fp360OrganizationInputRole = {
   both: 'both',
 } as const;
 
+export type Fp360OrganizationInputActivity = typeof Fp360OrganizationInputActivity[keyof typeof Fp360OrganizationInputActivity];
+
+
+export const Fp360OrganizationInputActivity = {
+  commerce: 'commerce',
+  services: 'services',
+  manufacturing: 'manufacturing',
+  hospitality: 'hospitality',
+  agriculture: 'agriculture',
+  fishing: 'fishing',
+  other: 'other',
+} as const;
+
 export interface Fp360OrganizationInput {
   /**
      * @minLength 1
@@ -41,6 +54,19 @@ export interface Fp360OrganizationInput {
   center: string;
   island: Fp360OrganizationInputIsland;
   role: Fp360OrganizationInputRole;
+  activity: Fp360OrganizationInputActivity;
+  /** @maxLength 150 */
+  commercialName?: string;
+  /** @maxLength 200 */
+  address?: string;
+  /** @maxLength 100 */
+  municipality?: string;
+  /** @maxLength 12 */
+  postalCode?: string;
+  /** @maxLength 150 */
+  businessEmail?: string;
+  /** @maxLength 40 */
+  businessPhone?: string;
 }
 
 export type Fp360OrganizationUpdateIsland = typeof Fp360OrganizationUpdateIsland[keyof typeof Fp360OrganizationUpdateIsland];
@@ -66,6 +92,19 @@ export const Fp360OrganizationUpdateRole = {
   both: 'both',
 } as const;
 
+export type Fp360OrganizationUpdateActivity = typeof Fp360OrganizationUpdateActivity[keyof typeof Fp360OrganizationUpdateActivity];
+
+
+export const Fp360OrganizationUpdateActivity = {
+  commerce: 'commerce',
+  services: 'services',
+  manufacturing: 'manufacturing',
+  hospitality: 'hospitality',
+  agriculture: 'agriculture',
+  fishing: 'fishing',
+  other: 'other',
+} as const;
+
 export interface Fp360OrganizationUpdate {
   /**
      * @minLength 1
@@ -80,6 +119,41 @@ export interface Fp360OrganizationUpdate {
   island?: Fp360OrganizationUpdateIsland;
   role?: Fp360OrganizationUpdateRole;
   isActive?: boolean;
+  activity?: Fp360OrganizationUpdateActivity;
+  /** @maxLength 150 */
+  commercialName?: string;
+  /** @maxLength 200 */
+  address?: string;
+  /** @maxLength 100 */
+  municipality?: string;
+  /** @maxLength 12 */
+  postalCode?: string;
+  /** @maxLength 150 */
+  businessEmail?: string;
+  /** @maxLength 40 */
+  businessPhone?: string;
+}
+
+export type OrganizationLogoUploadInputContentType = typeof OrganizationLogoUploadInputContentType[keyof typeof OrganizationLogoUploadInputContentType];
+
+
+export const OrganizationLogoUploadInputContentType = {
+  'image/png': 'image/png',
+  'image/jpeg': 'image/jpeg',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface OrganizationLogoUploadInput {
+  contentType: OrganizationLogoUploadInputContentType;
+  /**
+     * @minimum 1
+     * @maximum 2097152
+     */
+  size: number;
+}
+
+export interface OrganizationLogoUploadUrl {
+  uploadURL: string;
 }
 
 export type Fp360ProductInputItemType = typeof Fp360ProductInputItemType[keyof typeof Fp360ProductInputItemType];
@@ -1878,6 +1952,19 @@ export const Fp360OrganizationRole = {
   both: 'both',
 } as const;
 
+export type Fp360OrganizationActivity = typeof Fp360OrganizationActivity[keyof typeof Fp360OrganizationActivity];
+
+
+export const Fp360OrganizationActivity = {
+  commerce: 'commerce',
+  services: 'services',
+  manufacturing: 'manufacturing',
+  hospitality: 'hospitality',
+  agriculture: 'agriculture',
+  fishing: 'fishing',
+  other: 'other',
+} as const;
+
 export interface Fp360Organization {
   id: string;
   name: string;
@@ -1885,6 +1972,21 @@ export interface Fp360Organization {
   island: string;
   role: Fp360OrganizationRole;
   isActive: boolean;
+  activity: Fp360OrganizationActivity;
+  commercialName: string;
+  address: string;
+  municipality: string;
+  postalCode: string;
+  businessEmail: string;
+  businessPhone: string;
+  /** Identificador ficticio con prefijo SIM; no válido para trámites. */
+  cif: string;
+  /** Identificador ficticio con prefijo SIM; no válido para trámites. */
+  socialSecurityNumber: string;
+  /** Régimen de práctica asignado por actividad; no válido para gestión real. */
+  socialSecurityRegime: string;
+  /** @nullable */
+  logoUrl: string | null;
 }
 
 export type Fp360ProductItemType = typeof Fp360ProductItemType[keyof typeof Fp360ProductItemType];

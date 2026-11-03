@@ -5,6 +5,7 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+import type { Fp360OrganizationUpdateActivity } from './fp360OrganizationUpdateActivity';
 import type { Fp360OrganizationUpdateIsland } from './fp360OrganizationUpdateIsland';
 import type { Fp360OrganizationUpdateRole } from './fp360OrganizationUpdateRole';
 
@@ -22,4 +23,17 @@ export interface Fp360OrganizationUpdate {
   island?: Fp360OrganizationUpdateIsland;
   role?: Fp360OrganizationUpdateRole;
   isActive?: boolean;
+  activity?: Fp360OrganizationUpdateActivity;
+  /** @maxLength 150 */
+  commercialName?: string;
+  /** @maxLength 200 */
+  address?: string;
+  /** @maxLength 100 */
+  municipality?: string;
+  /** @maxLength 12 */
+  postalCode?: string;
+  /** @maxLength 150 */
+  businessEmail?: string;
+  /** @maxLength 40 */
+  businessPhone?: string;
 }

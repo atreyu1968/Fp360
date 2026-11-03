@@ -25,6 +25,11 @@
       "schemaHash": "38de37d075539bdf1970cb4d03b9fb141ce557092eac39c1d839c08d863bb60a",
       "snapshot": "0004-crm-opportunity-order-links.sql",
       "sha256": "3a5b23c74e4b5054a474350658c606efd26bf6b4a59cbd79d8f2d1054b0c05b1"
+    },
+    {
+      "schemaHash": "ad3797a0366851a068d732725b2cf85f614c856ff0f2fac5e4b98df19d22170b",
+      "snapshot": "0005-organization-profile.sql",
+      "sha256": "226b91a820071d0dcd933a2cdf8bcd644bc29ab2c2deeffd9bf2944e165096ec"
     }
   ],
   "migrations": [
@@ -50,6 +55,12 @@
       "id": "0004_crm_opportunity_order_links",
       "file": "0004_crm_opportunity_order_links.sql.json",
       "sha256": "66b30c857e6bbf27006abd04d1b35d073b4e9fd43b24b3463db9e6ddaec8fda3",
+      "backwardsCompatible": true
+    },
+    {
+      "id": "0005_organization_profile",
+      "file": "0005_organization_profile.sql.json",
+      "sha256": "d480f6138b9688a745778e4093b0c4ebc3a40431f4881b1ad52ea4ac0873f6e2",
       "backwardsCompatible": true
     }
   ]

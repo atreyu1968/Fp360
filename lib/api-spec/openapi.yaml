@@ -1983,6 +1983,53 @@ paths:
         "403": { description: Read-only role }
         "404": { description: Organization not found }
         "409": { description: Duplicate or assigned organization cannot be archived }
+  /redfp360/organizations/{id}/logo-upload:
+    post:
+      operationId: requestFp360OrganizationLogoUpload
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrganizationLogoUploadInput" }
+      responses:
+        "200":
+          description: Temporary upload URL for an organization logo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrganizationLogoUploadUrl" }
+        "400": { description: Invalid image metadata }
+        "404": { description: Organization not found }
+  /redfp360/organizations/{id}/logo-complete:
+    post:
+      operationId: completeFp360OrganizationLogoUpload
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Organization profile with the saved logo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360Organization" }
+        "400": { description: Uploaded image failed validation }
+        "404": { description: Organization or uploaded image not found }
+  /redfp360/organizations/{id}/logo:
+    get:
+      operationId: getFp360OrganizationLogo
+      tags: [redfp360]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Organization logo, accessible only within its tenant
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+        "404": { description: Organization logo not found }
   /redfp360/products:
     get:
       operationId: listFp360Products
@@ -5015,12 +5062,19 @@ components:
   schemas:
     Fp360OrganizationInput:
       type: object
-      required: [name, center, island, role]
+      required: [name, center, island, role, activity]
       properties:
         name: { type: string, minLength: 1, maxLength: 150 }
         center: { type: string, minLength: 1, maxLength: 150 }
         island: { type: string, enum: [Tenerife, Gran Canaria, Lanzarote, Fuerteventura, La Palma, La Gomera, El Hierro, La Graciosa] }
         role: { type: string, enum: [seller, buyer, both] }
+        activity: { type: string, enum: [commerce, services, manufacturing, hospitality, agriculture, fishing, other] }
+        commercialName: { type: string, maxLength: 150 }
+        address: { type: string, maxLength: 200 }
+        municipality: { type: string, maxLength: 100 }
+        postalCode: { type: string, maxLength: 12 }
+        businessEmail: { type: string, maxLength: 150 }
+        businessPhone: { type: string, maxLength: 40 }
     Fp360OrganizationUpdate:
       type: object
       properties:
@@ -5029,6 +5083,24 @@ components:
         island: { type: string, enum: [Tenerife, Gran Canaria, Lanzarote, Fuerteventura, La Palma, La Gomera, El Hierro, La Graciosa] }
         role: { type: string, enum: [seller, buyer, both] }
         isActive: { type: boolean }
+        activity: { type: string, enum: [commerce, services, manufacturing, hospitality, agriculture, fishing, other] }
+        commercialName: { type: string, maxLength: 150 }
+        address: { type: string, maxLength: 200 }
+        municipality: { type: string, maxLength: 100 }
+        postalCode: { type: string, maxLength: 12 }
+        businessEmail: { type: string, maxLength: 150 }
+        businessPhone: { type: string, maxLength: 40 }
+    OrganizationLogoUploadInput:
+      type: object
+      required: [contentType, size]
+      properties:
+        contentType: { type: string, enum: [image/png, image/jpeg, image/webp] }
+        size: { type: integer, minimum: 1, maximum: 2097152 }
+    OrganizationLogoUploadUrl:
+      type: object
+      required: [uploadURL]
+      properties:
+        uploadURL: { type: string, format: uri }
     Fp360ProductInput:
       type: object
       required: [sku, name, category, unitPriceCents, igicBasisPoints, stock]
@@ -6098,7 +6170,7 @@ components:
         - status
     Fp360Organization:
       type: object
-      required: [id, name, center, island, role, isActive]
+      required: [id, name, center, island, role, isActive, activity, commercialName, address, municipality, postalCode, businessEmail, businessPhone, cif, socialSecurityNumber, socialSecurityRegime, logoUrl]
       properties:
         id: { type: string }
         name: { type: string }
@@ -6106,6 +6178,17 @@ components:
         island: { type: string }
         role: { type: string, enum: [seller, buyer, both] }
         isActive: { type: boolean }
+        activity: { type: string, enum: [commerce, services, manufacturing, hospitality, agriculture, fishing, other] }
+        commercialName: { type: string }
+        address: { type: string }
+        municipality: { type: string }
+        postalCode: { type: string }
+        businessEmail: { type: string }
+        businessPhone: { type: string }
+        cif: { type: string, description: "Identificador ficticio con prefijo SIM; no válido para trámites." }
+        socialSecurityNumber: { type: string, description: "Identificador ficticio con prefijo SIM; no válido para trámites." }
+        socialSecurityRegime: { type: string, description: "Régimen de práctica asignado por actividad; no válido para gestión real." }
+        logoUrl: { type: ["string", "null"] }
     Fp360Product:
       type: object
       required: [id, sku, name, description, category, itemType, unit, tracksInventory, unitPriceCents, igicBasisPoints, stock, reserved, costCents, minimumStock, maxDiscountBasisPoints, leadTimeDays, supplierOrganizationId, isActive, isPublished]

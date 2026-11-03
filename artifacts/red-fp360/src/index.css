@@ -667,6 +667,8 @@ tbody tr:hover:not(:has(.empty-state)) { background: #fbfdff; }
 .product-cell small, .org-cell small { color: #8b9bab; font-size: 9px; }
 .product-glyph { width: 29px; height: 29px; border-radius: 7px; display: grid; place-items: center; color: #467eb7; background: #eff5fb; }
 .org-avatar { flex: 0 0 auto; width: 29px; height: 29px; display: grid; place-items: center; border-radius: 7px; color: #2871b5; background: #eaf3fc; font-size: 9px; font-weight: 800; }
+.org-avatar-with-logo { overflow: hidden; background: #fff; border: 1px solid #e7edf3; }
+.org-avatar-with-logo img { width: 100%; height: 100%; object-fit: contain; }
 .role-pill, .island-label { display: inline-block; padding: 4px 7px; border-radius: 5px; color: #506f89; background: #f0f5f9; font-size: 9px; font-weight: 600; }
 .island-label { color: #087c89; background: #ebf8f8; }
 .mono { font-family: var(--app-font-mono); }
@@ -698,6 +700,14 @@ tbody tr:hover:not(:has(.empty-state)) { background: #fbfdff; }
 .modal-head h2 { margin: 0; color: #173657; font-family: var(--app-font-serif); font-size: 17px; letter-spacing: -.025em; }
 .modal-head .icon-button { width: 30px; height: 30px; }
 .form-stack { display: flex; flex-direction: column; gap: 14px; padding: 18px 20px 20px; }
+.org-profile-grid, .org-profile-readonly { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.org-profile-grid > label, .org-profile-readonly > label { min-width: 0; }
+.org-profile-readonly { padding: 12px; border: 1px solid #e7edf3; border-radius: 8px; background: #f8fafc; }
+.org-logo-row { display: flex; align-items: center; gap: 13px; padding: 12px; border: 1px solid #e7edf3; border-radius: 8px; background: #fbfcfe; }
+.org-logo-preview { flex: 0 0 58px; width: 58px; height: 58px; display: grid; place-items: center; overflow: hidden; border: 1px solid #e3eaf0; border-radius: 9px; color: #698198; background: #fff; }
+.org-logo-preview img { width: 100%; height: 100%; object-fit: contain; }
+.org-logo-field { min-width: 0; flex: 1; }
+.org-logo-field input { max-width: 100%; }
 .form-intro { margin: 0; color: #687e91; font-size: 10px; line-height: 1.55; }
 .form-stack label { display: flex; flex-direction: column; gap: 6px; color: #39536c; font-size: 10px; font-weight: 700; }
 .form-stack input, .form-stack select { width: 100%; height: 37px; padding: 0 10px; color: #29445e; background: white; border: 1px solid #dce6ef; border-radius: 6px; font-size: 10px; }
@@ -1304,6 +1314,8 @@ tbody tr:hover:not(:has(.empty-state)) { background: #fbfdff; }
   .accounting-year-end-checks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
+  .org-profile-grid, .org-profile-readonly { grid-template-columns: minmax(0, 1fr); }
+  .org-logo-row { align-items: flex-start; }
   .accounting-heading { align-items: stretch; }
   .accounting-heading-actions { align-items: stretch; flex-direction: column; }
   .accounting-export-toolbar { align-items: stretch; flex-direction: column; }

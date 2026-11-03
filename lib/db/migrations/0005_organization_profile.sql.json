@@ -1,0 +1,15 @@
+[
+  "ALTER TABLE fp360_organizations ADD COLUMN activity text;",
+  "ALTER TABLE fp360_organizations ADD COLUMN commercial_name text;",
+  "ALTER TABLE fp360_organizations ADD COLUMN address text;",
+  "ALTER TABLE fp360_organizations ADD COLUMN municipality text;",
+  "ALTER TABLE fp360_organizations ADD COLUMN postal_code text;",
+  "ALTER TABLE fp360_organizations ADD COLUMN business_email text;",
+  "ALTER TABLE fp360_organizations ADD COLUMN business_phone text;",
+  "ALTER TABLE fp360_organizations ADD COLUMN logo_object_path text;",
+  "ALTER TABLE fp360_organizations ADD COLUMN logo_content_type text;",
+  "ALTER TABLE fp360_organizations ADD COLUMN logo_pending_object_path text;",
+  "ALTER TABLE fp360_organizations ADD COLUMN logo_pending_content_type text;",
+  "ALTER TABLE fp360_organizations ADD COLUMN logo_pending_size_bytes integer;",
+  "ALTER TABLE fp360_organizations ADD COLUMN logo_pending_user_id text;"
+]

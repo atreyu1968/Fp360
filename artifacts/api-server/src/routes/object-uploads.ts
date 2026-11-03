@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { Router, type IRouter, type NextFunction, type Request, type Response } from 'express';
-import { db, fpDocumentVersions, fpProductDocuments } from '@workspace/db';
+import { db, fpDocumentVersions, fpOrganizations, fpProductDocuments } from '@workspace/db';
 import { LocalObjectStorageError, verifyLocalUploadSignature } from '../lib/localObjectStorage';
 import { ObjectStorageService } from '../lib/objectStorage';
 
@@ -52,7 +52,17 @@ router.put(
       eq(fpProductDocuments.status, 'pending'),
     )).limit(1);
 
-    const pendingUpload = documentVersion ?? productDocument;
+    const [organizationLogo] = documentVersion || productDocument ? [undefined] : await db.select({
+      sizeBytes: fpOrganizations.logoPendingSizeBytes,
+      contentType: fpOrganizations.logoPendingContentType,
+    }).from(fpOrganizations).where(eq(fpOrganizations.logoPendingObjectPath, objectPath)).limit(1);
+
+    const pendingUpload = documentVersion ?? productDocument ?? (
+      organizationLogo?.sizeBytes !== null && organizationLogo?.sizeBytes !== undefined &&
+      organizationLogo.contentType
+        ? { sizeBytes: organizationLogo.sizeBytes, contentType: organizationLogo.contentType }
+        : undefined
+    );
     if (!pendingUpload) {
       reject(404, 'No existe una carga pendiente para este enlace.');
       return;
