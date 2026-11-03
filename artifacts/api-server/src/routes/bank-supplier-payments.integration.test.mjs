@@ -58,6 +58,8 @@ test("supplier payments link one conformed invoice, require independent review, 
   const invoices = Array.from({ length: 5 }, () => randomUUID());
   const operationIds = Array.from({ length: 5 }, () => `supplier-payment-${randomUUID()}`);
   const failedAuditOperationId = `supplier-payment-${randomUUID()}`;
+  const failedValidateOperationId = `supplier-payment-validate-${randomUUID()}`;
+  const failedAuthorizeOperationId = `supplier-payment-authorize-${randomUUID()}`;
   const failureToken = randomUUID().replaceAll("-", "");
   const failureTriggerName = `fp360_test_fail_supplier_payment_${failureToken}`;
   const failureFunctionName = `fp360_test_fail_supplier_payment_fn_${failureToken}`;
@@ -81,6 +83,61 @@ test("supplier payments link one conformed invoice, require independent review, 
       body = { error: responseText.slice(0, 300) };
     }
     return { status: response.status, body };
+  }
+
+  async function armAuditFailure(operationId) {
+    await pool.query(`DROP TRIGGER IF EXISTS ${failureTriggerName} ON fp360_bank_events`);
+    await pool.query(
+      `CREATE OR REPLACE FUNCTION public.${failureFunctionName}() RETURNS trigger
+       LANGUAGE plpgsql AS $$
+       BEGIN
+         IF NEW.tenant_id = TG_ARGV[0] AND NEW.operation_id = TG_ARGV[1] THEN
+           RAISE EXCEPTION 'controlled supplier payment audit failure';
+         END IF;
+         RETURN NEW;
+       END;
+       $$`,
+    );
+    await pool.query(
+      `CREATE TRIGGER ${failureTriggerName}
+       BEFORE INSERT ON fp360_bank_events
+       FOR EACH ROW EXECUTE FUNCTION public.${failureFunctionName}('${tenantId}', '${operationId}')`,
+    );
+  }
+
+  async function clearAuditFailure() {
+    await pool.query(`DROP TRIGGER IF EXISTS ${failureTriggerName} ON fp360_bank_events`);
+    await pool.query(`DROP FUNCTION IF EXISTS public.${failureFunctionName}()`);
+  }
+
+  async function transferSnapshot(transferId) {
+    const [transfer, accounts, movements, events] = await Promise.all([
+      pool.query(
+        `SELECT status, validated_by_user_id, authorized_by_user_id, rejected_reason, executed_at
+         FROM fp360_bank_transfers WHERE tenant_id = $1 AND id = $2`,
+        [tenantId, transferId],
+      ),
+      pool.query(
+        `SELECT id, balance_cents, reserved_cents FROM fp360_bank_accounts
+         WHERE tenant_id = $1 ORDER BY id`,
+        [tenantId],
+      ),
+      pool.query(
+        "SELECT COUNT(*)::int AS count FROM fp360_bank_movements WHERE tenant_id = $1",
+        [tenantId],
+      ),
+      pool.query(
+        `SELECT operation_id, event_type, transfer_id FROM fp360_bank_events
+         WHERE tenant_id = $1 AND transfer_id = $2 ORDER BY operation_id`,
+        [tenantId, transferId],
+      ),
+    ]);
+    return {
+      transfer: transfer.rows,
+      accounts: accounts.rows,
+      movementCount: movements.rows[0].count,
+      events: events.rows,
+    };
   }
 
   const port = await availablePort();
@@ -221,24 +278,7 @@ test("supplier payments link one conformed invoice, require independent review, 
     "SELECT COUNT(*)::int AS count FROM fp360_bank_movements WHERE tenant_id = $1",
     [tenantId],
   );
-  await pool.query(
-    `CREATE FUNCTION public.${failureFunctionName}() RETURNS trigger
-     LANGUAGE plpgsql AS $$
-     BEGIN
-       IF NEW.tenant_id = TG_ARGV[0]
-          AND NEW.operation_id = TG_ARGV[1]
-          AND NEW.event_type = 'supplier_payment_created' THEN
-         RAISE EXCEPTION 'controlled supplier payment audit failure';
-       END IF;
-       RETURN NEW;
-     END;
-     $$`,
-  );
-  await pool.query(
-    `CREATE TRIGGER ${failureTriggerName}
-     BEFORE INSERT ON fp360_bank_events
-     FOR EACH ROW EXECUTE FUNCTION public.${failureFunctionName}('${tenantId}', '${failedAuditOperationId}')`,
-  );
+  await armAuditFailure(failedAuditOperationId);
   const failedAuditInstruction = await makeInstruction(invoices[0], failedAuditOperationId);
   assert.equal(failedAuditInstruction.status, 500, JSON.stringify(failedAuditInstruction.body));
   const rolledBackInstruction = await pool.query(
@@ -269,8 +309,7 @@ test("supplier payments link one conformed invoice, require independent review, 
   assert.equal(movementsAfterFailedAudit.rows[0].count, movementsBeforeFailedAudit.rows[0].count,
     "A failed audit insert must not add bank movements");
 
-  await pool.query(`DROP TRIGGER ${failureTriggerName} ON fp360_bank_events`);
-  await pool.query(`DROP FUNCTION public.${failureFunctionName}()`);
+  await clearAuditFailure();
   const retriedInstruction = await makeInstruction(invoices[0], failedAuditOperationId);
   assert.equal(retriedInstruction.status, 201, JSON.stringify(retriedInstruction.body));
   assert.equal(retriedInstruction.body.purchaseInvoiceId, invoices[0]);
@@ -337,8 +376,58 @@ test("supplier payments link one conformed invoice, require independent review, 
     { action: name, operationId }, token,
   );
   assert.equal((await action("authorize", `authorize-self-${randomUUID()}`, managerToken)).status, 403);
-  assert.equal((await action("validate", `validate-${randomUUID()}`, managerToken)).body.status, "pending_review");
-  assert.equal((await action("authorize", `authorize-${randomUUID()}`, reviewerToken)).body.status, "authorized");
+
+  const beforeFailedValidation = await transferSnapshot(instruction.id);
+  await armAuditFailure(failedValidateOperationId);
+  const failedValidation = await action("validate", failedValidateOperationId, managerToken);
+  assert.equal(failedValidation.status, 500, JSON.stringify(failedValidation.body));
+  assert.deepEqual(await transferSnapshot(instruction.id), beforeFailedValidation,
+    "A failed validation audit must roll back the transfer and preserve accounts and movements");
+  await clearAuditFailure();
+  const retriedValidation = await action("validate", failedValidateOperationId, managerToken);
+  assert.equal(retriedValidation.status, 200, JSON.stringify(retriedValidation.body));
+  assert.equal(retriedValidation.body.status, "pending_review");
+  assert.equal((await action("validate", failedValidateOperationId, managerToken)).body.status, "pending_review",
+    "Replaying a successful validation must not create a second transition");
+  const validationEvents = await pool.query(
+    `SELECT event_type, transfer_id FROM fp360_bank_events
+     WHERE tenant_id = $1 AND operation_id = $2`,
+    [tenantId, failedValidateOperationId],
+  );
+  assert.deepEqual(validationEvents.rows, [{
+    event_type: "transfer_validate",
+    transfer_id: instruction.id,
+  }], "Retrying validation must create exactly one linked audit event");
+
+  const beforeFailedAuthorization = await transferSnapshot(instruction.id);
+  await armAuditFailure(failedAuthorizeOperationId);
+  const failedAuthorization = await action("authorize", failedAuthorizeOperationId, reviewerToken);
+  assert.equal(failedAuthorization.status, 500, JSON.stringify(failedAuthorization.body));
+  assert.deepEqual(await transferSnapshot(instruction.id), beforeFailedAuthorization,
+    "A failed authorization audit must not change status, reservations, balances, or movements");
+  await clearAuditFailure();
+  const retriedAuthorization = await action("authorize", failedAuthorizeOperationId, reviewerToken);
+  assert.equal(retriedAuthorization.status, 200, JSON.stringify(retriedAuthorization.body));
+  assert.equal(retriedAuthorization.body.status, "authorized");
+  assert.equal((await action("authorize", failedAuthorizeOperationId, reviewerToken)).body.status, "authorized",
+    "Replaying a successful authorization must not reserve the amount twice");
+  const authorizedSource = await pool.query(
+    `SELECT reserved_cents FROM fp360_bank_accounts
+     WHERE tenant_id = $1 AND id = $2`,
+    [tenantId, sourceAccountId],
+  );
+  assert.equal(authorizedSource.rows[0].reserved_cents, instruction.amountCents,
+    "A successful authorization retry must reserve the amount exactly once");
+  const authorizationEvents = await pool.query(
+    `SELECT event_type, transfer_id FROM fp360_bank_events
+     WHERE tenant_id = $1 AND operation_id = $2`,
+    [tenantId, failedAuthorizeOperationId],
+  );
+  assert.deepEqual(authorizationEvents.rows, [{
+    event_type: "transfer_authorize",
+    transfer_id: instruction.id,
+  }], "Retrying authorization must create exactly one linked audit event");
+
   assert.equal((await action("execute", `execute-${randomUUID()}`, managerToken)).body.status, "executed");
 
   const [movements, events, balances] = await Promise.all([
@@ -356,6 +445,7 @@ test("supplier payments link one conformed invoice, require independent review, 
     ),
   ]);
   assert.equal(movements.rows[0].count, 2, "one execution creates exactly two balanced simulated movements");
-  assert.equal(events.rows[0].count, 4, "creation, validation, authorization, and execution are audited");
+  assert.equal(events.rows[0].count, 4,
+    "creation, failed-action retries, and execution each retain one audit event");
   assert.equal(balances.rows.length, 2);
 });
