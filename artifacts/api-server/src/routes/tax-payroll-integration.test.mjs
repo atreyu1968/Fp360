@@ -3,7 +3,7 @@ import { randomBytes, randomUUID, scryptSync } from "node:crypto";
 import test from "node:test";
 import pg from "pg";
 
-test("AEAT 111 and 190 drafts use the latest closed payrolls and reject duplicates", async (t) => {
+test("AEAT drafts use the latest payrolls and concurrent imports create only one draft", async (t) => {
   assert.notEqual(process.env.NODE_ENV, "production", "Never run this test in production");
   assert.ok(process.env.DATABASE_URL, "A development/test DATABASE_URL is required");
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -117,12 +117,19 @@ test("AEAT 111 and 190 drafts use the latest closed payrolls and reject duplicat
   assert.ok(overview.body.modelCatalog.some((model) => model.modelCode === "111" && model.agency === "aeat"));
   assert.ok(overview.body.modelCatalog.some((model) => model.modelCode === "190" && model.agency === "aeat"));
 
-  const operationId = randomUUID();
-  const quarterlyInput = {
+  const quarterlyBaseInput = {
     organizationId: companyId, taxType: "withholding", modelCode: "111",
-    periodKey: "2027-Q3", sourcePayrollRunIds: payrollRunIds, operationId,
+    periodKey: "2027-Q3", sourcePayrollRunIds: payrollRunIds,
   };
-  const quarterly = await request("/redfp360/tax/declarations", "POST", quarterlyInput);
+  const concurrentInputs = [
+    { ...quarterlyBaseInput, operationId: randomUUID() },
+    { ...quarterlyBaseInput, operationId: randomUUID() },
+  ];
+  const concurrentResults = await Promise.all(concurrentInputs.map((input) =>
+    request("/redfp360/tax/declarations", "POST", input)));
+  assert.deepEqual(concurrentResults.map((result) => result.status).sort(), [201, 409]);
+  const quarterly = concurrentResults.find((result) => result.status === 201);
+  assert.ok(quarterly, "Exactly one simultaneous import should create the draft");
   assert.equal(quarterly.status, 201, JSON.stringify(quarterly.body));
   assert.equal(quarterly.body.status, "draft");
   assert.equal(quarterly.body.withholdingBaseCents, 250000);
@@ -132,11 +139,27 @@ test("AEAT 111 and 190 drafts use the latest closed payrolls and reject duplicat
   assert.equal(quarterly.body.formData.withholdingBaseEuros, "2500.00");
   assert.deepEqual(quarterly.body.sourcePayrollRunIds.sort(), [...payrollRunIds].sort());
 
-  const replay = await request("/redfp360/tax/declarations", "POST", quarterlyInput);
+  const declarationCount = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM fp360_tax_declarations
+     WHERE tenant_id = $1 AND organization_id = $2 AND tax_type = 'withholding'
+       AND model_code = '111' AND period_key = '2027-Q3'`,
+    [tenantId, companyId],
+  );
+  assert.equal(declarationCount.rows[0].count, 1, "Only one declaration should be stored for the model and period");
+  const creationEventCount = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM fp360_tax_events
+     WHERE tenant_id = $1 AND organization_id = $2 AND declaration_id = $3
+       AND event_type = 'draft_created'`,
+    [tenantId, companyId, quarterly.body.id],
+  );
+  assert.equal(creationEventCount.rows[0].count, 1, "The draft should have exactly one creation audit event");
+
+  const winningInput = concurrentInputs[concurrentResults.indexOf(quarterly)];
+  const replay = await request("/redfp360/tax/declarations", "POST", winningInput);
   assert.equal(replay.status, 200);
   assert.equal(replay.body.id, quarterly.body.id);
   const duplicate = await request("/redfp360/tax/declarations", "POST", {
-    ...quarterlyInput, operationId: randomUUID(),
+    ...quarterlyBaseInput, operationId: randomUUID(),
   });
   assert.equal(duplicate.status, 409);
 
