@@ -5415,6 +5415,15 @@ components:
     PurchaseInvoiceMatchStatus:
       type: string
       enum: [match, difference]
+    PurchaseSupplierPaymentInstructionStatus:
+      type: string
+      enum: [pending_review, authorized, executed, rejected]
+    PurchaseSupplierPaymentInstruction:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string }
+        status: { $ref: "#/components/schemas/PurchaseSupplierPaymentInstructionStatus" }
     PurchaseInvoiceLineInput:
       type: object
       required: [purchaseOrderLineId, quantity, unitPriceCents, igicBasisPoints]
@@ -5460,7 +5469,7 @@ components:
         matches: { type: boolean }
     PurchaseInvoice:
       type: object
-      required: [id, orderId, orderNumber, requestId, buyerOrganizationId, supplierOrganizationId, supplierName, supersedesInvoiceId, invoiceReference, invoiceDate, dueDate, status, matchStatus, matchSummary, baseCents, igicCents, freightCents, totalCents, decisionReason, lines, createdByRole, createdAt]
+      required: [id, orderId, orderNumber, requestId, buyerOrganizationId, supplierOrganizationId, supplierName, supersedesInvoiceId, invoiceReference, invoiceDate, dueDate, status, matchStatus, matchSummary, baseCents, igicCents, freightCents, totalCents, decisionReason, supplierPaymentInstruction, lines, createdByRole, createdAt]
       properties:
         id: { type: string, format: uuid }
         orderId: { type: string, format: uuid }
@@ -5481,6 +5490,7 @@ components:
         freightCents: { type: integer }
         totalCents: { type: integer }
         decisionReason: { type: ["string", "null"] }
+        supplierPaymentInstruction: { allOf: [{ $ref: "#/components/schemas/PurchaseSupplierPaymentInstruction" }], nullable: true }
         lines:
           type: array
           items: { $ref: "#/components/schemas/PurchaseInvoiceLine" }

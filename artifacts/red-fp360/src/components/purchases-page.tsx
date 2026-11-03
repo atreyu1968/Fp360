@@ -514,6 +514,34 @@ function InvoiceMatch({ status }: { status: string }) {
   return <span className={`invoice-match-pill ${status}`} data-testid={`match-invoice-${status}`}>{status === 'match' ? <><CircleCheck size={12} /> Coincide</> : <><AlertTriangle size={12} /> Diferencia</>}</span>;
 }
 
+const paymentInstructionText: Record<string, string> = {
+  pending_review: 'Pendiente de revisión',
+  authorized: 'Autorizada',
+  executed: 'Ejecutada',
+  rejected: 'Rechazada',
+};
+
+function SupplierPaymentInstruction({ invoice }: { invoice: PurchaseInvoice }) {
+  if (invoice.status !== 'conformed') return <span className="payment-instruction-na">No aplica</span>;
+  const instruction = invoice.supplierPaymentInstruction;
+  if (!instruction) return <span className="purchase-status status-draft" data-testid="status-payment-instruction-none"><i />Sin instrucción</span>;
+
+  const organizationId = encodeURIComponent(invoice.buyerOrganizationId);
+  const instructionId = encodeURIComponent(instruction.id);
+  return <div className="payment-instruction-cell">
+    <span className={`purchase-status ${instruction.status === 'executed' ? 'status-approved' : instruction.status === 'rejected' ? 'status-closed' : instruction.status === 'pending_review' ? 'status-waiting' : 'status-approved'}`} data-testid={`status-payment-instruction-${instruction.status}`}>
+      <i />{paymentInstructionText[instruction.status] ?? instruction.status}
+    </span>
+    <a
+      href={`/banco?supplierPaymentInstruction=${instructionId}&organizationId=${organizationId}`}
+      onClick={(event) => event.stopPropagation()}
+      data-testid={`link-payment-instruction-${instruction.id}`}
+    >
+      Ver instrucción
+    </a>
+  </div>;
+}
+
 function InvoicesSection({ orders, ordersLoading, ordersError, retryOrders, receipts, receiptsLoading, receiptsError, retryReceipts, invoices, invoicesLoading, invoicesError, retryInvoices, canRegister, canDecide, onNotice }: {
   orders: PurchaseOrder[]; ordersLoading: boolean; ordersError: boolean; retryOrders: () => void;
   receipts: PurchaseReceipt[]; receiptsLoading: boolean; receiptsError: boolean; retryReceipts: () => void;
@@ -534,9 +562,9 @@ function InvoicesSection({ orders, ordersLoading, ordersError, retryOrders, rece
     {!invoicesLoading && !invoicesError && !receiptsLoading && !receiptsError && !ordersLoading && !ordersError && <div className="invoice-workspace">
       <div className="invoice-list-pane">
         <div className="invoice-pane-head"><b>Registro de facturas</b>{canRegister && <label><span className="sr-only">Pedido para registrar factura</span><select value="" onChange={(e) => { const order = orders.find((item) => item.id === e.target.value); if (order) setFormTarget({ order }); }} data-testid="select-invoice-order"><option value="">Registrar desde un pedido…</option>{replaceableOrders.map((order) => <option key={order.id} value={order.id}>{order.orderNumber} · {order.supplierName}</option>)}</select></label>}</div>
-        <div className="invoice-table-wrap"><table className="purchase-table invoice-table"><thead><tr><th>Documento / pedido</th><th>Proveedor</th><th>Comparación</th><th>Total</th><th>Estado</th></tr></thead><tbody>
-          {invoices.map((invoice) => <tr key={invoice.id} className={selected?.id === invoice.id ? 'is-selected' : ''} onClick={() => setSelectedId(invoice.id)} tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') setSelectedId(invoice.id); }} data-testid={`row-purchase-invoice-${invoice.id}`}><td><b>{invoice.invoiceReference}</b><small className="table-secondary">{invoice.orderNumber} · {dateText(invoice.invoiceDate)}</small></td><td>{invoice.supplierName}</td><td><InvoiceMatch status={invoice.matchStatus} /></td><td className="money-cell">{money(invoice.totalCents)}</td><td><InvoiceStatus status={invoice.status} /></td></tr>)}
-          {!invoices.length && <tr><td colSpan={5}><PurchaseEmpty title="Aún no hay facturas recibidas" detail="Selecciona un pedido con unidades aceptadas para registrar el documento recibido." icon={ReceiptText} /></td></tr>}
+         <div className="invoice-table-wrap"><table className="purchase-table invoice-table"><thead><tr><th>Documento / pedido</th><th>Proveedor</th><th>Comparación</th><th>Total</th><th>Estado</th><th>Instrucción de pago</th></tr></thead><tbody>
+           {invoices.map((invoice) => <tr key={invoice.id} className={selected?.id === invoice.id ? 'is-selected' : ''} onClick={() => setSelectedId(invoice.id)} tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') setSelectedId(invoice.id); }} data-testid={`row-purchase-invoice-${invoice.id}`}><td><b>{invoice.invoiceReference}</b><small className="table-secondary">{invoice.orderNumber} · {dateText(invoice.invoiceDate)}</small></td><td>{invoice.supplierName}</td><td><InvoiceMatch status={invoice.matchStatus} /></td><td className="money-cell">{money(invoice.totalCents)}</td><td><InvoiceStatus status={invoice.status} /></td><td><SupplierPaymentInstruction invoice={invoice} /></td></tr>)}
+           {!invoices.length && <tr><td colSpan={6}><PurchaseEmpty title="Aún no hay facturas recibidas" detail="Selecciona un pedido con unidades aceptadas para registrar el documento recibido." icon={ReceiptText} /></td></tr>}
         </tbody></table></div>
       </div>
       <aside className="purchase-list-panel invoice-detail-panel">
@@ -545,6 +573,7 @@ function InvoicesSection({ orders, ordersLoading, ordersError, retryOrders, rece
           <div className={`invoice-match-banner ${selected.matchStatus}`}><span>{selected.matchStatus === 'match' ? <CircleCheck size={16} /> : <AlertTriangle size={16} />}</span><div><b>{selected.matchStatus === 'match' ? 'Coincidencia' : 'Diferencias detectadas'}</b><p>{selected.matchSummary}</p></div></div>
           <div className="invoice-comparison-lines"><div className="invoice-comparison-head"><span>Artículo</span><span>Factura / recibido</span><span>Precio / IGIC</span></div>{selected.lines.map((line) => <article key={line.id} className={line.matches ? '' : 'line-diff'} data-testid={`invoice-line-${line.id}`}><div><b>{line.productName}</b><small>{line.sku}</small><small className={line.matches ? 'line-match-yes' : 'line-match-no'}>{line.matches ? 'Coincide con pedido' : 'Diferencia con pedido'}</small></div><div><b>{line.quantity} / {line.expectedReceivedQuantity}</b><small>unidades facturadas / aceptadas</small></div><div><b>{money(line.unitPriceCents)} / {money(line.expectedUnitPriceCents)}</b><small>{percent(line.igicBasisPoints)} / {percent(line.expectedIgicBasisPoints)} IGIC</small></div></article>)}</div>
           <div className="invoice-amount-compare"><span>Base · factura <b>{money(selected.baseCents)}</b></span><span>Base · pedido <b>{selectedOrder ? money(selectedOrder.baseCents) : 'No disponible'}</b></span><span>IGIC · factura <b>{money(selected.igicCents)}</b></span><span>IGIC · pedido <b>{selectedOrder ? money(selectedOrder.igicCents) : 'No disponible'}</b></span><span>Portes · factura <b>{money(selected.freightCents)}</b></span><span>Portes · pedido <b>{selectedOrder ? money(selectedOrder.freightCents) : 'No disponible'}</b></span><strong>Total factura / pedido <b>{money(selected.totalCents)} / {selectedOrder ? money(selectedOrder.totalCents) : 'No disponible'}</b></strong></div>
+          <div className="invoice-payment-instruction"><small>Instrucción de pago didáctica</small><SupplierPaymentInstruction invoice={selected} /></div>
           {selected.supersedesInvoiceId && <p className="invoice-supersedes">Rectifica la factura anterior <span className="mono">{invoices.find((i) => i.id === selected.supersedesInvoiceId)?.invoiceReference ?? 'documento previo'}</span></p>}
           {selected.decisionReason && <div className="detail-reason"><small>Resolución registrada</small><p>{selected.decisionReason}</p></div>}
           {canDecide && selected.status === 'pending_review' && <div className="invoice-decisions"><button className="button button-primary" disabled={selected.matchStatus !== 'match'} title={selected.matchStatus !== 'match' ? 'No se puede conformar una factura con diferencias.' : ''} onClick={() => setDecisionTarget(selected)} data-testid={`button-conform-invoice-${selected.id}`}><Check size={14} /> Conformar</button><button className="button button-quiet" onClick={() => setDecisionTarget(selected)} data-testid={`button-review-invoice-${selected.id}`}><SlidersHorizontal size={14} /> Resolver diferencias</button></div>}

@@ -717,6 +717,8 @@ export * from './purchaseRequestSummary';
 export * from './purchaseRequestTransitionInput';
 export * from './purchaseSupplier';
 export * from './purchaseSupplierMetric';
+export * from './purchaseSupplierPaymentInstruction';
+export * from './purchaseSupplierPaymentInstructionStatus';
 export * from './purchaseUrgency';
 export * from './upsertFp360DirectionThresholdKey';
 export * from './upsertFp360DirectionThresholdParams';

@@ -68,9 +68,18 @@ export function BankPage({ identity, organizations = [], onNotice }: Props) {
   const organizationId = identity.organizationId ?? selectedOrganizationId;
   const canChooseOrganization = !identity.organizationId && ['teacher', 'administrator'].includes(identity.role);
   const locked = readOnly(identity.role);
+  const deepLinkParams = new URLSearchParams(window.location.search);
+  const deepLinkOrganizationId = deepLinkParams.get('organizationId');
+  const deepLinkInstructionId = deepLinkParams.get('supplierPaymentInstruction');
   useEffect(() => {
     if (!identity.organizationId && !selectedOrganizationId && organizations[0]) setSelectedOrganizationId(organizations[0].id);
   }, [identity.organizationId, organizations, selectedOrganizationId]);
+  useEffect(() => {
+    if (!deepLinkOrganizationId || (identity.organizationId && identity.organizationId !== deepLinkOrganizationId)) return;
+    if (organizations.some((organization) => organization.id === deepLinkOrganizationId)) {
+      setSelectedOrganizationId(deepLinkOrganizationId);
+    }
+  }, [deepLinkOrganizationId, identity.organizationId, organizations]);
 
   const queryKey = getGetFp360BankOverviewQueryKey({ organizationId });
   const overviewQuery = useGetFp360BankOverview<Fp360BankOverview>(
@@ -87,6 +96,11 @@ export function BankPage({ identity, organizations = [], onNotice }: Props) {
   const createFinancing = useCreateFp360BankFinancing();
   const actFinancing = useActOnFp360BankFinancing();
   const data = overviewQuery.data;
+  useEffect(() => {
+    if (!deepLinkInstructionId || !data?.transfers.some((transfer) => transfer.id === deepLinkInstructionId)) return;
+    setView('transfers');
+    setSearch(deepLinkInstructionId);
+  }, [data?.transfers, deepLinkInstructionId]);
   const accounts = data?.accounts ?? [];
   const primary = accounts.find((account) => account.isPrimary) ?? accounts[0];
   const invoices = useMemo(() => (invoiceQuery.data ?? []).filter((invoice) => invoice.issuerOrganizationId === organizationId && invoice.balanceCents > 0), [invoiceQuery.data, organizationId]);
@@ -101,7 +115,7 @@ export function BankPage({ identity, organizations = [], onNotice }: Props) {
   const movements = (data?.movements ?? []).filter((item) => `${item.counterpartyName} ${item.description} ${item.reference}`.toLocaleLowerCase('es').includes(term));
   const transfers = (data?.transfers ?? []).filter((item) => {
     const invoice = (purchaseInvoiceQuery.data ?? []).find((candidate) => candidate.id === item.purchaseInvoiceId);
-    return `${item.beneficiaryName} ${item.concept} ${invoice?.invoiceReference ?? ''} ${item.status}`.toLocaleLowerCase('es').includes(term);
+    return `${item.id} ${item.beneficiaryName} ${item.concept} ${invoice?.invoiceReference ?? ''} ${item.status}`.toLocaleLowerCase('es').includes(term);
   });
   const effects = (data?.effects ?? []).filter((item) => `${item.reference} ${item.invoiceReference} ${item.status}`.toLocaleLowerCase('es').includes(term));
   const financing = (data?.financing ?? []).filter((item) => `${item.productType} ${item.status} ${item.effectReference ?? ''}`.toLocaleLowerCase('es').includes(term));
@@ -178,7 +192,12 @@ export function BankPage({ identity, organizations = [], onNotice }: Props) {
   const transferAction = (id: string, action: 'validate' | 'authorize' | 'execute' | 'reject' | 'cancel') => {
     setActionBusy(id); setActionError('');
     actTransfer.mutate({ id, data: { action, operationId: opId(), ...(action === 'reject' || action === 'cancel' ? { reason: 'Decisión del equipo en el escenario didáctico.' } : {}) } }, {
-      onSuccess: () => { invalidate(); setActionBusy(''); onNotice(`Acción de transferencia aplicada: ${label(action)}. Solo en el escenario simulado.`); },
+      onSuccess: () => {
+        invalidate();
+        void client.invalidateQueries({ queryKey: getListPurchaseInvoicesQueryKey() });
+        setActionBusy('');
+        onNotice(`Acción de transferencia aplicada: ${label(action)}. Solo en el escenario simulado.`);
+      },
       onError: (error) => { setActionBusy(''); setActionError(withMutationError(error, 'No se pudo actualizar la transferencia.')); },
     });
   };

@@ -8,6 +8,7 @@
 import type { PurchaseInvoiceLine } from './purchaseInvoiceLine';
 import type { PurchaseInvoiceMatchStatus } from './purchaseInvoiceMatchStatus';
 import type { PurchaseInvoiceStatus } from './purchaseInvoiceStatus';
+import type { PurchaseSupplierPaymentInstruction } from './purchaseSupplierPaymentInstruction';
 
 export interface PurchaseInvoice {
   id: string;
@@ -32,6 +33,7 @@ export interface PurchaseInvoice {
   totalCents: number;
   /** @nullable */
   decisionReason: string | null;
+  supplierPaymentInstruction: PurchaseSupplierPaymentInstruction | null;
   lines: PurchaseInvoiceLine[];
   createdByRole: string;
   createdAt: string;

@@ -738,6 +738,21 @@ export const PurchaseInvoiceMatchStatus = {
   difference: 'difference',
 } as const;
 
+export type PurchaseSupplierPaymentInstructionStatus = typeof PurchaseSupplierPaymentInstructionStatus[keyof typeof PurchaseSupplierPaymentInstructionStatus];
+
+
+export const PurchaseSupplierPaymentInstructionStatus = {
+  pending_review: 'pending_review',
+  authorized: 'authorized',
+  executed: 'executed',
+  rejected: 'rejected',
+} as const;
+
+export interface PurchaseSupplierPaymentInstruction {
+  id: string;
+  status: PurchaseSupplierPaymentInstructionStatus;
+}
+
 export interface PurchaseInvoiceLineInput {
   purchaseOrderLineId: string;
   /**
@@ -835,6 +850,7 @@ export interface PurchaseInvoice {
   totalCents: number;
   /** @nullable */
   decisionReason: string | null;
+  supplierPaymentInstruction: PurchaseSupplierPaymentInstruction | null;
   lines: PurchaseInvoiceLine[];
   createdByRole: string;
   createdAt: string;

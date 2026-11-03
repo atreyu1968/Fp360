@@ -5184,6 +5184,10 @@ export const CreatePurchaseInvoiceResponse = zod.object({
   "freightCents": zod.int(),
   "totalCents": zod.int(),
   "decisionReason": zod.string().nullable(),
+  "supplierPaymentInstruction": zod.union([zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending_review', 'authorized', 'executed', 'rejected'])
+}),zod.null()]),
   "lines": zod.array(zod.object({
   "id": zod.uuid(),
   "purchaseOrderLineId": zod.uuid(),
@@ -5224,6 +5228,10 @@ export const ListPurchaseInvoicesResponseItem = zod.object({
   "freightCents": zod.int(),
   "totalCents": zod.int(),
   "decisionReason": zod.string().nullable(),
+  "supplierPaymentInstruction": zod.union([zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending_review', 'authorized', 'executed', 'rejected'])
+}),zod.null()]),
   "lines": zod.array(zod.object({
   "id": zod.uuid(),
   "purchaseOrderLineId": zod.uuid(),
@@ -5279,6 +5287,10 @@ export const DecidePurchaseInvoiceResponse = zod.object({
   "freightCents": zod.int(),
   "totalCents": zod.int(),
   "decisionReason": zod.string().nullable(),
+  "supplierPaymentInstruction": zod.union([zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending_review', 'authorized', 'executed', 'rejected'])
+}),zod.null()]),
   "lines": zod.array(zod.object({
   "id": zod.uuid(),
   "purchaseOrderLineId": zod.uuid(),

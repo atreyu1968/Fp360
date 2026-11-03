@@ -11,9 +11,10 @@ import {
 import {
   db, fpActivity, fpOrganizations, fpProducts,
   fpPurchaseEvents, fpPurchaseInvoiceLines, fpPurchaseInvoices, fpPurchaseOrderLines,
-  fpPurchaseOrders, fpPurchaseReceiptLines, fpPurchaseReceipts,
+  fpPurchaseOrders, fpPurchaseReceiptLines, fpPurchaseReceipts, fpBankTransfers,
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
+import { purchaseInstructionStatus } from "./purchase-instruction-status.mjs";
 
 const router: IRouter = Router();
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -262,6 +263,19 @@ async function readInvoice(id: string, actor: AuthContext) {
   const [supplier] = await db.select({ name: fpOrganizations.name }).from(fpOrganizations).where(and(
     eq(fpOrganizations.id, invoice.supplierOrganizationId), eq(fpOrganizations.tenantId, actor.tenantId),
   ));
+  const [paymentInstruction] = invoice.status === "conformed"
+    ? await db.select({
+      id: fpBankTransfers.id,
+      status: fpBankTransfers.status,
+    }).from(fpBankTransfers).where(and(
+      eq(fpBankTransfers.tenantId, actor.tenantId),
+      eq(fpBankTransfers.purchaseInvoiceId, invoice.id),
+      eq(fpBankTransfers.organizationId, order.buyerOrganizationId),
+    )).limit(1)
+    : [];
+  const instructionStatus = paymentInstruction
+    ? purchaseInstructionStatus(paymentInstruction.status)
+    : null;
   const receiptTotals = await db.select({
     purchaseOrderLineId: fpPurchaseReceiptLines.purchaseOrderLineId,
     accepted: sql<number>`sum(${fpPurchaseReceiptLines.quantityAccepted})::int`,
@@ -302,7 +316,11 @@ async function readInvoice(id: string, actor: AuthContext) {
     status: invoice.status, matchStatus: invoice.matchStatus, matchSummary: invoice.matchSummary,
     baseCents: invoice.baseCents, igicCents: invoice.igicCents,
     freightCents: invoice.freightCents, totalCents: invoice.totalCents,
-    decisionReason: invoice.decisionReason, lines, createdByRole: invoice.createdByRole,
+    decisionReason: invoice.decisionReason,
+    supplierPaymentInstruction: instructionStatus && paymentInstruction
+      ? { id: paymentInstruction.id, status: instructionStatus }
+      : null,
+    lines, createdByRole: invoice.createdByRole,
     createdAt: iso(invoice.createdAt),
   };
 }
