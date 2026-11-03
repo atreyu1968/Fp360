@@ -1,0 +1,10 @@
+[
+  "CREATE TABLE \"fp360_centers\" (\n\"id\" text PRIMARY KEY NOT NULL,\n\"tenant_id\" text NOT NULL,\n\"name\" text NOT NULL,\n\"normalized_name\" text NOT NULL,\n\"is_active\" boolean DEFAULT true NOT NULL,\n\"created_by_user_id\" text,\n\"created_at\" timestamp with time zone DEFAULT now() NOT NULL,\nCONSTRAINT \"fp360_centers_tenant_name_key\" UNIQUE(\"tenant_id\",\"normalized_name\")\n);",
+  "CREATE TABLE \"fp360_simulation_networks\" (\n\"id\" text PRIMARY KEY NOT NULL,\n\"tenant_id\" text NOT NULL,\n\"code\" text NOT NULL,\n\"name\" text NOT NULL,\n\"calendar_mode\" text NOT NULL,\n\"is_active\" boolean DEFAULT true NOT NULL,\n\"created_by_user_id\" text,\n\"created_at\" timestamp with time zone DEFAULT now() NOT NULL,\nCONSTRAINT \"fp360_simulation_networks_tenant_code_key\" UNIQUE(\"tenant_id\",\"code\")\n);",
+  "CREATE TABLE \"fp360_organization_scopes\" (\n\"organization_id\" text PRIMARY KEY NOT NULL,\n\"tenant_id\" text NOT NULL,\n\"center_id\" text NOT NULL,\n\"simulation_network_id\" text NOT NULL,\n\"origin\" text NOT NULL,\n\"created_by_user_id\" text,\n\"created_at\" timestamp with time zone DEFAULT now() NOT NULL,\n\"updated_at\" timestamp with time zone DEFAULT now() NOT NULL\n);",
+  "CREATE INDEX \"fp360_centers_tenant_idx\" ON \"fp360_centers\" USING btree (\"tenant_id\");",
+  "CREATE INDEX \"fp360_simulation_networks_tenant_mode_idx\" ON \"fp360_simulation_networks\" USING btree (\"tenant_id\",\"calendar_mode\");",
+  "CREATE INDEX \"fp360_organization_scopes_tenant_idx\" ON \"fp360_organization_scopes\" USING btree (\"tenant_id\");",
+  "CREATE INDEX \"fp360_organization_scopes_center_idx\" ON \"fp360_organization_scopes\" USING btree (\"tenant_id\",\"center_id\");",
+  "CREATE INDEX \"fp360_organization_scopes_network_idx\" ON \"fp360_organization_scopes\" USING btree (\"tenant_id\",\"simulation_network_id\");"
+]

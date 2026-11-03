@@ -18,6 +18,9 @@
 //   export type Post = typeof postsTable.$inferSelect;
 
 export * from "./redfp360";
+export * from "./redfp360-centers";
+export * from "./redfp360-simulation-networks";
+export * from "./redfp360-organization-scopes";
 export * from "./redfp360-bank";
 export * from "./redfp360-tax";
 export * from "./redfp360-social-security";

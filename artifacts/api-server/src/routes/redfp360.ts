@@ -42,6 +42,7 @@ import {
 } from "@workspace/db";
 import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
 import { toFp360OrganizationDto } from "../lib/fp360-organization-profile";
+import { backfillTenantOrganizationScopes } from "../lib/organization-scopes";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -525,6 +526,7 @@ router.get("/redfp360/dashboard", async (req, res): Promise<void> => {
 router.get("/redfp360/organizations", async (req, res): Promise<void> => {
   const tenantId = req.auth!.tenantId;
   await ensureDemoData(tenantId);
+  const scopes = await backfillTenantOrganizationScopes(tenantId);
   const organizations = await db
     .select()
     .from(fpOrganizations)
@@ -532,7 +534,11 @@ router.get("/redfp360/organizations", async (req, res): Promise<void> => {
     .orderBy(fpOrganizations.name);
   res.json(
     ListFp360OrganizationsResponse.parse(
-      organizations.map(toFp360OrganizationDto),
+      organizations.map((organization) => {
+        const scope = scopes.get(organization.id);
+        if (!scope) throw new Error("No se pudo resolver la red económica de una empresa.");
+        return toFp360OrganizationDto(organization, scope);
+      }),
     ),
   );
 });

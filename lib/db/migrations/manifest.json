@@ -30,6 +30,11 @@
       "schemaHash": "ad3797a0366851a068d732725b2cf85f614c856ff0f2fac5e4b98df19d22170b",
       "snapshot": "0005-organization-profile.sql",
       "sha256": "226b91a820071d0dcd933a2cdf8bcd644bc29ab2c2deeffd9bf2944e165096ec"
+    },
+    {
+      "schemaHash": "3b1bce960cef423318d4d0c76244866b7edbb48b61c1fe21f41c9489ab5beff2",
+      "snapshot": "0006-organization-economic-networks.sql",
+      "sha256": "be9a42b523f175263ebd47e124c23d17a2af07167bb2b177919ec3d65b61640c"
     }
   ],
   "migrations": [
@@ -61,6 +66,12 @@
       "id": "0005_organization_profile",
       "file": "0005_organization_profile.sql.json",
       "sha256": "d480f6138b9688a745778e4093b0c4ebc3a40431f4881b1ad52ea4ac0873f6e2",
+      "backwardsCompatible": true
+    },
+    {
+      "id": "0006_organization_economic_networks",
+      "file": "0006_organization_economic_networks.sql.json",
+      "sha256": "d72139ed9ca9a3f09425232681fb1858a42238a686287af082543c23f2bdd369",
       "backwardsCompatible": true
     }
   ]

@@ -4035,6 +4035,10 @@ export const ListFp360DirectionEventsResponse = zod.array(ListFp360DirectionEven
  */
 export const ListFp360OrganizationsResponseItem = zod.object({
   "id": zod.string(),
+  "centerId": zod.string(),
+  "simulationNetworkId": zod.string(),
+  "simulationCalendarMode": zod.enum(['ordinary', 'accelerated']),
+  "simulationNetworkName": zod.string(),
   "name": zod.string(),
   "center": zod.string(),
   "island": zod.string(),
@@ -4089,6 +4093,10 @@ export const CreateFp360OrganizationBody = zod.object({
 
 export const CreateFp360OrganizationResponse = zod.object({
   "id": zod.string(),
+  "centerId": zod.string(),
+  "simulationNetworkId": zod.string(),
+  "simulationCalendarMode": zod.enum(['ordinary', 'accelerated']),
+  "simulationNetworkName": zod.string(),
   "name": zod.string(),
   "center": zod.string(),
   "island": zod.string(),
@@ -4147,6 +4155,10 @@ export const UpdateFp360OrganizationBody = zod.object({
 
 export const UpdateFp360OrganizationResponse = zod.object({
   "id": zod.string(),
+  "centerId": zod.string(),
+  "simulationNetworkId": zod.string(),
+  "simulationCalendarMode": zod.enum(['ordinary', 'accelerated']),
+  "simulationNetworkName": zod.string(),
   "name": zod.string(),
   "center": zod.string(),
   "island": zod.string(),
@@ -4190,6 +4202,10 @@ export const CompleteFp360OrganizationLogoUploadParams = zod.object({
 
 export const CompleteFp360OrganizationLogoUploadResponse = zod.object({
   "id": zod.string(),
+  "centerId": zod.string(),
+  "simulationNetworkId": zod.string(),
+  "simulationCalendarMode": zod.enum(['ordinary', 'accelerated']),
+  "simulationNetworkName": zod.string(),
   "name": zod.string(),
   "center": zod.string(),
   "island": zod.string(),

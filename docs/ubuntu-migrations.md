@@ -51,6 +51,7 @@ instalador lo configura como propietario de su base local.
 - Tablas nuevas.
 - Índices no únicos nuevos.
 - Tipos nuevos.
+- Restricciones declaradas dentro de tablas nuevas y vacías.
 - Columnas opcionales nuevas, sin `DEFAULT`, `NOT NULL`, claves o restricciones sobre
   los datos existentes.
 - Transiciones sin SQL para cambios de organización del código del esquema,
@@ -67,6 +68,17 @@ No debe aceptarse código de una fuente no confiable.
 Eliminar columnas o tablas, convertir tipos, añadir restricciones a datos
 existentes o hacer backfills requiere un procedimiento específico y revisado.
 El actualizador no improvisa esos cambios ni ejecuta `push --force`.
+
+La migración `0006_organization_economic_networks` es una excepción de backfill
+revisada y documentada: después de aplicar su DDL, el actualizador ejecuta
+`lib/db/scripts/backfill-organization-scopes.mjs` dentro de una transacción
+independiente. Solo crea los centros, una red ordinaria por tenant y las
+asignaciones que falten. Empresas de distintos centros del mismo tenant
+comparten esa red para conservar las relaciones económicas existentes. No
+cambia empresas, movimientos, facturas, saldos ni historial. El proceso es
+idempotente y está restringido al PostgreSQL local de Ubuntu; si falla, el
+actualizador no activa el código nuevo y se puede reintentar sin duplicar
+asignaciones.
 
 ## Preparar una publicación que cambie el esquema
 

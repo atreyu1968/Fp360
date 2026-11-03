@@ -23,6 +23,7 @@ import { db, fpActivity, fpAuthInvitations, fpAuthMemberships, fpOrganizations, 
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
 import { toFp360OrganizationDto } from "../lib/fp360-organization-profile";
+import { ensureOrganizationScope } from "../lib/organization-scopes";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -100,10 +101,22 @@ router.post("/redfp360/organizations", async (req, res): Promise<void> => {
       ...body.data, name: body.data.name.trim(), center: body.data.center.trim(),
       id: randomUUID(), tenantId: actor.tenantId, isActive: true,
     }).returning();
+    const scope = await ensureOrganizationScope(tx, {
+      organizationId: created.id,
+      tenantId: actor.tenantId,
+      centerName: created.center,
+      actorUserId: actor.userId,
+      origin: "organization_created",
+    });
     await activity(tx, actor, "Empresa creada", `Alta de ${created.name} en el directorio simulado.`, created.id);
-    return created;
+    return { organization: created, scope };
   });
-  res.status(201).json(CreateFp360OrganizationResponse.parse(toFp360OrganizationDto(organization)));
+  res.status(201).json(CreateFp360OrganizationResponse.parse(toFp360OrganizationDto(organization.organization, {
+    centerId: organization.scope.scope.centerId,
+    simulationNetworkId: organization.scope.scope.simulationNetworkId,
+    simulationCalendarMode: organization.scope.network.calendarMode,
+    simulationNetworkName: organization.scope.network.name,
+  })));
 });
 
 router.patch("/redfp360/organizations/:id", async (req, res): Promise<void> => {
@@ -143,10 +156,25 @@ router.patch("/redfp360/organizations/:id", async (req, res): Promise<void> => {
     }
     const [updated] = await tx.update(fpOrganizations).set({ ...body.data, name, center })
       .where(and(eq(fpOrganizations.id, previous.id), eq(fpOrganizations.tenantId, actor.tenantId))).returning();
+    const scope = await ensureOrganizationScope(tx, {
+      organizationId: updated.id,
+      tenantId: actor.tenantId,
+      centerName: updated.center,
+      actorUserId: actor.userId,
+      origin: previous.center === updated.center ? "legacy_backfill" : "center_changed",
+    });
+    if (previous.center !== updated.center) {
+      await activity(tx, actor, "Empresa trasladada de centro", `${previous.center} → ${updated.center}. La empresa conserva su red económica e historial.`, previous.id);
+    }
     await activity(tx, actor, "Empresa actualizada", `Se ha actualizado la ficha de ${name}; se conserva su historial.`, previous.id);
-    return updated;
+    return { organization: updated, scope };
   });
-  res.json(UpdateFp360OrganizationResponse.parse(toFp360OrganizationDto(organization)));
+  res.json(UpdateFp360OrganizationResponse.parse(toFp360OrganizationDto(organization.organization, {
+    centerId: organization.scope.scope.centerId,
+    simulationNetworkId: organization.scope.scope.simulationNetworkId,
+    simulationCalendarMode: organization.scope.network.calendarMode,
+    simulationNetworkName: organization.scope.network.name,
+  })));
 });
 
 router.post("/redfp360/organizations/:id/logo-upload", async (req, res): Promise<void> => {
@@ -251,7 +279,19 @@ router.post("/redfp360/organizations/:id/logo-complete", async (req, res): Promi
       req.log.warn({ err: error, organizationId: organization.id }, "Could not remove the replaced organization logo");
     }
   }
-  res.json(CompleteFp360OrganizationLogoUploadResponse.parse(toFp360OrganizationDto(updated)));
+  const scope = await db.transaction((tx) => ensureOrganizationScope(tx, {
+    organizationId: updated.id,
+    tenantId: actor.tenantId,
+    centerName: updated.center,
+    actorUserId: actor.userId,
+    origin: "legacy_backfill",
+  }));
+  res.json(CompleteFp360OrganizationLogoUploadResponse.parse(toFp360OrganizationDto(updated, {
+    centerId: scope.scope.centerId,
+    simulationNetworkId: scope.scope.simulationNetworkId,
+    simulationCalendarMode: scope.network.calendarMode,
+    simulationNetworkName: scope.network.name,
+  })));
 });
 
 router.post("/redfp360/products", async (req, res): Promise<void> => {

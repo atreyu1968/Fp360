@@ -53,6 +53,16 @@ apply_database_migrations() (
     node "$REPO_DIR/lib/db/scripts/migrate-ubuntu.mjs" apply --from "$APP_DIR/lib/db"
 )
 
+apply_organization_scope_backfill() (
+  set -a
+  # Root reads the private environment; DATABASE_URL is never a CLI argument.
+  source "$CONFIG_DIR/api.env"
+  set +a
+  runuser -u "$SERVICE_USER" -- env HOME="$DATA_DIR" \
+    RED_FP360_MIGRATION_TARGET=ubuntu-local \
+    node "$REPO_DIR/lib/db/scripts/backfill-organization-scopes.mjs"
+)
+
 while (($#)); do
   case "$1" in
     --ref)
@@ -217,6 +227,8 @@ systemctl stop "$SERVICE_NAME"
 SERVICE_STOPPED=1
 printf 'Aplicando migraciones compatibles en una transacción...\n'
 apply_database_migrations
+printf 'Asignando empresas existentes a centros y redes sin tocar sus operaciones...\n'
+apply_organization_scope_backfill
 mv "$APP_DIR" "$ROLLBACK_DIR"
 ROLLBACK_ACTIVE=1
 if ! mv "$REPO_DIR" "$APP_DIR"; then

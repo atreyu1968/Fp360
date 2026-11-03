@@ -1943,6 +1943,14 @@ export interface HealthStatus {
   status: string;
 }
 
+export type Fp360OrganizationSimulationCalendarMode = typeof Fp360OrganizationSimulationCalendarMode[keyof typeof Fp360OrganizationSimulationCalendarMode];
+
+
+export const Fp360OrganizationSimulationCalendarMode = {
+  ordinary: 'ordinary',
+  accelerated: 'accelerated',
+} as const;
+
 export type Fp360OrganizationRole = typeof Fp360OrganizationRole[keyof typeof Fp360OrganizationRole];
 
 
@@ -1967,6 +1975,10 @@ export const Fp360OrganizationActivity = {
 
 export interface Fp360Organization {
   id: string;
+  centerId: string;
+  simulationNetworkId: string;
+  simulationCalendarMode: Fp360OrganizationSimulationCalendarMode;
+  simulationNetworkName: string;
   name: string;
   center: string;
   island: string;

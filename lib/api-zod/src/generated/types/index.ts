@@ -430,6 +430,7 @@ export * from './fp360OrganizationInputActivity';
 export * from './fp360OrganizationInputIsland';
 export * from './fp360OrganizationInputRole';
 export * from './fp360OrganizationRole';
+export * from './fp360OrganizationSimulationCalendarMode';
 export * from './fp360OrganizationUpdate';
 export * from './fp360OrganizationUpdateActivity';
 export * from './fp360OrganizationUpdateIsland';

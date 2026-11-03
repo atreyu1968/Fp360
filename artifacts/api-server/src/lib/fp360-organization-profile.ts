@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { fpOrganizations } from "@workspace/db";
+import type { OrganizationScopeDto } from "./organization-scopes";
 
 type Fp360OrganizationRow = typeof fpOrganizations.$inferSelect;
 
@@ -9,7 +10,7 @@ export function socialSecurityRegimeForActivity(activity: string | null | undefi
   return "Régimen General (simulado)";
 }
 
-export function toFp360OrganizationDto(organization: Fp360OrganizationRow) {
+export function toFp360OrganizationDto(organization: Fp360OrganizationRow, scope: OrganizationScopeDto) {
   const simulatedCode = createHash("sha256")
     .update(organization.id)
     .digest("hex")
@@ -18,6 +19,10 @@ export function toFp360OrganizationDto(organization: Fp360OrganizationRow) {
   const activity = organization.activity ?? "commerce";
   return {
     id: organization.id,
+    centerId: scope.centerId,
+    simulationNetworkId: scope.simulationNetworkId,
+    simulationCalendarMode: scope.simulationCalendarMode,
+    simulationNetworkName: scope.simulationNetworkName,
     name: organization.name,
     center: organization.center,
     island: organization.island,

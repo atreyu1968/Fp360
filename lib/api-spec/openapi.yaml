@@ -6194,9 +6194,13 @@ components:
         - status
     Fp360Organization:
       type: object
-      required: [id, name, center, island, role, isActive, activity, commercialName, address, municipality, postalCode, businessEmail, businessPhone, cif, socialSecurityNumber, socialSecurityRegime, logoUrl]
+      required: [id, centerId, simulationNetworkId, simulationCalendarMode, simulationNetworkName, name, center, island, role, isActive, activity, commercialName, address, municipality, postalCode, businessEmail, businessPhone, cif, socialSecurityNumber, socialSecurityRegime, logoUrl]
       properties:
         id: { type: string }
+        centerId: { type: string }
+        simulationNetworkId: { type: string }
+        simulationCalendarMode: { type: string, enum: [ordinary, accelerated] }
+        simulationNetworkName: { type: string }
         name: { type: string }
         center: { type: string }
         island: { type: string }

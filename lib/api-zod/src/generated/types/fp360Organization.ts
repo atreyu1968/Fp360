@@ -7,9 +7,14 @@
  */
 import type { Fp360OrganizationActivity } from './fp360OrganizationActivity';
 import type { Fp360OrganizationRole } from './fp360OrganizationRole';
+import type { Fp360OrganizationSimulationCalendarMode } from './fp360OrganizationSimulationCalendarMode';
 
 export interface Fp360Organization {
   id: string;
+  centerId: string;
+  simulationNetworkId: string;
+  simulationCalendarMode: Fp360OrganizationSimulationCalendarMode;
+  simulationNetworkName: string;
   name: string;
   center: string;
   island: string;

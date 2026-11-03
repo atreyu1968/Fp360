@@ -21,8 +21,15 @@ test("organization identifiers are stable and explicitly simulated", () => {
     logoContentType: null,
   };
 
-  const profile = toFp360OrganizationDto(organization);
-  assert.equal(profile.cif, toFp360OrganizationDto(organization).cif);
+  const scope = {
+    centerId: "center-1",
+    simulationNetworkId: "network-1",
+    simulationCalendarMode: "ordinary",
+    simulationNetworkName: "Red económica ordinaria",
+  };
+  const profile = toFp360OrganizationDto(organization, scope);
+  assert.equal(profile.cif, toFp360OrganizationDto(organization, scope).cif);
+  assert.equal(profile.simulationNetworkId, "network-1");
   assert.match(profile.cif, /^SIM-CIF-[A-F0-9]{10}$/);
   assert.match(profile.socialSecurityNumber, /^SIM-SS-[A-F0-9]{10}$/);
   assert.equal(profile.socialSecurityRegime, "Sistema Especial Agrario (simulado)");
@@ -46,6 +53,11 @@ test("organization logo URLs are tenant-routed and regimes follow simulated acti
     businessPhone: "000000000",
     logoObjectPath: "/objects/uploads/logo-1",
     logoContentType: "image/png",
+  }, {
+    centerId: "center-2",
+    simulationNetworkId: "network-2",
+    simulationCalendarMode: "accelerated",
+    simulationNetworkName: "Ejercicio acelerado",
   });
 
   assert.equal(profile.socialSecurityRegime, "Régimen Especial del Mar (simulado)");
