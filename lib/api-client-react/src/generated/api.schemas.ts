@@ -9576,6 +9576,13 @@ export type GetFp360BankReconciliationParams = {
   toDate: string;
 };
 
+export type GetFp360BankSupplierPaymentInstructionParams = {
+  /** @minLength 1 */
+  instructionId: string;
+  /** @minLength 1 */
+  organizationId: string;
+};
+
 export type GetFp360TaxOverviewParams = {
   /** @minLength 1 */
   organizationId: string;

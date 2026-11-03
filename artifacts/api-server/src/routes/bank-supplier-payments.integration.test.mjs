@@ -397,6 +397,51 @@ test("bank transfers and supplier payments roll back missing audit events and cr
   assert.equal((await makeInstruction(invoices[2], operationIds[3])).status, 409);
   assert.equal((await makeInstruction(invoices[3], operationIds[4])).status, 404);
 
+  await pool.query(
+    `INSERT INTO fp360_bank_transfers
+      (id, tenant_id, organization_id, source_account_id, beneficiary_account_id,
+       amount_cents, concept, status, operation_id, request_fingerprint,
+       created_by_user_id, created_by_name, created_at, purchase_invoice_id)
+     SELECT 'recent-bank-transfer-' || seq, $1, $2, $3, $4,
+       1250, 'Transferencia reciente de prueba', 'draft',
+       'recent-bank-operation-' || seq, 'test-fingerprint', $5, 'Usuario de prueba',
+       now() + make_interval(secs => seq), NULL
+     FROM generate_series(1, 101) AS seq`,
+    [tenantId, buyerId, sourceAccountId, beneficiaryAccountId, userIds[0]],
+  );
+  const overviewWithoutOldInstruction = await request(
+    `/redfp360/bank/overview?organizationId=${buyerId}`, "GET", undefined, sessionTokens[0],
+  );
+  assert.equal(overviewWithoutOldInstruction.status, 200);
+  assert.equal(overviewWithoutOldInstruction.body.transfers.some((row) => row.id === instruction.id), false,
+    "The supplier instruction is outside the 100 most recent bank transfers");
+  const oldInstructionLookup = await request(
+    `/redfp360/bank/supplier-payments/instruction?instructionId=${instruction.id}&organizationId=${buyerId}`,
+    "GET", undefined, sessionTokens[0],
+  );
+  assert.equal(oldInstructionLookup.status, 200, JSON.stringify(oldInstructionLookup.body));
+  assert.equal(oldInstructionLookup.body.id, instruction.id,
+    "A valid invoice link must load its instruction even when absent from the recent overview");
+  const invalidInstructionLookup = await request(
+    `/redfp360/bank/supplier-payments/instruction?instructionId=${randomUUID()}&organizationId=${buyerId}`,
+    "GET", undefined, sessionTokens[0],
+  );
+  assert.equal(invalidInstructionLookup.status, 404);
+  assert.equal(invalidInstructionLookup.body.id, undefined,
+    "An invalid instruction link must not expose an instruction");
+  const mismatchedBuyerLookup = await request(
+    `/redfp360/bank/supplier-payments/instruction?instructionId=${instruction.id}&organizationId=${otherBuyerId}`,
+    "GET", undefined, sessionTokens[2],
+  );
+  assert.equal(mismatchedBuyerLookup.status, 404,
+    "A supervisor must not load an instruction through a different buyer company's link");
+  const inaccessibleBuyerLookup = await request(
+    `/redfp360/bank/supplier-payments/instruction?instructionId=${instruction.id}&organizationId=${otherBuyerId}`,
+    "GET", undefined, sessionTokens[0],
+  );
+  assert.equal(inaccessibleBuyerLookup.status, 403,
+    "A buyer must not use a valid instruction ID to access another company's bank");
+
   const supervisorInstruction = await makeInstruction(
     invoices[3], `supervisor-instruction-${randomUUID()}`, otherBuyerId, sessionTokens[2],
     `bank-primary:${tenantId}:${otherBuyerId}`,

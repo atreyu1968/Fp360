@@ -286,6 +286,7 @@ import type {
   GetFp360AccountingYearEndSummaryParams,
   GetFp360BankOverviewParams,
   GetFp360BankReconciliationParams,
+  GetFp360BankSupplierPaymentInstructionParams,
   GetFp360CommunicationsOverviewParams,
   GetFp360CustomerServiceOverviewParams,
   GetFp360DirectionOverviewParams,
@@ -16179,6 +16180,114 @@ export const useCreateFp360BankTransfer = <TError = ErrorType<void>,
       > => {
       return useMutation(getCreateFp360BankTransferMutationOptions(options), queryClient);
     }
+
+export const getGetFp360BankSupplierPaymentInstructionUrl = (params: GetFp360BankSupplierPaymentInstructionParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/redfp360/bank/supplier-payments/instruction?${stringifiedParams}` : `/api/redfp360/bank/supplier-payments/instruction`
+}
+
+/**
+ * @summary Get one supplier payment instruction for its buyer company
+ */
+export const getFp360BankSupplierPaymentInstruction = async (params: GetFp360BankSupplierPaymentInstructionParams, options?: Parameters<typeof customFetch>[1]): Promise<Fp360BankTransfer> => {
+
+  return customFetch<Fp360BankTransfer>(getGetFp360BankSupplierPaymentInstructionUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFp360BankSupplierPaymentInstructionQueryKey = (params?: GetFp360BankSupplierPaymentInstructionParams,) => {
+    return [
+    `/api/redfp360/bank/supplier-payments/instruction`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFp360BankSupplierPaymentInstructionQueryOptions = <TData = Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>, TError = ErrorType<void>>(params: GetFp360BankSupplierPaymentInstructionParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFp360BankSupplierPaymentInstructionQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>> = ({ signal }) => getFp360BankSupplierPaymentInstruction(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFp360BankSupplierPaymentInstructionQueryResult = NonNullable<Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>>
+export type GetFp360BankSupplierPaymentInstructionQueryError = ErrorType<void>
+
+
+export function useGetFp360BankSupplierPaymentInstruction<TData = Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>, TError = ErrorType<void>>(
+ params: GetFp360BankSupplierPaymentInstructionParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360BankSupplierPaymentInstruction<TData = Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>, TError = ErrorType<void>>(
+ params: GetFp360BankSupplierPaymentInstructionParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>,
+          TError,
+          Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFp360BankSupplierPaymentInstruction<TData = Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>, TError = ErrorType<void>>(
+ params: GetFp360BankSupplierPaymentInstructionParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get one supplier payment instruction for its buyer company
+ */
+
+export function useGetFp360BankSupplierPaymentInstruction<TData = Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>, TError = ErrorType<void>>(
+ params: GetFp360BankSupplierPaymentInstructionParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360BankSupplierPaymentInstruction>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFp360BankSupplierPaymentInstructionQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getCreateFp360BankSupplierPaymentUrl = () => {
 

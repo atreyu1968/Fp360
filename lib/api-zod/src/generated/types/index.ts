@@ -608,6 +608,7 @@ export * from './getFp360AccountingOverviewParams';
 export * from './getFp360AccountingYearEndSummaryParams';
 export * from './getFp360BankOverviewParams';
 export * from './getFp360BankReconciliationParams';
+export * from './getFp360BankSupplierPaymentInstructionParams';
 export * from './getFp360CommunicationsOverviewParams';
 export * from './getFp360CustomerServiceOverviewParams';
 export * from './getFp360DirectionOverviewParams';

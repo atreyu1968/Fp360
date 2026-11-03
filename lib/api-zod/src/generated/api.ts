@@ -7501,6 +7501,41 @@ export const CreateFp360BankTransferResponse = zod.object({
 
 
 /**
+ * @summary Get one supplier payment instruction for its buyer company
+ */
+
+
+
+
+export const GetFp360BankSupplierPaymentInstructionQueryParams = zod.object({
+  "instructionId": zod.string().min(1),
+  "organizationId": zod.string().min(1)
+})
+
+
+
+
+export const GetFp360BankSupplierPaymentInstructionResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "purchaseInvoiceId": zod.string().nullable(),
+  "sourceAccountId": zod.string(),
+  "beneficiaryAccountId": zod.string(),
+  "sourceReference": zod.string(),
+  "beneficiaryReference": zod.string(),
+  "beneficiaryName": zod.string(),
+  "amountCents": zod.int().min(1),
+  "concept": zod.string(),
+  "scheduledDate": zod.iso.date().nullable(),
+  "status": zod.enum(['draft', 'pending_review', 'authorized', 'scheduled', 'executed', 'rejected', 'cancelled']),
+  "operationId": zod.string(),
+  "createdByName": zod.string(),
+  "executedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "createdAt": zod.iso.datetime({"offset":true})
+})
+
+
+/**
  * @summary Create a simulated supplier payment instruction for a conformed purchase invoice
  */
 

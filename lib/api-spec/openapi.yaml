@@ -3283,6 +3283,30 @@ paths:
           description: Invalid transfer details
         "409":
           description: Operation identifier was reused with different data
+  /redfp360/bank/supplier-payments/instruction:
+    get:
+      operationId: getFp360BankSupplierPaymentInstruction
+      tags: [redfp360]
+      summary: Get one supplier payment instruction for its buyer company
+      parameters:
+        - name: instructionId
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+        - name: organizationId
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+      responses:
+        "200":
+          description: Supplier payment instruction verified against its buyer invoice and tenant
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankTransfer" }
+        "403":
+          description: Organization is outside the actor's access
+        "404":
+          description: Instruction is not linked to an invoice for this buyer company
   /redfp360/bank/supplier-payments:
     post:
       operationId: createFp360BankSupplierPayment

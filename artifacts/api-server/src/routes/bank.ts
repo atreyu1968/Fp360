@@ -21,6 +21,8 @@ import {
   GetFp360BankReconciliationResponse,
   GetFp360BankOverviewQueryParams,
   GetFp360BankOverviewResponse,
+  GetFp360BankSupplierPaymentInstructionQueryParams,
+  GetFp360BankSupplierPaymentInstructionResponse,
 } from "@workspace/api-zod";
 import {
   db,
@@ -651,6 +653,47 @@ router.get("/redfp360/bank/overview", route(async (req, res) => {
   }
   await ensureScenarioAccounts(actor);
   res.json(GetFp360BankOverviewResponse.parse(await loadOverview(actor.tenantId, organizationId)));
+}));
+
+router.get("/redfp360/bank/supplier-payments/instruction", route(async (req, res) => {
+  const actor = req.auth!;
+  const query = GetFp360BankSupplierPaymentInstructionQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const organizationId = await resolveOrganization(actor, query.data.organizationId);
+  if (!organizationId) {
+    res.status(403).json({ error: "La empresa solicitada no está disponible para este perfil." });
+    return;
+  }
+  const [linkedInstruction] = await db.select({ id: fpBankTransfers.id })
+    .from(fpBankTransfers)
+    .innerJoin(fpPurchaseInvoices, and(
+      eq(fpPurchaseInvoices.id, fpBankTransfers.purchaseInvoiceId),
+      eq(fpPurchaseInvoices.tenantId, actor.tenantId),
+    ))
+    .innerJoin(fpPurchaseOrders, and(
+      eq(fpPurchaseOrders.id, fpPurchaseInvoices.orderId),
+      eq(fpPurchaseOrders.tenantId, actor.tenantId),
+    ))
+    .where(and(
+      eq(fpBankTransfers.id, query.data.instructionId),
+      eq(fpBankTransfers.tenantId, actor.tenantId),
+      eq(fpBankTransfers.organizationId, organizationId),
+      eq(fpPurchaseOrders.buyerOrganizationId, organizationId),
+    ))
+    .limit(1);
+  if (!linkedInstruction) {
+    res.status(404).json({ error: "La instrucción no está disponible para esta empresa." });
+    return;
+  }
+  const instruction = await loadTransfer(linkedInstruction.id, actor.tenantId);
+  if (!instruction || instruction.purchaseInvoiceId === null) {
+    res.status(404).json({ error: "La instrucción no está disponible para esta empresa." });
+    return;
+  }
+  res.json(GetFp360BankSupplierPaymentInstructionResponse.parse(instruction));
 }));
 
 router.get("/redfp360/bank/reconciliation", route(async (req, res) => {
