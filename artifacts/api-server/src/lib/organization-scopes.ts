@@ -102,7 +102,9 @@ async function getOrCreateNetwork(
     id: randomUUID(),
     tenantId,
     code,
-    name: calendarMode === "ordinary"
+    name: calendarMode === "ordinary" && fiscalYearStartMonth === 1
+      ? DEFAULT_NETWORK_NAME
+      : calendarMode === "ordinary"
       ? `Red económica ordinaria · ejercicio desde ${fiscalYearStartMonth}`
       : `Red económica acelerada · ejercicio desde ${fiscalYearStartMonth}`,
     calendarMode,
@@ -129,6 +131,7 @@ export async function ensureOrganizationScope(
     calendarMode?: "ordinary" | "accelerated";
     fiscalYearStartMonth?: number;
     academicPeriod?: string;
+    simulationNetworkId?: string;
   },
 ): Promise<{ scope: typeof fpOrganizationScopes.$inferSelect; network: typeof fpSimulationNetworks.$inferSelect }> {
   const center = await getOrCreateCenter(tx, input.tenantId, input.centerName, input.actorUserId);
@@ -143,13 +146,29 @@ export async function ensureOrganizationScope(
       eq(fpSimulationNetworks.tenantId, input.tenantId),
     )).limit(1);
     if (!currentNetwork) throw new Error("La empresa tiene una red económica no válida.");
+    const [selectedNetwork] = input.simulationNetworkId
+      ? await tx.select().from(fpSimulationNetworks).where(and(
+        eq(fpSimulationNetworks.id, input.simulationNetworkId),
+        eq(fpSimulationNetworks.tenantId, input.tenantId),
+        eq(fpSimulationNetworks.isActive, true),
+      )).limit(1)
+      : [undefined];
+    if (input.simulationNetworkId && !selectedNetwork) {
+      throw new Error("La red económica seleccionada no está disponible en esta organización.");
+    }
+    if (selectedNetwork && (
+      (input.calendarMode !== undefined && input.calendarMode !== selectedNetwork.calendarMode) ||
+      (input.fiscalYearStartMonth !== undefined && input.fiscalYearStartMonth !== selectedNetwork.fiscalYearStartMonth)
+    )) {
+      throw new Error("La configuración del calendario no coincide con la red económica seleccionada.");
+    }
     const calendarMode = input.calendarMode ?? currentNetwork.calendarMode;
     const fiscalYearStartMonth = input.fiscalYearStartMonth ?? currentNetwork.fiscalYearStartMonth;
     const calendarChanged = calendarMode !== currentNetwork.calendarMode ||
       fiscalYearStartMonth !== currentNetwork.fiscalYearStartMonth;
-    const network = calendarChanged
+    const network = selectedNetwork ?? (calendarChanged
       ? await getOrCreateNetwork(tx, input.tenantId, calendarMode, fiscalYearStartMonth, input.actorUserId)
-      : currentNetwork;
+      : currentNetwork);
     const scopeChanges: Partial<typeof fpOrganizationScopes.$inferInsert> = {};
     if (network.id !== existing.simulationNetworkId) scopeChanges.simulationNetworkId = network.id;
     if (input.academicPeriod !== undefined && input.academicPeriod !== existing.academicPeriod) {
@@ -182,7 +201,23 @@ export async function ensureOrganizationScope(
     return { scope: existing, network };
   }
 
-  const network = await getOrCreateNetwork(
+  const [selectedNetwork] = input.simulationNetworkId
+    ? await tx.select().from(fpSimulationNetworks).where(and(
+      eq(fpSimulationNetworks.id, input.simulationNetworkId),
+      eq(fpSimulationNetworks.tenantId, input.tenantId),
+      eq(fpSimulationNetworks.isActive, true),
+    )).limit(1)
+    : [undefined];
+  if (input.simulationNetworkId && !selectedNetwork) {
+    throw new Error("La red económica seleccionada no está disponible en esta organización.");
+  }
+  if (selectedNetwork && (
+    (input.calendarMode !== undefined && input.calendarMode !== selectedNetwork.calendarMode) ||
+    (input.fiscalYearStartMonth !== undefined && input.fiscalYearStartMonth !== selectedNetwork.fiscalYearStartMonth)
+  )) {
+    throw new Error("La configuración del calendario no coincide con la red económica seleccionada.");
+  }
+  const network = selectedNetwork ?? await getOrCreateNetwork(
     tx,
     input.tenantId,
     input.calendarMode ?? "ordinary",

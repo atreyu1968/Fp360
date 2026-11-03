@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, gt, isNull, ne, sql } from "drizzle-orm";
 import { Router, type ErrorRequestHandler, type IRouter } from "express";
 import {
@@ -6,6 +6,8 @@ import {
   CompleteFp360OrganizationLogoUploadParams, CompleteFp360OrganizationLogoUploadResponse,
   CompleteFp360ProductDocumentUploadParams, CompleteFp360ProductDocumentUploadResponse,
   CreateFp360OrganizationBody, CreateFp360OrganizationResponse,
+  GenerateFp360OrganizationAiProfileProposalBody, GenerateFp360OrganizationAiProfileProposalResponse,
+  ListFp360OrganizationNetworksResponse,
   CreateFp360ProductBody, CreateFp360ProductResponse,
   DeleteFp360ProductDocumentParams, DeleteFp360ProductDocumentResponse,
   DownloadFp360ProductDocumentParams,
@@ -19,11 +21,13 @@ import {
   UpdateFp360OrganizationBody, UpdateFp360OrganizationParams, UpdateFp360OrganizationResponse,
   UpdateFp360ProductBody, UpdateFp360ProductParams, UpdateFp360ProductResponse,
 } from "@workspace/api-zod";
-import { db, fpActivity, fpAuthInvitations, fpAuthMemberships, fpOrganizations, fpProducts, fpProductDocuments, fpProductPriceVersions, fpStockAdjustments } from "@workspace/db";
+import { db, fpActivity, fpAdminAiCoordinatorSettings, fpAuthAudit, fpAuthInvitations, fpAuthMemberships, fpOrganizations, fpProducts, fpProductDocuments, fpProductPriceVersions, fpSimulationNetworks, fpStockAdjustments } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
 import { toFp360OrganizationDto } from "../lib/fp360-organization-profile";
 import { ensureOrganizationScope } from "../lib/organization-scopes";
+import { normalizeLocalAiBaseUrl, requestLocalAiJson } from "../lib/local-ai";
+import { requestGroqAiJson } from "../lib/groq-ai";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -65,6 +69,52 @@ function validAcademicPeriod(value: string | undefined) {
   const years = /^(\d{4})-(\d{4})$/.exec(value);
   return !!years && Number(years[2]) === Number(years[1]) + 1;
 }
+function proposalSignature(payload: string): string {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) fail(503, "No se puede firmar la propuesta de alta en esta sesión.");
+  return createHmac("sha256", secret).update(payload).digest("base64url");
+}
+function issueOrganizationProposalToken(actor: AuthContext, data: {
+  simulationNetworkId: string; center: string; island: string; activity: string;
+}): string {
+  const payload = Buffer.from(JSON.stringify({
+    nonce: randomUUID(),
+    userId: actor.userId,
+    simulationNetworkId: data.simulationNetworkId,
+    center: data.center.trim().replace(/\s+/gu, " ").toLowerCase(),
+    island: data.island,
+    activity: data.activity,
+    expiresAt: Date.now() + 60 * 60 * 1000,
+  })).toString("base64url");
+  return `${payload}.${proposalSignature(payload)}`;
+}
+function verifyOrganizationProposalToken(token: string | undefined, actor: AuthContext, data: {
+  simulationNetworkId: string | undefined; center: string; island: string; activity: string;
+}): string | null {
+  if (!token || token.length > 2000 || !data.simulationNetworkId) return null;
+  const [payload, signature, ...extra] = token.split(".");
+  if (!payload || !signature || extra.length) return null;
+  let expected: string;
+  try { expected = proposalSignature(payload); } catch { return null; }
+  const expectedBytes = Buffer.from(expected, "base64url");
+  const signatureBytes = Buffer.from(signature, "base64url");
+  if (expectedBytes.length !== signatureBytes.length || !timingSafeEqual(expectedBytes, signatureBytes)) return null;
+  try {
+    const context = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
+      nonce?: unknown; userId?: unknown; simulationNetworkId?: unknown; center?: unknown;
+      island?: unknown; activity?: unknown; expiresAt?: unknown;
+    };
+    const valid = context.userId === actor.userId &&
+      context.simulationNetworkId === data.simulationNetworkId &&
+      context.center === data.center.trim().replace(/\s+/gu, " ").toLowerCase() &&
+      context.island === data.island &&
+      context.activity === data.activity &&
+      typeof context.expiresAt === "number" && context.expiresAt > Date.now();
+    return valid && typeof context.nonce === "string" && /^[a-f0-9-]{36}$/i.test(context.nonce)
+      ? context.nonce
+      : null;
+  } catch { return null; }
+}
 function documentResponse(row: typeof fpProductDocuments.$inferSelect) {
   return { ...row, createdAt: row.createdAt.toISOString() };
 }
@@ -92,24 +142,177 @@ async function checkDuplicate(tx: Transaction, tenantId: string, name: string, c
 
 router.use("/redfp360", requireAuth, requireSimulationWriteAccess);
 
+router.get("/redfp360/organization-networks", async (req, res): Promise<void> => {
+  const actor = req.auth!;
+  if (!isNetworkSupervisor(actor)) fail(403, "Solo la supervisión de red puede consultar las redes disponibles para altas.");
+  const selectNetworks = () => db.select({
+    id: fpSimulationNetworks.id,
+    name: fpSimulationNetworks.name,
+    calendarMode: fpSimulationNetworks.calendarMode,
+    fiscalYearStartMonth: fpSimulationNetworks.fiscalYearStartMonth,
+  }).from(fpSimulationNetworks).where(and(
+    eq(fpSimulationNetworks.tenantId, actor.tenantId),
+    eq(fpSimulationNetworks.isActive, true),
+  )).orderBy(fpSimulationNetworks.name);
+  let networks = await selectNetworks();
+  if (!networks.length) {
+    await db.insert(fpSimulationNetworks).values({
+      id: randomUUID(),
+      tenantId: actor.tenantId,
+      code: "ordinary-default",
+      name: "Red económica ordinaria",
+      calendarMode: "ordinary",
+      fiscalYearStartMonth: 1,
+      createdByUserId: actor.userId,
+    }).onConflictDoNothing();
+    networks = await selectNetworks();
+  }
+  res.json(ListFp360OrganizationNetworksResponse.parse(networks));
+});
+
+router.post("/redfp360/organizations/ai-profile-proposals", async (req, res): Promise<void> => {
+  const body = GenerateFp360OrganizationAiProfileProposalBody.safeParse(req.body);
+  if (!body.success) fail(400, "Revisa el centro, la isla, la actividad y la red seleccionada.");
+  const actor = req.auth!;
+  if (!isNetworkSupervisor(actor)) fail(403, "Solo la administración o el profesorado de red puede generar propuestas de alta.");
+  const [network] = await db.select().from(fpSimulationNetworks).where(and(
+    eq(fpSimulationNetworks.id, body.data.simulationNetworkId),
+    eq(fpSimulationNetworks.tenantId, actor.tenantId),
+    eq(fpSimulationNetworks.isActive, true),
+  )).limit(1);
+  if (!network) fail(404, "La red económica seleccionada no está disponible.");
+  const [settings] = await db.select().from(fpAdminAiCoordinatorSettings)
+    .where(eq(fpAdminAiCoordinatorSettings.tenantId, actor.tenantId)).limit(1);
+  if (!settings?.enabled || !settings.model || (settings.provider === "local" && !settings.baseUrl)) {
+    fail(503, "La administración debe configurar y activar un proveedor de IA para generar propuestas.");
+  }
+  if (settings.provider !== "local" && settings.provider !== "groqcloud") {
+    fail(503, "El proveedor guardado ya no está disponible.");
+  }
+  const groqApiKey = settings.provider === "groqcloud" ? process.env.GROQ_API_KEY : undefined;
+  if (settings.provider === "groqcloud" && !groqApiKey) fail(503, "Falta configurar GROQ_API_KEY en los Secretos del proyecto.");
+  let baseUrl = "";
+  if (settings.provider === "local") {
+    try { baseUrl = normalizeLocalAiBaseUrl(settings.baseUrl); }
+    catch { fail(503, "La configuración del endpoint local de IA no es válida."); }
+  }
+  const systemPrompt = [
+    "Genera una propuesta de ficha para una empresa ficticia de un simulador educativo.",
+    "La ficha pertenece exclusivamente a la red económica indicada y debe reflejar su modo de calendario.",
+    "Devuelve solo JSON con los campos name, commercialName, address, municipality, postalCode y description.",
+    "Usa nombres y direcciones inequívocamente ficticios; no uses nombres de personas, empresas reales, teléfonos, correos, URLs, DNI/CIF, cuentas bancarias ni otros datos personales.",
+    "No crees productos, pedidos, facturas, saldos, empleados, pagos, contratos, eventos ni ninguna operación. Solo propone texto de ficha editable.",
+    "Mantén address, municipality y postalCode claramente simulados; la descripción debe ser breve, educativa y sin cifras monetarias.",
+  ].join(" ");
+  const providerNetwork = settings.provider === "groqcloud"
+    ? { id: "red-seleccionada", name: "Red económica seleccionada", calendarMode: network.calendarMode }
+    : { id: network.id, name: network.name, calendarMode: network.calendarMode };
+  const userPrompt = JSON.stringify({ fictionalCompanyProfile: {
+    center: settings.provider === "groqcloud" ? "Centro educativo simulado" : body.data.center.trim(),
+    island: body.data.island,
+    activity: body.data.activity,
+    economicNetwork: providerNetwork,
+  } });
+  let rawProposal: unknown;
+  try {
+    rawProposal = settings.provider === "groqcloud"
+      ? await requestGroqAiJson({ model: settings.model, apiKey: groqApiKey! }, systemPrompt, userPrompt)
+      : await requestLocalAiJson({ baseUrl, model: settings.model }, systemPrompt, userPrompt);
+  } catch {
+    req.log.warn({ tenantId: actor.tenantId, provider: settings.provider, model: settings.model }, "AI organization profile generation failed");
+    fail(502, "El proveedor de IA no pudo generar una ficha revisable.");
+  }
+  if (!rawProposal || typeof rawProposal !== "object" || Array.isArray(rawProposal)) {
+    fail(502, "El proveedor de IA devolvió una propuesta no válida.");
+  }
+  const candidate = rawProposal as Record<string, unknown>;
+  const profile = {
+    name: candidate.name,
+    commercialName: candidate.commercialName,
+    activity: body.data.activity,
+    address: candidate.address,
+    municipality: candidate.municipality,
+    postalCode: candidate.postalCode,
+    description: candidate.description,
+  };
+  const personalOrOperationalContent = (value: unknown) => typeof value !== "string" ||
+    /@|https?:\/\/|\b(?:dni|nie|cif|iban|tel[eé]fono|correo|email|persona|emplead[oa])\b/i.test(value) ||
+    /\+?\d[\d\s().-]{7,}\d/.test(value);
+  if (Object.entries(profile).some(([key, value]) => key !== "activity" && personalOrOperationalContent(value))) {
+    fail(502, "La propuesta incluye datos personales o contenido no permitido.");
+  }
+  const parsed = GenerateFp360OrganizationAiProfileProposalResponse.safeParse({
+    ...profile,
+    simulationNetworkId: network.id,
+    simulationNetworkName: network.name,
+    proposalToken: issueOrganizationProposalToken(actor, body.data),
+    approvalRequired: true,
+    simulationOnly: true,
+  });
+  if (!parsed.success) fail(502, "La ficha generada no cumple las reglas de RED FP360.");
+  res.setHeader("Cache-Control", "no-store");
+  res.json(parsed.data);
+});
+
 router.post("/redfp360/organizations", async (req, res): Promise<void> => {
   const body = CreateFp360OrganizationBody.safeParse(req.body);
   if (!body.success) fail(400, "Revisa los datos de la empresa simulada.");
   nonBlank(body.data.name, "El nombre");
   nonBlank(body.data.center, "El centro");
   if (!validAcademicPeriod(body.data.academicPeriod)) fail(400, "El curso escolar debe usar dos años consecutivos, por ejemplo 2027-2028.");
+  if (body.data.creationMode === "ai_reviewed" && body.data.proposalReviewAcknowledged !== true) {
+    fail(400, "Revisa la propuesta de datos ficticios antes de activar la empresa.");
+  }
   const actor = req.auth!;
   if (!isNetworkSupervisor(actor)) fail(403, "Solo la administración o el profesorado de red puede crear empresas.");
   const {
     simulationCalendarMode = "ordinary",
     fiscalYearStartMonth = 1,
     academicPeriod = "2027-2028",
+    simulationNetworkId,
+    creationMode,
+    proposalReviewAcknowledged: _reviewed,
+    proposalToken: _proposalToken,
     ...organizationInput
   } = body.data;
   if (!validAcademicPeriod(academicPeriod)) fail(400, "El curso escolar debe usar dos años consecutivos, por ejemplo 2027-2028.");
+  const proposalNonce = creationMode === "ai_reviewed" ? verifyOrganizationProposalToken(body.data.proposalToken, actor, {
+    simulationNetworkId,
+    center: body.data.center,
+    island: body.data.island,
+    activity: body.data.activity,
+  }) : null;
+  if (creationMode === "ai_reviewed" && !proposalNonce) {
+    fail(400, "La propuesta no se generó para esta empresa, red o persona, o ya ha caducado. Genera otra propuesta.");
+  }
   const organization = await db.transaction(async (tx) => {
     await lockDirectory(tx, actor.tenantId);
+    if (proposalNonce) {
+      const operationId = `organization-ai-profile:${proposalNonce}`;
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`fp360-ai-profile:${actor.tenantId}:${proposalNonce}`}))`);
+      const [consumedProposal] = await tx.select({ id: fpAuthAudit.id }).from(fpAuthAudit).where(and(
+        eq(fpAuthAudit.tenantId, actor.tenantId),
+        eq(fpAuthAudit.operationId, operationId),
+      )).limit(1);
+      if (consumedProposal) fail(409, "Esta propuesta ya se utilizó para crear una empresa.");
+    }
     await checkDuplicate(tx, actor.tenantId, body.data.name, body.data.center);
+    if (simulationNetworkId) {
+      const [selectedNetwork] = await tx.select({
+        id: fpSimulationNetworks.id,
+        calendarMode: fpSimulationNetworks.calendarMode,
+        fiscalYearStartMonth: fpSimulationNetworks.fiscalYearStartMonth,
+      }).from(fpSimulationNetworks).where(and(
+        eq(fpSimulationNetworks.id, simulationNetworkId),
+        eq(fpSimulationNetworks.tenantId, actor.tenantId),
+        eq(fpSimulationNetworks.isActive, true),
+      )).limit(1);
+      if (!selectedNetwork) fail(400, "La red económica seleccionada no pertenece a tu organización o está inactiva.");
+      if (selectedNetwork.calendarMode !== simulationCalendarMode ||
+          selectedNetwork.fiscalYearStartMonth !== fiscalYearStartMonth) {
+        fail(400, "La configuración de calendario no coincide con la red económica seleccionada.");
+      }
+    }
     const [created] = await tx.insert(fpOrganizations).values({
       ...organizationInput, name: body.data.name.trim(), center: body.data.center.trim(),
       id: randomUUID(), tenantId: actor.tenantId, isActive: true,
@@ -123,8 +326,23 @@ router.post("/redfp360/organizations", async (req, res): Promise<void> => {
       calendarMode: simulationCalendarMode,
       fiscalYearStartMonth,
       academicPeriod,
+      simulationNetworkId,
     });
-    await activity(tx, actor, "Empresa creada", `Alta de ${created.name} en el directorio simulado.`, created.id);
+    const creationSource = creationMode === "ai_reviewed"
+      ? "propuesta ficticia de IA revisada y aprobada por una persona"
+      : "ficha inicial en blanco";
+    await activity(tx, actor, "Empresa creada", `Alta de ${created.name} en el directorio simulado mediante ${creationSource}, dentro de la red ${scope.network.name}. Sin operaciones iniciales.`, created.id);
+    if (proposalNonce) {
+      await tx.insert(fpAuthAudit).values({
+        id: randomUUID(),
+        tenantId: actor.tenantId,
+        actorUserId: actor.userId,
+        action: "organization.ai-profile.proposal-consumed",
+        entityId: created.id,
+        operationId: `organization-ai-profile:${proposalNonce}`,
+        operationFingerprint: createHash("sha256").update(body.data.proposalToken ?? "").digest("hex"),
+      });
+    }
     return { organization: created, scope };
   });
   res.status(201).json(CreateFp360OrganizationResponse.parse(toFp360OrganizationDto(organization.organization, {

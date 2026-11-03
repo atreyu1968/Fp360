@@ -4093,6 +4093,10 @@ export const createFp360OrganizationBodyAcademicPeriodMax = 9;
 
 
 export const createFp360OrganizationBodyAcademicPeriodRegExp = new RegExp('^[0-9]{4}-[0-9]{4}$');
+export const createFp360OrganizationBodySimulationNetworkIdMax = 120;
+
+export const createFp360OrganizationBodyProposalTokenMax = 2000;
+
 
 
 export const CreateFp360OrganizationBody = zod.object({
@@ -4109,7 +4113,11 @@ export const CreateFp360OrganizationBody = zod.object({
   "businessPhone": zod.string().max(createFp360OrganizationBodyBusinessPhoneMax).optional(),
   "simulationCalendarMode": zod.enum(['ordinary', 'accelerated']).optional(),
   "fiscalYearStartMonth": zod.int().min(1).max(createFp360OrganizationBodyFiscalYearStartMonthMax).optional(),
-  "academicPeriod": zod.string().min(createFp360OrganizationBodyAcademicPeriodMin).max(createFp360OrganizationBodyAcademicPeriodMax).regex(createFp360OrganizationBodyAcademicPeriodRegExp).optional()
+  "academicPeriod": zod.string().min(createFp360OrganizationBodyAcademicPeriodMin).max(createFp360OrganizationBodyAcademicPeriodMax).regex(createFp360OrganizationBodyAcademicPeriodRegExp).optional(),
+  "simulationNetworkId": zod.string().min(1).max(createFp360OrganizationBodySimulationNetworkIdMax).optional(),
+  "creationMode": zod.enum(['blank', 'ai_reviewed']).optional(),
+  "proposalReviewAcknowledged": zod.boolean().optional(),
+  "proposalToken": zod.string().min(1).max(createFp360OrganizationBodyProposalTokenMax).optional()
 })
 
 export const createFp360OrganizationResponseFiscalYearStartMonthMax = 12;
@@ -4145,6 +4153,70 @@ export const CreateFp360OrganizationResponse = zod.object({
   "socialSecurityNumber": zod.string().describe('Identificador ficticio con prefijo SIM; no válido para trámites.'),
   "socialSecurityRegime": zod.string().describe('Régimen de práctica asignado por actividad; no válido para gestión real.'),
   "logoUrl": zod.string().nullable()
+})
+
+
+/**
+ * @summary List active economic networks for company onboarding
+ */
+export const listFp360OrganizationNetworksResponseFiscalYearStartMonthMax = 12;
+
+
+
+export const ListFp360OrganizationNetworksResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "calendarMode": zod.enum(['ordinary', 'accelerated']),
+  "fiscalYearStartMonth": zod.int().min(1).max(listFp360OrganizationNetworksResponseFiscalYearStartMonthMax)
+})
+export const ListFp360OrganizationNetworksResponse = zod.array(ListFp360OrganizationNetworksResponseItem)
+
+
+/**
+ * @summary Generate a fictional company profile for human review
+ */
+export const generateFp360OrganizationAiProfileProposalBodySimulationNetworkIdMax = 120;
+
+export const generateFp360OrganizationAiProfileProposalBodyCenterMax = 150;
+
+
+
+export const GenerateFp360OrganizationAiProfileProposalBody = zod.object({
+  "simulationNetworkId": zod.string().min(1).max(generateFp360OrganizationAiProfileProposalBodySimulationNetworkIdMax),
+  "center": zod.string().min(1).max(generateFp360OrganizationAiProfileProposalBodyCenterMax),
+  "island": zod.enum(['Tenerife', 'Gran Canaria', 'Lanzarote', 'Fuerteventura', 'La Palma', 'La Gomera', 'El Hierro', 'La Graciosa']),
+  "activity": zod.enum(['commerce', 'services', 'manufacturing', 'hospitality', 'agriculture', 'fishing', 'other'])
+})
+
+export const generateFp360OrganizationAiProfileProposalResponseProposalTokenMax = 2000;
+
+export const generateFp360OrganizationAiProfileProposalResponseNameMax = 150;
+
+export const generateFp360OrganizationAiProfileProposalResponseCommercialNameMax = 150;
+
+export const generateFp360OrganizationAiProfileProposalResponseAddressMax = 200;
+
+export const generateFp360OrganizationAiProfileProposalResponseMunicipalityMax = 100;
+
+export const generateFp360OrganizationAiProfileProposalResponsePostalCodeMax = 12;
+
+export const generateFp360OrganizationAiProfileProposalResponseDescriptionMax = 400;
+
+
+
+export const GenerateFp360OrganizationAiProfileProposalResponse = zod.object({
+  "simulationNetworkId": zod.string(),
+  "simulationNetworkName": zod.string(),
+  "proposalToken": zod.string().min(1).max(generateFp360OrganizationAiProfileProposalResponseProposalTokenMax),
+  "name": zod.string().min(1).max(generateFp360OrganizationAiProfileProposalResponseNameMax),
+  "commercialName": zod.string().max(generateFp360OrganizationAiProfileProposalResponseCommercialNameMax),
+  "activity": zod.enum(['commerce', 'services', 'manufacturing', 'hospitality', 'agriculture', 'fishing', 'other']),
+  "address": zod.string().max(generateFp360OrganizationAiProfileProposalResponseAddressMax),
+  "municipality": zod.string().max(generateFp360OrganizationAiProfileProposalResponseMunicipalityMax),
+  "postalCode": zod.string().max(generateFp360OrganizationAiProfileProposalResponsePostalCodeMax),
+  "description": zod.string().max(generateFp360OrganizationAiProfileProposalResponseDescriptionMax),
+  "approvalRequired": zod.literal(true),
+  "simulationOnly": zod.literal(true)
 })
 
 

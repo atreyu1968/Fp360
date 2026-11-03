@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Fp360OrganizationInputActivity } from './fp360OrganizationInputActivity';
+import type { Fp360OrganizationInputCreationMode } from './fp360OrganizationInputCreationMode';
 import type { Fp360OrganizationInputIsland } from './fp360OrganizationInputIsland';
 import type { Fp360OrganizationInputRole } from './fp360OrganizationInputRole';
 import type { Fp360OrganizationInputSimulationCalendarMode } from './fp360OrganizationInputSimulationCalendarMode';
@@ -48,4 +49,16 @@ export interface Fp360OrganizationInput {
      * @pattern ^[0-9]{4}-[0-9]{4}$
      */
   academicPeriod?: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  simulationNetworkId?: string;
+  creationMode?: Fp360OrganizationInputCreationMode;
+  proposalReviewAcknowledged?: boolean;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  proposalToken?: string;
 }

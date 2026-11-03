@@ -46,7 +46,7 @@ async function waitForServer(child, baseUrl) {
 
 test("GroqCloud proposal flow anonymizes the network and saves only a valid draft", {
   skip: missingEnvironment.length ? `Requires ${missingEnvironment.join(" and ")}` : false,
-}, async () => {
+}, async (t) => {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const client = await pool.connect();
   const tenantId = `simulation-ai-test-${randomUUID()}`;
@@ -56,6 +56,9 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
   const sessionToken = randomBytes(32).toString("base64url");
   const organizationA = randomUUID();
   const organizationB = randomUUID();
+  const simulationNetworkId = randomUUID();
+  const centerIdA = randomUUID();
+  const centerIdB = randomUUID();
   const companyNameA = `Empresa Ficticia Aurora ${randomUUID()}`;
   const companyNameB = `Empresa Ficticia Brisa ${randomUUID()}`;
   const centerNameA = `Centro Ficticio Cumbre ${randomUUID()}`;
@@ -66,6 +69,15 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
   let child;
 
   try {
+    const fiscalCalendarColumn = await client.query(
+      `SELECT 1 FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'fp360_simulation_networks'
+         AND column_name = 'fiscal_year_start_month'`,
+    );
+    if (!fiscalCalendarColumn.rowCount) {
+      t.skip("The development database needs the fiscal-calendar schema before network-scoped integration tests can run.");
+      return;
+    }
     const port = await availablePort();
     const baseUrl = `http://127.0.0.1:${port}`;
     const serverPath = fileURLToPath(new URL("../../dist/index.mjs", import.meta.url));
@@ -122,6 +134,25 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
         centerNameA,
         centerNameB,
       ],
+    );
+    await client.query(
+      `INSERT INTO fp360_centers (id, tenant_id, name, normalized_name)
+       VALUES ($1, $3, $4, lower($4)), ($2, $3, $5, lower($5))`,
+      [centerIdA, centerIdB, tenantId, centerNameA, centerNameB],
+    );
+    await client.query(
+      `INSERT INTO fp360_simulation_networks
+        (id, tenant_id, code, name, calendar_mode, fiscal_year_start_month)
+       VALUES ($1, $2, 'ordinary-default', 'Test economic network', 'ordinary', 1)`,
+      [simulationNetworkId, tenantId],
+    );
+    await client.query(
+      `INSERT INTO fp360_organization_scopes
+        (organization_id, tenant_id, center_id, simulation_network_id, academic_period, origin)
+       VALUES
+        ($1, $3, $4, $5, '2027-2028', 'organization_created'),
+        ($2, $3, $6, $5, '2027-2028', 'organization_created')`,
+      [organizationA, organizationB, tenantId, centerIdA, simulationNetworkId, centerIdB],
     );
     await client.query(
       `INSERT INTO fp360_admin_ai_coordinator_settings
@@ -405,6 +436,9 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
     await client.query("DELETE FROM fp360_auth_sessions WHERE user_id = $1", [userId]);
     await client.query("DELETE FROM fp360_auth_memberships WHERE user_id = $1", [userId]);
     await client.query("DELETE FROM fp360_auth_users WHERE id = $1", [userId]);
+    await client.query("DELETE FROM fp360_organization_scopes WHERE tenant_id = $1", [tenantId]);
+    await client.query("DELETE FROM fp360_simulation_networks WHERE tenant_id = $1", [tenantId]);
+    await client.query("DELETE FROM fp360_centers WHERE tenant_id = $1", [tenantId]);
     await client.query("DELETE FROM fp360_organizations WHERE tenant_id = $1", [tenantId]);
     client.release();
     await pool.end();

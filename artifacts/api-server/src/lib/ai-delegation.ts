@@ -1,10 +1,10 @@
 import { createHash, randomUUID } from "node:crypto";
 import { and, asc, eq, isNull, lte, sql } from "drizzle-orm";
 import {
-  db, fpAiDelegations, fpAiDelegationRuns, fpAdminAiCoordinatorSettings,
   fpOrganizations, fpSimulationCampaigns, fpSimulationEvents, fpSimulationAuditEvents,
   fpDocumentDossiers, fpDocuments, fpDocumentVersions, fpDocumentEvents,
   type FpAiDelegation, type FpAiDelegationRun,
+  db, fpAiDelegations, fpAiDelegationRuns, fpAdminAiCoordinatorSettings,
 } from "@workspace/db";
 import { networkSituationSnapshot } from "../routes/simulations";
 import { commonSimulationNetworkId } from "./organization-scopes";

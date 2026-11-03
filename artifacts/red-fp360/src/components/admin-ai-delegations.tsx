@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getListAdminAiDelegationsQueryKey, getListAdminAuditQueryKey,
@@ -34,6 +35,13 @@ export function AdminAiDelegations({ data, done }: { data: AdminSystemOverview; 
         company && <DelegationControls key={`${companyId}:${grant?.revision ?? 0}`} companyId={companyId}
           active={company.isActive} providerEnabled={data.aiCoordinator.enabled && data.aiCoordinator.provider === 'local'} grant={grant} done={done} />}
       <div className="ac-callout"><p>Ciclos automáticos cada cinco minutos, hasta tres acciones por ciclo. No se ejecutan pagos, trámites fiscales ni acciones laborales reales. Las notas son borradores educativos sin validez real. Los eventos con requisitos previos permanecen bajo control humano. Revocar detiene los ciclos pendientes sin borrar el historial ni los documentos ya creados.</p></div>
+      <div className="ac-callout ac-ai-onboarding">
+        <div><b>Altas con datos ficticios revisables</b>
+          <p>Las propuestas para crear empresas usan la red económica elegida, requieren revisión humana y solo completan la ficha. No heredan estos permisos automáticos ni crean operaciones.</p>
+          <small>{data.aiCoordinator.enabled ? `Proveedor supervisado activo: ${data.aiCoordinator.provider === 'groqcloud' ? 'GroqCloud' : 'local'}.` : 'Configura y activa un proveedor en Coordinación IA para generar propuestas.'}</small>
+        </div>
+        <Link href="/clientes" className="ac-button" data-testid="link-ai-company-onboarding">Ir al directorio</Link>
+      </div>
       <h4>Actividad de esta empresa</h4>
       {overview.data?.runs.filter(r => r.organizationId === companyId).slice(0, 10).map(run => <article key={run.id} className="ac-callout">
         <div><b>{statusLabels[run.status] ?? run.status} · revisión {run.revision}</b>

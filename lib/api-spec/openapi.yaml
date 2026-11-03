@@ -1962,6 +1962,40 @@ paths:
         "400": { description: Invalid organization }
         "403": { description: Read-only role }
         "409": { description: Duplicate organization }
+  /redfp360/organization-networks:
+    get:
+      operationId: listFp360OrganizationNetworks
+      tags: [redfp360]
+      summary: List active economic networks for company onboarding
+      responses:
+        "200":
+          description: Active economic networks in the current tenant
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Fp360OrganizationNetwork" }
+  /redfp360/organizations/ai-profile-proposals:
+    post:
+      operationId: generateFp360OrganizationAiProfileProposal
+      tags: [redfp360]
+      summary: Generate a fictional company profile for human review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360OrganizationAiProfileProposalInput" }
+      responses:
+        "200":
+          description: Reviewable fictional profile proposal; no company or operation is created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360OrganizationAiProfileProposal" }
+        "400": { description: Invalid proposal request }
+        "403": { description: Read-only role }
+        "404": { description: Economic network not found }
+        "502": { description: AI provider returned an invalid proposal }
+        "503": { description: AI coordinator is unavailable }
   /redfp360/organizations/{id}:
     patch:
       operationId: updateFp360Organization
@@ -5102,6 +5136,42 @@ components:
         simulationCalendarMode: { type: string, enum: [ordinary, accelerated] }
         fiscalYearStartMonth: { type: integer, minimum: 1, maximum: 12 }
         academicPeriod: { type: string, minLength: 9, maxLength: 9, pattern: '^[0-9]{4}-[0-9]{4}$' }
+        simulationNetworkId: { type: string, minLength: 1, maxLength: 120 }
+        creationMode: { type: string, enum: [blank, ai_reviewed] }
+        proposalReviewAcknowledged: { type: boolean }
+        proposalToken: { type: string, minLength: 1, maxLength: 2000 }
+    Fp360OrganizationNetwork:
+      type: object
+      required: [id, name, calendarMode, fiscalYearStartMonth]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        calendarMode: { type: string, enum: [ordinary, accelerated] }
+        fiscalYearStartMonth: { type: integer, minimum: 1, maximum: 12 }
+    Fp360OrganizationAiProfileProposalInput:
+      type: object
+      required: [simulationNetworkId, center, island, activity]
+      properties:
+        simulationNetworkId: { type: string, minLength: 1, maxLength: 120 }
+        center: { type: string, minLength: 1, maxLength: 150 }
+        island: { type: string, enum: [Tenerife, Gran Canaria, Lanzarote, Fuerteventura, La Palma, La Gomera, El Hierro, La Graciosa] }
+        activity: { type: string, enum: [commerce, services, manufacturing, hospitality, agriculture, fishing, other] }
+    Fp360OrganizationAiProfileProposal:
+      type: object
+      required: [simulationNetworkId, simulationNetworkName, proposalToken, name, commercialName, activity, address, municipality, postalCode, description, approvalRequired, simulationOnly]
+      properties:
+        simulationNetworkId: { type: string }
+        simulationNetworkName: { type: string }
+        proposalToken: { type: string, minLength: 1, maxLength: 2000 }
+        name: { type: string, minLength: 1, maxLength: 150 }
+        commercialName: { type: string, maxLength: 150 }
+        activity: { type: string, enum: [commerce, services, manufacturing, hospitality, agriculture, fishing, other] }
+        address: { type: string, maxLength: 200 }
+        municipality: { type: string, maxLength: 100 }
+        postalCode: { type: string, maxLength: 12 }
+        description: { type: string, maxLength: 400 }
+        approvalRequired: { type: boolean, enum: [true] }
+        simulationOnly: { type: boolean, enum: [true] }
     Fp360OrganizationUpdate:
       type: object
       properties:

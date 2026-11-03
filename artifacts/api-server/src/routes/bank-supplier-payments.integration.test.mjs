@@ -44,6 +44,8 @@ test("bank transfers and supplier payments roll back missing audit events and cr
   assert.notEqual(process.env.NODE_ENV, "production", "Never run this test in production");
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const tenantId = `bank-supplier-payment-test-${randomUUID()}`;
+  const simulationNetworkId = randomUUID();
+  const centerId = randomUUID();
   const buyerId = randomUUID();
   const otherBuyerId = randomUUID();
   const supplierId = randomUUID();
@@ -164,6 +166,9 @@ test("bank transfers and supplier payments roll back missing audit events and cr
     await pool.query("DELETE FROM fp360_auth_sessions WHERE user_id = ANY($1::text[])", [userIds]);
     await pool.query("DELETE FROM fp360_auth_memberships WHERE user_id = ANY($1::text[])", [userIds]);
     await pool.query("DELETE FROM fp360_auth_users WHERE id = ANY($1::text[])", [userIds]);
+    await pool.query("DELETE FROM fp360_organization_scopes WHERE tenant_id = $1", [tenantId]);
+    await pool.query("DELETE FROM fp360_simulation_networks WHERE tenant_id = $1", [tenantId]);
+    await pool.query("DELETE FROM fp360_centers WHERE tenant_id = $1", [tenantId]);
     await pool.query("DELETE FROM fp360_organizations WHERE tenant_id = $1", [tenantId]);
     await pool.end();
   });
@@ -177,6 +182,15 @@ test("bank transfers and supplier payments roll back missing audit events and cr
     t.skip("The development database needs the supplier-payment schema from the task migration.");
     return;
   }
+  const fiscalCalendarColumn = await pool.query(
+    `SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'fp360_simulation_networks'
+       AND column_name = 'fiscal_year_start_month'`,
+  );
+  if (!fiscalCalendarColumn.rowCount) {
+    t.skip("The development database needs the fiscal-calendar schema before network-scoped integration tests can run.");
+    return;
+  }
 
   for (const [id, name, role] of [
     [buyerId, "Buyer test", "buyer"],
@@ -188,6 +202,25 @@ test("bank transfers and supplier payments roll back missing audit events and cr
         (id, tenant_id, name, center, island, role, is_active)
        VALUES ($1, $2, $3, 'Test center', 'Test island', $4, true)`,
       [id, tenantId, name, role],
+    );
+  }
+  await pool.query(
+    `INSERT INTO fp360_centers (id, tenant_id, name, normalized_name)
+     VALUES ($1, $2, 'Test center', 'test center')`,
+    [centerId, tenantId],
+  );
+  await pool.query(
+    `INSERT INTO fp360_simulation_networks
+      (id, tenant_id, code, name, calendar_mode, fiscal_year_start_month)
+     VALUES ($1, $2, 'ordinary-default', 'Test economic network', 'ordinary', 1)`,
+    [simulationNetworkId, tenantId],
+  );
+  for (const organizationId of organizationIds) {
+    await pool.query(
+      `INSERT INTO fp360_organization_scopes
+        (organization_id, tenant_id, center_id, simulation_network_id, academic_period, origin)
+       VALUES ($1, $2, $3, $4, '2027-2028', 'organization_created')`,
+      [organizationId, tenantId, centerId, simulationNetworkId],
     );
   }
   for (let index = 0; index < userIds.length; index++) {

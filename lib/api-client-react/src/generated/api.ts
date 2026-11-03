@@ -211,7 +211,10 @@ import type {
   Fp360Order,
   Fp360OrderInput,
   Fp360Organization,
+  Fp360OrganizationAiProfileProposal,
+  Fp360OrganizationAiProfileProposalInput,
   Fp360OrganizationInput,
+  Fp360OrganizationNetwork,
   Fp360OrganizationUpdate,
   Fp360PaymentInput,
   Fp360PayrollOverview,
@@ -10000,6 +10003,195 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateFp360OrganizationMutationOptions(options), queryClient);
+    }
+
+export const getListFp360OrganizationNetworksUrl = () => {
+
+
+
+
+  return `/api/redfp360/organization-networks`
+}
+
+/**
+ * @summary List active economic networks for company onboarding
+ */
+export const listFp360OrganizationNetworks = async ( options?: Parameters<typeof customFetch>[1]): Promise<Fp360OrganizationNetwork[]> => {
+
+  return customFetch<Fp360OrganizationNetwork[]>(getListFp360OrganizationNetworksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFp360OrganizationNetworksQueryKey = () => {
+    return [
+    `/api/redfp360/organization-networks`
+    ] as const;
+    }
+
+
+export const getListFp360OrganizationNetworksQueryOptions = <TData = Awaited<ReturnType<typeof listFp360OrganizationNetworks>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360OrganizationNetworks>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFp360OrganizationNetworksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFp360OrganizationNetworks>>> = ({ signal }) => listFp360OrganizationNetworks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFp360OrganizationNetworks>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListFp360OrganizationNetworksQueryResult = NonNullable<Awaited<ReturnType<typeof listFp360OrganizationNetworks>>>
+export type ListFp360OrganizationNetworksQueryError = ErrorType<unknown>
+
+
+export function useListFp360OrganizationNetworks<TData = Awaited<ReturnType<typeof listFp360OrganizationNetworks>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360OrganizationNetworks>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360OrganizationNetworks>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360OrganizationNetworks>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360OrganizationNetworks<TData = Awaited<ReturnType<typeof listFp360OrganizationNetworks>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360OrganizationNetworks>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listFp360OrganizationNetworks>>,
+          TError,
+          Awaited<ReturnType<typeof listFp360OrganizationNetworks>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListFp360OrganizationNetworks<TData = Awaited<ReturnType<typeof listFp360OrganizationNetworks>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360OrganizationNetworks>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List active economic networks for company onboarding
+ */
+
+export function useListFp360OrganizationNetworks<TData = Awaited<ReturnType<typeof listFp360OrganizationNetworks>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listFp360OrganizationNetworks>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListFp360OrganizationNetworksQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGenerateFp360OrganizationAiProfileProposalUrl = () => {
+
+
+
+
+  return `/api/redfp360/organizations/ai-profile-proposals`
+}
+
+/**
+ * @summary Generate a fictional company profile for human review
+ */
+export const generateFp360OrganizationAiProfileProposal = async (fp360OrganizationAiProfileProposalInput: Fp360OrganizationAiProfileProposalInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360OrganizationAiProfileProposal> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360OrganizationAiProfileProposal>(getGenerateFp360OrganizationAiProfileProposalUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360OrganizationAiProfileProposalInput)
+  }
+);}
+
+
+
+
+
+export const getGenerateFp360OrganizationAiProfileProposalMutationKey = () => ['generateFp360OrganizationAiProfileProposal'] as const;
+
+export const getGenerateFp360OrganizationAiProfileProposalMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateFp360OrganizationAiProfileProposal>>, TError,GenerateFp360OrganizationAiProfileProposalMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateFp360OrganizationAiProfileProposal>>, TError,GenerateFp360OrganizationAiProfileProposalMutationVariables, TContext> => {
+
+const mutationKey = getGenerateFp360OrganizationAiProfileProposalMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateFp360OrganizationAiProfileProposal>>, GenerateFp360OrganizationAiProfileProposalMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateFp360OrganizationAiProfileProposal(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateFp360OrganizationAiProfileProposalMutationResult = NonNullable<Awaited<ReturnType<typeof generateFp360OrganizationAiProfileProposal>>>
+    export type GenerateFp360OrganizationAiProfileProposalMutationBody = BodyType<Fp360OrganizationAiProfileProposalInput>
+    export type GenerateFp360OrganizationAiProfileProposalMutationError = ErrorType<void>
+    export type GenerateFp360OrganizationAiProfileProposalMutationVariables = {data: BodyType<Fp360OrganizationAiProfileProposalInput>}
+
+    /**
+ * @summary Generate a fictional company profile for human review
+ */
+export const useGenerateFp360OrganizationAiProfileProposal = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateFp360OrganizationAiProfileProposal>>, TError,GenerateFp360OrganizationAiProfileProposalMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof generateFp360OrganizationAiProfileProposal>>,
+        TError,
+        GenerateFp360OrganizationAiProfileProposalMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGenerateFp360OrganizationAiProfileProposalMutationOptions(options), queryClient);
     }
 
 export const getUpdateFp360OrganizationUrl = (id: string,) => {
