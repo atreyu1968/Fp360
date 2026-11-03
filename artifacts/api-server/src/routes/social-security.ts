@@ -314,17 +314,6 @@ router.post("/redfp360/social-security/workers", route(async (request, response)
     response.status(404).json({ error: "No se encontró una persona activa de Recursos Humanos para esa empresa." });
     return;
   }
-  if (linkedEmployee) {
-    const [existingLinkedWorker] = await db.select({ id: fpSocialSecurityWorkers.id }).from(fpSocialSecurityWorkers).where(and(
-      eq(fpSocialSecurityWorkers.tenantId, actor.tenantId),
-      eq(fpSocialSecurityWorkers.organizationId, organizationId),
-      eq(fpSocialSecurityWorkers.hrEmployeeId, linkedEmployee.id),
-    )).limit(1);
-    if (existingLinkedWorker) {
-      response.status(409).json({ error: "La persona ya tiene un registro de Seguridad Social vinculado." });
-      return;
-    }
-  }
   const requestFingerprint = fingerprint(input);
   const [existingMovement] = await db.select().from(fpSocialSecurityMovements).where(and(
     eq(fpSocialSecurityMovements.tenantId, actor.tenantId),
@@ -342,6 +331,17 @@ router.post("/redfp360/social-security/workers", route(async (request, response)
     )).limit(1);
     if (existingWorker) {
       response.status(201).json(CreateFp360SocialSecurityWorkerResponse.parse(workerResponse(existingWorker)));
+      return;
+    }
+  }
+  if (linkedEmployee) {
+    const [existingLinkedWorker] = await db.select({ id: fpSocialSecurityWorkers.id }).from(fpSocialSecurityWorkers).where(and(
+      eq(fpSocialSecurityWorkers.tenantId, actor.tenantId),
+      eq(fpSocialSecurityWorkers.organizationId, organizationId),
+      eq(fpSocialSecurityWorkers.hrEmployeeId, linkedEmployee.id),
+    )).limit(1);
+    if (existingLinkedWorker) {
+      response.status(409).json({ error: "La persona ya tiene un registro de Seguridad Social vinculado." });
       return;
     }
   }
@@ -517,10 +517,6 @@ router.post("/redfp360/social-security/movements/:movementId/review", route(asyn
     response.status(404).json({ error: "No se encontró el registro asociado." });
     return;
   }
-  if (movement.status !== "pending_review") {
-    response.status(409).json({ error: "El movimiento ya fue revisado." });
-    return;
-  }
   const requestFingerprint = fingerprint({ movementId: movement.id, ...body.data });
   const [priorEvent] = await db.select().from(fpSocialSecurityEvents).where(and(
     eq(fpSocialSecurityEvents.tenantId, actor.tenantId),
@@ -536,6 +532,10 @@ router.post("/redfp360/social-security/movements/:movementId/review", route(asyn
       response.json(ReviewFp360SocialSecurityMovementResponse.parse(movementResponse(current, worker.workerRef)));
       return;
     }
+  }
+  if (movement.status !== "pending_review") {
+    response.status(409).json({ error: "El movimiento ya fue revisado." });
+    return;
   }
   const reviewedAt = new Date();
   const updated = await db.transaction(async (tx) => {
