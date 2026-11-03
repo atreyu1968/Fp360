@@ -78,10 +78,11 @@ test('local upload URLs are time-limited and signatures cannot be changed', () =
   assert.equal(url.origin, 'https://fp360.example.test');
   assert.equal(url.pathname, `/api/storage/uploads/${objectId}`);
   assert.equal(verifyLocalUploadSignature({ objectId, expires, signature, secret }), true);
+  const tamperedSignature = `${signature.slice(0, -1)}${signature.endsWith('0') ? '1' : '0'}`;
   assert.equal(verifyLocalUploadSignature({
     objectId,
     expires,
-    signature: `${signature.slice(0, -1)}0`,
+    signature: tamperedSignature,
     secret,
   }), false);
   assert.equal(verifyLocalUploadSignature({
