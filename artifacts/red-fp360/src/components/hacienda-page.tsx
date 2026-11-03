@@ -24,6 +24,19 @@ const agencyModels: Record<Agency, string[]> = {
   aeat: ['036', '111', '190', '115', '180', '200', '130', '131', '100', '347'],
 };
 const agencyNames: Record<Agency, string> = { aeat: 'Hacienda estatal · AEAT', atc: 'Hacienda Canaria · ATC' };
+const payrollMonthNames = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+const payrollCoverageFor = (periodKeys: string[]) => {
+  const monthNumbers = new Set(periodKeys.map((periodKey) => Number(periodKey.slice(-2))));
+  const includedMonths = payrollMonthNames.filter((_, index) => monthNumbers.has(index + 1));
+  const missingMonths = payrollMonthNames.filter((_, index) => !monthNumbers.has(index + 1));
+  return { includedMonths, missingMonths };
+};
+const payrollCoverageFields = new Set([
+  'payrollCoverage', 'payrollIncludedMonths', 'payrollMissingMonths',
+]);
 const tabs: Array<{ id: View; label: string; icon: typeof CalendarDays }> = [
   { id: 'calendar', label: 'Calendario fiscal', icon: CalendarDays },
   { id: 'igic', label: 'IGIC', icon: ArrowRight },
@@ -391,6 +404,7 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
                 : [];
               const payrollGross = payrollInputs.reduce((sum, source) => sum + source.grossTotalCents, 0);
               const payrollWithholding = payrollInputs.reduce((sum, source) => sum + source.withholdingCents, 0);
+              const annualPayrollCoverage = payrollCoverageFor(payrollInputs.map((source) => source.periodKey));
               return <article className="hacienda-retention-card" key={model.modelCode}>
                 <div className="hacienda-retention-title"><span>AEAT · {model.modelCode}</span><b>{model.label}</b></div>
                 <span className={`hacienda-applicability compact ${model.applicabilityStatus === 'applies' ? 'applies' : model.applicabilityStatus === 'review_required' ? 'review-required' : 'does-not-apply'}`}><span>{applicabilityLabel(model)}</span><p>{model.applicabilityNote}</p></span>
@@ -398,7 +412,15 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
                 {model.modelCode === '111' && <label className="hacienda-payroll-period">Trimestre<select value={payrollQuarter} onChange={(event) => setPayrollQuarter(event.target.value)}><option value="2027-Q1">2027 · 1.er trimestre</option><option value="2027-Q2">2027 · 2.º trimestre</option><option value="2027-Q3">2027 · 3.er trimestre</option><option value="2027-Q4">2027 · 4.º trimestre</option></select></label>}
                 {(model.modelCode === '111' || model.modelCode === '190') && <div className="hacienda-payroll-preview">
                   <b>{payrollInputs.length} periodo(s) cerrado(s) · {euro(payrollGross)} bruto · {euro(payrollWithholding)} retenido</b>
-                  <small>Referencias del mismo periodo y empresa. Revisa posibles meses faltantes antes de validar el borrador.</small>
+                  {model.modelCode === '190' ? <>
+                    <strong className={annualPayrollCoverage.missingMonths.length ? 'partial' : 'complete'}>
+                      {annualPayrollCoverage.missingMonths.length
+                        ? `Cobertura parcial · ${annualPayrollCoverage.includedMonths.length}/12 meses`
+                        : 'Cobertura completa · 12/12 meses'}
+                    </strong>
+                    <small>Meses incluidos: {annualPayrollCoverage.includedMonths.join(', ') || 'ninguno'}.</small>
+                    <small>Meses faltantes: {annualPayrollCoverage.missingMonths.join(', ') || 'ninguno'}.</small>
+                  </> : <small>Referencias del mismo trimestre y empresa.</small>}
                   <button type="button" className="hacienda-button small" onClick={() => importPayrollDraft(model.modelCode as '111' | '190', payrollPeriod)} disabled={!canOpen || readOnly || !payrollInputs.length || busyId === `payroll-${model.modelCode}-${payrollPeriod}`}>
                     {busyId === `payroll-${model.modelCode}-${payrollPeriod}` ? 'Creando borrador…' : `Crear borrador ${model.modelCode} desde nóminas`}
                   </button>
@@ -432,14 +454,20 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
               <label className="hacienda-search"><span>Buscar</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Modelo, periodo o estado" aria-label="Buscar modelos" data-testid="input-hacienda-declaration-search" /></label>
               {!filteredDeclarations.length ? <Empty title={term ? 'Sin coincidencias' : 'Aún no hay declaraciones'} detail={term ? 'Prueba con otro modelo o periodo.' : 'Crea un borrador educativo para comenzar.'} /> : <div className="hacienda-declaration-list">{filteredDeclarations.map((item) => {
                 const model = models.find((entry) => entry.modelCode === item.modelCode);
+                const payrollFormData = item.formData ?? {};
                 return <article className="hacienda-declaration" key={item.id} data-testid={`card-hacienda-declaration-${item.id}`}>
                   <div className="hacienda-declaration-top"><span className="hacienda-model-icon"><FileText size={17} /></span><div><small>{agency.toUpperCase()} · MODELO {item.modelCode} · {item.periodKey} · VERSIÓN {item.version}</small><b>{modelTitle(model)}</b></div><Status value={item.status} /></div>
                    {model && <div className={`hacienda-applicability compact ${model.applicabilityStatus === 'applies' ? 'applies' : model.applicabilityStatus === 'review_required' ? 'review-required' : 'does-not-apply'}`}><span>{applicabilityLabel(model)}</span><p>{model.applicabilityNote}</p></div>}
-                  {item.formData && Object.keys(item.formData).length > 0 && <details className="hacienda-formdata"><summary>Campos educativos cumplimentados</summary><dl>{Object.entries(item.formData).map(([key, value]) => <div key={key}><dt>{model?.formFields.find((field) => field.key === key)?.label ?? key}</dt><dd>{value || '—'}</dd></div>)}</dl></details>}
+                  {item.formData && Object.entries(item.formData).some(([key]) => !payrollCoverageFields.has(key)) && <details className="hacienda-formdata"><summary>Campos educativos cumplimentados</summary><dl>{Object.entries(item.formData).filter(([key]) => !payrollCoverageFields.has(key)).map(([key, value]) => <div key={key}><dt>{model?.formFields.find((field) => field.key === key)?.label ?? key}</dt><dd>{value || '—'}</dd></div>)}</dl></details>}
                   {item.sourcePayrollRunIds.length > 0 && <div className="hacienda-payroll-links"><b>Fuentes de nómina · {organizationLabel} · {item.sourcePayrollRunIds.length} periodo(s)</b><span>{item.sourcePayrollRunIds.map((id) => {
                     const source = payrollSourceById.get(id);
                     return source ? `${source.periodKey} · v${source.version}` : `Referencia ${id}`;
                   }).join(' · ')}</span><small>Datos de nómina cerrados; estado fiscal independiente y pendiente de revisión.</small></div>}
+                  {item.modelCode === '190' && item.sourcePayrollRunIds.length > 0 && <div className={`hacienda-payroll-coverage ${payrollFormData.payrollCoverage === 'partial' ? 'partial' : 'complete'}`} role="status">
+                    <b>{payrollFormData.payrollCoverage === 'partial' ? 'Cobertura anual parcial' : 'Cobertura anual completa'}</b>
+                    <span>Meses incluidos: {payrollFormData.payrollIncludedMonths || 'sin datos'}.</span>
+                    <span>Meses faltantes: {payrollFormData.payrollMissingMonths || 'ninguno'}.</span>
+                  </div>}
                   <div className="hacienda-declaration-values"><span>Base imponible <b>{euro(item.taxableBaseCents)}</b></span><span>IGIC repercutido <b>{euro(item.outputIgicCents)}</b></span><span>IGIC soportado <b>{euro(item.inputIgicCents)}</b></span><span>Retenciones <b>{euro(item.withholdingCents)}</b></span><span>Resultado provisional <b className={item.resultCents < 0 ? 'hacienda-negative' : ''}>{euro(item.resultCents)}</b></span></div>
                   <div className="hacienda-declaration-foot"><span><Clock3 size={13} /> Vencimiento educativo · {dateLabel(item.simulatedDueDate)}</span><span>Pago · {statuses[item.paymentStatus] ?? item.paymentStatus}</span></div>
                   {item.receiptReference && <div className="hacienda-receipt"><BadgeCheck size={14} /><span>Justificante simulado <b className="mono">{item.receiptReference}</b></span><small>No es un justificante oficial</small></div>}

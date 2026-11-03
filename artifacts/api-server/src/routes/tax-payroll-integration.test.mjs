@@ -12,7 +12,7 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   const userId = randomUUID();
   const membershipId = randomUUID();
   const policyId = randomUUID();
-  const payrollRunIds = [randomUUID(), randomUUID()];
+  const payrollRunIds = [randomUUID(), randomUUID(), randomUUID()];
   const password = randomBytes(24).toString("base64url");
   const salt = randomBytes(16);
   const passwordHash = `scrypt$32768$8$1$${salt.toString("base64url")}$${scryptSync(password, salt, 64, {
@@ -83,8 +83,9 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
       { employeeId: "worker-b", workerRef: "EMP-B", grossCents: 50000, withholdingCents: 5000 },
     ],
     [{ employeeId: "worker-a", workerRef: "EMP-A", grossCents: 100000, withholdingCents: 10000 }],
+    [{ employeeId: "worker-c", workerRef: "EMP-C", grossCents: 999900, withholdingCents: 99990 }],
   ];
-  for (const [index, periodKey] of ["2027-07", "2027-08"].entries()) {
+  for (const [index, periodKey] of ["2027-07", "2027-08", "2027-09"].entries()) {
     const lines = payrollLines[index];
     await pool.query(
       `INSERT INTO fp360_payroll_runs
@@ -174,6 +175,11 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   assert.equal(annual.body.resultCents, 0, "The annual informative summary does not create a payment result.");
   assert.equal(annual.body.formData.annualBaseEuros, "2500.00");
   assert.equal(annual.body.formData.annualWithholdingEuros, "250.00");
+  assert.equal(annual.body.formData.payrollCoverage, "partial");
+  assert.equal(annual.body.formData.payrollIncludedMonths, "julio, agosto");
+  assert.equal(annual.body.formData.payrollMissingMonths, "enero, febrero, marzo, abril, mayo, junio, septiembre, octubre, noviembre, diciembre");
+  assert.deepEqual(annual.body.sourcePayrollRunIds.sort(), payrollRunIds.slice(0, 2).sort());
   assert.match(annual.body.formData.recipientSummary, /EMP-A: base 2000\.00 € · retención 200\.00 €/);
   assert.match(annual.body.formData.recipientSummary, /EMP-B: base 500\.00 € · retención 50\.00 €/);
+  assert.doesNotMatch(annual.body.formData.recipientSummary, /EMP-C/);
 });

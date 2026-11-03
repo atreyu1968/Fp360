@@ -134,6 +134,10 @@
 .hacienda-payroll-preview,.hacienda-payroll-links { display:flex; width:100%; flex-direction:column; gap:5px; padding:9px; border:1px solid #dcebe4; border-radius:5px; color:#55756d; background:#f6fbf8; font-size:8px; line-height:1.45; }
 .hacienda-payroll-preview b,.hacienda-payroll-links b { color:#38635b; font-size:8px; }
 .hacienda-payroll-preview small,.hacienda-payroll-links small { color:#839590; font-size:7px; }
+.hacienda-payroll-preview strong.partial,.hacienda-payroll-coverage.partial { color:#8a612d; background:#fff8eb; }
+.hacienda-payroll-preview strong.complete,.hacienda-payroll-coverage.complete { color:#38635b; }
+.hacienda-payroll-coverage { display:flex; flex-direction:column; gap:4px; padding:9px; border:1px solid #eadfc6; border-radius:5px; margin-top:9px; font-size:8px; line-height:1.45; }
+.hacienda-payroll-coverage b { font-size:8px; }
 .hacienda-payroll-links { margin-top:9px; }
 .hacienda-model-meta { display:flex; flex-wrap:wrap; justify-content:space-between; gap:7px; padding:2px 0 5px; color:#8a9994; font-size:8px; }
 .hacienda-official-warning { display:flex; align-items:center; flex-wrap:wrap; gap:7px; padding:8px 9px; border:1px solid #eadfc6; border-radius:5px; color:#876c38; background:#fffaf0; font-size:8px; line-height:1.45; }

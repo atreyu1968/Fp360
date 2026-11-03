@@ -15,6 +15,13 @@ export function aggregatePayrollWithholding(runs, modelCode) {
   }
   const euros = (cents) => (cents / 100).toFixed(2);
   const recipientCount = recipients.size;
+  const months = [...new Set(runs.map((run) => run.periodKey.slice(-2)))].sort();
+  const monthNames = [
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+  ];
+  const includedMonths = months.map((month) => monthNames[Number(month) - 1]);
+  const missingMonths = monthNames.filter((_, index) => !months.includes(String(index + 1).padStart(2, "0")));
   const formData = modelCode === "111" ? {
     recipientCount: String(recipientCount),
     withholdingBaseEuros: euros(withholdingBaseCents),
@@ -27,6 +34,9 @@ export function aggregatePayrollWithholding(runs, modelCode) {
     recipientSummary: [...recipients.values()]
       .map((recipient) => `${recipient.workerRef}: base ${euros(recipient.baseCents)} € · retención ${euros(recipient.withholdingCents)} €`)
       .join("; "),
+    payrollCoverage: missingMonths.length ? "partial" : "complete",
+    payrollIncludedMonths: includedMonths.join(", "),
+    payrollMissingMonths: missingMonths.join(", "),
   };
   return { recipientCount, withholdingBaseCents, withholdingCents, formData };
 }
