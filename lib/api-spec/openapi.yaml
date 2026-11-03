@@ -1593,6 +1593,10 @@ paths:
       summary: Get source-backed executive indicators for a simulated period
       parameters:
         - in: query
+          name: organizationId
+          required: true
+          schema: { type: string, minLength: 1 }
+        - in: query
           name: periodStart
           schema: { type: string, format: date }
         - in: query
@@ -8423,8 +8427,9 @@ components:
       allOf:
         - $ref: "#/components/schemas/DirectionPeriod"
         - type: object
-          required: [salesBaseCents, purchaseBaseCents, outstandingCustomerCents, outstandingCustomerInvoiceCount, salesInvoiceCount, purchaseInvoiceCount, overdueCustomerInvoiceCount, overdueCustomerInvoiceUnavailableReason, treasuryBalanceCents, treasuryBalanceUnavailableReason, grossMarginCents, grossMarginUnavailableReason, series, activityByArea, simulationOnly]
+          required: [organizationId, salesBaseCents, purchaseBaseCents, outstandingCustomerCents, outstandingCustomerInvoiceCount, salesInvoiceCount, purchaseInvoiceCount, overdueCustomerInvoiceCount, overdueCustomerInvoiceUnavailableReason, treasuryBalanceCents, treasuryBalanceUnavailableReason, grossMarginCents, grossMarginUnavailableReason, series, activityByArea, simulationOnly]
           properties:
+            organizationId: { type: string, minLength: 1 }
             salesBaseCents: { type: integer, minimum: 0 }
             purchaseBaseCents: { type: integer, minimum: 0 }
             outstandingCustomerCents: { type: integer, minimum: 0 }

@@ -21,6 +21,7 @@ import type {
   CrmOpportunityUpdate, Fp360Organization,
 } from '@workspace/api-client-react';
 import { apiErrorMessage as sharedApiErrorMessage, centsToEuros, eurosToCents, ReadOnlyBanner, WRITE_ROLES } from './master-shared';
+import { useActiveEnvironment } from '@/lib/active-environment';
 import './crm.css';
 
 type Tab = 'opportunities' | 'contacts' | 'activities' | 'history';
@@ -63,7 +64,15 @@ function FormActions({ close, pending, label }: { close: () => void; pending: bo
 
 export function CrmPage({ onNotice }: { onNotice: (message: string) => void }) {
   const queryClient = useQueryClient();
-  const identity = useGetCurrentIdentity();
+  const identityQuery = useGetCurrentIdentity();
+  const activeEnvironment = useActiveEnvironment();
+  const activeOrganizationId = activeEnvironment?.organizationId ?? identityQuery.data?.organizationId ?? null;
+  const identity = {
+    ...identityQuery,
+    data: identityQuery.data
+      ? { ...identityQuery.data, organizationId: activeOrganizationId ?? undefined }
+      : undefined,
+  };
   const contactsQuery = useListCrmContacts();
   const opportunitiesQuery = useListCrmOpportunities();
   const historyQuery = useListCrmOpportunityHistory();
@@ -86,16 +95,16 @@ export function CrmPage({ onNotice }: { onNotice: (message: string) => void }) {
   const [stageDraft, setStageDraft] = useState<{ opportunity: CrmOpportunity; stage: CrmOpportunity['stage'] } | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [formError, setFormError] = useState('');
-  const contacts = contactsQuery.data ?? [];
-  const opportunities = opportunitiesQuery.data ?? [];
-  const activities = activitiesQuery.data ?? [];
-  const history = historyQuery.data ?? [];
+  const contacts = (contactsQuery.data ?? []).filter((contact) => contact.organizationId === activeOrganizationId);
+  const opportunities = (opportunitiesQuery.data ?? []).filter((opportunity) => opportunity.organizationId === activeOrganizationId);
+  const activities = (activitiesQuery.data ?? []).filter((activity) => activity.organizationId === activeOrganizationId);
+  const history = (historyQuery.data ?? []).filter((item) => item.organizationId === activeOrganizationId);
   const organizations = organizationsQuery.data ?? [];
   const activeContacts = contacts.filter((contact) => contact.isActive);
   const isNetworkSupervisor = identity.data?.role === 'administrator' ||
     (identity.data?.role === 'teacher' && !identity.data.organizationId);
   const activeOrganizations = organizations.filter((org) =>
-    org.isActive && (isNetworkSupervisor || org.id === identity.data?.organizationId));
+    org.isActive && (isNetworkSupervisor || org.id === activeOrganizationId));
   const activeOpportunityCount = opportunities.filter((op) => !['won', 'lost'].includes(op.stage)).length;
   const weightedCents = opportunities
     .filter((op) => !['won', 'lost'].includes(op.stage))

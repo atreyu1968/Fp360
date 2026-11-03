@@ -14,10 +14,12 @@ import {
   fpDirectionTasks,
   fpDirectionThresholds,
   fpInvoices,
+  fpOrganizations,
   fpOrders,
   fpPayments,
   fpProducts,
   fpPurchaseInvoices,
+  fpPurchaseOrders,
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 
@@ -91,11 +93,15 @@ function monthsBetween(start: string, end: string): string[] {
   return output;
 }
 
-async function getOverview(tenantId: string, periodStart: string, periodEnd: string) {
+async function getOverview(tenantId: string, periodStart: string, periodEnd: string, organizationId?: string) {
   validatePeriod(periodStart, periodEnd);
-  const allInvoicesToEnd = await db.select().from(fpInvoices).where(and(
+  const salesFilters = [
     eq(fpInvoices.tenantId, tenantId),
     lte(fpInvoices.simulatedDate, periodEnd),
+  ];
+  if (organizationId) salesFilters.push(eq(fpInvoices.issuerOrganizationId, organizationId));
+  const allInvoicesToEnd = await db.select().from(fpInvoices).where(and(
+    ...salesFilters,
   ));
   const periodInvoices = allInvoicesToEnd.filter((invoice) =>
     invoice.simulatedDate >= periodStart && invoice.simulatedDate <= periodEnd
@@ -113,12 +119,17 @@ async function getOverview(tenantId: string, periodStart: string, periodEnd: str
   const outstandingBalances = allInvoicesToEnd.map((invoice) =>
     Math.max(0, invoice.totalCents - (paidByInvoice.get(invoice.id) ?? 0))
   );
-  const purchaseInvoices = await db.select().from(fpPurchaseInvoices).where(and(
+  const purchaseFilters = [
     eq(fpPurchaseInvoices.tenantId, tenantId),
     eq(fpPurchaseInvoices.status, "approved"),
     gte(fpPurchaseInvoices.invoiceDate, periodStart),
     lte(fpPurchaseInvoices.invoiceDate, periodEnd),
-  ));
+  ];
+  if (organizationId) purchaseFilters.push(eq(fpPurchaseOrders.buyerOrganizationId, organizationId));
+  const purchaseInvoiceRows = await db.select({ invoice: fpPurchaseInvoices }).from(fpPurchaseInvoices)
+    .innerJoin(fpPurchaseOrders, eq(fpPurchaseOrders.id, fpPurchaseInvoices.orderId))
+    .where(and(...purchaseFilters));
+  const purchaseInvoices = purchaseInvoiceRows.map(({ invoice }) => invoice);
   const seriesByMonth = new Map<string, { period: string; salesBaseCents: number; purchaseBaseCents: number }>();
   for (const month of monthsBetween(periodStart, periodEnd)) {
     seriesByMonth.set(month, { period: month, salesBaseCents: 0, purchaseBaseCents: 0 });
@@ -139,6 +150,8 @@ async function getOverview(tenantId: string, periodStart: string, periodEnd: str
   const purchaseBaseCents = purchaseInvoices.reduce((total, invoice) => total + invoice.baseCents, 0);
 
   return {
+    ...(organizationId ? { organizationId } : {}),
+    organizationId,
     periodStart,
     periodEnd,
     periodLabel: `${periodStart} — ${periodEnd}`,
@@ -219,8 +232,22 @@ router.use("/redfp360/direction", requireAuth);
 router.get("/redfp360/direction/overview", route(async (req, res) => {
   const parsed = api.GetFp360DirectionOverviewQueryParams.safeParse(req.query);
   if (!parsed.success) fail(400, "El periodo de consulta no es válido.");
+  const actor = req.auth!;
+  const organizationId = parsed.data.organizationId;
+  if (actor.organizationId && actor.organizationId !== organizationId) {
+    fail(403, "No tienes acceso a los indicadores de esta empresa.");
+  }
+  if (!actor.organizationId && !["teacher", "administrator"].includes(actor.role)) {
+    fail(403, "Tu perfil no puede elegir una empresa para consultar Dirección.");
+  }
+  const [organization] = await db.select({ id: fpOrganizations.id }).from(fpOrganizations).where(and(
+    eq(fpOrganizations.tenantId, actor.tenantId),
+    eq(fpOrganizations.id, organizationId),
+    eq(fpOrganizations.isActive, true),
+  )).limit(1);
+  if (!organization) fail(404, "La empresa seleccionada no está activa en este entorno.");
   const period = periodFromQuery(parsed.data);
-  res.json(publicOverview(await getOverview(req.auth!.tenantId, period.periodStart, period.periodEnd)));
+  res.json(publicOverview(await getOverview(actor.tenantId, period.periodStart, period.periodEnd, organizationId)));
 }));
 
 router.get("/redfp360/direction/tasks", route(async (req, res) => {

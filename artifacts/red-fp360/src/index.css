@@ -505,12 +505,18 @@ body { margin: 0; }
 .brand-name small { font-size: 8px; letter-spacing: .1em; color: var(--fp-muted); font-weight: 700; }
 .sidebar-context { padding: 20px 14px 17px; }
 .context-label, .nav-caption { display: block; font-size: 9px; font-weight: 700; color: #8799aa; letter-spacing: .1em; padding: 0 9px 8px; }
-.context-selector { width: 100%; background: #f7f9fc; border: 1px solid #e8eef5; padding: 9px; border-radius: 9px; display: flex; align-items: center; text-align: left; gap: 9px; color: var(--fp-navy); cursor: default; }
+.context-selector { width: 100%; background: #f7f9fc; border: 1px solid #e8eef5; padding: 9px; border-radius: 9px; display: flex; align-items: center; text-align: left; gap: 9px; color: var(--fp-navy); }
 .context-avatar { width: 29px; height: 29px; display: grid; place-items: center; flex: 0 0 auto; background: #e6f0fb; border-radius: 7px; font-size: 10px; font-weight: 800; color: var(--fp-blue); }
-.context-selector span:nth-child(2) { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.context-choice { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .context-selector b { font-size: 11px; white-space: nowrap; }
 .context-selector small { color: var(--fp-muted); font-size: 9px; white-space: nowrap; }
+.context-selector select { width: 100%; min-width: 0; padding: 0; border: 0; outline: 0; color: #536a82; background: transparent; font: inherit; font-size: 9px; cursor: pointer; }
+.context-selector select:focus-visible { outline: 2px solid #75a8dd; outline-offset: 2px; border-radius: 3px; }
 .context-selector > svg { color: #94a4b3; }
+.environment-required { display:flex; align-items:flex-start; gap:14px; max-width:720px; padding:24px; color:var(--fp-navy); }
+.environment-required > svg { flex:0 0 auto; color:var(--fp-blue); }
+.environment-required h2 { margin:0 0 6px; font-size:17px; }
+.environment-required p { margin:0; color:var(--fp-muted); font-size:13px; line-height:1.6; }
 .nav-caption { padding: 4px 23px 9px; }
 .main-nav { min-height: 0; flex: 1 1 auto; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #c8d5e1 transparent; display: flex; flex-direction: column; gap: 3px; padding: 0 11px; }
 .main-nav::-webkit-scrollbar { width: 6px; }

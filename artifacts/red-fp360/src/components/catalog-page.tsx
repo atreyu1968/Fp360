@@ -21,6 +21,7 @@ import {
   basisToPercent, centsToEuros, eurosToCents, percentToBasis,
 } from './master-shared';
 import { ProductDocuments } from './product-documents';
+import { useActiveEnvironment } from '@/lib/active-environment';
 import './catalog-page.css';
 
 const money = (c: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(c / 100);
@@ -46,7 +47,15 @@ function ItemState({ product }: { product: Fp360Product }) {
 
 export function CatalogPage({ onNotice }: { onNotice: (message: string) => void }) {
   const queryClient = useQueryClient();
-  const identity = useGetCurrentIdentity();
+  const identityQuery = useGetCurrentIdentity();
+  const activeEnvironment = useActiveEnvironment();
+  const activeOrganizationId = activeEnvironment?.organizationId ?? identityQuery.data?.organizationId ?? null;
+  const identity = {
+    ...identityQuery,
+    data: identityQuery.data
+      ? { ...identityQuery.data, organizationId: activeOrganizationId ?? undefined }
+      : undefined,
+  };
   const catalog = useListFp360Products();
   const orders = useListFp360Orders();
   const organizations = useListFp360Organizations();
@@ -75,7 +84,7 @@ export function CatalogPage({ onNotice }: { onNotice: (message: string) => void 
   const [confirmation, setConfirmation] = useState<DialogAction | null>(null);
   const [actionError, setActionError] = useState('');
 
-  const all = catalog.data ?? [];
+  const all = (catalog.data ?? []).filter((product) => product.supplierOrganizationId === activeOrganizationId);
   const query = search.trim().toLocaleLowerCase('es');
   const rows = all.filter((p) => {
     const matchesSearch = `${p.name} ${p.sku} ${p.category} ${p.description}`.toLocaleLowerCase('es').includes(query);

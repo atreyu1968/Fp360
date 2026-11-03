@@ -10,6 +10,8 @@ import type { DirectionPeriod } from './directionPeriod';
 import type { DirectionSeriesPoint } from './directionSeriesPoint';
 
 export type DirectionOverview = DirectionPeriod & ({
+  /** @minLength 1 */
+  organizationId: string;
   /** @minimum 0 */
   salesBaseCents: number;
   /** @minimum 0 */

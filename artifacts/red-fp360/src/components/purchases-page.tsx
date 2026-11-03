@@ -25,6 +25,7 @@ import {
   PackageCheck, CircleCheck,
 } from 'lucide-react';
 import { MasterDialog, ReadOnlyBanner, apiErrorMessage, eurosToCents, WRITE_ROLES } from './master-shared';
+import { useActiveEnvironment } from '@/lib/active-environment';
 import './purchases.css';
 
 type Section = 'requests' | 'comparison' | 'orders' | 'receipts' | 'invoices' | 'suppliers';
@@ -41,14 +42,23 @@ const opId = () => crypto.randomUUID();
 
 export function PurchasesPage({ onNotice }: { onNotice: (message: string) => void }) {
   const qc = useQueryClient();
-  const identity = useGetCurrentIdentity();
+  const identityQuery = useGetCurrentIdentity();
+  const activeEnvironment = useActiveEnvironment();
+  const activeOrganizationId = activeEnvironment?.organizationId ?? identityQuery.data?.organizationId ?? null;
+  const identity = {
+    ...identityQuery,
+    data: identityQuery.data
+      ? { ...identityQuery.data, organizationId: activeOrganizationId ?? undefined }
+      : undefined,
+  };
   const requestsQ = useListPurchaseRequests();
   const orgQ = useListFp360Organizations();
   const productsQ = useListFp360Products();
   const role = identity.data?.role ?? '';
   const canTeacher = role === 'teacher' || role === 'administrator';
-  const currentOrganization = (orgQ.data ?? []).find((org) => org.id === identity.data?.organizationId);
-  const isSellerOnly = Boolean(identity.data?.organizationId) && !canTeacher && currentOrganization?.role !== 'buyer' && currentOrganization?.role !== 'both';
+  const currentOrganization = (orgQ.data ?? []).find((org) => org.id === activeOrganizationId);
+  const isSellerOnly = Boolean(activeOrganizationId) &&
+    currentOrganization?.role !== 'buyer' && currentOrganization?.role !== 'both';
   const canViewBuying = !isSellerOnly && (canTeacher || currentOrganization?.role === 'buyer' || currentOrganization?.role === 'both');
   const ordersQ = useListPurchaseOrders({ query: { queryKey: getListPurchaseOrdersQueryKey(), enabled: canViewBuying, refetchOnMount: 'always' } });
   const receiptsQ = useListPurchaseReceipts({ query: { queryKey: getListPurchaseReceiptsQueryKey(), enabled: canViewBuying, refetchOnMount: 'always' } });
@@ -81,7 +91,13 @@ export function PurchasesPage({ onNotice }: { onNotice: (message: string) => voi
     setNewRequest(true);
     window.history.replaceState(window.history.state, '', window.location.pathname);
   }, [canCreate]);
-  const requests = requestsQ.data ?? [];
+  const requests = (requestsQ.data ?? []).filter((request) =>
+    !canViewBuying || request.organizationId === activeOrganizationId,
+  );
+  const activeOrders = (ordersQ.data ?? []).filter((order) => order.buyerOrganizationId === activeOrganizationId);
+  const activeOrderIds = new Set(activeOrders.map((order) => order.id));
+  const activeReceipts = (receiptsQ.data ?? []).filter((receipt) => activeOrderIds.has(receipt.orderId));
+  const activeInvoices = (invoicesQ.data ?? []).filter((invoice) => invoice.buyerOrganizationId === activeOrganizationId);
   const filtered = requests.filter((r) => `${r.requestNumber} ${r.organizationName} ${r.department} ${statusText[r.status]}`.toLocaleLowerCase('es').includes(search.toLocaleLowerCase('es')));
   const selectedSummary = requests.find((r) => r.id === selectedId) ?? filtered[0] ?? requests[0];
   const reqQuery = useGetPurchaseRequest(selectedSummary?.id ?? '', { query: { queryKey: getGetPurchaseRequestQueryKey(selectedSummary?.id ?? ''), enabled: Boolean(selectedSummary?.id) } });
@@ -102,7 +118,7 @@ export function PurchasesPage({ onNotice }: { onNotice: (message: string) => voi
   };
   const offers = offersQ.data ?? [];
   const selected = reqQuery.data;
-  const visibleOffers = canViewBuying ? offers : offers.filter((offer) => offer.supplierOrganizationId === identity.data?.organizationId);
+  const visibleOffers = canViewBuying ? offers : offers.filter((offer) => offer.supplierOrganizationId === activeOrganizationId);
   const issueOrder = (offer: PurchaseOffer) => setTransition({ request: selectedSummary!, action: 'award', offer });
   const showDetail = (r: PurchaseRequestSummary) => { setSelectedId(r.id); setSection('comparison'); };
   const tabs: { id: Section; label: string; icon: typeof ClipboardList }[] = [
@@ -120,17 +136,17 @@ export function PurchasesPage({ onNotice }: { onNotice: (message: string) => voi
         {canCreate && <button className="button button-primary" onClick={() => { setError(''); setMarketPrefill(null); setNewRequest(true); }} data-testid="button-new-purchase"><Plus size={15} /> Nueva solicitud</button>}
       </div>
     </div>
-    <div className="purchase-disclaimer"><ShieldAlert size={16} /><span><b>Entorno educativo simulado.</b> No se contacta con proveedores, no hay transacciones financieras y emitir un pedido no modifica existencias.</span></div>
+    <div className="purchase-disclaimer"><ShieldAlert size={16} /><span><b>Empresa activa: {activeEnvironment?.name ?? 'sin asignar'}.</b> Pedidos, recepciones y facturas se filtran por esta empresa. Entorno simulado: no se contacta con proveedores, no hay transacciones financieras y emitir un pedido no modifica existencias.</span></div>
     {readOnly && identity.data && <ReadOnlyBanner text="Tu perfil puede consultar compras, pero no crear solicitudes ni avanzar el flujo." />}
     <div className="purchase-metrics">
       <div className="purchase-metric pm-red" data-testid="metric-open-purchase-requests"><span className="pm-icon"><ClipboardList size={17} /></span><small>Solicitudes abiertas</small><strong>{requestsQ.isLoading ? '…' : requests.filter((r) => ['requested', 'pending_approval'].includes(r.status)).length}</strong><span className="pm-caption">En revisión o esperando ofertas</span></div>
       <div className="purchase-metric pm-blue" data-testid="metric-purchase-offers"><span className="pm-icon"><ShoppingCart size={17} /></span><small>Ofertas recibidas</small><strong>{isSellerOnly ? '—' : requestsQ.isLoading ? '…' : requests.reduce((s, r) => s + r.offerCount, 0)}</strong><span className="pm-caption">{isSellerOnly ? 'El resto de propuestas es confidencial' : 'Propuestas de proveedores invitados'}</span></div>
-      <div className="purchase-metric pm-teal" data-testid="metric-purchase-orders"><span className="pm-icon"><FileCheck2 size={17} /></span><small>Pedidos emitidos</small><strong>{canViewBuying ? ordersQ.isLoading ? '…' : ordersQ.data?.length ?? 0 : '—'}</strong><span className="pm-caption">Instantáneas inmutables de compra</span></div>
-      <div className="purchase-metric pm-gold" data-testid="metric-committed-purchase-total"><span className="pm-icon"><BanknoteIcon /></span><small>Importe comprometido</small><strong>{canViewBuying ? ordersQ.isLoading ? '…' : money((ordersQ.data ?? []).reduce((s, o) => s + o.totalCents, 0)) : '—'}</strong><span className="pm-caption">Total simulado con IGIC y portes</span></div>
+      <div className="purchase-metric pm-teal" data-testid="metric-purchase-orders"><span className="pm-icon"><FileCheck2 size={17} /></span><small>Pedidos emitidos</small><strong>{canViewBuying ? ordersQ.isLoading ? '…' : activeOrders.length : '—'}</strong><span className="pm-caption">Empresa activa · instantáneas inmutables</span></div>
+      <div className="purchase-metric pm-gold" data-testid="metric-committed-purchase-total"><span className="pm-icon"><BanknoteIcon /></span><small>Importe comprometido</small><strong>{canViewBuying ? ordersQ.isLoading ? '…' : money(activeOrders.reduce((s, o) => s + o.totalCents, 0)) : '—'}</strong><span className="pm-caption">Total simulado con IGIC y portes</span></div>
     </div>
     <section className="purchase-workspace">
       <div className="purchase-work-toolbar">
-        <div className="purchase-tabs" role="tablist" aria-label="Secciones de compras">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={section === id ? 'active' : ''} role="tab" aria-selected={section === id} onClick={() => setSection(id)} data-testid={`tab-purchase-${id}`}><Icon size={15} />{label}{id === 'orders' && <span>{ordersQ.data?.length ?? 0}</span>}</button>)}</div>
+        <div className="purchase-tabs" role="tablist" aria-label="Secciones de compras">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={section === id ? 'active' : ''} role="tab" aria-selected={section === id} onClick={() => setSection(id)} data-testid={`tab-purchase-${id}`}><Icon size={15} />{label}{id === 'orders' && <span>{activeOrders.length}</span>}</button>)}</div>
         <label className="purchase-search"><span className="sr-only">Buscar solicitudes</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar solicitud, empresa…" data-testid="input-purchase-search" /><button aria-label="Actualizar compras" type="button" onClick={() => refresh(selectedSummary?.id)}><RefreshCw size={15} /></button></label>
       </div>
       {section === 'requests' && <section className="purchase-list-panel">
@@ -175,9 +191,9 @@ export function PurchasesPage({ onNotice }: { onNotice: (message: string) => voi
         </aside>
       </div>}
       {section === 'orders' && canViewBuying && <PurchaseOrders />}
-      {section === 'receipts' && canViewBuying && <ReceiptsSection orders={ordersQ.data ?? []} ordersLoading={ordersQ.isLoading} ordersError={ordersQ.isError} retryOrders={() => void ordersQ.refetch()} receipts={receiptsQ.data ?? []} receiptsLoading={receiptsQ.isLoading} receiptsError={receiptsQ.isError} retryReceipts={() => void receiptsQ.refetch()} canRecord={canCreate && !isSellerOnly} onNotice={onNotice} />}
-      {section === 'invoices' && canViewBuying && <InvoicesSection orders={ordersQ.data ?? []} ordersLoading={ordersQ.isLoading} ordersError={ordersQ.isError} retryOrders={() => void ordersQ.refetch()} receipts={receiptsQ.data ?? []} receiptsLoading={receiptsQ.isLoading} receiptsError={receiptsQ.isError} retryReceipts={() => void receiptsQ.refetch()} invoices={invoicesQ.data ?? []} invoicesLoading={invoicesQ.isLoading} invoicesError={invoicesQ.isError} retryInvoices={() => void invoicesQ.refetch()} canRegister={canCreate && !isSellerOnly} canDecide={canTeacher || (role === 'team_manager' && (currentOrganization?.role === 'buyer' || currentOrganization?.role === 'both'))} onNotice={onNotice} />}
-      {section === 'suppliers' && canViewBuying && <SupplierAnalysisSection metrics={supplierAnalysisQ.data ?? []} loading={supplierAnalysisQ.isLoading} error={supplierAnalysisQ.isError} retry={() => void supplierAnalysisQ.refetch()} />}
+      {section === 'receipts' && canViewBuying && <ReceiptsSection orders={activeOrders} ordersLoading={ordersQ.isLoading} ordersError={ordersQ.isError} retryOrders={() => void ordersQ.refetch()} receipts={activeReceipts} receiptsLoading={receiptsQ.isLoading} receiptsError={receiptsQ.isError} retryReceipts={() => void receiptsQ.refetch()} canRecord={canCreate && !isSellerOnly} onNotice={onNotice} />}
+      {section === 'invoices' && canViewBuying && <InvoicesSection orders={activeOrders} ordersLoading={ordersQ.isLoading} ordersError={ordersQ.isError} retryOrders={() => void ordersQ.refetch()} receipts={activeReceipts} receiptsLoading={receiptsQ.isLoading} receiptsError={receiptsQ.isError} retryReceipts={() => void receiptsQ.refetch()} invoices={activeInvoices} invoicesLoading={invoicesQ.isLoading} invoicesError={invoicesQ.isError} retryInvoices={() => void invoicesQ.refetch()} canRegister={canCreate && !isSellerOnly} canDecide={canTeacher || (role === 'team_manager' && (currentOrganization?.role === 'buyer' || currentOrganization?.role === 'both'))} onNotice={onNotice} />}
+      {section === 'suppliers' && canViewBuying && <><div className="purchase-disclaimer"><ShieldAlert size={16} /><span>Los indicadores de rendimiento de proveedores son agregados de toda la red; no se atribuyen exclusivamente a la empresa activa.</span></div><SupplierAnalysisSection metrics={supplierAnalysisQ.data ?? []} loading={supplierAnalysisQ.isLoading} error={supplierAnalysisQ.isError} retry={() => void supplierAnalysisQ.refetch()} /></>}
     </section>
     {newRequest && <RequestForm organizations={orgQ.data ?? []} products={productsQ.data ?? []} organizationId={identity.data?.organizationId ?? ''} initialProductId={marketPrefill?.productId} initialSupplierId={marketPrefill?.supplierId} close={() => { setNewRequest(false); setMarketPrefill(null); }} onSaved={(request) => { setNewRequest(false); setMarketPrefill(null); refresh(request.id); setSelectedId(request.id); setSection('comparison'); onNotice(`Solicitud ${request.requestNumber} creada como borrador.`); }} />}
     {quoteTarget && <OfferForm request={selected} summary={quoteTarget} organizations={orgQ.data ?? []} role={role} organizationId={identity.data?.organizationId ?? ''} close={() => setQuoteTarget(null)} onSaved={() => { setQuoteTarget(null); refresh(quoteTarget.id); onNotice('Oferta simulada registrada.'); }} />}

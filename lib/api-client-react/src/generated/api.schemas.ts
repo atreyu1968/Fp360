@@ -6608,6 +6608,8 @@ export interface DirectionAreaActivity {
 }
 
 export type DirectionOverview = DirectionPeriod & ({
+  /** @minLength 1 */
+  organizationId: string;
   /** @minimum 0 */
   salesBaseCents: number;
   /** @minimum 0 */
@@ -9387,6 +9389,8 @@ export type GetCoordinationOverviewParams = {
 };
 
 export type GetFp360DirectionOverviewParams = {
+  /** @minLength 1 */
+  organizationId: string;
   periodStart?: string;
   periodEnd?: string;
 };

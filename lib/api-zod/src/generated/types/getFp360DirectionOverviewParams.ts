@@ -7,6 +7,8 @@
  */
 
 export type GetFp360DirectionOverviewParams = {
+  /** @minLength 1 */
+  organizationId: string;
   periodStart?: string;
   periodEnd?: string;
 };

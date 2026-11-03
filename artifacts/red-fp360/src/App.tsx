@@ -30,6 +30,7 @@ import type {
   CrmOpportunity,
 } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { ActiveEnvironmentProvider, useActiveEnvironment } from '@/lib/active-environment';
 import { httpStatus } from '@/components/admin-shared';
 import { applicationModules, canOpenApplication } from '@/lib/application-modules';
 import { Toaster } from '@/components/ui/toaster';
@@ -289,6 +290,7 @@ function MarketPage({ organizations, products, orders, stateOrg, stateProducts, 
   stateOrg: DataState; stateProducts: DataState; stateOrders: DataState;
 }) {
   const identity = useGetCurrentIdentity();
+  const activeEnvironment = useActiveEnvironment();
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'partners' | 'products' | 'operations'>('partners');
   const [selectedOrganizationId, setSelectedOrganizationId] = useState('');
@@ -296,10 +298,17 @@ function MarketPage({ organizations, products, orders, stateOrg, stateProducts, 
   const [selectedOrderId, setSelectedOrderId] = useState('');
   const activeOrganizations = (organizations ?? []).filter((org) => org.isActive);
   const suppliers = activeOrganizations.filter((org) => org.role === 'seller' || org.role === 'both');
+  const activeOrganizationId = activeEnvironment?.organizationId ?? '';
   const publishedProducts = (products ?? []).filter((product) => product.isActive && product.isPublished);
   const complete = (order: Order) => ['delivered', 'invoiced', 'paid'].includes(order.status);
-  const completedOrders = (orders ?? []).filter(complete);
-  const currentOrganization = activeOrganizations.find((org) => org.id === identity.data?.organizationId);
+  const companyOrders = (orders ?? []).filter((order) =>
+    order.buyerOrganizationId === activeOrganizationId ||
+    order.lines.some((line) => products?.some((product) =>
+      product.id === line.productId && product.supplierOrganizationId === activeOrganizationId,
+    )),
+  );
+  const completedOrders = companyOrders.filter(complete);
+  const currentOrganization = activeOrganizations.find((org) => org.id === activeEnvironment?.organizationId);
   const canRequestOffer = !['mentor', 'promoter'].includes(identity.data?.role ?? '') &&
     (currentOrganization?.role === 'buyer' || currentOrganization?.role === 'both');
   const searchText = search.trim().toLocaleLowerCase('es');
@@ -324,13 +333,13 @@ function MarketPage({ organizations, products, orders, stateOrg, stateProducts, 
     const supplier = activeOrganizations.find((org) => org.id === product.supplierOrganizationId)?.name ?? 'sin proveedor asignado';
     return `${product.name} ${product.category} ${product.sku} ${product.itemType} ${supplier}`.toLocaleLowerCase('es').includes(searchText);
   });
-  const matchedOrders = (orders ?? []).filter((order) => `${order.reference} ${order.buyerName} ${order.status}`.toLocaleLowerCase('es').includes(searchText));
+  const matchedOrders = companyOrders.filter((order) => `${order.reference} ${order.buyerName} ${order.status}`.toLocaleLowerCase('es').includes(searchText));
   const selectedSupplier = suppliers.find((org) => org.id === selectedOrganizationId) ?? matchedSuppliers[0] ?? null;
   const selectedProduct = publishedProducts.find((product) => product.id === selectedProductId) ?? matchedProducts[0] ?? null;
-  const selectedOrder = (orders ?? []).find((order) => order.id === selectedOrderId) ?? matchedOrders[0] ?? null;
-  const recentOrders = [...(orders ?? [])].sort((a, b) => b.simulatedDate.localeCompare(a.simulatedDate)).slice(0, 4);
-  const inProgressOrders = (orders ?? []).filter((order) => order.status === 'confirmed' || order.status === 'partial');
-  const closedPercent = orders?.length ? Math.round((completedOrders.length / orders.length) * 100) : 0;
+  const selectedOrder = companyOrders.find((order) => order.id === selectedOrderId) ?? matchedOrders[0] ?? null;
+  const recentOrders = [...companyOrders].sort((a, b) => b.simulatedDate.localeCompare(a.simulatedDate)).slice(0, 4);
+  const inProgressOrders = companyOrders.filter((order) => order.status === 'confirmed' || order.status === 'partial');
+  const closedPercent = companyOrders.length ? Math.round((completedOrders.length / companyOrders.length) * 100) : 0;
 
   return <main className="page-content market-page">
     <PageHeading path="/mercado"><Link className="button button-primary" href="/ventas" data-testid="button-market-new-operation"><Plus size={16} /> Nueva operación</Link></PageHeading>
@@ -339,7 +348,7 @@ function MarketPage({ organizations, products, orders, stateOrg, stateProducts, 
       <div className="market-kpi"><span className="market-kpi-icon blue"><Building2 size={16} /></span><div><small>Empresas activas</small><b>{organizations ? activeOrganizations.length : '—'}</b><span>Participantes de la red</span></div></div>
       <div className="market-kpi"><span className="market-kpi-icon green"><Package size={16} /></span><div><small>Referencias publicadas</small><b>{products ? publishedProducts.length : '—'}</b><span>Productos y servicios</span></div></div>
       <div className="market-kpi"><span className="market-kpi-icon amber"><ShoppingCart size={16} /></span><div><small>Pedidos intercentros</small><b>{orders ? orders.length : '—'}</b><span>En este escenario</span></div></div>
-      <div className="market-kpi"><span className="market-kpi-icon violet"><CheckCircle2 size={16} /></span><div><small>Operaciones cerradas</small><b>{orders ? completedOrders.length : '—'}</b><span>Con entrega registrada</span></div></div>
+              <div className="market-kpi"><span className="market-kpi-icon violet"><CheckCircle2 size={16} /></span><div><small>Operaciones de la empresa</small><b>{orders ? companyOrders.length : '—'}</b><span>{completedOrders.length} cerradas con entrega registrada</span></div></div>
     </section>
 
     <div className="market-dashboard-grid">
@@ -446,7 +455,7 @@ function MarketPage({ organizations, products, orders, stateOrg, stateProducts, 
       </section>
       <section className="panel market-lower-panel"><div className="market-section-heading"><div><h2>Ciclo de operaciones</h2><p>Avance calculado desde pedidos reales.</p></div><BarChart3 size={16} /></div>
         <div className="market-cycle-stats"><div><span>Borradores</span><b>{orders ? orders.filter((order) => order.status === 'draft').length : '—'}</b></div><div><span>En preparación</span><b>{orders ? inProgressOrders.length : '—'}</b></div><div><span>Cerradas</span><b>{orders ? completedOrders.length : '—'}</b></div></div>
-        <div className="market-cycle-progress"><div><span>Operaciones cerradas</span><b>{orders?.length ? `${closedPercent}%` : 'Sin operaciones'}</b></div><div className="market-progress-track"><span style={{ width: `${closedPercent}%` }} /></div><small>{orders?.length ? `${completedOrders.length} de ${orders.length} pedidos` : 'El indicador aparecerá al registrar pedidos.'}</small></div>
+            <div className="market-cycle-progress"><div><span>Operaciones cerradas</span><b>{companyOrders.length ? `${closedPercent}%` : 'Sin operaciones'}</b></div><div className="market-progress-track"><span style={{ width: `${closedPercent}%` }} /></div><small>{companyOrders.length ? `${completedOrders.length} de ${companyOrders.length} pedidos de ${activeEnvironment?.name}` : 'El indicador aparecerá al registrar pedidos.'}</small></div>
       </section>
     </div>
     <div className="market-quick-actions">
@@ -464,6 +473,7 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
   onRefresh: () => void; onNotice: (message: string) => void;
 }) {
   const identity = useGetCurrentIdentity();
+  const activeEnvironment = useActiveEnvironment();
   const readOnly = !identity.data || ['promoter', 'mentor'].includes(identity.data.role);
   const queryClient = useQueryClient();
   const orderQuery = useListFp360Orders<Order[]>();
@@ -482,7 +492,14 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
   const [orderAttemptFingerprint, setOrderAttemptFingerprint] = useState('');
   const [dispatchQuantity, setDispatchQuantity] = useState(1);
   const [dispatchOperationId, setDispatchOperationId] = useState('');
-  const buyers = (organizations ?? []).filter((org) => org.isActive && (org.role === 'buyer' || org.role === 'both'));
+  const buyers = (organizations ?? []).filter((org) =>
+    org.isActive && org.id === activeEnvironment?.organizationId && (org.role === 'buyer' || org.role === 'both'),
+  );
+  useEffect(() => {
+    setBuyerId(activeEnvironment?.organizationId ?? '');
+    setProductId('');
+    setCrmOpportunityId('');
+  }, [activeEnvironment?.organizationId]);
   const orderable = (products ?? []).filter((p) => p.isActive && p.isPublished);
   const selectedProduct = orderable.find((p) => p.id === productId);
   const wonOpportunities = (opportunitiesQuery.data ?? []).filter((opportunity) =>
@@ -529,13 +546,18 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
       onError: () => onNotice('No se pudo registrar la expedición. Revisa las unidades pendientes.'),
     });
   };
-  const actionable = orders ?? [];
+  const actionable = (orders ?? []).filter((order) =>
+    order.buyerOrganizationId === activeEnvironment?.organizationId ||
+    order.lines.some((line) => products?.some((product) =>
+      product.id === line.productId && product.supplierOrganizationId === activeEnvironment?.organizationId,
+    )),
+  );
   return <main className="page-content">
-      <PageHeading path="/ventas"><button className="button button-primary" disabled={readOnly} onClick={() => { setOrderOperationId(crypto.randomUUID()); setOrderAttemptFingerprint(''); setNewOrder(true); }} data-testid="button-create-order"><Plus size={16} /> Crear pedido</button></PageHeading>
+       <PageHeading path="/ventas"><button className="button button-primary" disabled={readOnly} onClick={() => { setBuyerId(activeEnvironment?.organizationId ?? ''); setOrderOperationId(crypto.randomUUID()); setOrderAttemptFingerprint(''); setNewOrder(true); }} data-testid="button-create-order"><Plus size={16} /> Crear pedido</button></PageHeading>
     {readOnly && <p role="status">Tu perfil permite consultar los pedidos, pero no modificarlos.</p>}
     <SimulationNotice />
     <div className="sub-metrics">
-      <div><span>Pedidos del escenario</span><b>{orders?.length ?? '—'}</b><small>Historial de venta</small></div>
+       <div><span>Pedidos de la empresa activa</span><b>{actionable.length}</b><small>Operaciones donde participa este entorno</small></div>
       <div><span>Pendientes de confirmar</span><b>{actionable.filter((o) => o.status === 'draft').length}</b><small>Requieren validación comercial</small></div>
       <div><span>En preparación o envío</span><b>{actionable.filter((o) => o.status === 'confirmed' || o.status === 'partial').length}</b><small>Reserva y expedición</small></div>
     </div>
@@ -584,17 +606,19 @@ function InventoryPage({ products, orders, stateProducts, stateOrders }: {
   products?: Product[]; orders?: Order[]; stateProducts: DataState; stateOrders: DataState;
 }) {
   const identity = useGetCurrentIdentity();
+  const activeEnvironment = useActiveEnvironment();
   const [search, setSearch] = useState('');
-  const isNetworkSupervisor = identity.data?.role === 'administrator' ||
-    (identity.data?.role === 'teacher' && !identity.data.organizationId);
+  const organizationId = activeEnvironment?.organizationId ?? identity.data?.organizationId;
   const inventoryProducts = (products ?? []).filter((p) =>
-    (isNetworkSupervisor || (!!identity.data?.organizationId && p.supplierOrganizationId === identity.data.organizationId)) &&
-    p.tracksInventory,
+    Boolean(organizationId && p.supplierOrganizationId === organizationId) && p.tracksInventory,
   );
   const rows = inventoryProducts.filter((p) => `${p.name} ${p.sku} ${p.category}`.toLowerCase().includes(search.toLowerCase()));
   const totalAvailable = inventoryProducts.reduce((sum, p) => sum + Math.max(0, p.stock - p.reserved), 0);
   const totalReserved = inventoryProducts.reduce((sum, p) => sum + p.reserved, 0);
   const prepOrders = (orders ?? []).filter((order) => (order.status === 'confirmed' || order.status === 'partial') &&
+    order.lines.some((line) => products?.some((product) =>
+      product.id === line.productId && product.supplierOrganizationId === organizationId,
+    )) &&
     order.lines.some((line) => line.tracksInventory && line.shippedQuantity < line.quantity));
   return <main className="page-content">
     <PageHeading path="/almacen" />
@@ -628,6 +652,7 @@ function LogisticsPage({ orders, organizations, stateOrders, onRefresh, onNotice
   onRefresh: () => void; onNotice: (message: string) => void;
 }) {
   const identity = useGetCurrentIdentity();
+  const activeEnvironment = useActiveEnvironment();
   const queryClient = useQueryClient();
   const ordersQuery = useListFp360Orders<Order[]>();
   const productsQuery = useListFp360Products<Product[]>();
@@ -641,14 +666,21 @@ function LogisticsPage({ orders, organizations, stateOrders, onRefresh, onNotice
   const [dispatchOperationId, setDispatchOperationId] = useState('');
   const readOnly = !identity.data || ['mentor', 'promoter'].includes(identity.data.role);
   const isSupervisor = identity.data?.role === 'administrator' || (identity.data?.role === 'teacher' && !identity.data.organizationId);
-  const currentOrganization = organizations?.find((organization) => organization.id === identity.data?.organizationId);
-  const shipmentRows = shipmentsQuery.data ?? [];
+  const organizationId = activeEnvironment?.organizationId ?? identity.data?.organizationId;
+  const currentOrganization = organizations?.find((organization) => organization.id === organizationId);
+  const companyOrderIds = new Set((orders ?? []).filter((order) =>
+    order.buyerOrganizationId === organizationId ||
+    order.lines.some((line) => productsQuery.data?.some((product) =>
+      product.id === line.productId && product.supplierOrganizationId === organizationId,
+    )),
+  ).map((order) => order.id));
+  const shipmentRows = (shipmentsQuery.data ?? []).filter((shipment) => companyOrderIds.has(shipment.orderId));
   const physicalLines = (order: Order) => order.lines.filter((line) => line.itemType === 'product');
   const canShipLine = (line: Order['lines'][number]) => {
-    if (isSupervisor) return true;
-    if (!identity.data?.organizationId || !currentOrganization || !['seller', 'both'].includes(currentOrganization.role)) return false;
+    if (isSupervisor && !activeEnvironment) return true;
+    if (!organizationId || !currentOrganization || !['seller', 'both'].includes(currentOrganization.role)) return false;
     const product = productsQuery.data?.find((item) => item.id === line.productId);
-    return Boolean(product && (!product.supplierOrganizationId || product.supplierOrganizationId === identity.data.organizationId));
+    return Boolean(product && product.supplierOrganizationId === organizationId);
   };
   const dispatchableLines = (order: Order) => physicalLines(order).filter(canShipLine);
   const shipmentProgress = (order: Order) => {
@@ -659,7 +691,7 @@ function LogisticsPage({ orders, organizations, stateOrders, onRefresh, onNotice
       remaining: lines.reduce((sum, line) => sum + line.quantity - line.shippedQuantity, 0),
     };
   };
-  const physicalOrders = (orders ?? []).filter((order) => physicalLines(order).length > 0 && (
+  const physicalOrders = (orders ?? []).filter((order) => companyOrderIds.has(order.id) && physicalLines(order).length > 0 && (
     isSupervisor ||
     shipmentRows.some((shipment) => shipment.orderId === order.id) ||
     dispatchableLines(order).some((line) => line.quantity > line.shippedQuantity)
@@ -674,7 +706,7 @@ function LogisticsPage({ orders, organizations, stateOrders, onRefresh, onNotice
   const filteredOrders = tabOrders.filter((order) => `${order.reference} ${order.buyerName}`.toLocaleLowerCase('es').includes(search.trim().toLocaleLowerCase('es')));
   const selectedOrder = filteredOrders.find((order) => order.id === selectedId) ?? filteredOrders[0] ?? null;
   const buyer = organizations?.find((organization) => organization.id === selectedOrder?.buyerOrganizationId);
-  const origin = organizations?.find((organization) => organization.id === identity.data?.organizationId);
+  const origin = organizations?.find((organization) => organization.id === organizationId);
   const completedShipments = shipmentRows.filter((shipment) => shipment.status === 'delivered').length;
   const openIncidents = shipmentRows.flatMap((shipment) => shipment.incidents).filter((incident) => incident.status === 'open').length;
   const progressPercent = shipmentRows.length ? Math.round((completedShipments / shipmentRows.length) * 100) : 0;
@@ -992,10 +1024,12 @@ function InvoicesPage({ invoices, orders, stateInvoices, stateOrders, onRefresh,
   onRefresh: () => void; onNotice: (message: string) => void;
 }) {
   const identity = useGetCurrentIdentity();
+  const activeEnvironment = useActiveEnvironment();
   const readOnly = !identity.data || ['promoter', 'mentor'].includes(identity.data.role);
   const queryClient = useQueryClient();
   const invoiceQuery = useListFp360Invoices<Invoice[]>();
   const orderQuery = useListFp360Orders<Order[]>();
+  const productsQuery = useListFp360Products<Product[]>();
   const logisticsQuery = useListFp360LogisticsShipments<LogisticsShipment[]>();
   const issueInvoice = useIssueFp360Invoice();
   const recordPayment = useRecordFp360Payment();
@@ -1009,7 +1043,19 @@ function InvoicesPage({ invoices, orders, stateInvoices, stateOrders, onRefresh,
     const hasShipment = (logisticsQuery.data ?? []).some((shipment) => shipment.orderId === order.id);
     return (hasShipment ? line.receivedQuantity : line.shippedQuantity) - line.invoicedQuantity;
   };
-  const issuable = logisticsQuery.isLoading || logisticsQuery.isError ? [] : (orders ?? []).filter((order) =>
+  const activeOrderIds = new Set((orders ?? []).filter((order) =>
+    order.buyerOrganizationId === activeEnvironment?.organizationId ||
+    order.lines.some((line) => productsQuery.data?.some((product) =>
+      product.id === line.productId && product.supplierOrganizationId === activeEnvironment?.organizationId,
+    )),
+  ).map((order) => order.id));
+  const companyInvoices = (invoices ?? []).filter((invoice) =>
+    invoice.issuerOrganizationId === activeEnvironment?.organizationId || activeOrderIds.has(invoice.orderId),
+  );
+  const issuable = logisticsQuery.isLoading || logisticsQuery.isError || productsQuery.isLoading || productsQuery.isError ? [] : (orders ?? []).filter((order) =>
+    order.lines.some((line) => productsQuery.data?.some((product) =>
+      product.id === line.productId && product.supplierOrganizationId === activeEnvironment?.organizationId,
+    )) &&
     ['delivered', 'invoiced', 'paid'].includes(order.status) &&
     order.lines.some((line) => invoiceableQuantity(order, line) > 0),
   );
@@ -1053,8 +1099,8 @@ function InvoicesPage({ invoices, orders, stateInvoices, stateOrders, onRefresh,
       onError: () => onNotice('No se pudo confirmar el pago. Reintenta con el mismo importe e identificador de operación.'),
     });
   };
-  const shownInvoices = (invoices ?? []).filter((invoice) => tab === 'all' || invoice.balanceCents > 0);
-  const outstanding = (invoices ?? []).reduce((sum, invoice) => sum + invoice.balanceCents, 0);
+  const shownInvoices = companyInvoices.filter((invoice) => tab === 'all' || invoice.balanceCents > 0);
+  const outstanding = companyInvoices.reduce((sum, invoice) => sum + invoice.balanceCents, 0);
   return <main className="page-content">
     <PageHeading path="/facturas" />
     {readOnly && <p role="status">Tu perfil permite consultar las facturas, pero no emitir documentos ni registrar pagos.</p>}
@@ -1226,6 +1272,14 @@ function roleLabel(role: AuthIdentity['role']) {
   return labels[role];
 }
 
+const companyScopedRoutes = new Set([
+  '/', '/mercado', '/ventas', '/compras', '/almacen', '/logistica', '/contabilidad',
+  '/tesoreria', '/banco', '/hacienda', '/recursos-humanos', '/empleo', '/comunicaciones',
+  '/simulaciones', '/portafolio', '/evaluacion-docente', '/mentoria-empresarial',
+  '/coordinacion-intercentros', '/nominas', '/atencion-cliente', '/proyectos-servicios',
+  '/gestion-documental', '/seguridad-social', '/facturas', '/crm', '/productos',
+]);
+
 function Shell({ identity }: { identity: AuthIdentity }) {
   const [location, setLocation] = useLocation();
   const [mobileNav, setMobileNav] = useState(false);
@@ -1233,9 +1287,60 @@ function Shell({ identity }: { identity: AuthIdentity }) {
   const logout = useLogout();
   const leaveNetwork = useLeaveCurrentNetwork();
   const organizationsQuery = useListFp360Organizations<Organization[]>();
+  const activeOrganizations = useMemo(
+    () => (organizationsQuery.data ?? []).filter((organization) => organization.isActive),
+    [organizationsQuery.data],
+  );
+  const canSelectActiveOrganization = !identity.organizationId &&
+    ['teacher', 'administrator'].includes(identity.role);
+  const activeOrganizationStorageKey = `redfp360:active-organization:${identity.tenantId}:${identity.id}`;
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState(() => {
+    try { return window.localStorage.getItem(activeOrganizationStorageKey) ?? ''; } catch { return ''; }
+  });
+  useEffect(() => {
+    if (!canSelectActiveOrganization || organizationsQuery.isLoading) return;
+    setSelectedOrganizationId((current) => {
+      if (activeOrganizations.some((organization) => organization.id === current)) return current;
+      try {
+        const saved = window.localStorage.getItem(activeOrganizationStorageKey);
+        if (saved && activeOrganizations.some((organization) => organization.id === saved)) return saved;
+      } catch { /* The environment remains usable without browser storage. */ }
+      return activeOrganizations.length === 1 ? activeOrganizations[0].id : '';
+    });
+  }, [activeOrganizationStorageKey, activeOrganizations, canSelectActiveOrganization, organizationsQuery.isLoading]);
+  const activeOrganizationId = identity.organizationId ??
+    (canSelectActiveOrganization && activeOrganizations.some((organization) => organization.id === selectedOrganizationId)
+      ? selectedOrganizationId
+      : '');
+  useEffect(() => {
+    if (!canSelectActiveOrganization || organizationsQuery.isLoading) return;
+    try {
+      if (activeOrganizationId) window.localStorage.setItem(activeOrganizationStorageKey, activeOrganizationId);
+      else window.localStorage.removeItem(activeOrganizationStorageKey);
+    } catch { /* The active selection still works for this session. */ }
+  }, [activeOrganizationId, activeOrganizationStorageKey, canSelectActiveOrganization, organizationsQuery.isLoading]);
+  const activeOrganization = activeOrganizations.find((organization) => organization.id === activeOrganizationId);
+  const activeEnvironment = useMemo(() => activeOrganizationId ? ({
+    organizationId: activeOrganizationId,
+    name: activeOrganization?.name ?? 'Empresa asignada',
+    center: activeOrganization?.center ?? 'Acceso vinculado',
+  }) : null, [activeOrganization, activeOrganizationId]);
+  const scopedIdentity = useMemo(() => activeEnvironment
+    ? { ...identity, organizationId: activeEnvironment.organizationId }
+    : identity, [activeEnvironment, identity]);
   const productsQuery = useListFp360Products<Product[]>();
   const ordersQuery = useListFp360Orders<Order[]>();
   const invoicesQuery = useListFp360Invoices<Invoice[]>();
+  const selectActiveOrganization = (organizationId: string) => {
+    if (!canSelectActiveOrganization) return;
+    if (organizationId && !activeOrganizations.some((organization) => organization.id === organizationId)) return;
+    setSelectedOrganizationId(organizationId);
+    try {
+      if (organizationId) window.localStorage.setItem(activeOrganizationStorageKey, organizationId);
+      else window.localStorage.removeItem(activeOrganizationStorageKey);
+    } catch { /* Keep the selection active for this session. */ }
+    void queryClient.invalidateQueries();
+  };
   const retryAll = () => { void queryClient.invalidateQueries(); };
   const states = {
     organizations: { loading: organizationsQuery.isLoading, error: organizationsQuery.isError, retry: retryAll },
@@ -1244,30 +1349,44 @@ function Shell({ identity }: { identity: AuthIdentity }) {
     invoices: { loading: invoicesQuery.isLoading, error: invoicesQuery.isError, retry: retryAll },
   };
   const page = useMemo(() => {
+    if (companyScopedRoutes.has(location) && !activeEnvironment) {
+      return <main className="page-content">
+        <PageHeading path="/" />
+        <section className="panel environment-required" role="status">
+          <Building2 size={22} />
+          <div><h2>{organizationsQuery.isLoading ? 'Cargando empresas' : 'Selecciona la empresa activa'}</h2>
+            <p>{organizationsQuery.isError
+              ? 'No se pudo cargar la lista de empresas. Reintenta antes de consultar datos.'
+              : 'Elige una empresa en “Entorno activo” para que los indicadores y módulos operativos muestren su información.'}</p>
+            {organizationsQuery.isError && <button className="button button-secondary" onClick={retryAll}>Reintentar</button>}
+          </div>
+        </section>
+      </main>;
+    }
     switch (location) {
-      case '/': return <DirectionPage actorRole={identity.role} />;
+      case '/': return <DirectionPage actorRole={identity.role} organizationId={activeEnvironment?.organizationId ?? ''} organizationName={activeEnvironment?.name ?? ''} />;
       case '/mercado': return <MarketPage organizations={organizationsQuery.data} products={productsQuery.data} orders={ordersQuery.data} stateOrg={states.organizations} stateProducts={states.products} stateOrders={states.orders} />;
       case '/ventas': return <SalesPage products={productsQuery.data} organizations={organizationsQuery.data} orders={ordersQuery.data} states={{ products: states.products, organizations: states.organizations, orders: states.orders }} onRefresh={() => { void queryClient.invalidateQueries({ queryKey: getGetFp360DashboardQueryKey() }); void queryClient.invalidateQueries(); }} onNotice={setNotice} />;
       case '/compras': return <PurchasesPage onNotice={setNotice} />;
       case '/almacen': return <InventoryPage products={productsQuery.data} orders={ordersQuery.data} stateProducts={states.products} stateOrders={states.orders} />;
       case '/logistica': return <LogisticsPage orders={ordersQuery.data} organizations={organizationsQuery.data} stateOrders={states.orders} onRefresh={retryAll} onNotice={setNotice} />;
-      case '/contabilidad': return <AccountingPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
-      case '/tesoreria': return <TreasuryPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
-      case '/banco': return <BankPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
-      case '/hacienda': return <HaciendaPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
-      case '/recursos-humanos': return <HumanResourcesPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
-      case '/empleo': return <EmploymentPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
-      case '/comunicaciones': return <CommunicationsPage identity={identity} organizationId={identity.organizationId ?? null} organizations={organizationsQuery.data ?? []} onNotice={setNotice} />;
-      case '/simulaciones': return <SimulationCampaignsPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
-      case '/portafolio': return <PortfolioPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
-      case '/evaluacion-docente': return <EvaluationPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
-      case '/mentoria-empresarial': return <MentorshipPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
-      case '/coordinacion-intercentros': return <CoordinationPage identity={{ role: identity.role, organizationId: identity.organizationId ?? undefined }} onNotice={setNotice} />;
-      case '/nominas': return <PayrollPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
-      case '/atencion-cliente': return <CustomerServicePage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
-      case '/proyectos-servicios': return <ProjectsServicesPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
-      case '/gestion-documental': return <DocumentManagementPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
-      case '/seguridad-social': return <SocialSecurityPage identity={identity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/contabilidad': return <AccountingPage identity={scopedIdentity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/tesoreria': return <TreasuryPage identity={scopedIdentity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/banco': return <BankPage identity={scopedIdentity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/hacienda': return <HaciendaPage identity={scopedIdentity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/recursos-humanos': return <HumanResourcesPage identity={scopedIdentity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/empleo': return <EmploymentPage identity={scopedIdentity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/comunicaciones': return <CommunicationsPage identity={scopedIdentity} organizationId={activeEnvironment?.organizationId ?? null} organizations={organizationsQuery.data ?? []} onNotice={setNotice} />;
+      case '/simulaciones': return <SimulationCampaignsPage identity={scopedIdentity} onNotice={setNotice} />;
+      case '/portafolio': return <PortfolioPage identity={scopedIdentity} onNotice={setNotice} />;
+      case '/evaluacion-docente': return <EvaluationPage identity={scopedIdentity} onNotice={setNotice} />;
+      case '/mentoria-empresarial': return <MentorshipPage identity={scopedIdentity} onNotice={setNotice} />;
+      case '/coordinacion-intercentros': return <CoordinationPage identity={scopedIdentity} onNotice={setNotice} />;
+      case '/nominas': return <PayrollPage identity={scopedIdentity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/atencion-cliente': return <CustomerServicePage identity={scopedIdentity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/proyectos-servicios': return <ProjectsServicesPage identity={scopedIdentity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/gestion-documental': return <DocumentManagementPage identity={scopedIdentity} organizations={organizationsQuery.data} onNotice={setNotice} />;
+      case '/seguridad-social': return <SocialSecurityPage identity={scopedIdentity} organizations={organizationsQuery.data} onNotice={setNotice} />;
       case '/facturas': return <InvoicesPage invoices={invoicesQuery.data} orders={ordersQuery.data} stateInvoices={states.invoices} stateOrders={states.orders} onRefresh={() => { void queryClient.invalidateQueries({ queryKey: getGetFp360DashboardQueryKey() }); void queryClient.invalidateQueries(); }} onNotice={setNotice} />;
       case '/clientes': return <OrganizationsDirectory onNotice={setNotice} />;
       case '/crm': return <CrmPage onNotice={setNotice} />;
@@ -1276,16 +1395,22 @@ function Shell({ identity }: { identity: AuthIdentity }) {
        case '/apps': return <ApplicationsPage role={identity.role} />;
        case '/documentacion':
        case '/docs': return <DocumentationPage />;
-      case '/administracion': return identity.role === 'administrator' ? <AdminPage identity={identity} /> : <AdminAccessDenied />;
+        case '/administracion': return identity.role === 'administrator' ? <AdminPage identity={identity} /> : <AdminAccessDenied />;
       default: return null;
     }
-  }, [location, organizationsQuery.data, organizationsQuery.isLoading, organizationsQuery.isError, productsQuery.data, productsQuery.isLoading, productsQuery.isError, ordersQuery.data, ordersQuery.isLoading, ordersQuery.isError, invoicesQuery.data, invoicesQuery.isLoading, invoicesQuery.isError, identity]);
-  return <div className="app-shell">
+  }, [location, organizationsQuery.data, organizationsQuery.isLoading, organizationsQuery.isError, productsQuery.data, productsQuery.isLoading, productsQuery.isError, ordersQuery.data, ordersQuery.isLoading, ordersQuery.isError, invoicesQuery.data, invoicesQuery.isLoading, invoicesQuery.isError, activeEnvironment, identity, scopedIdentity, retryAll]);
+  return <ActiveEnvironmentProvider value={activeEnvironment}><div className="app-shell">
     <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
       <Link href="/" className="brand-lockup" onClick={() => setMobileNav(false)}>
         <span className="brand-mark"><span>R</span><i /></span><span className="brand-name"><b>RED FP360</b><small>EMPRESA SIMULADA · FP</small></span>
       </Link>
-      <div className="sidebar-context"><span className="context-label">ENTORNO ACTIVO</span><button className="context-selector" type="button"><span className="context-avatar">CE</span><span><b>Empresa de prácticas</b><small>Centro educativo · Canarias</small></span><ChevronDown size={14} /></button></div>
+       <div className="sidebar-context"><span className="context-label">ENTORNO ACTIVO</span><div className="context-selector">
+         <span className="context-avatar">{activeEnvironment?.name.split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || '—'}</span>
+         <span className="context-choice">{canSelectActiveOrganization
+           ? <><b>Empresa activa</b><select aria-label="Empresa activa" data-testid="select-active-organization" value={activeOrganizationId} onChange={(event) => selectActiveOrganization(event.target.value)}><option value="">Selecciona una empresa</option>{activeOrganizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name} · {organization.center}</option>)}</select></>
+           : <><b>{activeEnvironment?.name ?? 'Empresa no asignada'}</b><small>{activeEnvironment?.center ?? 'Solicita que asignen una empresa'}</small></>}
+         </span>{canSelectActiveOrganization && <ChevronDown size={14} />}
+       </div></div>
       <div className="nav-caption">ESPACIO DE TRABAJO</div>
       <nav className="main-nav" aria-label="Navegación principal">{[...navItems, ...(identity.role === 'administrator' ? [{ href: '/administracion', label: 'Administración del sistema', icon: ShieldCheck }] : [])].map(({ href, label, icon: Icon }) => <Link href={href} key={href} className={`nav-link ${location === href ? 'nav-active' : ''}`} onClick={() => setMobileNav(false)} aria-current={location === href ? 'page' : undefined}><Icon size={18} strokeWidth={1.8} /><span>{label}</span>{href === '/aplicaciones' && <span className="nav-count">26</span>}</Link>)}</nav>
       <div className="sidebar-bottom"><div className="help-card"><div className="help-icon"><LifeBuoy size={17} /></div><b>¿Primera vez por aquí?</b><p>Consulta la guía de aprendizaje de la red.</p><Link href="/documentacion" onClick={() => setMobileNav(false)}>Abrir recursos <ArrowRight size={13} /></Link></div>
@@ -1315,7 +1440,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
     </aside>
     {mobileNav && <button className="mobile-scrim" aria-label="Cerrar menú" onClick={() => setMobileNav(false)} />}
     <div className="main-shell">
-      <header className="topbar"><div className="topbar-left"><button className="mobile-menu icon-button" aria-label="Abrir menú" onClick={() => setMobileNav(true)}><Menu size={20} /></button><div className="topbar-path"><span>Curso 2027–2028</span><i>/</i><b>Simulación intercentros</b></div></div>
+       <header className="topbar"><div className="topbar-left"><button className="mobile-menu icon-button" aria-label="Abrir menú" onClick={() => setMobileNav(true)}><Menu size={20} /></button><div className="topbar-path"><span>Entorno activo</span><i>/</i><b data-testid="text-active-organization">{activeEnvironment?.name ?? 'Selecciona una empresa'}</b></div></div>
         <div className="topbar-right"><span className="environment-pill"><span /> SIMULACIÓN · SIN OPERACIONES REALES</span><button className="top-icon" aria-label="Notificaciones de demostración" title="Sin notificaciones"><Bell size={17} /><i /></button><span className="top-divider" /><span className="top-user" aria-label={identity.displayName}>{identityInitials(identity)}</span></div>
       </header>
       <div className="content-scroll redfp-scroll"><Suspense fallback={<div className="module-loading" role="status" aria-live="polite">Cargando módulo…</div>}><Switch>
@@ -1356,7 +1481,7 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       <footer className="app-footer"><span>RED FP360 <i>·</i> Entorno educativo de prácticas</span><span>Sin conexión a sistemas reales <b>·</b> © 2027</span></footer>
     </div>
     <ToastMessage message={notice} onClose={() => setNotice('')} />
-  </div>;
+  </div></ActiveEnvironmentProvider>;
 }
 
 function isUnauthorized(error: unknown) {

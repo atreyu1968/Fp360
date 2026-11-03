@@ -43,7 +43,7 @@ import type {
 } from '@workspace/api-client-react';
 import './direction.css';
 
-type Props = { actorRole: string };
+type Props = { actorRole: string; organizationId: string; organizationName: string };
 type Tab = 'resumen' | 'alertas' | 'decisiones' | 'objetivos' | 'informes';
 type Notice = { kind: 'success' | 'error'; text: string };
 type ModalKind = 'task' | 'decision' | 'objective' | 'report' | 'threshold' | 'alert' | 'review' | null;
@@ -111,7 +111,7 @@ function StateTag({ value }: { value: string }) {
   return <span className={`dir-status dir-status-${value}`}>{statusNames[value] ?? value}</span>;
 }
 
-export default function DirectionPage({ actorRole }: Props) {
+export default function DirectionPage({ actorRole, organizationId, organizationName }: Props) {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>('resumen');
   const [periodStart, setPeriodStart] = useState<string>();
@@ -126,10 +126,11 @@ export default function DirectionPage({ actorRole }: Props) {
   const [reportTitle, setReportTitle] = useState('');
   const [reportDetailOpen, setReportDetailOpen] = useState(false);
 
-  const overview = useGetFp360DirectionOverview(
-    periodStart && periodEnd ? { periodStart, periodEnd } : undefined,
-    { query: { staleTime: 30_000 } },
-  );
+  const overviewParams = {
+    organizationId,
+    ...(periodStart && periodEnd ? { periodStart, periodEnd } : {}),
+  };
+  const overview = useGetFp360DirectionOverview(overviewParams, { query: { staleTime: 30_000 } });
   const tasks = useListFp360DirectionTasks({ query: { staleTime: 20_000 } });
   const members = useListFp360DirectionMembers({ query: { staleTime: 60_000 } });
   const alerts = useListFp360DirectionAlerts({ query: { staleTime: 20_000 } });
@@ -170,7 +171,7 @@ export default function DirectionPage({ actorRole }: Props) {
   const invalidate = async (...keys: (readonly unknown[])[]) => {
     await Promise.all(keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
   };
-  const overviewKey = getGetFp360DirectionOverviewQueryKey(periodStart && periodEnd ? { periodStart, periodEnd } : undefined);
+  const overviewKey = getGetFp360DirectionOverviewQueryKey(overviewParams);
   const auditKey = getListFp360DirectionEventsQueryKey();
   const objectiveKey = getListFp360DirectionObjectivesQueryKey(periodStart && periodEnd ? { periodStart, periodEnd } : undefined);
 
@@ -320,7 +321,7 @@ export default function DirectionPage({ actorRole }: Props) {
           <button type="button" onClick={reloadOverview} aria-label="Actualizar indicadores" title="Actualizar indicadores"><RefreshCw size={16} /></button>
         </div>
       </div>
-      <div className="dir-hero-foot"><span>{overview.data?.periodLabel ?? 'Periodo simulado'}</span><span>Los indicadores muestran exclusivamente fuentes aprobadas disponibles.</span></div>
+      <div className="dir-hero-foot"><span>{organizationName} · {overview.data?.periodLabel ?? 'Periodo simulado'}</span><span>Indicadores financieros de esta empresa. Tareas, alertas, decisiones, objetivos, informes y auditoría son de toda la red.</span></div>
     </header>
 
     {notice && <div className={`dir-notice dir-notice-${notice.kind}`} role="status"><span>{notice.kind === 'success' ? <Check size={16} /> : <AlertTriangle size={16} />}{notice.text}</span><button type="button" onClick={() => setNotice(null)} aria-label="Cerrar aviso"><X size={15} /></button></div>}

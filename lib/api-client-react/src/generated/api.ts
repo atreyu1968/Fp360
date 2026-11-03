@@ -7981,7 +7981,7 @@ export const useUpdateCoordinationTransfer = <TError = ErrorType<void>,
       return useMutation(getUpdateCoordinationTransferMutationOptions(options), queryClient);
     }
 
-export const getGetFp360DirectionOverviewUrl = (params?: GetFp360DirectionOverviewParams,) => {
+export const getGetFp360DirectionOverviewUrl = (params: GetFp360DirectionOverviewParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -7999,7 +7999,7 @@ export const getGetFp360DirectionOverviewUrl = (params?: GetFp360DirectionOvervi
 /**
  * @summary Get source-backed executive indicators for a simulated period
  */
-export const getFp360DirectionOverview = async (params?: GetFp360DirectionOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<DirectionOverview> => {
+export const getFp360DirectionOverview = async (params: GetFp360DirectionOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<DirectionOverview> => {
 
   return customFetch<DirectionOverview>(getGetFp360DirectionOverviewUrl(params),
   {
@@ -8021,7 +8021,7 @@ export const getGetFp360DirectionOverviewQueryKey = (params?: GetFp360DirectionO
     }
 
 
-export const getGetFp360DirectionOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError = ErrorType<void>>(params?: GetFp360DirectionOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getGetFp360DirectionOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError = ErrorType<void>>(params: GetFp360DirectionOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -8044,7 +8044,7 @@ export type GetFp360DirectionOverviewQueryError = ErrorType<void>
 
 
 export function useGetFp360DirectionOverview<TData = Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError = ErrorType<void>>(
- params: undefined |  GetFp360DirectionOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>> & Pick<
+ params: GetFp360DirectionOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getFp360DirectionOverview>>,
           TError,
@@ -8054,7 +8054,7 @@ export function useGetFp360DirectionOverview<TData = Awaited<ReturnType<typeof g
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetFp360DirectionOverview<TData = Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError = ErrorType<void>>(
- params?: GetFp360DirectionOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>> & Pick<
+ params: GetFp360DirectionOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getFp360DirectionOverview>>,
           TError,
@@ -8064,7 +8064,7 @@ export function useGetFp360DirectionOverview<TData = Awaited<ReturnType<typeof g
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetFp360DirectionOverview<TData = Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError = ErrorType<void>>(
- params?: GetFp360DirectionOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ params: GetFp360DirectionOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -8072,7 +8072,7 @@ export function useGetFp360DirectionOverview<TData = Awaited<ReturnType<typeof g
  */
 
 export function useGetFp360DirectionOverview<TData = Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError = ErrorType<void>>(
- params?: GetFp360DirectionOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ params: GetFp360DirectionOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFp360DirectionOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 

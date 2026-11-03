@@ -3295,10 +3295,15 @@ export const UpdateCoordinationTransferResponse = zod.object({
 /**
  * @summary Get source-backed executive indicators for a simulated period
  */
+
+
+
 export const GetFp360DirectionOverviewQueryParams = zod.object({
+  "organizationId": zod.string().min(1),
   "periodStart": zod.iso.date().optional(),
   "periodEnd": zod.iso.date().optional()
 })
+
 
 export const getFp360DirectionOverviewResponseTwoSalesBaseCentsMin = 0;
 
@@ -3327,6 +3332,7 @@ export const GetFp360DirectionOverviewResponse = zod.object({
   "periodEnd": zod.iso.date(),
   "periodLabel": zod.string()
 }).and(zod.object({
+  "organizationId": zod.string().min(1),
   "salesBaseCents": zod.int().min(getFp360DirectionOverviewResponseTwoSalesBaseCentsMin),
   "purchaseBaseCents": zod.int().min(getFp360DirectionOverviewResponseTwoPurchaseBaseCentsMin),
   "outstandingCustomerCents": zod.int().min(getFp360DirectionOverviewResponseTwoOutstandingCustomerCentsMin),
@@ -3788,6 +3794,7 @@ export const UpdateFp360DirectionObjectiveResponse = zod.object({
 /**
  * @summary List direction reports visible to the authenticated role
  */
+
 export const listFp360DirectionReportsResponseSnapshotTwoSalesBaseCentsMin = 0;
 
 export const listFp360DirectionReportsResponseSnapshotTwoPurchaseBaseCentsMin = 0;
@@ -3823,6 +3830,7 @@ export const ListFp360DirectionReportsResponseItem = zod.object({
   "periodEnd": zod.iso.date(),
   "periodLabel": zod.string()
 }).and(zod.object({
+  "organizationId": zod.string().min(1),
   "salesBaseCents": zod.int().min(listFp360DirectionReportsResponseSnapshotTwoSalesBaseCentsMin),
   "purchaseBaseCents": zod.int().min(listFp360DirectionReportsResponseSnapshotTwoPurchaseBaseCentsMin),
   "outstandingCustomerCents": zod.int().min(listFp360DirectionReportsResponseSnapshotTwoOutstandingCustomerCentsMin),
@@ -3864,6 +3872,7 @@ export const CreateFp360DirectionReportBody = zod.object({
   "periodEnd": zod.iso.date()
 })
 
+
 export const createFp360DirectionReportResponseSnapshotTwoSalesBaseCentsMin = 0;
 
 export const createFp360DirectionReportResponseSnapshotTwoPurchaseBaseCentsMin = 0;
@@ -3899,6 +3908,7 @@ export const CreateFp360DirectionReportResponse = zod.object({
   "periodEnd": zod.iso.date(),
   "periodLabel": zod.string()
 }).and(zod.object({
+  "organizationId": zod.string().min(1),
   "salesBaseCents": zod.int().min(createFp360DirectionReportResponseSnapshotTwoSalesBaseCentsMin),
   "purchaseBaseCents": zod.int().min(createFp360DirectionReportResponseSnapshotTwoPurchaseBaseCentsMin),
   "outstandingCustomerCents": zod.int().min(createFp360DirectionReportResponseSnapshotTwoOutstandingCustomerCentsMin),
@@ -3935,6 +3945,7 @@ export const GetFp360DirectionReportParams = zod.object({
   "id": zod.string().min(1)
 })
 
+
 export const getFp360DirectionReportResponseSnapshotTwoSalesBaseCentsMin = 0;
 
 export const getFp360DirectionReportResponseSnapshotTwoPurchaseBaseCentsMin = 0;
@@ -3970,6 +3981,7 @@ export const GetFp360DirectionReportResponse = zod.object({
   "periodEnd": zod.iso.date(),
   "periodLabel": zod.string()
 }).and(zod.object({
+  "organizationId": zod.string().min(1),
   "salesBaseCents": zod.int().min(getFp360DirectionReportResponseSnapshotTwoSalesBaseCentsMin),
   "purchaseBaseCents": zod.int().min(getFp360DirectionReportResponseSnapshotTwoPurchaseBaseCentsMin),
   "outstandingCustomerCents": zod.int().min(getFp360DirectionReportResponseSnapshotTwoOutstandingCustomerCentsMin),
