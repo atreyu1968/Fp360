@@ -354,16 +354,19 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
   let runningBalance = 0;
 
   return <main className="page-content accounting-page">
-    <div className="page-heading accounting-heading">
-      <div><span className="page-kicker">CICLO ECONÓMICO · REGISTRO CONTABLE</span><h1>Contabilidad</h1><p>Diario, mayor y estados didácticos enlazados con documentos de origen.</p></div>
-      <div className="accounting-heading-actions">
-        {canChooseOrganization && <label className="accounting-org-select">Empresa<select value={organizationId} onChange={(event) => {
-          setOrganizationId(event.target.value);
-          setSelectedEntryId('');
-          setSelectedAccountId('');
-          setSearch('');
-        }}><option value="">Selecciona una empresa</option>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name} · {organization.center}</option>)}</select></label>}
-        <button className="button button-primary" type="button" disabled={readOnly || !organizationId || !accounts.length} onClick={openEntryForm}>＋ Nuevo asiento</button>
+    <div className="page-heading page-enter accounting-heading">
+      <div className="breadcrumbs"><span>RED FP360</span><span className="crumb-slash">/</span><span>CICLO ECONÓMICO · REGISTRO CONTABLE</span></div>
+      <div className="heading-row">
+        <div><h1>Contabilidad</h1><p>Diario, mayor y estados didácticos enlazados con documentos de origen.</p></div>
+        <div className="accounting-heading-actions">
+          {canChooseOrganization && <label className="accounting-org-select">Empresa<select value={organizationId} onChange={(event) => {
+            setOrganizationId(event.target.value);
+            setSelectedEntryId('');
+            setSelectedAccountId('');
+            setSearch('');
+          }}><option value="">Selecciona una empresa</option>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name} · {organization.center}</option>)}</select></label>}
+          <button className="button button-primary" type="button" disabled={readOnly || !organizationId || !accounts.length} onClick={openEntryForm}>＋ Nuevo asiento</button>
+        </div>
       </div>
     </div>
     <div className="accounting-sim-note">Simulación educativa: estos asientos no constituyen contabilidad oficial ni generan obligaciones fiscales reales.</div>

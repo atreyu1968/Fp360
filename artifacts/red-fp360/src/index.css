@@ -1274,7 +1274,6 @@ tbody tr:hover:not(:has(.empty-state)) { background: #fbfdff; }
   .logistics-event-timeline li > .status { grid-column: 2; justify-self: start; }
 }
 .accounting-page { display: grid; gap: 14px; }
-.accounting-heading { align-items: flex-end; }
 .accounting-heading-actions { display: flex; align-items: flex-end; gap: 9px; }
 .accounting-org-select, .accounting-inline-select { display: grid; gap: 5px; color: #7c8c99; font-size: 9px; font-weight: 700; }
 .accounting-org-select select, .accounting-inline-select select, .accounting-toolbar input { min-width: 175px; height: 34px; padding: 0 10px; border: 1px solid #dfe7ed; border-radius: 7px; color: #3d5b73; background: #fff; font: inherit; }
@@ -1407,7 +1406,7 @@ tbody tr:hover:not(:has(.empty-state)) { background: #fbfdff; }
 @media (max-width: 640px) {
   .org-profile-grid, .org-profile-readonly { grid-template-columns: minmax(0, 1fr); }
   .org-logo-row { align-items: flex-start; }
-  .accounting-heading { align-items: stretch; }
+  .accounting-heading .heading-row { align-items: stretch; flex-direction: column; }
   .accounting-heading-actions { align-items: stretch; flex-direction: column; }
   .accounting-export-toolbar { align-items: stretch; flex-direction: column; }
   .accounting-export-toolbar > button { width: 100%; }
