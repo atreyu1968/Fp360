@@ -58,7 +58,11 @@ function route(handler: (request: Request, response: Response) => Promise<void>)
         return;
       }
       request.log.error({ err: error }, "RED FP360 tax operation failed");
-      next(error);
+      if (response.headersSent) {
+        next(error);
+        return;
+      }
+      response.status(500).json({ error: "No se pudo completar la operación fiscal." });
     });
   };
 }

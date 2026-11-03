@@ -49,7 +49,7 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
         body = responseText;
       }
     }
-    return { status: response.status, body,
+    return { status: response.status, body, contentType: response.headers.get("content-type"),
       cookie: response.headers.get("set-cookie")?.split(";")[0] };
   }
 
@@ -235,6 +235,9 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
     operationId: failedOperationId,
   });
   assert.equal(failedRectification.status, 500, JSON.stringify(failedRectification.body));
+  assert.match(failedRectification.contentType ?? "", /^application\/json\b/i);
+  assert.deepEqual(failedRectification.body, { error: "No se pudo completar la operación fiscal." });
+  assert.doesNotMatch(JSON.stringify(failedRectification.body), /controlled rectification insert failure|postgres|database/i);
 
   const originalAfterFailedRectification = await pool.query(
     `SELECT *
@@ -345,6 +348,7 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
     ...quarterlyBaseInput, operationId: randomUUID(),
   });
   assert.equal(duplicate.status, 409);
+  assert.equal(duplicate.body.error, "Ya existe un expediente para ese modelo y periodo. Usa Rectificar para crear una versión nueva.");
 
   const secondCompanyDraft = await request("/redfp360/tax/declarations", "POST", {
     organizationId: secondCompanyId, taxType: "withholding", modelCode: "111",
