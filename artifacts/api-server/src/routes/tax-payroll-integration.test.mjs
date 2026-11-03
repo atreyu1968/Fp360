@@ -9,10 +9,15 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   const tenantId = `tax-payroll-test-${randomUUID()}`;
   const companyId = randomUUID();
+  const secondCompanyId = randomUUID();
   const userId = randomUUID();
+  const secondUserId = randomUUID();
   const membershipId = randomUUID();
+  const secondMembershipId = randomUUID();
   const policyId = randomUUID();
+  const secondPolicyId = randomUUID();
   const payrollRunIds = [randomUUID(), randomUUID(), randomUUID()];
+  const secondPayrollRunId = randomUUID();
   const password = randomBytes(24).toString("base64url");
   const salt = randomBytes(16);
   const passwordHash = `scrypt$32768$8$1$${salt.toString("base64url")}$${scryptSync(password, salt, 64, {
@@ -21,11 +26,11 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   const baseUrl = process.env.API_BASE_URL ?? "http://127.0.0.1:8080/api";
   let cookie;
 
-  async function request(path, method = "GET", data) {
+  async function request(path, method = "GET", data, requestCookie = cookie) {
     const response = await fetch(`${baseUrl}${path}`, {
       method,
       headers: {
-        ...(cookie ? { Cookie: cookie } : {}),
+        ...(requestCookie ? { Cookie: requestCookie } : {}),
         ...(data ? { "Content-Type": "application/json" } : {}),
       },
       ...(data ? { body: JSON.stringify(data) } : {}),
@@ -43,9 +48,9 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
     await pool.query("DELETE FROM fp360_payroll_runs WHERE tenant_id = $1", [tenantId]);
     await pool.query("DELETE FROM fp360_payroll_policies WHERE tenant_id = $1", [tenantId]);
     await pool.query("DELETE FROM fp360_auth_audit WHERE tenant_id = $1", [tenantId]);
-    await pool.query("DELETE FROM fp360_auth_sessions WHERE user_id = $1", [userId]);
-    await pool.query("DELETE FROM fp360_auth_memberships WHERE user_id = $1", [userId]);
-    await pool.query("DELETE FROM fp360_auth_users WHERE id = $1", [userId]);
+    await pool.query("DELETE FROM fp360_auth_sessions WHERE user_id = ANY($1::text[])", [[userId, secondUserId]]);
+    await pool.query("DELETE FROM fp360_auth_memberships WHERE user_id = ANY($1::text[])", [[userId, secondUserId]]);
+    await pool.query("DELETE FROM fp360_auth_users WHERE id = ANY($1::text[])", [[userId, secondUserId]]);
     await pool.query("DELETE FROM fp360_organizations WHERE tenant_id = $1", [tenantId]);
     await pool.end();
   });
@@ -58,24 +63,40 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
     return;
   }
 
-  await pool.query(
-    "INSERT INTO fp360_organizations (id,tenant_id,name,center,island,role,is_active) VALUES ($1,$2,'AEAT payroll test','Training centre','Gran Canaria','buyer',true)",
-    [companyId, tenantId],
-  );
-  await pool.query(
-    "INSERT INTO fp360_auth_users (id,email,display_name,password_hash) VALUES ($1,$2,'AEAT payroll test user',$3)",
-    [userId, `${userId}@example.test`, passwordHash],
-  );
-  await pool.query(
-    "INSERT INTO fp360_auth_memberships (id,user_id,tenant_id,organization_id,role) VALUES ($1,$2,$3,NULL,'teacher')",
-    [membershipId, userId, tenantId],
-  );
+  for (const [id, name] of [[companyId, "AEAT payroll test"], [secondCompanyId, "Second AEAT payroll test"]]) {
+    await pool.query(
+      "INSERT INTO fp360_organizations (id,tenant_id,name,center,island,role,is_active) VALUES ($1,$2,$3,'Training centre','Gran Canaria','buyer',true)",
+      [id, tenantId, name],
+    );
+  }
+  for (const [id, name] of [[userId, "AEAT payroll test user"], [secondUserId, "Second AEAT payroll test user"]]) {
+    await pool.query(
+      "INSERT INTO fp360_auth_users (id,email,display_name,password_hash) VALUES ($1,$2,$3,$4)",
+      [id, `${id}@example.test`, name, passwordHash],
+    );
+  }
+  for (const [membership, user, organization] of [
+    [membershipId, userId, companyId],
+    [secondMembershipId, secondUserId, secondCompanyId],
+  ]) {
+    await pool.query(
+      "INSERT INTO fp360_auth_memberships (id,user_id,tenant_id,organization_id,role) VALUES ($1,$2,$3,$4,'teacher')",
+      [membership, user, tenantId, organization],
+    );
+  }
   await pool.query(
     `INSERT INTO fp360_payroll_policies
       (id,tenant_id,organization_id,version,worker_social_security_bps,employer_social_security_bps,
        income_withholding_bps,status,operation_id,request_fingerprint,created_by_user_id,created_by_name)
      VALUES ($1,$2,$3,1,0,0,0,'active',$4,'test-fingerprint',$5,'Test teacher')`,
     [policyId, tenantId, companyId, randomUUID(), userId],
+  );
+  await pool.query(
+    `INSERT INTO fp360_payroll_policies
+      (id,tenant_id,organization_id,version,worker_social_security_bps,employer_social_security_bps,
+       income_withholding_bps,status,operation_id,request_fingerprint,created_by_user_id,created_by_name)
+     VALUES ($1,$2,$3,1,0,0,0,'active',$4,'second-company-test-fingerprint',$5,'Second test teacher')`,
+    [secondPolicyId, tenantId, secondCompanyId, randomUUID(), secondUserId],
   );
   const payrollLines = [
     [
@@ -97,6 +118,19 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
         lines.length, lines.reduce((sum, line) => sum + line.grossCents, 0), randomUUID(), userId],
     );
   }
+  const secondCompanyPayrollLines = [
+    { employeeId: "second-company-worker", workerRef: "EMP-C", grossCents: 80000, withholdingCents: 8000 },
+  ];
+  await pool.query(
+    `INSERT INTO fp360_payroll_runs
+      (id,tenant_id,organization_id,period_key,version,policy_id,receipt_lines,employee_count,
+       gross_total_cents,net_total_cents,employer_cost_total_cents,status,operation_id,
+       request_fingerprint,created_by_user_id,created_by_name,reviewed_by_name)
+     VALUES ($1,$2,$3,'2027-09',1,$4,$5::jsonb,1,80000,80000,80000,'closed',$6,
+       'second-company-test-fingerprint',$7,'Second test teacher','Second test teacher')`,
+    [secondPayrollRunId, tenantId, secondCompanyId, secondPolicyId,
+      JSON.stringify(secondCompanyPayrollLines), randomUUID(), secondUserId],
+  );
 
   const login = await request("/auth/login", "POST", {
     email: `${userId}@example.test`, password,
@@ -111,6 +145,19 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
     withholdsProfessionals: false, paysBusinessRent: false, operationId: randomUUID(),
   });
   assert.equal(profile.status, 200, JSON.stringify(profile.body));
+  const secondLogin = await request("/auth/login", "POST", {
+    email: `${secondUserId}@example.test`, password,
+  }, null);
+  assert.equal(secondLogin.status, 200, JSON.stringify(secondLogin.body));
+  const secondCookie = secondLogin.cookie;
+  assert.ok(secondCookie, "Second company login should return its own session cookie");
+  const secondProfile = await request("/redfp360/tax/profile", "PUT", {
+    organizationId: secondCompanyId, entityType: "sociedad", igicRegime: "general",
+    incomeTaxMethod: "not_applicable", hasEmployees: true,
+    withholdsProfessionals: false, paysBusinessRent: false, operationId: randomUUID(),
+  }, secondCookie);
+  assert.equal(secondProfile.status, 200, JSON.stringify(secondProfile.body));
+  assert.equal(secondProfile.body.organizationId, secondCompanyId);
 
   const overview = await request(`/redfp360/tax/overview?organizationId=${companyId}`);
   assert.equal(overview.status, 200, JSON.stringify(overview.body));
@@ -133,11 +180,11 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   assert.ok(quarterly, "Exactly one simultaneous import should create the draft");
   assert.equal(quarterly.status, 201, JSON.stringify(quarterly.body));
   assert.equal(quarterly.body.status, "draft");
-  assert.equal(quarterly.body.withholdingBaseCents, 250000);
-  assert.equal(quarterly.body.withholdingCents, 25000);
-  assert.equal(quarterly.body.resultCents, 25000);
-  assert.equal(quarterly.body.formData.recipientCount, "2");
-  assert.equal(quarterly.body.formData.withholdingBaseEuros, "2500.00");
+  assert.equal(quarterly.body.withholdingBaseCents, 1249900);
+  assert.equal(quarterly.body.withholdingCents, 124990);
+  assert.equal(quarterly.body.resultCents, 124990);
+  assert.equal(quarterly.body.formData.recipientCount, "3");
+  assert.equal(quarterly.body.formData.withholdingBaseEuros, "12499.00");
   assert.deepEqual(quarterly.body.sourcePayrollRunIds.sort(), [...payrollRunIds].sort());
 
   const declarationCount = await pool.query(
@@ -164,9 +211,45 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   });
   assert.equal(duplicate.status, 409);
 
+  const secondCompanyDraft = await request("/redfp360/tax/declarations", "POST", {
+    organizationId: secondCompanyId, taxType: "withholding", modelCode: "111",
+    periodKey: "2027-Q3", sourcePayrollRunIds: [secondPayrollRunId], operationId: randomUUID(),
+  }, secondCookie);
+  assert.equal(secondCompanyDraft.status, 201, JSON.stringify(secondCompanyDraft.body));
+  assert.equal(secondCompanyDraft.body.status, "draft");
+  assert.equal(secondCompanyDraft.body.organizationId, secondCompanyId);
+  assert.deepEqual(secondCompanyDraft.body.sourcePayrollRunIds, [secondPayrollRunId]);
+  assert.equal(secondCompanyDraft.body.withholdingBaseCents, 80000);
+  assert.equal(secondCompanyDraft.body.withholdingCents, 8000);
+  assert.notEqual(secondCompanyDraft.body.id, quarterly.body.id);
+
+  const companyOverview = await request(`/redfp360/tax/overview?organizationId=${companyId}`);
+  const secondCompanyOverview = await request(
+    `/redfp360/tax/overview?organizationId=${secondCompanyId}`, "GET", undefined, secondCookie,
+  );
+  assert.equal(companyOverview.status, 200);
+  assert.equal(secondCompanyOverview.status, 200);
+  assert.deepEqual(companyOverview.body.declarations.map((declaration) => declaration.id), [quarterly.body.id]);
+  assert.deepEqual(secondCompanyOverview.body.declarations.map((declaration) => declaration.id), [secondCompanyDraft.body.id]);
+  assert.equal((await request(`/redfp360/tax/overview?organizationId=${secondCompanyId}`)).status, 403);
+  assert.equal((await request(`/redfp360/tax/overview?organizationId=${companyId}`, "GET", undefined, secondCookie)).status, 403);
+
+  const sameModelAndPeriodCount = await pool.query(
+    `SELECT organization_id, COUNT(*)::int AS count
+     FROM fp360_tax_declarations
+     WHERE tenant_id = $1 AND tax_type = 'withholding' AND model_code = '111' AND period_key = '2027-Q3'
+     GROUP BY organization_id`,
+    [tenantId],
+  );
+  assert.deepEqual(
+    Object.fromEntries(sameModelAndPeriodCount.rows.map((row) => [row.organization_id, row.count])),
+    { [companyId]: 1, [secondCompanyId]: 1 },
+    "Each company should keep exactly its own draft for the same model and period",
+  );
+
   const annual = await request("/redfp360/tax/declarations", "POST", {
     organizationId: companyId, taxType: "withholding", modelCode: "190",
-    periodKey: "2027", sourcePayrollRunIds: payrollRunIds, operationId: randomUUID(),
+    periodKey: "2027", sourcePayrollRunIds: payrollRunIds.slice(0, 2), operationId: randomUUID(),
   });
   assert.equal(annual.status, 201, JSON.stringify(annual.body));
   assert.equal(annual.body.status, "draft");
