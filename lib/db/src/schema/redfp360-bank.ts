@@ -57,9 +57,13 @@ export const fpBankTransfers = pgTable(
     rejectedReason: text("rejected_reason"),
     executedAt: timestamp("executed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    purchaseInvoiceId: text("purchase_invoice_id"),
   },
   (table) => [
     uniqueIndex("fp360_bank_transfers_operation_idx").on(table.tenantId, table.operationId),
+    index("fp360_bank_transfers_purchase_invoice_idx")
+      .on(table.tenantId, table.purchaseInvoiceId)
+      .where(sql`${table.purchaseInvoiceId} IS NOT NULL`),
     index("fp360_bank_transfers_org_idx").on(table.tenantId, table.organizationId, table.createdAt),
     index("fp360_bank_transfers_status_idx").on(table.tenantId, table.status),
   ],

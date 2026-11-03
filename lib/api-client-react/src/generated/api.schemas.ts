@@ -5984,6 +5984,8 @@ export const Fp360BankTransferStatus = {
 export interface Fp360BankTransfer {
   id: string;
   organizationId: string;
+  /** @nullable */
+  purchaseInvoiceId: string | null;
   sourceAccountId: string;
   beneficiaryAccountId: string;
   sourceReference: string;
@@ -6285,6 +6287,20 @@ export interface Fp360BankTransferInput {
   concept: string;
   /** @nullable */
   scheduledDate: string | null;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId: string;
+}
+
+export interface Fp360BankSupplierPaymentInput {
+  /** @minLength 1 */
+  organizationId: string;
+  /** @minLength 1 */
+  sourceAccountId: string;
+  /** @minLength 1 */
+  invoiceId: string;
   /**
      * @minLength 8
      * @maxLength 120

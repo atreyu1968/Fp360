@@ -10,6 +10,8 @@ import type { Fp360BankTransferStatus } from './fp360BankTransferStatus';
 export interface Fp360BankTransfer {
   id: string;
   organizationId: string;
+  /** @nullable */
+  purchaseInvoiceId: string | null;
   sourceAccountId: string;
   beneficiaryAccountId: string;
   sourceReference: string;

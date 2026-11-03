@@ -14,6 +14,7 @@ import {
   CreateFp360BankEffectResponse,
   CreateFp360BankFinancingBody,
   CreateFp360BankFinancingResponse,
+  CreateFp360BankSupplierPaymentBody,
   CreateFp360BankTransferBody,
   CreateFp360BankTransferResponse,
   GetFp360BankReconciliationQueryParams,
@@ -36,8 +37,11 @@ import {
   fpInvoices,
   fpOrganizations,
   fpPayments,
+  fpPurchaseInvoices,
+  fpPurchaseOrders,
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
+import { supplierPaymentEligibility, supplierPaymentReviewerError } from "./bank-supplier-payment.mjs";
 
 const router: IRouter = Router();
 router.use("/redfp360/bank", requireAuth, requireSimulationWriteAccess);
@@ -254,6 +258,7 @@ async function loadTransfer(transferId: string, tenantId: string) {
   return {
     id: transfer.id,
     organizationId: transfer.organizationId,
+    purchaseInvoiceId: transfer.purchaseInvoiceId,
     sourceAccountId: transfer.sourceAccountId,
     beneficiaryAccountId: transfer.beneficiaryAccountId,
     sourceReference: source?.syntheticReference ?? "Cuenta no disponible",
@@ -477,6 +482,7 @@ async function loadOverview(tenantId: string, organizationId: string) {
     return {
       id: transfer.id,
       organizationId: transfer.organizationId,
+      purchaseInvoiceId: transfer.purchaseInvoiceId,
       sourceAccountId: transfer.sourceAccountId,
       beneficiaryAccountId: transfer.beneficiaryAccountId,
       sourceReference: source?.syntheticReference ?? "Cuenta no disponible",
@@ -900,6 +906,112 @@ router.post("/redfp360/bank/transfers", route(async (req, res) => {
   res.status(201).json(CreateFp360BankTransferResponse.parse(transfer));
 }));
 
+router.post("/redfp360/bank/supplier-payments", route(async (req, res) => {
+  const actor = req.auth!;
+  const body = CreateFp360BankSupplierPaymentBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  if (!["team_manager", "teacher", "administrator"].includes(actor.role)) {
+    res.status(403).json({ error: "Tu perfil no puede preparar pagos simulados a proveedores." });
+    return;
+  }
+  const organizationId = await resolveOrganization(actor, body.data.organizationId);
+  if (!organizationId) {
+    res.status(403).json({ error: "La empresa solicitada no está disponible para este perfil." });
+    return;
+  }
+
+  const requestFingerprint = fingerprint(body.data);
+  await ensureScenarioAccounts(actor);
+  const result = await db.transaction(async (tx) => {
+    const [invoice] = await tx.select().from(fpPurchaseInvoices).where(and(
+      eq(fpPurchaseInvoices.id, body.data.invoiceId),
+      eq(fpPurchaseInvoices.tenantId, actor.tenantId),
+    )).for("update").limit(1);
+    const [order] = invoice ? await tx.select().from(fpPurchaseOrders).where(and(
+      eq(fpPurchaseOrders.id, invoice.orderId),
+      eq(fpPurchaseOrders.tenantId, actor.tenantId),
+    )).limit(1) : [];
+    const resourceError = supplierPaymentEligibility({ invoice, order, organizationId });
+    if (resourceError?.status === 404) throw new BankError(resourceError.status, resourceError.message);
+
+    const [existingOperation] = await tx.select().from(fpBankTransfers).where(and(
+      eq(fpBankTransfers.tenantId, actor.tenantId),
+      eq(fpBankTransfers.operationId, body.data.operationId),
+    )).limit(1);
+    if (existingOperation) {
+      if (existingOperation.createdByUserId !== actor.userId
+        || existingOperation.requestFingerprint !== requestFingerprint
+        || existingOperation.purchaseInvoiceId !== invoice.id) {
+        throw new BankError(409, "El identificador de operación ya se utilizó con otros datos.");
+      }
+      return { id: existingOperation.id, replayed: true };
+    }
+
+    const [existingPayment] = await tx.select({ id: fpBankTransfers.id }).from(fpBankTransfers).where(and(
+      eq(fpBankTransfers.tenantId, actor.tenantId),
+      eq(fpBankTransfers.purchaseInvoiceId, invoice.id),
+    )).limit(1);
+    const eligibilityError = supplierPaymentEligibility({
+      invoice, order, organizationId, alreadyHasPayment: Boolean(existingPayment),
+    });
+    if (eligibilityError) throw new BankError(eligibilityError.status, eligibilityError.message);
+
+    const [source] = await tx.select().from(fpBankAccounts).where(and(
+      eq(fpBankAccounts.id, body.data.sourceAccountId),
+      eq(fpBankAccounts.tenantId, actor.tenantId),
+      eq(fpBankAccounts.organizationId, organizationId),
+      eq(fpBankAccounts.accountType, "company"),
+      eq(fpBankAccounts.status, "active"),
+    )).for("update").limit(1);
+    const [beneficiary] = await tx.select().from(fpBankAccounts).where(and(
+      eq(fpBankAccounts.tenantId, actor.tenantId),
+      eq(fpBankAccounts.organizationId, invoice.supplierOrganizationId),
+      eq(fpBankAccounts.accountType, "company"),
+      eq(fpBankAccounts.status, "active"),
+    )).orderBy(desc(fpBankAccounts.isPrimary), asc(fpBankAccounts.createdAt)).limit(1);
+    if (!source || !beneficiary || source.id === beneficiary.id) {
+      throw new BankError(409, "No hay cuentas sintéticas activas para la empresa compradora y su proveedor.");
+    }
+
+    const id = randomUUID();
+    await tx.insert(fpBankTransfers).values({
+      id,
+      tenantId: actor.tenantId,
+      organizationId,
+      purchaseInvoiceId: invoice.id,
+      sourceAccountId: source.id,
+      beneficiaryAccountId: beneficiary.id,
+      amountCents: invoice.totalCents,
+      concept: `Pago simulado · Factura ${invoice.invoiceReference}`,
+      scheduledDate: null,
+      status: "draft",
+      operationId: body.data.operationId,
+      requestFingerprint,
+      createdByUserId: actor.userId,
+      createdByName: actor.displayName,
+    });
+    await appendEvent(tx, actor, {
+      organizationId,
+      transferId: id,
+      operationId: body.data.operationId,
+      requestFingerprint,
+      eventType: "supplier_payment_created",
+      description: `Instrucción didáctica para la factura ${invoice.invoiceReference}; pendiente de revisión. No se inicia ningún pago bancario real.`,
+    });
+    return { id, replayed: false };
+  });
+
+  const transfer = await loadTransfer(result.id, actor.tenantId);
+  if (!transfer) {
+    res.status(500).json({ error: "No se pudo cargar la instrucción de pago creada." });
+    return;
+  }
+  res.status(result.replayed ? 200 : 201).json(CreateFp360BankTransferResponse.parse(transfer));
+}));
+
 router.post("/redfp360/bank/transfers/:id/action", route(async (req, res) => {
   const actor = req.auth!;
   const params = ActOnFp360BankTransferParams.safeParse(req.params);
@@ -939,11 +1051,33 @@ router.post("/redfp360/bank/transfers/:id/action", route(async (req, res) => {
     res.status(403).json({ error: "Tu perfil no puede autorizar ni ejecutar transferencias." });
     return;
   }
+  const reviewerError = body.data.action === "authorize"
+    ? supplierPaymentReviewerError(transfer, actor)
+    : null;
+  if (reviewerError) {
+    res.status(403).json({ error: reviewerError });
+    return;
+  }
   await db.transaction(async (tx) => {
     const [locked] = await tx.select().from(fpBankTransfers).where(and(
       eq(fpBankTransfers.id, transfer.id), eq(fpBankTransfers.tenantId, actor.tenantId),
     )).for("update").limit(1);
     if (!locked) throw new BankError(404, "Transferencia no encontrada.");
+    if (locked.purchaseInvoiceId && ["validate", "authorize", "execute"].includes(body.data.action)) {
+      const [invoice] = await tx.select().from(fpPurchaseInvoices).where(and(
+        eq(fpPurchaseInvoices.id, locked.purchaseInvoiceId),
+        eq(fpPurchaseInvoices.tenantId, actor.tenantId),
+      )).for("update").limit(1);
+      const [order] = invoice ? await tx.select().from(fpPurchaseOrders).where(and(
+        eq(fpPurchaseOrders.id, invoice.orderId),
+        eq(fpPurchaseOrders.tenantId, actor.tenantId),
+      )).limit(1) : [];
+      if (!invoice || !order || order.buyerOrganizationId !== locked.organizationId
+        || order.supplierOrganizationId !== invoice.supplierOrganizationId
+        || invoice.status !== "conformed") {
+        throw new BankError(409, "La factura vinculada ya no está conformada y vigente.");
+      }
+    }
     const eventFingerprint = requestFingerprint;
     let nextStatus = locked.status;
 

@@ -3232,6 +3232,35 @@ paths:
           description: Invalid transfer details
         "409":
           description: Operation identifier was reused with different data
+  /redfp360/bank/supplier-payments:
+    post:
+      operationId: createFp360BankSupplierPayment
+      tags: [redfp360]
+      summary: Create a simulated supplier payment instruction for a conformed purchase invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Fp360BankSupplierPaymentInput" }
+      responses:
+        "200":
+          description: Previously created supplier payment returned after an idempotent retry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankTransfer" }
+        "201":
+          description: Draft instruction created and linked to the purchase invoice
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Fp360BankTransfer" }
+        "400":
+          description: Invalid supplier payment request
+        "403":
+          description: Organization is outside the actor's access
+        "404":
+          description: Purchase invoice was not found for this company
+        "409":
+          description: Invoice is not conformed, has already been paid in the scenario, or operation identifier conflicts
   /redfp360/bank/transfers/{id}/action:
     post:
       operationId: actOnFp360BankTransfer
@@ -8101,10 +8130,11 @@ components:
         syntheticReference: { type: string }
     Fp360BankTransfer:
       type: object
-      required: [id, organizationId, sourceAccountId, beneficiaryAccountId, sourceReference, beneficiaryReference, beneficiaryName, amountCents, concept, scheduledDate, status, operationId, createdByName, executedAt, createdAt]
+      required: [id, organizationId, purchaseInvoiceId, sourceAccountId, beneficiaryAccountId, sourceReference, beneficiaryReference, beneficiaryName, amountCents, concept, scheduledDate, status, operationId, createdByName, executedAt, createdAt]
       properties:
         id: { type: string }
         organizationId: { type: string }
+        purchaseInvoiceId: { type: ["string", "null"] }
         sourceAccountId: { type: string }
         beneficiaryAccountId: { type: string }
         sourceReference: { type: string }
@@ -8128,6 +8158,14 @@ components:
         amountCents: { type: integer, minimum: 1, maximum: 50000000 }
         concept: { type: string, minLength: 3, maxLength: 200 }
         scheduledDate: { type: ["string", "null"], format: date }
+        operationId: { type: string, minLength: 8, maxLength: 120 }
+    Fp360BankSupplierPaymentInput:
+      type: object
+      required: [organizationId, sourceAccountId, invoiceId, operationId]
+      properties:
+        organizationId: { type: string, minLength: 1 }
+        sourceAccountId: { type: string, minLength: 1 }
+        invoiceId: { type: string, minLength: 1 }
         operationId: { type: string, minLength: 8, maxLength: 120 }
     Fp360BankTransferActionInput:
       type: object

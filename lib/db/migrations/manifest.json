@@ -15,6 +15,11 @@
       "schemaHash": "134de69720d9c56c728452a047f64a33fd6c63b1fbda11cd7ddd761d134d80dd",
       "snapshot": "0002-payroll-aeat.sql",
       "sha256": "1b669c7eda4f004707587c7967a0e98da90c31437495044204949cdab1414e39"
+    },
+    {
+      "schemaHash": "a99d03aa189f922757e4efaa0e2a374e183ef5c96dc30550cc886f2a40bbc246",
+      "snapshot": "0003-bank-supplier-payments.sql",
+      "sha256": "9ed8099ab7fdbcf7c8577bc762f9217306ebf1243e89214cb3acb950aeec101d"
     }
   ],
   "migrations": [
@@ -28,6 +33,12 @@
       "id": "0002_payroll_aeat_sources",
       "file": "0002_payroll_aeat_sources.sql.json",
       "sha256": "a4c14890cd149d000d3c263385b617d7f95203641b6600e52f9bb0e8709bd836",
+      "backwardsCompatible": true
+    },
+    {
+      "id": "0003_bank_supplier_payments",
+      "file": "0003_bank_supplier_payments.sql.json",
+      "sha256": "2b110a38925667b26992f7544266fdf706d093b87bc8d100272e332b35848f76",
       "backwardsCompatible": true
     }
   ]

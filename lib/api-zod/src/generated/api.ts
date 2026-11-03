@@ -7054,6 +7054,7 @@ export const GetFp360BankOverviewResponse = zod.object({
   "transfers": zod.array(zod.object({
   "id": zod.string(),
   "organizationId": zod.string(),
+  "purchaseInvoiceId": zod.string().nullable(),
   "sourceAccountId": zod.string(),
   "beneficiaryAccountId": zod.string(),
   "sourceReference": zod.string(),
@@ -7282,6 +7283,48 @@ export const CreateFp360BankTransferBody = zod.object({
 export const CreateFp360BankTransferResponse = zod.object({
   "id": zod.string(),
   "organizationId": zod.string(),
+  "purchaseInvoiceId": zod.string().nullable(),
+  "sourceAccountId": zod.string(),
+  "beneficiaryAccountId": zod.string(),
+  "sourceReference": zod.string(),
+  "beneficiaryReference": zod.string(),
+  "beneficiaryName": zod.string(),
+  "amountCents": zod.int().min(1),
+  "concept": zod.string(),
+  "scheduledDate": zod.iso.date().nullable(),
+  "status": zod.enum(['draft', 'pending_review', 'authorized', 'scheduled', 'executed', 'rejected', 'cancelled']),
+  "operationId": zod.string(),
+  "createdByName": zod.string(),
+  "executedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "createdAt": zod.iso.datetime({"offset":true})
+})
+
+
+/**
+ * @summary Create a simulated supplier payment instruction for a conformed purchase invoice
+ */
+
+
+
+export const createFp360BankSupplierPaymentBodyOperationIdMin = 8;
+export const createFp360BankSupplierPaymentBodyOperationIdMax = 120;
+
+
+
+export const CreateFp360BankSupplierPaymentBody = zod.object({
+  "organizationId": zod.string().min(1),
+  "sourceAccountId": zod.string().min(1),
+  "invoiceId": zod.string().min(1),
+  "operationId": zod.string().min(createFp360BankSupplierPaymentBodyOperationIdMin).max(createFp360BankSupplierPaymentBodyOperationIdMax)
+})
+
+
+
+
+export const CreateFp360BankSupplierPaymentResponse = zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "purchaseInvoiceId": zod.string().nullable(),
   "sourceAccountId": zod.string(),
   "beneficiaryAccountId": zod.string(),
   "sourceReference": zod.string(),
@@ -7324,6 +7367,7 @@ export const ActOnFp360BankTransferBody = zod.object({
 export const ActOnFp360BankTransferResponse = zod.object({
   "id": zod.string(),
   "organizationId": zod.string(),
+  "purchaseInvoiceId": zod.string().nullable(),
   "sourceAccountId": zod.string(),
   "beneficiaryAccountId": zod.string(),
   "sourceReference": zod.string(),

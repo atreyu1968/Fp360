@@ -253,6 +253,7 @@ export * from './fp360BankReconciliationLedgerLine';
 export * from './fp360BankReconciliationLedgerLineStatus';
 export * from './fp360BankReconciliationStatementLine';
 export * from './fp360BankReconciliationStatementLineDirection';
+export * from './fp360BankSupplierPaymentInput';
 export * from './fp360BankTransfer';
 export * from './fp360BankTransferActionInput';
 export * from './fp360BankTransferActionInputAction';

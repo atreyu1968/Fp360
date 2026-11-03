@@ -142,6 +142,7 @@ import type {
   Fp360BankFinancingInput,
   Fp360BankOverview,
   Fp360BankReconciliation,
+  Fp360BankSupplierPaymentInput,
   Fp360BankTransfer,
   Fp360BankTransferActionInput,
   Fp360BankTransferInput,
@@ -15929,6 +15930,94 @@ export const useCreateFp360BankTransfer = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateFp360BankTransferMutationOptions(options), queryClient);
+    }
+
+export const getCreateFp360BankSupplierPaymentUrl = () => {
+
+
+
+
+  return `/api/redfp360/bank/supplier-payments`
+}
+
+/**
+ * @summary Create a simulated supplier payment instruction for a conformed purchase invoice
+ */
+export const createFp360BankSupplierPayment = async (fp360BankSupplierPaymentInput: Fp360BankSupplierPaymentInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360BankTransfer> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Fp360BankTransfer>(getCreateFp360BankSupplierPaymentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(fp360BankSupplierPaymentInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFp360BankSupplierPaymentMutationKey = () => ['createFp360BankSupplierPayment'] as const;
+
+export const getCreateFp360BankSupplierPaymentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360BankSupplierPayment>>, TError,CreateFp360BankSupplierPaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFp360BankSupplierPayment>>, TError,CreateFp360BankSupplierPaymentMutationVariables, TContext> => {
+
+const mutationKey = getCreateFp360BankSupplierPaymentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFp360BankSupplierPayment>>, CreateFp360BankSupplierPaymentMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFp360BankSupplierPayment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFp360BankSupplierPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360BankSupplierPayment>>>
+    export type CreateFp360BankSupplierPaymentMutationBody = BodyType<Fp360BankSupplierPaymentInput>
+    export type CreateFp360BankSupplierPaymentMutationError = ErrorType<void>
+    export type CreateFp360BankSupplierPaymentMutationVariables = {data: BodyType<Fp360BankSupplierPaymentInput>}
+
+    /**
+ * @summary Create a simulated supplier payment instruction for a conformed purchase invoice
+ */
+export const useCreateFp360BankSupplierPayment = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFp360BankSupplierPayment>>, TError,CreateFp360BankSupplierPaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createFp360BankSupplierPayment>>,
+        TError,
+        CreateFp360BankSupplierPaymentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateFp360BankSupplierPaymentMutationOptions(options), queryClient);
     }
 
 export const getActOnFp360BankTransferUrl = (id: string,) => {
