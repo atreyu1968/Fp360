@@ -824,6 +824,9 @@ router.post("/redfp360/tax/declarations/:id/action", route(async (request, respo
       eq(fpTaxDeclarations.tenantId, actor.tenantId),
     )).for("update").limit(1);
     if (!current) throw new TaxError(404, "No se encontró el expediente fiscal.");
+    if (current.organizationId !== declaration.organizationId) {
+      throw new TaxError(403, "No tienes acceso a este expediente.");
+    }
     let updated: typeof fpTaxDeclarations.$inferSelect;
     let eventType: string = input.action;
     let description = "";

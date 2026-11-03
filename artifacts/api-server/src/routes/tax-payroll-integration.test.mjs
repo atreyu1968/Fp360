@@ -302,6 +302,38 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   assert.equal(secondCompanyDraft.body.withholdingCents, 8000);
   assert.notEqual(secondCompanyDraft.body.id, quarterly.body.id);
 
+  async function readDeclarationAndAudit() {
+    const declaration = await pool.query(
+      `SELECT to_jsonb(d) AS record FROM fp360_tax_declarations d
+       WHERE tenant_id = $1 AND organization_id = $2 AND id = $3`,
+      [tenantId, companyId, quarterly.body.id],
+    );
+    const events = await pool.query(
+      `SELECT to_jsonb(e) AS record FROM fp360_tax_events e
+       WHERE tenant_id = $1 AND organization_id = $2 AND declaration_id = $3
+       ORDER BY id`,
+      [tenantId, companyId, quarterly.body.id],
+    );
+    return { declaration: declaration.rows[0]?.record, events: events.rows.map((row) => row.record) };
+  }
+
+  const protectedDraftBefore = await readDeclarationAndAudit();
+  for (const action of ["recalculate", "validate"]) {
+    const deniedAction = await request(
+      `/redfp360/tax/declarations/${quarterly.body.id}/action`,
+      "POST",
+      { action, operationId: randomUUID() },
+      secondCookie,
+    );
+    assert.equal(deniedAction.status, 403, `${action} from another company must be denied`);
+    assert.match(deniedAction.body.error, /No tienes acceso a este expediente/);
+    assert.deepEqual(
+      await readDeclarationAndAudit(),
+      protectedDraftBefore,
+      `${action} from another company must not change the draft or its audit`,
+    );
+  }
+
   const companyOverview = await request(`/redfp360/tax/overview?organizationId=${companyId}`);
   const secondCompanyOverview = await request(
     `/redfp360/tax/overview?organizationId=${secondCompanyId}`, "GET", undefined, secondCookie,
