@@ -9,6 +9,6 @@
 - [RED FP360 module integration](redfp360-module-integration.md) — Connect ERP modules through auditable, organization-scoped source links, not navigation alone.
 - [Idempotent replay authorization](redfp360-idempotency-access.md) — Bind retries to the original actor and recheck current resource scope before returning stored results.
 - [Coordinación económica con IA](redfp360-ai-economic-coordinator.md) — La IA establece situaciones para las empresas y coordina el sistema económico interconectado.
-- [Validación tras actualizar dependencias](dependency-validation.md) — Fuerza la regeneración de declaraciones TypeScript tras cambios mayores de dependencias de tipos.
+- [Validación de tipos compartidos](dependency-validation.md) — Reconstruye declaraciones compartidas tras cambios de dependencias o contratos antes de validar sus consumidores.
 - [Instalador Ubuntu](redfp360-github-installer.md) — Instalación y actualización desatendidas; documentos privados locales en Ubuntu y almacenamiento administrado en Replit.
 - [Orden de columnas en migraciones Ubuntu](ubuntu-migration-column-order.md) — Las columnas aditivas deben quedar al final de la tabla en el snapshot para coincidir con PostgreSQL.

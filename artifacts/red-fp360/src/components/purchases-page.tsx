@@ -54,6 +54,7 @@ export function PurchasesPage({ onNotice }: { onNotice: (message: string) => voi
   const requestsQ = useListPurchaseRequests();
   const orgQ = useListFp360Organizations();
   const productsQ = useListFp360Products();
+  const [section, setSection] = useState<Section>('requests');
   const role = identity.data?.role ?? '';
   const canTeacher = role === 'teacher' || role === 'administrator';
   const currentOrganization = (orgQ.data ?? []).find((org) => org.id === activeOrganizationId);
@@ -62,9 +63,14 @@ export function PurchasesPage({ onNotice }: { onNotice: (message: string) => voi
   const canViewBuying = !isSellerOnly && (canTeacher || currentOrganization?.role === 'buyer' || currentOrganization?.role === 'both');
   const ordersQ = useListPurchaseOrders({ query: { queryKey: getListPurchaseOrdersQueryKey(), enabled: canViewBuying, refetchOnMount: 'always' } });
   const receiptsQ = useListPurchaseReceipts({ query: { queryKey: getListPurchaseReceiptsQueryKey(), enabled: canViewBuying, refetchOnMount: 'always' } });
-  const invoicesQ = useListPurchaseInvoices({ query: { queryKey: getListPurchaseInvoicesQueryKey(), enabled: canViewBuying, refetchOnMount: 'always' } });
+  const invoicesQ = useListPurchaseInvoices({ query: {
+    queryKey: getListPurchaseInvoicesQueryKey(),
+    enabled: canViewBuying,
+    refetchOnMount: 'always',
+    refetchInterval: section === 'invoices' && canViewBuying ? 15_000 : false,
+    refetchIntervalInBackground: false,
+  } });
   const supplierAnalysisQ = useListPurchaseSupplierAnalysis({ query: { queryKey: getListPurchaseSupplierAnalysisQueryKey(), enabled: canViewBuying, refetchOnMount: 'always' } });
-  const [section, setSection] = useState<Section>('requests');
   const [selectedId, setSelectedId] = useState('');
   const [search, setSearch] = useState('');
   const [newRequest, setNewRequest] = useState(false);
