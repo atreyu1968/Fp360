@@ -57,6 +57,10 @@ test("supplier payments link one conformed invoice, require independent review, 
   const orders = Array.from({ length: 4 }, () => randomUUID());
   const invoices = Array.from({ length: 4 }, () => randomUUID());
   const operationIds = Array.from({ length: 5 }, () => `supplier-payment-${randomUUID()}`);
+  const failedAuditOperationId = `supplier-payment-${randomUUID()}`;
+  const failureToken = randomUUID().replaceAll("-", "");
+  const failureTriggerName = `fp360_test_fail_supplier_payment_${failureToken}`;
+  const failureFunctionName = `fp360_test_fail_supplier_payment_fn_${failureToken}`;
   let child;
 
   async function request(pathname, method, data, token) {
@@ -80,6 +84,8 @@ test("supplier payments link one conformed invoice, require independent review, 
       child.kill("SIGTERM");
       await once(child, "exit");
     }
+    await pool.query(`DROP TRIGGER IF EXISTS ${failureTriggerName} ON fp360_bank_events`);
+    await pool.query(`DROP FUNCTION IF EXISTS public.${failureFunctionName}()`);
     for (const table of [
       "fp360_bank_movements", "fp360_bank_events", "fp360_bank_transfers",
       "fp360_bank_accounts", "fp360_purchase_invoices", "fp360_purchase_orders",
@@ -192,6 +198,83 @@ test("supplier payments link one conformed invoice, require independent review, 
     request("/redfp360/bank/supplier-payments", "POST", {
       organizationId, sourceAccountId, invoiceId, operationId,
     }, token);
+  const initializedAccounts = await request(
+    `/redfp360/bank/overview?organizationId=${buyerId}`, "GET", undefined, sessionTokens[0],
+  );
+  assert.equal(initializedAccounts.status, 200, JSON.stringify(initializedAccounts.body));
+  const accountsBeforeFailedAudit = await pool.query(
+    `SELECT id, balance_cents, reserved_cents
+     FROM fp360_bank_accounts WHERE tenant_id = $1 ORDER BY id`,
+    [tenantId],
+  );
+  const movementsBeforeFailedAudit = await pool.query(
+    "SELECT COUNT(*)::int AS count FROM fp360_bank_movements WHERE tenant_id = $1",
+    [tenantId],
+  );
+  await pool.query(
+    `CREATE FUNCTION public.${failureFunctionName}() RETURNS trigger
+     LANGUAGE plpgsql AS $$
+     BEGIN
+       IF NEW.tenant_id = TG_ARGV[0]
+          AND NEW.operation_id = TG_ARGV[1]
+          AND NEW.event_type = 'supplier_payment_created' THEN
+         RAISE EXCEPTION 'controlled supplier payment audit failure';
+       END IF;
+       RETURN NEW;
+     END;
+     $$`,
+  );
+  await pool.query(
+    `CREATE TRIGGER ${failureTriggerName}
+     BEFORE INSERT ON fp360_bank_events
+     FOR EACH ROW EXECUTE FUNCTION public.${failureFunctionName}('${tenantId}', '${failedAuditOperationId}')`,
+  );
+  const failedAuditInstruction = await makeInstruction(invoices[0], failedAuditOperationId);
+  assert.equal(failedAuditInstruction.status, 500, JSON.stringify(failedAuditInstruction.body));
+  const rolledBackInstruction = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM fp360_bank_transfers
+     WHERE tenant_id = $1 AND operation_id = $2`,
+    [tenantId, failedAuditOperationId],
+  );
+  const rolledBackEvent = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM fp360_bank_events
+     WHERE tenant_id = $1 AND operation_id = $2`,
+    [tenantId, failedAuditOperationId],
+  );
+  const accountsAfterFailedAudit = await pool.query(
+    `SELECT id, balance_cents, reserved_cents
+     FROM fp360_bank_accounts WHERE tenant_id = $1 ORDER BY id`,
+    [tenantId],
+  );
+  const movementsAfterFailedAudit = await pool.query(
+    "SELECT COUNT(*)::int AS count FROM fp360_bank_movements WHERE tenant_id = $1",
+    [tenantId],
+  );
+  assert.equal(rolledBackInstruction.rows[0].count, 0,
+    "A failed audit insert must roll back the payment instruction");
+  assert.equal(rolledBackEvent.rows[0].count, 0,
+    "A failed audit insert must not leave a partial event");
+  assert.deepEqual(accountsAfterFailedAudit.rows, accountsBeforeFailedAudit.rows,
+    "A failed audit insert must preserve every account balance and reservation");
+  assert.equal(movementsAfterFailedAudit.rows[0].count, movementsBeforeFailedAudit.rows[0].count,
+    "A failed audit insert must not add bank movements");
+
+  await pool.query(`DROP TRIGGER ${failureTriggerName} ON fp360_bank_events`);
+  await pool.query(`DROP FUNCTION public.${failureFunctionName}()`);
+  const retriedInstruction = await makeInstruction(invoices[0], failedAuditOperationId);
+  assert.equal(retriedInstruction.status, 201, JSON.stringify(retriedInstruction.body));
+  assert.equal(retriedInstruction.body.purchaseInvoiceId, invoices[0]);
+  assert.equal(retriedInstruction.body.status, "draft");
+  const retriedEvent = await pool.query(
+    `SELECT transfer_id FROM fp360_bank_events
+     WHERE tenant_id = $1 AND operation_id = $2
+       AND event_type = 'supplier_payment_created'`,
+    [tenantId, failedAuditOperationId],
+  );
+  assert.equal(retriedEvent.rows.length, 1, "Retrying after the failure must create one complete audit event");
+  assert.equal(retriedEvent.rows[0].transfer_id, retriedInstruction.body.id,
+    "The retry's audit event must reference its created instruction");
+
   const competing = await Promise.all([
     makeInstruction(invoices[0], operationIds[0]),
     makeInstruction(invoices[0], operationIds[1]),
