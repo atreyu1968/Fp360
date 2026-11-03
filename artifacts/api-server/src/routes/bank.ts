@@ -1107,9 +1107,38 @@ router.post("/redfp360/bank/transfers/:id/action", route(async (req, res) => {
       res.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
-    const transfer = await loadTransfer(params.data.id, actor.tenantId);
-    if (transfer) {
-      res.json(ActOnFp360BankTransferResponse.parse(transfer));
+    const [transferAccounts, transferInvoice] = await Promise.all([
+      db.select().from(fpBankAccounts).where(and(
+        eq(fpBankAccounts.tenantId, actor.tenantId),
+        inArray(fpBankAccounts.id, [transfer.sourceAccountId, transfer.beneficiaryAccountId]),
+      )),
+      transfer.purchaseInvoiceId ? db.select().from(fpPurchaseInvoices).where(and(
+        eq(fpPurchaseInvoices.id, transfer.purchaseInvoiceId),
+        eq(fpPurchaseInvoices.tenantId, actor.tenantId),
+      )).limit(1).then((rows) => rows[0]) : Promise.resolve(undefined),
+    ]);
+    const [transferOrder] = transferInvoice ? await db.select().from(fpPurchaseOrders).where(and(
+      eq(fpPurchaseOrders.id, transferInvoice.orderId),
+      eq(fpPurchaseOrders.tenantId, actor.tenantId),
+    )).limit(1) : [];
+    const accountOrganizationIds = transferAccounts
+      .map((account) => account.organizationId)
+      .filter((id): id is string => Boolean(id));
+    const replayNetworkIsValid = transferInvoice && transferOrder
+      ? await db.transaction((tx) => commonSimulationNetworkId(tx, actor.tenantId, [
+        transferOrder.buyerOrganizationId, transferOrder.supplierOrganizationId,
+        transferInvoice.supplierOrganizationId,
+      ]))
+      : accountOrganizationIds.length === 2
+        ? await db.transaction((tx) => commonSimulationNetworkId(tx, actor.tenantId, accountOrganizationIds))
+        : null;
+    if (!replayNetworkIsValid) {
+      res.status(409).json({ error: "La transferencia anterior ya no pertenece a una única red económica." });
+      return;
+    }
+    const replayedTransfer = await loadTransfer(params.data.id, actor.tenantId);
+    if (replayedTransfer) {
+      res.json(ActOnFp360BankTransferResponse.parse(replayedTransfer));
       return;
     }
   }
@@ -1129,6 +1158,18 @@ router.post("/redfp360/bank/transfers/:id/action", route(async (req, res) => {
       eq(fpBankTransfers.id, transfer.id), eq(fpBankTransfers.tenantId, actor.tenantId),
     )).for("update").limit(1);
     if (!locked) throw new BankError(404, "Transferencia no encontrada.");
+    if (!locked.purchaseInvoiceId) {
+      const accounts = await tx.select().from(fpBankAccounts).where(and(
+        eq(fpBankAccounts.tenantId, actor.tenantId),
+        inArray(fpBankAccounts.id, [locked.sourceAccountId, locked.beneficiaryAccountId]),
+      ));
+      const source = accounts.find((account) => account.id === locked.sourceAccountId);
+      const beneficiary = accounts.find((account) => account.id === locked.beneficiaryAccountId);
+      if (!source?.organizationId || !beneficiary?.organizationId ||
+        !await commonSimulationNetworkId(tx, actor.tenantId, [source.organizationId, beneficiary.organizationId])) {
+        throw new BankError(409, "La transferencia no puede vincular empresas de redes económicas distintas.");
+      }
+    }
     if (locked.purchaseInvoiceId && ["validate", "authorize", "execute"].includes(body.data.action)) {
       const [invoice] = await tx.select().from(fpPurchaseInvoices).where(and(
         eq(fpPurchaseInvoices.id, locked.purchaseInvoiceId),

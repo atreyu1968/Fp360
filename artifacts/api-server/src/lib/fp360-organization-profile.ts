@@ -22,6 +22,8 @@ export function toFp360OrganizationDto(organization: Fp360OrganizationRow, scope
     centerId: scope.centerId,
     simulationNetworkId: scope.simulationNetworkId,
     simulationCalendarMode: scope.simulationCalendarMode,
+    fiscalYearStartMonth: scope.fiscalYearStartMonth,
+    academicPeriod: scope.academicPeriod,
     simulationNetworkName: scope.simulationNetworkName,
     name: organization.name,
     center: organization.center,

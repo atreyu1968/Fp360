@@ -76,8 +76,8 @@ test("a simulated sale flows from invoice and collections to treasury sources an
       `INSERT INTO fp360_organizations
         (id, tenant_id, name, center, island, role, is_active)
        VALUES
-        ($1, $3, 'Empresa vendedora ficticia', 'Centro de prueba', 'Isla ficticia', 'company', true),
-        ($2, $3, 'Empresa compradora ficticia', 'Centro de prueba', 'Isla ficticia', 'company', true)`,
+        ($1, $3, 'Empresa vendedora ficticia', 'Centro de prueba', 'Isla ficticia', 'seller', true),
+        ($2, $3, 'Empresa compradora ficticia', 'Centro de prueba', 'Isla ficticia', 'buyer', true)`,
       [sellerOrganizationId, buyerOrganizationId, tenantId],
     );
 
@@ -142,12 +142,22 @@ test("a simulated sale flows from invoice and collections to treasury sources an
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
       const text = await response.text();
-      return { response, body: text ? JSON.parse(text) : null };
+      let parsedBody = null;
+      if (text) {
+        try {
+          parsedBody = JSON.parse(text);
+        } catch {
+          parsedBody = { error: text.slice(0, 1000) };
+        }
+      }
+      return { response, body: parsedBody };
     };
     const sellerToken = sessionTokens[0];
     const reviewerToken = sessionTokens[1];
     const buyerToken = sessionTokens[2];
 
+    const organizationList = await request(sellerToken, "/redfp360/organizations");
+    assert.equal(organizationList.response.status, 200, JSON.stringify(organizationList.body));
     const invoiceResult = await request(sellerToken, "/redfp360/invoices", "POST", { orderId });
     assert.equal(invoiceResult.response.status, 201, JSON.stringify(invoiceResult.body));
     const invoice = invoiceResult.body;
@@ -445,6 +455,9 @@ test("a simulated sale flows from invoice and collections to treasury sources an
     await client.query("DELETE FROM fp360_auth_sessions WHERE user_id = ANY($1::text[])", [[sellerUserId, reviewerUserId, buyerUserId]]);
     await client.query("DELETE FROM fp360_auth_memberships WHERE user_id = ANY($1::text[])", [[sellerUserId, reviewerUserId, buyerUserId]]);
     await client.query("DELETE FROM fp360_auth_users WHERE id = ANY($1::text[])", [[sellerUserId, reviewerUserId, buyerUserId]]);
+    await client.query("DELETE FROM fp360_organization_scopes WHERE tenant_id = $1", [tenantId]);
+    await client.query("DELETE FROM fp360_simulation_networks WHERE tenant_id = $1", [tenantId]);
+    await client.query("DELETE FROM fp360_centers WHERE tenant_id = $1", [tenantId]);
     await client.query("DELETE FROM fp360_organizations WHERE tenant_id = $1", [tenantId]);
     const cleanupCheck = await client.query(
       `SELECT

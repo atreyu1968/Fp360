@@ -551,6 +551,10 @@ router.post("/redfp360/purchases/invoices/:id/decision", requireSimulationWriteA
     if (!order || !mayManageBuyer(actor, order.buyerOrganizationId)) {
       fail(404, "Factura recibida no encontrada en tu empresa.");
     }
+    await assertOrderNetwork(tx, actor.tenantId, order.buyerOrganizationId, order.supplierOrganizationId);
+    if (invoice.supplierOrganizationId !== order.supplierOrganizationId) {
+      fail(409, "La factura no pertenece al proveedor del pedido.");
+    }
     const decision = parsed.data.decision;
     if (invoice.status === decision && invoice.decisionReason === reason &&
       invoice.decisionByUserId === actor.userId) return;

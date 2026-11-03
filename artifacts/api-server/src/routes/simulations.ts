@@ -17,6 +17,7 @@ import {
   fpHrEvents,
   fpInvoices,
   fpLogisticsEvents,
+  fpOrderLines,
   fpOrders,
   fpOrganizations,
   fpOrganizationScopes,
@@ -25,6 +26,7 @@ import {
   fpProducts,
   fpPurchaseEvents,
   fpPurchaseOrders,
+  fpPurchaseRequests,
   fpSimulationAuditEvents,
   fpSimulationCampaigns,
   fpSimulationEvents,
@@ -35,7 +37,7 @@ import {
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 import { normalizeLocalAiBaseUrl, requestLocalAiJson } from "../lib/local-ai";
 import { requestGroqAiJson } from "../lib/groq-ai";
-import { commonSimulationNetworkId } from "../lib/organization-scopes";
+import { backfillTenantOrganizationScopes, commonSimulationNetworkId } from "../lib/organization-scopes";
 
 const router: Router = Router();
 const SIMULATION_START = "2027-01-01";
@@ -128,13 +130,25 @@ export async function networkSituationSnapshot(tenantId: string, simulationNetwo
       inArray(fpOrganizations.id, organizationIds),
     )).orderBy(asc(fpOrganizations.name)),
     db.select({
-      buyerOrganizationId: fpOrders.buyerOrganizationId, status: fpOrders.status,
+      id: fpOrders.id, buyerOrganizationId: fpOrders.buyerOrganizationId, status: fpOrders.status,
       totalCents: fpOrders.totalCents, simulatedDate: fpOrders.simulatedDate,
-    }).from(fpOrders).where(and(eq(fpOrders.tenantId, tenantId), lte(fpOrders.simulatedDate, SIMULATION_TODAY))),
+    }).from(fpOrders).where(and(
+      eq(fpOrders.tenantId, tenantId),
+      lte(fpOrders.simulatedDate, SIMULATION_TODAY),
+      inArray(fpOrders.buyerOrganizationId, organizationIds),
+    )),
     db.select({
       id: fpInvoices.id, issuerOrganizationId: fpInvoices.issuerOrganizationId,
       totalCents: fpInvoices.totalCents, simulatedDate: fpInvoices.simulatedDate,
-    }).from(fpInvoices).where(and(eq(fpInvoices.tenantId, tenantId), lte(fpInvoices.simulatedDate, SIMULATION_TODAY))),
+    }).from(fpInvoices).innerJoin(fpOrders, and(
+      eq(fpOrders.id, fpInvoices.orderId),
+      eq(fpOrders.tenantId, fpInvoices.tenantId),
+    )).where(and(
+      eq(fpInvoices.tenantId, tenantId),
+      lte(fpInvoices.simulatedDate, SIMULATION_TODAY),
+      inArray(fpInvoices.issuerOrganizationId, organizationIds),
+      inArray(fpOrders.buyerOrganizationId, organizationIds),
+    )),
     db.select({
       invoiceId: fpPayments.invoiceId, organizationId: fpPayments.organizationId,
       amountCents: fpPayments.amountCents, simulatedDate: fpPayments.simulatedDate,
@@ -176,6 +190,32 @@ export async function networkSituationSnapshot(tenantId: string, simulationNetwo
     )),
     Promise.all(eventQueries),
   ]);
+  const orderProductRows = orders.length ? await db.select({
+    orderId: fpOrderLines.orderId,
+    supplierOrganizationId: fpProducts.supplierOrganizationId,
+  }).from(fpOrderLines).leftJoin(fpProducts, and(
+    eq(fpProducts.id, fpOrderLines.productId),
+    eq(fpProducts.tenantId, tenantId),
+  )).where(inArray(fpOrderLines.orderId, orders.map((order) => order.id))) : [];
+  const suppliersByOrder = new Map<string, string[]>();
+  for (const row of orderProductRows) {
+    if (!row.supplierOrganizationId) continue;
+    const suppliers = suppliersByOrder.get(row.orderId) ?? [];
+    suppliers.push(row.supplierOrganizationId);
+    suppliersByOrder.set(row.orderId, suppliers);
+  }
+  const networkOrders = orders.filter((order) =>
+    (suppliersByOrder.get(order.id) ?? []).every((supplierId) => organizationIdSet.has(supplierId)));
+  const purchaseRequests = await db.select({
+    id: fpPurchaseRequests.id,
+    organizationId: fpPurchaseRequests.organizationId,
+  }).from(fpPurchaseRequests).where(and(
+    eq(fpPurchaseRequests.tenantId, tenantId),
+    inArray(fpPurchaseRequests.organizationId, organizationIds),
+  ));
+  const purchaseRequestOrganizationById = new Map(
+    purchaseRequests.map((request) => [request.id, request.organizationId]),
+  );
   const companyState = new Map(organizations.map((organization) => [organization.id, {
     ...organization,
     orderCountByStatus: {} as Record<string, number>,
@@ -221,7 +261,7 @@ export async function networkSituationSnapshot(tenantId: string, simulationNetwo
       amountCents: payment.amountCents,
     });
   }
-  for (const order of orders) {
+  for (const order of networkOrders) {
     const state = companyState.get(order.buyerOrganizationId);
     if (state) {
       addCount(state.orderCountByStatus, order.status);
@@ -306,7 +346,13 @@ export async function networkSituationSnapshot(tenantId: string, simulationNetwo
   }
   for (const source of eventSources) {
     for (const row of source.rows) {
-      const operation = sanitizedAuditOperation(source.module, row);
+      const rawRow = row as Record<string, unknown>;
+      const purchaseOrganizationId = source.module === "compras" && typeof rawRow.requestId === "string"
+        ? purchaseRequestOrganizationById.get(rawRow.requestId)
+        : undefined;
+      const operation = sanitizedAuditOperation(source.module, purchaseOrganizationId
+        ? { ...rawRow, organizationId: purchaseOrganizationId }
+        : row);
       if (operation.organizationId && organizationIdSet.has(operation.organizationId)) append(operation);
     }
   }
@@ -457,6 +503,7 @@ async function campaignOutput(campaign: typeof fpSimulationCampaigns.$inferSelec
 async function assertOrganizations(actor: AuthContext, ids: string[]) {
   const uniqueIds = [...new Set(ids)];
   if (uniqueIds.length !== ids.length || !uniqueIds.length) fail(400, "Selecciona empresas simuladas distintas.");
+  await backfillTenantOrganizationScopes(actor.tenantId);
   const organizations = await organizationRows(actor, uniqueIds);
   if (organizations.length !== uniqueIds.length) fail(400, "Una o más empresas ya no están activas en esta red.");
   const networkId = await db.transaction((tx) =>

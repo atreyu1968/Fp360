@@ -218,6 +218,18 @@ router.post("/redfp360/purchases/requests", async (req, res): Promise<void> => {
       if (replay.createdByUserId !== actor.userId || replay.requestFingerprint !== fingerprint) {
         fail(409, "La clave de operación ya se utilizó con otros datos.");
       }
+      const replaySuppliers = await tx.select({
+        supplierOrganizationId: fpPurchaseRequestSuppliers.supplierOrganizationId,
+      }).from(fpPurchaseRequestSuppliers).where(and(
+        eq(fpPurchaseRequestSuppliers.requestId, replay.id),
+        eq(fpPurchaseRequestSuppliers.tenantId, actor.tenantId),
+      ));
+      if (!await commonSimulationNetworkId(tx, actor.tenantId, [
+        replay.organizationId,
+        ...replaySuppliers.map((supplier) => supplier.supplierOrganizationId),
+      ])) {
+        fail(409, "La solicitud anterior conecta empresas de redes económicas distintas.");
+      }
       return replay.id;
     }
     const [buyer] = await tx.select().from(fpOrganizations).where(and(
@@ -586,6 +598,11 @@ router.post("/redfp360/purchases/requests/:id/award", async (req, res): Promise<
       eq(fpPurchaseOrders.requestId, request.id), eq(fpPurchaseOrders.tenantId, actor.tenantId),
     ));
     if (replay) {
+      if (!await commonSimulationNetworkId(tx, actor.tenantId, [
+        replay.buyerOrganizationId, replay.supplierOrganizationId,
+      ])) {
+        fail(409, "El pedido adjudicado pertenece a otra red económica.");
+      }
       if (replay.offerId === parsed.data.offerId && replay.awardedReason === reason && replay.createdByUserId === actor.userId) return replay.id;
       fail(409, "Esta solicitud ya tiene un pedido adjudicado.");
     }

@@ -269,6 +269,7 @@ async function ensureDemoData(tenantId: string): Promise<void> {
       },
     ])
     .onConflictDoNothing();
+  await backfillTenantOrganizationScopes(tenantId);
 }
 
 function timestamp(value: Date): string {
@@ -682,6 +683,23 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
         if (!previousOrder || !previousOpportunity || !currentBuyer || !["buyer", "both"].includes(currentBuyer.role)) {
           return { ok: false as const, status: 404 as const, error: "El pedido o la oportunidad vinculados ya no están disponibles." };
         }
+        const previousLines = await tx.select({ productId: fpOrderLines.productId }).from(fpOrderLines)
+          .where(eq(fpOrderLines.orderId, previousOrder.id));
+        const previousProductIds = [...new Set(previousLines.map((line) => line.productId))];
+        const previousProducts = previousProductIds.length ? await tx.select({
+          supplierOrganizationId: fpProducts.supplierOrganizationId,
+        }).from(fpProducts).where(and(
+          eq(fpProducts.tenantId, tenantId),
+          inArray(fpProducts.id, previousProductIds),
+        )) : [];
+        const previousParticipants = [
+          previousOrder.buyerOrganizationId,
+          ...previousProducts.map((product) => product.supplierOrganizationId).filter((id): id is string => Boolean(id)),
+        ];
+        if (previousProducts.length !== previousProductIds.length ||
+          !await commonSimulationNetworkId(tx, tenantId, previousParticipants)) {
+          return { ok: false as const, status: 409 as const, error: "El pedido anterior ya no pertenece a una única red económica." };
+        }
         if (previousLink.actorUserId !== actor.userId || previousLink.requestFingerprint !== requestFingerprint) {
           return { ok: false as const, status: 409 as const, error: "El identificador de operación ya se utilizó con otra solicitud." };
         }
@@ -993,6 +1011,27 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
           (!actor.organizationId || previousShipment.originOrganizationId !== actor.organizationId))) {
         return { ok: false as const, status: 404 as const, error: "Expedición no encontrada." };
       }
+      const [previousOrder] = await tx.select().from(fpOrders).where(and(
+        eq(fpOrders.id, previousShipment.orderId),
+        eq(fpOrders.tenantId, tenantId),
+      ));
+      const previousLines = previousOrder ? await tx.select({ productId: fpOrderLines.productId })
+        .from(fpOrderLines).where(eq(fpOrderLines.orderId, previousOrder.id)) : [];
+      const previousProductIds = [...new Set(previousLines.map((line) => line.productId))];
+      const previousProducts = previousProductIds.length ? await tx.select({
+        supplierOrganizationId: fpProducts.supplierOrganizationId,
+      }).from(fpProducts).where(and(
+        eq(fpProducts.tenantId, tenantId),
+        inArray(fpProducts.id, previousProductIds),
+      )) : [];
+      const previousParticipants = [
+        ...(previousOrder ? [previousOrder.buyerOrganizationId] : []),
+        ...previousProducts.map((product) => product.supplierOrganizationId).filter((id): id is string => Boolean(id)),
+      ];
+      if (!previousOrder || previousProducts.length !== previousProductIds.length ||
+        !await commonSimulationNetworkId(tx, tenantId, previousParticipants)) {
+        return { ok: false as const, status: 409 as const, error: "La expedición anterior conecta redes económicas distintas." };
+      }
       return { ok: true as const, reference: previousShipment.reference, replay: true as const };
     }
     const [order] = await tx
@@ -1261,6 +1300,22 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
       .from(fpOrganizations)
       .where(and(eq(fpOrganizations.id, order.buyerOrganizationId), eq(fpOrganizations.tenantId, tenantId)))
       .limit(1);
+    const productIds = [...new Set(lines.map((line) => line.productId))];
+    const invoiceProducts = productIds.length ? await tx.select({
+      supplierOrganizationId: fpProducts.supplierOrganizationId,
+    }).from(fpProducts).where(and(
+      eq(fpProducts.tenantId, tenantId),
+      inArray(fpProducts.id, productIds),
+    )) : [];
+    const invoiceParticipants = [...new Set([
+      order.buyerOrganizationId,
+      ...invoiceProducts.map((product) => product.supplierOrganizationId).filter((id): id is string => Boolean(id)),
+      ...(actor.organizationId ? [actor.organizationId] : []),
+      ...(projectBilling?.organizationId ? [projectBilling.organizationId] : []),
+    ])];
+    if (!await commonSimulationNetworkId(tx, tenantId, invoiceParticipants)) {
+      return { ok: false as const, status: 409 as const, error: "La factura no puede vincular empresas de redes económicas distintas." };
+    }
     const invoiceId = newId("invoice");
     const invoiceReference = `FP360-SIM-${new Date().getFullYear()}-${randomUUID()
       .slice(0, 8)
@@ -1397,6 +1452,31 @@ router.post(
             eq(fpInvoices.tenantId, tenantId),
           ))
           .limit(1);
+        const [priorInvoiceNetworkData] = await tx.select({
+          issuerOrganizationId: fpInvoices.issuerOrganizationId,
+          orderId: fpInvoices.orderId,
+        }).from(fpInvoices).where(and(
+          eq(fpInvoices.id, priorOperation.invoiceId),
+          eq(fpInvoices.tenantId, tenantId),
+        )).limit(1);
+        const [priorOrder] = priorInvoiceNetworkData ? await tx.select({
+          buyerOrganizationId: fpOrders.buyerOrganizationId,
+        }).from(fpOrders).where(and(
+          eq(fpOrders.id, priorInvoiceNetworkData.orderId),
+          eq(fpOrders.tenantId, tenantId),
+        )).limit(1) : [];
+        const priorParticipants = [
+          ...(priorInvoiceNetworkData?.issuerOrganizationId ? [priorInvoiceNetworkData.issuerOrganizationId] : []),
+          ...(priorOrder?.buyerOrganizationId ? [priorOrder.buyerOrganizationId] : []),
+          ...(actor.organizationId ? [actor.organizationId] : []),
+        ];
+        if (!priorOrder || !await commonSimulationNetworkId(tx, tenantId, [...new Set(priorParticipants)])) {
+          return {
+            ok: false as const,
+            status: 409 as const,
+            error: "La operación anterior pertenece a una red económica distinta.",
+          };
+        }
         return {
           ok: true as const,
           status: 200 as const,
@@ -1420,6 +1500,24 @@ router.post(
           ok: false as const,
           status: 404 as const,
           error: "Factura no encontrada.",
+        };
+      }
+      const [order] = await tx.select({
+        buyerOrganizationId: fpOrders.buyerOrganizationId,
+      }).from(fpOrders).where(and(
+        eq(fpOrders.id, invoice.orderId),
+        eq(fpOrders.tenantId, tenantId),
+      )).limit(1);
+      const paymentParticipants = [
+        ...(invoice.issuerOrganizationId ? [invoice.issuerOrganizationId] : []),
+        ...(order?.buyerOrganizationId ? [order.buyerOrganizationId] : []),
+        ...(actor.organizationId ? [actor.organizationId] : []),
+      ];
+      if (!order || !await commonSimulationNetworkId(tx, tenantId, [...new Set(paymentParticipants)])) {
+        return {
+          ok: false as const,
+          status: 409 as const,
+          error: "El cobro no puede vincular empresas de redes económicas distintas.",
         };
       }
       if (actor.organizationId && invoice.issuerOrganizationId !== actor.organizationId) {

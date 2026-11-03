@@ -25,7 +25,7 @@ export function scopesShareSimulationNetwork(
   organizationIds: string[],
 ): boolean {
   const uniqueIds = [...new Set(organizationIds)];
-  if (!uniqueIds.length || uniqueIds.length !== organizationIds.length) return false;
+  if (!uniqueIds.length) return false;
   if (scopes.length !== uniqueIds.length) return false;
   const scopedIds = new Set(scopes.map((scope) => scope.organizationId));
   if (uniqueIds.some((id) => !scopedIds.has(id))) return false;
@@ -38,7 +38,7 @@ export async function commonSimulationNetworkId(
   organizationIds: string[],
 ): Promise<string | null> {
   const uniqueIds = [...new Set(organizationIds)];
-  if (!uniqueIds.length || uniqueIds.length !== organizationIds.length) return null;
+  if (!uniqueIds.length) return null;
   const scopes = await tx.select({
     organizationId: fpOrganizationScopes.organizationId,
     simulationNetworkId: fpOrganizationScopes.simulationNetworkId,
@@ -46,9 +46,14 @@ export async function commonSimulationNetworkId(
     eq(fpOrganizationScopes.tenantId, tenantId),
     inArray(fpOrganizationScopes.organizationId, uniqueIds),
   ));
-  return scopesShareSimulationNetwork(scopes, uniqueIds)
-    ? scopes[0].simulationNetworkId
-    : null;
+  if (!scopesShareSimulationNetwork(scopes, uniqueIds)) return null;
+  const simulationNetworkId = scopes[0].simulationNetworkId;
+  const [network] = await tx.select({ id: fpSimulationNetworks.id }).from(fpSimulationNetworks).where(and(
+    eq(fpSimulationNetworks.id, simulationNetworkId),
+    eq(fpSimulationNetworks.tenantId, tenantId),
+    eq(fpSimulationNetworks.isActive, true),
+  )).limit(1);
+  return network?.id ?? null;
 }
 
 const DEFAULT_NETWORK_CODE = "ordinary-default";

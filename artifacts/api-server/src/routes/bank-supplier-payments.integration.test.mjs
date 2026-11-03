@@ -156,7 +156,8 @@ test("bank transfers and supplier payments roll back missing audit events and cr
     for (const table of [
       "fp360_bank_movements", "fp360_bank_events", "fp360_bank_transfers",
       "fp360_bank_accounts", "fp360_purchase_invoices", "fp360_purchase_orders",
-      "fp360_purchase_offers", "fp360_purchase_requests",
+      "fp360_purchase_offers", "fp360_purchase_requests", "fp360_organization_scopes",
+      "fp360_simulation_networks", "fp360_centers",
     ]) {
       await pool.query(`DELETE FROM ${table} WHERE tenant_id = $1`, [tenantId]);
     }
@@ -279,9 +280,13 @@ test("bank transfers and supplier payments roll back missing audit events and cr
     operationId,
   }, sessionTokens[0]);
   const initializedAccounts = await request(
-    `/redfp360/bank/overview?organizationId=${buyerId}`, "GET", undefined, sessionTokens[0],
+    "/redfp360/organizations", "GET", undefined, sessionTokens[0],
   );
   assert.equal(initializedAccounts.status, 200, JSON.stringify(initializedAccounts.body));
+  const initializedBankAccounts = await request(
+    `/redfp360/bank/overview?organizationId=${buyerId}`, "GET", undefined, sessionTokens[0],
+  );
+  assert.equal(initializedBankAccounts.status, 200, JSON.stringify(initializedBankAccounts.body));
   const accountsBeforeFailedAudit = await pool.query(
     `SELECT id, balance_cents, reserved_cents
      FROM fp360_bank_accounts WHERE tenant_id = $1 ORDER BY id`,
