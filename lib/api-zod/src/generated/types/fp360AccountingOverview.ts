@@ -14,6 +14,11 @@ import type { Fp360AccountingSource } from './fp360AccountingSource';
 
 export interface Fp360AccountingOverview {
   organizationId: string;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  fiscalYearStartMonth: number;
   accounts: Fp360AccountingAccount[];
   entries: Fp360AccountingEntry[];
   periods: Fp360AccountingPeriod[];

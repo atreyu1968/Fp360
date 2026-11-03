@@ -6597,6 +6597,8 @@ export const GetFp360AccountingOverviewQueryParams = zod.object({
   "organizationId": zod.string().min(1)
 })
 
+export const getFp360AccountingOverviewResponseFiscalYearStartMonthMax = 12;
+
 export const getFp360AccountingOverviewResponseEntriesItemPeriodMax = 12;
 
 export const getFp360AccountingOverviewResponseEntriesItemDebitCentsMin = 0;
@@ -6629,6 +6631,7 @@ export const getFp360AccountingOverviewResponseTotalsCreditCentsMin = 0;
 
 export const GetFp360AccountingOverviewResponse = zod.object({
   "organizationId": zod.string(),
+  "fiscalYearStartMonth": zod.int().min(1).max(getFp360AccountingOverviewResponseFiscalYearStartMonthMax),
   "accounts": zod.array(zod.object({
   "id": zod.string(),
   "organizationId": zod.string(),

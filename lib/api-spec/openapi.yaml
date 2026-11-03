@@ -6425,9 +6425,10 @@ components:
         outcome: { type: string, enum: [resume, close_partial] }
     Fp360AccountingOverview:
       type: object
-      required: [organizationId, accounts, entries, periods, sources, balances, totals]
+      required: [organizationId, fiscalYearStartMonth, accounts, entries, periods, sources, balances, totals]
       properties:
         organizationId: { type: string }
+        fiscalYearStartMonth: { type: integer, minimum: 1, maximum: 12 }
         accounts:
           type: array
           items: { $ref: "#/components/schemas/Fp360AccountingAccount" }

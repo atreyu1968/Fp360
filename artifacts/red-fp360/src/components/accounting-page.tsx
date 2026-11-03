@@ -66,7 +66,6 @@ const formatDate = (value: string) => new Intl.DateTimeFormat('es-ES', { dateSty
 const operationId = () => crypto.randomUUID();
 const centsFromInput = (value: string) => Math.round(Number(value.replace(',', '.')) * 100);
 const signedMoney = (cents: number) => `${cents < 0 ? '−' : ''}${formatMoney(Math.abs(cents))}`;
-
 function initialLines(accounts: Fp360AccountingAccount[]): DraftLine[] {
   const debit = accounts.find((account) => account.normalBalance === 'debit');
   const credit = accounts.find((account) => account.normalBalance === 'credit');
@@ -118,7 +117,7 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
   );
   const yearEndSummaryQuery = useGetFp360AccountingYearEndSummary<Fp360AccountingYearEndSummary>(
     { organizationId, fiscalYear: selectedFiscalYear },
-    { query: { enabled: Boolean(organizationId) && view === 'close' } },
+    { query: { enabled: Boolean(organizationId) && (view === 'close' || view === 'reports') } },
   );
   const overview = overviewQuery.data;
   const selectedOrganization = organizations.find((organization) => organization.id === organizationId);
@@ -142,6 +141,11 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
   useEffect(() => {
     if (!selectedAccountId && accounts[0]) setSelectedAccountId(accounts[0].id);
   }, [accounts, selectedAccountId]);
+  useEffect(() => {
+    if (periods.length && !periods.some((period) => period.fiscalYear === selectedFiscalYear)) {
+      setSelectedFiscalYear(periods[0].fiscalYear);
+    }
+  }, [periods, selectedFiscalYear]);
   const visibleEntries = useMemo(() => entries.filter((entry) => {
     const needle = search.trim().toLocaleLowerCase('es');
     return !needle || [entry.concept, entry.sourceReference ?? '', String(entry.entryNumber ?? '')]
@@ -152,6 +156,15 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
   const creditDraft = currentDraftLines.reduce((sum, line) => sum + (Number.isFinite(centsFromInput(line.credit)) ? centsFromInput(line.credit) : 0), 0);
   const resultCents = balances.filter((balance) => balance.nature === 'revenue').reduce((sum, balance) => sum + balance.balanceCents, 0)
     - balances.filter((balance) => balance.nature === 'expense').reduce((sum, balance) => sum + balance.balanceCents, 0);
+  const fiscalStartMonth = overview?.fiscalYearStartMonth ?? 1;
+  const simulatedMonth = 9;
+  const simulatedFiscalYear = simulatedMonth >= fiscalStartMonth ? 2027 : 2026;
+  const simulatedFiscalPeriod = ((simulatedMonth - fiscalStartMonth + 12) % 12) + 1;
+  const simulatedPeriod = periods.find((period) =>
+    period.fiscalYear === simulatedFiscalYear && period.period === simulatedFiscalPeriod,
+  );
+  const simulatedPeriodName = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(2027, simulatedMonth - 1, 1)));
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: getGetFp360AccountingOverviewQueryKey({ organizationId }) });
     void queryClient.invalidateQueries({
@@ -391,7 +404,7 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
         <article><span>Saldo bancos</span><b>{formatMoney(balances.filter((balance) => balance.code.startsWith('572')).reduce((sum, balance) => sum + balance.balanceCents, 0))}</b><small>Cuenta 572 · saldo deudor</small></article>
         <article><span>Resultado didáctico</span><b className={resultCents >= 0 ? 'accounting-positive' : 'accounting-negative'}>{signedMoney(resultCents)}</b><small>Ingresos menos gastos contabilizados</small></article>
         <article><span>Asientos pendientes</span><b>{overview.totals.draftEntryCount}</b><small>Requieren revisión</small></article>
-        <article><span>Periodo actual</span><b>{periods.find((period) => period.fiscalYear === 2027 && period.period === 9)?.status === 'closed' ? 'Cerrado' : 'Abierto'}</b><small>Septiembre de 2027 · escenario</small></article>
+        <article><span>Periodo actual</span><b>{simulatedPeriod?.status === 'closed' ? 'Cerrado' : 'Abierto'}</b><small>{simulatedPeriodName} · ejercicio {simulatedFiscalYear}</small></article>
       </div>
 
       {view === 'summary' && <div className="accounting-view-grid">
@@ -446,11 +459,18 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
       </section>}
 
       {view === 'reports' && <section className="panel accounting-panel">
-        <div className="accounting-section-head"><div><h2>Balances y resultados</h2><p>Sumas, saldos y resultado derivados exclusivamente del diario contabilizado.</p>{selectedOrganization && <p className="accounting-report-scope">Ámbito: {selectedOrganization.name} · {selectedOrganization.center}</p>}</div><button className="button button-secondary" onClick={() => window.print()}>Imprimir / guardar PDF</button></div>
-        <div className="accounting-report-cards"><article><span>Total Debe</span><b>{formatMoney(overview.totals.debitCents)}</b></article><article><span>Total Haber</span><b>{formatMoney(overview.totals.creditCents)}</b></article><article><span>Resultado didáctico</span><b className={resultCents >= 0 ? 'accounting-positive' : 'accounting-negative'}>{signedMoney(resultCents)}</b></article><article><span>Control</span><b>{overview.totals.balanced ? 'Cuadrado' : 'Revisar'}</b></article></div>
-        <div className="accounting-table-scroll"><table className="accounting-table"><thead><tr><th>Cuenta</th><th>Nombre</th><th>Naturaleza</th><th>Sumas Debe</th><th>Sumas Haber</th><th>Saldo natural</th></tr></thead><tbody>
-          {balances.map((balance) => <tr key={balance.accountId}><td className="accounting-code">{balance.code}</td><td>{balance.name}</td><td>{natureNames[balance.nature]}</td><td>{formatMoney(balance.debitCents)}</td><td>{formatMoney(balance.creditCents)}</td><td>{signedMoney(balance.balanceCents)}</td></tr>)}
-        </tbody></table></div>
+        <div className="accounting-section-head"><div><h2>Balances y resultados</h2><p>Informe del ejercicio fiscal {selectedFiscalYear}, según el inicio configurado para esta empresa.</p>{selectedOrganization && <p className="accounting-report-scope">Ámbito: {selectedOrganization.name} · {selectedOrganization.center}</p>}</div><button className="button button-secondary" onClick={() => window.print()}>Imprimir / guardar PDF</button></div>
+        {yearEndSummaryQuery.isLoading
+          ? <div className="accounting-empty">Calculando el informe del ejercicio…</div>
+          : yearEndSummaryQuery.isError || !yearEndSummaryQuery.data
+            ? <div className="accounting-empty accounting-error">No se pudo cargar el informe. <button className="text-button" onClick={refresh}>Reintentar</button></div>
+            : <>
+              <div className="accounting-report-cards"><article><span>Total Debe</span><b>{formatMoney(yearEndSummaryQuery.data.debitCents)}</b></article><article><span>Total Haber</span><b>{formatMoney(yearEndSummaryQuery.data.creditCents)}</b></article><article><span>Resultado didáctico</span><b className={yearEndSummaryQuery.data.resultCents >= 0 ? 'accounting-positive' : 'accounting-negative'}>{signedMoney(yearEndSummaryQuery.data.resultCents)}</b></article><article><span>Control</span><b>{yearEndSummaryQuery.data.journalBalanced ? 'Cuadrado' : 'Revisar'}</b></article></div>
+              <div className="accounting-table-scroll"><table className="accounting-table"><thead><tr><th>Cuenta</th><th>Nombre</th><th>Naturaleza</th><th>Sumas Debe</th><th>Sumas Haber</th><th>Saldo natural</th></tr></thead><tbody>
+                {yearEndSummaryQuery.data.profitAndLossAccounts.map((balance) => <tr key={balance.accountId}><td className="accounting-code">{balance.code}</td><td>{balance.name}</td><td>{natureNames[balance.nature as Nature]}</td><td>{formatMoney(balance.debitCents)}</td><td>{formatMoney(balance.creditCents)}</td><td>{signedMoney(balance.balanceCents)}</td></tr>)}
+                {!yearEndSummaryQuery.data.profitAndLossAccounts.length && <tr><td colSpan={6} className="accounting-empty-cell">No hay ingresos ni gastos contabilizados en este ejercicio.</td></tr>}
+              </tbody></table></div>
+            </>}
       </section>}
 
       {view === 'close' && <section className="panel accounting-panel">
@@ -459,7 +479,7 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
         <div className="accounting-period-grid">{periods.filter((period) => period.fiscalYear === selectedFiscalYear).sort((a, b) => a.period - b.period).map((period) => {
           const drafts = entries.filter((entry) => entry.fiscalYear === period.fiscalYear && entry.period === period.period && entry.status === 'draft').length;
           return <article key={period.id} className={period.status === 'closed' ? 'accounting-period closed' : 'accounting-period'}>
-            <div><span>Periodo {String(period.period).padStart(2, '0')}</span><b>{new Intl.DateTimeFormat('es-ES', { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(period.fiscalYear, period.period - 1, 1)))}</b></div>
+            <div><span>Periodo {String(period.period).padStart(2, '0')}</span><b>Ejercicio {period.fiscalYear}</b></div>
             <span className={period.status === 'closed' ? 'accounting-status closed' : 'accounting-status active'}>{period.status === 'closed' ? 'Cerrado' : 'Abierto'}</span>
             <small>{drafts ? `${drafts} borrador(es) pendiente(s)` : 'Sin borradores pendientes'}</small>
             {period.status === 'closed'

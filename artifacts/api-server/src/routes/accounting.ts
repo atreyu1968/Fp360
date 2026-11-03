@@ -35,6 +35,8 @@ import {
   fpAccountingEvents,
   fpAccountingPeriods,
   fpAccountingSequences,
+  fpOrganizationScopes,
+  fpSimulationNetworks,
   fpInvoices,
   fpOrganizations,
   fpOrders,
@@ -56,6 +58,10 @@ import {
   validateIndependentPayrollReviewer,
   validatePayrollImport,
 } from "./payroll-accounting.mjs";
+import {
+  getAccountingFiscalPeriod,
+  getAccountingFiscalYearForDate,
+} from "./accounting-fiscal-period.mjs";
 
 const router: IRouter = Router();
 router.use("/redfp360/accounting", requireAuth, requireSimulationWriteAccess);
@@ -126,7 +132,13 @@ async function ensureChart(tenantId: string, organizationId: string, actor: Auth
   }))).onConflictDoNothing();
 }
 
-async function ensurePeriod(tx: Transaction, tenantId: string, organizationId: string, fiscalYear: number, period: number) {
+async function ensurePeriod(
+  tx: Transaction,
+  tenantId: string,
+  organizationId: string,
+  fiscalYear: number,
+  period: number,
+) {
   await tx.insert(fpAccountingPeriods).values({
     id: randomUUID(),
     tenantId,
@@ -233,12 +245,22 @@ async function loadEntry(entryId: string, tenantId: string, organizationId: stri
 
 async function loadOverview(tenantId: string, organizationId: string, actor: AuthContext) {
   await ensureChart(tenantId, organizationId, actor);
-  const currentYear = Number(SIMULATED_DATE.slice(0, 4));
+  const [network] = await db.select({
+    fiscalYearStartMonth: fpSimulationNetworks.fiscalYearStartMonth,
+  }).from(fpOrganizationScopes).innerJoin(
+    fpSimulationNetworks,
+    eq(fpOrganizationScopes.simulationNetworkId, fpSimulationNetworks.id),
+  ).where(and(
+    eq(fpOrganizationScopes.tenantId, tenantId),
+    eq(fpOrganizationScopes.organizationId, organizationId),
+  )).limit(1);
+  const fiscalYearStartMonth = network?.fiscalYearStartMonth ?? 1;
+  const currentFiscalYear = getAccountingFiscalYearForDate(SIMULATED_DATE, fiscalYearStartMonth);
   await db.insert(fpAccountingPeriods).values(Array.from({ length: 12 }, (_, index) => ({
     id: randomUUID(),
     tenantId,
     organizationId,
-    fiscalYear: currentYear,
+    fiscalYear: currentFiscalYear,
     period: index + 1,
     status: "open",
   }))).onConflictDoNothing();
@@ -395,6 +417,7 @@ async function loadOverview(tenantId: string, organizationId: string, actor: Aut
   const postedEntries = entries.filter((entry) => entry.status !== "draft");
   return GetFp360AccountingOverviewResponse.parse({
     organizationId,
+    fiscalYearStartMonth,
     accounts: accounts.map((account) => ({
       id: account.id,
       organizationId: account.organizationId,
@@ -463,8 +486,19 @@ async function createDraft(
     )).limit(1);
     if (priorSource) return { error: "Este documento ya se ha importado al diario.", status: 409 as const };
   }
-  const fiscalYear = Number(entryDate.slice(0, 4));
-  const periodNumber = Number(entryDate.slice(5, 7));
+  const [network] = await tx.select({
+    fiscalYearStartMonth: fpSimulationNetworks.fiscalYearStartMonth,
+  }).from(fpOrganizationScopes).innerJoin(
+    fpSimulationNetworks,
+    eq(fpOrganizationScopes.simulationNetworkId, fpSimulationNetworks.id),
+  ).where(and(
+    eq(fpOrganizationScopes.tenantId, actor.tenantId),
+    eq(fpOrganizationScopes.organizationId, organizationId),
+  )).limit(1);
+  const { fiscalYear, period: periodNumber } = getAccountingFiscalPeriod(
+    entryDate,
+    network?.fiscalYearStartMonth ?? 1,
+  );
   const period = await ensurePeriod(tx, actor.tenantId, organizationId, fiscalYear, periodNumber);
   if (!period || period.status !== "open") return { error: "El periodo contable está cerrado.", status: 409 as const };
   const accountIds = [...new Set(lines.map((line) => line.accountId))];
@@ -857,9 +891,22 @@ router.post("/redfp360/accounting/entries/:id/post", async (req, res): Promise<v
         eq(fpPayrollRuns.tenantId, actor.tenantId),
         eq(fpPayrollRuns.organizationId, organizationId),
       )).for("update").limit(1);
+      const [network] = await tx.select({
+        fiscalYearStartMonth: fpSimulationNetworks.fiscalYearStartMonth,
+      }).from(fpOrganizationScopes).innerJoin(
+        fpSimulationNetworks,
+        eq(fpOrganizationScopes.simulationNetworkId, fpSimulationNetworks.id),
+      ).where(and(
+        eq(fpOrganizationScopes.tenantId, actor.tenantId),
+        eq(fpOrganizationScopes.organizationId, organizationId),
+      )).limit(1);
+      const expectedPeriod = run
+        ? getAccountingFiscalPeriod(`${run.periodKey}-01`, network?.fiscalYearStartMonth ?? 1)
+        : null;
       if (!run || !closedPayrollStatuses.has(run.status)
-        || entry.fiscalYear !== Number(run.periodKey.slice(0, 4))
-        || entry.period !== Number(run.periodKey.slice(5, 7))
+        || !expectedPeriod
+        || entry.fiscalYear !== expectedPeriod.fiscalYear
+        || entry.period !== expectedPeriod.period
         || entry.sourceReference !== `${run.periodKey} · v${run.version}`) {
         return { error: "El origen de nómina ya no coincide con la empresa, periodo o versión del borrador.", status: 409 as const };
       }
