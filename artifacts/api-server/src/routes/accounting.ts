@@ -1093,13 +1093,6 @@ router.post("/redfp360/accounting/sources/:sourceType/:sourceId/draft", async (r
         "payroll_run", run.id, sourceReference, lines,
       );
     }
-    const existing = await tx.select().from(fpAccountingEntries).where(and(
-      eq(fpAccountingEntries.tenantId, actor.tenantId),
-      eq(fpAccountingEntries.organizationId, organizationId),
-      eq(fpAccountingEntries.sourceType, params.data.sourceType),
-      eq(fpAccountingEntries.sourceId, params.data.sourceId),
-    )).limit(1);
-    if (existing.length) return { error: "Este documento ya tiene un asiento vinculado.", status: 409 as const };
     const accounts = await tx.select().from(fpAccountingAccounts).where(and(
       eq(fpAccountingAccounts.tenantId, actor.tenantId),
       eq(fpAccountingAccounts.organizationId, organizationId),
