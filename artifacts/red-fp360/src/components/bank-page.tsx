@@ -20,6 +20,9 @@ import type {
 } from '@workspace/api-client-react';
 import './bank-page.css';
 
+import { resolveSupplierPaymentDeepLink } from '@/lib/supplier-payment-deep-link';
+import { BankInvalidInstructionNotice } from './bank-invalid-instruction-notice';
+
 type Props = { identity: AuthIdentity; organizations?: Fp360Organization[]; onNotice: (message: string) => void };
 type View = 'summary' | 'movements' | 'transfers' | 'effects' | 'financing';
 type FormKind = 'account' | 'transfer' | 'supplierPayment' | 'effect' | 'financing' | null;
@@ -60,11 +63,16 @@ function AmountMetric({ title, amount, note, kind }: { title: string; amount: nu
 
 export function BankPage({ identity, organizations = [], onNotice }: Props) {
   const client = useQueryClient();
-  const deepLinkParams = new URLSearchParams(window.location.search);
-  const deepLinkOrganizationId = deepLinkParams.get('organizationId');
-  const deepLinkInstructionId = deepLinkParams.get('supplierPaymentInstruction');
-  const hasInstructionDeepLink = deepLinkParams.has('organizationId') || deepLinkParams.has('supplierPaymentInstruction');
-  const hasCompleteInstructionDeepLink = Boolean(deepLinkOrganizationId && deepLinkInstructionId);
+  const {
+    organizationId: deepLinkOrganizationId,
+    instructionId: deepLinkInstructionId,
+    hasInstructionDeepLink,
+    deepLinkAccessAllowed,
+  } = resolveSupplierPaymentDeepLink({
+    search: window.location.search,
+    identity,
+    organizations,
+  });
   const [view, setView] = useState<View>('summary');
   const [selectedOrganizationId, setSelectedOrganizationId] = useState(
     identity.organizationId ?? (hasInstructionDeepLink ? '' : organizations[0]?.id ?? ''),
@@ -73,6 +81,7 @@ export function BankPage({ identity, organizations = [], onNotice }: Props) {
   const [formError, setFormError] = useState('');
   const [search, setSearch] = useState('');
   const [deepLinkedInstructionId, setDeepLinkedInstructionId] = useState('');
+  const [deepLinkedInvoiceId, setDeepLinkedInvoiceId] = useState('');
   const [actionBusy, setActionBusy] = useState('');
   const [actionError, setActionError] = useState('');
   const organizationId = identity.organizationId ?? selectedOrganizationId;
@@ -90,11 +99,6 @@ export function BankPage({ identity, organizations = [], onNotice }: Props) {
   );
   const invoiceQuery = useListFp360Invoices({ query: { queryKey: getListFp360InvoicesQueryKey() } });
   const purchaseInvoiceQuery = useListPurchaseInvoices({ query: { queryKey: getListPurchaseInvoicesQueryKey() } });
-  const deepLinkAccessAllowed = hasCompleteInstructionDeepLink
-    && Boolean(deepLinkOrganizationId && deepLinkInstructionId)
-    && (identity.organizationId
-      ? identity.organizationId === deepLinkOrganizationId
-      : canChooseOrganization && organizations.some((organization) => organization.id === deepLinkOrganizationId));
   const instructionQuery = useGetFp360BankSupplierPaymentInstruction(
     { instructionId: deepLinkInstructionId ?? '', organizationId: deepLinkOrganizationId ?? '' },
     { query: {
@@ -105,7 +109,12 @@ export function BankPage({ identity, organizations = [], onNotice }: Props) {
       }),
     } },
   );
-  const canOpenDeepLink = deepLinkAccessAllowed && Boolean(instructionQuery.data);
+  const { canOpenDeepLink, linkedInvoiceId } = resolveSupplierPaymentDeepLink({
+    search: window.location.search,
+    identity,
+    organizations,
+    instruction: instructionQuery.data,
+  });
   const createAccount = useCreateFp360BankAccount();
   const createTransfer = useCreateFp360BankTransfer();
   const createSupplierPayment = useCreateFp360BankSupplierPayment();
@@ -115,12 +124,13 @@ export function BankPage({ identity, organizations = [], onNotice }: Props) {
   const actFinancing = useActOnFp360BankFinancing();
   const data = overviewQuery.data;
   useEffect(() => {
-    if (!canOpenDeepLink || !deepLinkOrganizationId || !deepLinkInstructionId) return;
+    if (!canOpenDeepLink || !linkedInvoiceId || !deepLinkOrganizationId || !deepLinkInstructionId) return;
     setSelectedOrganizationId(deepLinkOrganizationId);
     setView('transfers');
     setSearch('');
     setDeepLinkedInstructionId(deepLinkInstructionId);
-  }, [canOpenDeepLink, deepLinkOrganizationId, deepLinkInstructionId]);
+    setDeepLinkedInvoiceId(linkedInvoiceId);
+  }, [canOpenDeepLink, linkedInvoiceId, deepLinkOrganizationId, deepLinkInstructionId]);
   const accounts = data?.accounts ?? [];
   const primary = accounts.find((account) => account.isPrimary) ?? accounts[0];
   const invoices = useMemo(() => (invoiceQuery.data ?? []).filter((invoice) => invoice.issuerOrganizationId === organizationId && invoice.balanceCents > 0), [invoiceQuery.data, organizationId]);
@@ -133,14 +143,16 @@ export function BankPage({ identity, organizations = [], onNotice }: Props) {
   );
   const term = search.trim().toLocaleLowerCase('es');
   const movements = (data?.movements ?? []).filter((item) => `${item.counterpartyName} ${item.description} ${item.reference}`.toLocaleLowerCase('es').includes(term));
-  const scopedDeepLinkedInstruction = organizationId === deepLinkOrganizationId
+  const scopedDeepLinkedInstruction = canOpenDeepLink && organizationId === deepLinkOrganizationId
     ? instructionQuery.data
     : undefined;
   const transferRows = scopedDeepLinkedInstruction
     ? [scopedDeepLinkedInstruction, ...(data?.transfers ?? []).filter((item) => item.id !== scopedDeepLinkedInstruction.id)]
     : data?.transfers ?? [];
   const transfers = transferRows.filter((item) => {
-    if (deepLinkedInstructionId && item.id !== deepLinkedInstructionId) return false;
+    if (deepLinkedInstructionId && (
+      item.id !== deepLinkedInstructionId || item.purchaseInvoiceId !== deepLinkedInvoiceId
+    )) return false;
     const invoice = (purchaseInvoiceQuery.data ?? []).find((candidate) => candidate.id === item.purchaseInvoiceId);
     return `${item.id} ${item.beneficiaryName} ${item.concept} ${invoice?.invoiceReference ?? ''} ${item.status}`.toLocaleLowerCase('es').includes(term);
   });
@@ -262,13 +274,13 @@ export function BankPage({ identity, organizations = [], onNotice }: Props) {
     <header className="bank-heading">
       <div><div className="breadcrumbs"><span>RED FP360</span><span className="crumb-slash">/</span><span>BANCO · LIQUIDEZ SIMULADA</span></div><h1>Banco FP360</h1><p>Practica la gestión de liquidez, pagos y financiación de tu empresa.</p></div>
       <div className="bank-heading-tools">
-        {canChooseOrganization && <label className="bank-org-select">Empresa<select value={organizationId} onChange={(event) => { setDeepLinkedInstructionId(''); setSelectedOrganizationId(event.target.value); }} data-testid="select-bank-organization"><option value="">Selecciona una empresa</option>{organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}</select></label>}
+        {canChooseOrganization && <label className="bank-org-select">Empresa<select value={organizationId} onChange={(event) => { setDeepLinkedInstructionId(''); setDeepLinkedInvoiceId(''); setSelectedOrganizationId(event.target.value); }} data-testid="select-bank-organization"><option value="">Selecciona una empresa</option>{organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}</select></label>}
         <span className="bank-date"><CalendarDays size={14} /> Escenario · 15 sep 2027</span>
       </div>
     </header>
     <div className="bank-notice"><ShieldAlert size={16} /><span><b>Banco sintético de aprendizaje.</b> Cuentas, referencias e importes son ficticios. No existe conexión bancaria ni se ejecuta dinero real.</span></div>
     {hasInstructionDeepLink && !canOpenDeepLink && (instructionQuery.isLoading || instructionQuery.isFetching) && deepLinkAccessAllowed && <section className="bank-unselected" role="status"><Clock3 size={22} /><h2>Consultando instrucción</h2><p>Se está verificando que la instrucción pertenece a una factura de esta empresa.</p></section>}
-    {hasInstructionDeepLink && !canOpenDeepLink && (instructionQuery.isError || !deepLinkAccessAllowed) && <section className="bank-unselected" role="alert"><CircleAlert size={22} /><h2>No se puede abrir esta instrucción</h2><p>El enlace no identifica una factura e instrucción disponibles para tu empresa o red.</p></section>}
+    {hasInstructionDeepLink && !canOpenDeepLink && (!deepLinkAccessAllowed || !(instructionQuery.isLoading || instructionQuery.isFetching)) && <BankInvalidInstructionNotice />}
     {!hasInstructionDeepLink && !organizationId && <section className="bank-unselected"><Building2 size={22} /><h2>Selecciona una empresa para abrir su banco</h2><p>La posición, las cuentas y las operaciones corresponden a una única organización por consulta.</p>{canChooseOrganization ? <label>Empresa<select value={selectedOrganizationId} onChange={(event) => setSelectedOrganizationId(event.target.value)}><option value="">Selecciona una empresa</option>{organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}</select></label> : <p>Tu perfil no tiene una empresa asignada. Solicita al equipo docente que configure el acceso.</p>}</section>}
     {organizationId && (!hasInstructionDeepLink || canOpenDeepLink) && <>
       <nav className="bank-tabs" aria-label="Vistas de Banco FP360" role="tablist">{tabs.map((tab) => <button key={tab.id} type="button" role="tab" aria-selected={view === tab.id} className={view === tab.id ? 'active' : ''} onClick={() => setView(tab.id)} data-testid={`tab-bank-${tab.id}`}>{tab.title}</button>)}</nav>
