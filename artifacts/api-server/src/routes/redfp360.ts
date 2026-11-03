@@ -42,7 +42,7 @@ import {
 } from "@workspace/db";
 import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
 import { toFp360OrganizationDto } from "../lib/fp360-organization-profile";
-import { backfillTenantOrganizationScopes } from "../lib/organization-scopes";
+import { backfillTenantOrganizationScopes, commonSimulationNetworkId } from "../lib/organization-scopes";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -749,6 +749,12 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
     if (products.length !== productIds.length) {
       return { ok: false as const, status: 400 as const, error: "Uno de los productos ya no está disponible." };
     }
+    const supplierOrganizationIds = products
+      .map((product) => product.supplierOrganizationId)
+      .filter((id): id is string => Boolean(id));
+    if (!await commonSimulationNetworkId(tx, tenantId, [buyer.id, ...new Set(supplierOrganizationIds)])) {
+      return { ok: false as const, status: 409 as const, error: "El pedido no puede conectar empresas de redes económicas distintas." };
+    }
     for (const product of products) {
       if (!product.isActive || !product.isPublished) {
         return { ok: false as const, status: 400 as const, error: "Uno de los productos no está activo y aprobado para el mercado." };
@@ -887,6 +893,12 @@ router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
         ),
       )
       .for("update");
+    const supplierOrganizationIds = products
+      .map((product) => product.supplierOrganizationId)
+      .filter((id): id is string => Boolean(id));
+    if (!await commonSimulationNetworkId(tx, tenantId, [order.buyerOrganizationId, ...new Set(supplierOrganizationIds)])) {
+      return { ok: false as const, status: 409 as const, error: "El pedido contiene empresas de redes económicas distintas." };
+    }
     const productById = new Map(products.map((product) => [product.id, product]));
     for (const line of lines) {
       const product = productById.get(line.productId);
@@ -1046,6 +1058,9 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
       }
     }
     const supplierIds = [...new Set(products.map((product) => product.supplierOrganizationId).filter((id): id is string => Boolean(id)))];
+    if (!await commonSimulationNetworkId(tx, tenantId, [order.buyerOrganizationId, ...supplierIds])) {
+      return { ok: false as const, status: 409 as const, error: "No se puede expedir un pedido entre redes económicas distintas." };
+    }
     if (supplierIds.length > 1 && !isNetworkSupervisor(actor)) {
       return { ok: false as const, status: 400 as const, error: "Separa la expedición cuando los productos tengan distintos proveedores." };
     }

@@ -6,7 +6,6 @@ import {
   db,
   fpAccountingEntries,
   fpAccountingEvents,
-  fpActivity,
   fpAdminAiCoordinatorSettings,
   fpBankEvents,
   fpCommunicationsEvents,
@@ -20,6 +19,7 @@ import {
   fpLogisticsEvents,
   fpOrders,
   fpOrganizations,
+  fpOrganizationScopes,
   fpPayrollEvents,
   fpPayments,
   fpProducts,
@@ -35,6 +35,7 @@ import {
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 import { normalizeLocalAiBaseUrl, requestLocalAiJson } from "../lib/local-ai";
 import { requestGroqAiJson } from "../lib/groq-ai";
+import { commonSimulationNetworkId } from "../lib/organization-scopes";
 
 const router: Router = Router();
 const SIMULATION_START = "2027-01-01";
@@ -80,7 +81,25 @@ function sanitizedAuditOperation(module: string, value: unknown): NetworkOperati
   };
 }
 
-export async function networkSituationSnapshot(tenantId: string) {
+export async function networkSituationSnapshot(tenantId: string, simulationNetworkId: string) {
+  const scopes = await db.select({
+    organizationId: fpOrganizationScopes.organizationId,
+  }).from(fpOrganizationScopes).where(and(
+    eq(fpOrganizationScopes.tenantId, tenantId),
+    eq(fpOrganizationScopes.simulationNetworkId, simulationNetworkId),
+  ));
+  const organizationIds = scopes.map((scope) => scope.organizationId);
+  if (!organizationIds.length) {
+    return {
+      snapshotAt: new Date().toISOString(),
+      simulatedThrough: SIMULATION_TODAY,
+      companyCount: 0,
+      companies: [],
+      historyCoverage: "No hay empresas en esta red económica.",
+      operationHistory: [],
+    };
+  }
+  const organizationIdSet = new Set(organizationIds);
   const eventQueries: Array<Promise<{ module: string; rows: unknown[] }>> = [
     db.select().from(fpAccountingEvents).where(eq(fpAccountingEvents.tenantId, tenantId)).then((rows) => ({ module: "contabilidad", rows })),
     db.select().from(fpBankEvents).where(eq(fpBankEvents.tenantId, tenantId)).then((rows) => ({ module: "tesoreria", rows })),
@@ -99,12 +118,15 @@ export async function networkSituationSnapshot(tenantId: string) {
   ];
   const [
     organizations, orders, invoices, payments, products, purchaseOrders,
-    accountingEntries, taxDeclarations, activityRows, eventSources,
+    accountingEntries, taxDeclarations, eventSources,
   ] = await Promise.all([
     db.select({
       id: fpOrganizations.id, name: fpOrganizations.name, center: fpOrganizations.center,
       island: fpOrganizations.island, role: fpOrganizations.role, isActive: fpOrganizations.isActive,
-    }).from(fpOrganizations).where(eq(fpOrganizations.tenantId, tenantId)).orderBy(asc(fpOrganizations.name)),
+    }).from(fpOrganizations).where(and(
+      eq(fpOrganizations.tenantId, tenantId),
+      inArray(fpOrganizations.id, organizationIds),
+    )).orderBy(asc(fpOrganizations.name)),
     db.select({
       buyerOrganizationId: fpOrders.buyerOrganizationId, status: fpOrders.status,
       totalCents: fpOrders.totalCents, simulatedDate: fpOrders.simulatedDate,
@@ -121,26 +143,37 @@ export async function networkSituationSnapshot(tenantId: string) {
       supplierOrganizationId: fpProducts.supplierOrganizationId, stock: fpProducts.stock,
       reserved: fpProducts.reserved, minimumStock: fpProducts.minimumStock,
       tracksInventory: fpProducts.tracksInventory, isActive: fpProducts.isActive,
-    }).from(fpProducts).where(eq(fpProducts.tenantId, tenantId)),
+    }).from(fpProducts).where(and(
+      eq(fpProducts.tenantId, tenantId),
+      inArray(fpProducts.supplierOrganizationId, organizationIds),
+    )),
     db.select({
       buyerOrganizationId: fpPurchaseOrders.buyerOrganizationId,
       supplierOrganizationId: fpPurchaseOrders.supplierOrganizationId,
       totalCents: fpPurchaseOrders.totalCents, status: fpPurchaseOrders.status,
       simulatedDate: fpPurchaseOrders.simulatedDate,
-    }).from(fpPurchaseOrders).where(and(eq(fpPurchaseOrders.tenantId, tenantId), lte(fpPurchaseOrders.simulatedDate, SIMULATION_TODAY))),
+    }).from(fpPurchaseOrders).where(and(
+      eq(fpPurchaseOrders.tenantId, tenantId),
+      lte(fpPurchaseOrders.simulatedDate, SIMULATION_TODAY),
+      inArray(fpPurchaseOrders.buyerOrganizationId, organizationIds),
+      inArray(fpPurchaseOrders.supplierOrganizationId, organizationIds),
+    )),
     db.select({
       organizationId: fpAccountingEntries.organizationId, status: fpAccountingEntries.status,
       fiscalYear: fpAccountingEntries.fiscalYear, entryDate: fpAccountingEntries.entryDate,
       debitCents: fpAccountingEntries.debitCents, creditCents: fpAccountingEntries.creditCents,
-    }).from(fpAccountingEntries).where(eq(fpAccountingEntries.tenantId, tenantId)),
+    }).from(fpAccountingEntries).where(and(
+      eq(fpAccountingEntries.tenantId, tenantId),
+      inArray(fpAccountingEntries.organizationId, organizationIds),
+    )),
     db.select({
       organizationId: fpTaxDeclarations.organizationId, status: fpTaxDeclarations.status,
       modelCode: fpTaxDeclarations.modelCode, periodKey: fpTaxDeclarations.periodKey,
       resultCents: fpTaxDeclarations.resultCents,
-    }).from(fpTaxDeclarations).where(eq(fpTaxDeclarations.tenantId, tenantId)),
-    db.select({
-      action: fpActivity.action, simulatedDate: fpActivity.simulatedDate,
-    }).from(fpActivity).where(eq(fpActivity.tenantId, tenantId)),
+    }).from(fpTaxDeclarations).where(and(
+      eq(fpTaxDeclarations.tenantId, tenantId),
+      inArray(fpTaxDeclarations.organizationId, organizationIds),
+    )),
     Promise.all(eventQueries),
   ]);
   const companyState = new Map(organizations.map((organization) => [organization.id, {
@@ -175,10 +208,14 @@ export async function networkSituationSnapshot(tenantId: string) {
   const invoiceOrgById = new Map(invoices.map((invoice) => [invoice.id, invoice.issuerOrganizationId]));
   const paidByInvoice = new Map<string, number>();
   for (const payment of payments) {
+    const invoiceOrganizationId = invoiceOrgById.get(payment.invoiceId);
+    if (!invoiceOrganizationId || !organizationIdSet.has(invoiceOrganizationId)) continue;
     paidByInvoice.set(payment.invoiceId, (paidByInvoice.get(payment.invoiceId) ?? 0) + payment.amountCents);
     append({
       module: "cobros",
-      organizationId: payment.organizationId ?? invoiceOrgById.get(payment.invoiceId) ?? null,
+      organizationId: payment.organizationId && organizationIdSet.has(payment.organizationId)
+        ? payment.organizationId
+        : invoiceOrganizationId,
       date: payment.simulatedDate,
       status: "registrado",
       amountCents: payment.amountCents,
@@ -267,16 +304,11 @@ export async function networkSituationSnapshot(tenantId: string) {
       period: declaration.periodKey,
     });
   }
-  for (const activity of activityRows) {
-    append({
-      module: "actividad_general",
-      organizationId: null,
-      date: activity.simulatedDate,
-      action: safeAuditCode(activity.action) ?? "operacion",
-    });
-  }
   for (const source of eventSources) {
-    for (const row of source.rows) append(sanitizedAuditOperation(source.module, row));
+    for (const row of source.rows) {
+      const operation = sanitizedAuditOperation(source.module, row);
+      if (operation.organizationId && organizationIdSet.has(operation.organizationId)) append(operation);
+    }
   }
   return {
     snapshotAt: new Date().toISOString(),
@@ -359,6 +391,7 @@ async function getCampaign(actor: AuthContext, id: string) {
   if (!canViewAcrossOrganizations(actor.role) && (!actor.organizationId || !campaign.participantOrganizationIds.includes(actor.organizationId))) {
     fail(403, "No tienes acceso a esta campaña.");
   }
+  await assertOrganizations(actor, campaign.participantOrganizationIds);
   return campaign;
 }
 
@@ -426,6 +459,10 @@ async function assertOrganizations(actor: AuthContext, ids: string[]) {
   if (uniqueIds.length !== ids.length || !uniqueIds.length) fail(400, "Selecciona empresas simuladas distintas.");
   const organizations = await organizationRows(actor, uniqueIds);
   if (organizations.length !== uniqueIds.length) fail(400, "Una o más empresas ya no están activas en esta red.");
+  const networkId = await db.transaction((tx) =>
+    commonSimulationNetworkId(tx, actor.tenantId, uniqueIds));
+  if (!networkId) fail(409, "Las empresas deben pertenecer a la misma red económica para coordinar operaciones.");
+  return networkId;
 }
 
 async function priorOperation(actor: AuthContext, operationId: string, campaignId: string, eventId: string | null, action: string) {
@@ -518,7 +555,7 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
   endDateValue.setUTCDate(endDateValue.getUTCDate() + data.durationWeeks * 7);
   const endDate = endDateValue.toISOString().slice(0, 10);
   if (endDate > SIMULATION_END) fail(400, "La duración supera el periodo disponible del escenario.");
-  await assertOrganizations(actor, data.participantOrganizationIds);
+  const simulationNetworkId = await assertOrganizations(actor, data.participantOrganizationIds);
 
   const inputFingerprint = createHash("sha256").update(JSON.stringify(data)).digest("hex");
   const [priorCampaign] = await db.select().from(fpSimulationCampaigns).where(and(
@@ -572,7 +609,7 @@ router.post("/redfp360/simulations/ai-proposals", requireSimulationWriteAccess, 
       fail(503, "La configuración del endpoint local de IA no es válida.");
     }
   }
-  const network = await networkSituationSnapshot(actor.tenantId);
+  const network = await networkSituationSnapshot(actor.tenantId, simulationNetworkId);
   if (!network.companyCount) fail(400, "No hay empresas registradas en la red.");
   const participantSet = new Set(data.participantOrganizationIds);
   const companyAliases = new Map(network.companies.map((company, index) => [

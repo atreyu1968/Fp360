@@ -43,6 +43,7 @@ import {
   fpPurchaseOrders,
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
+import { commonSimulationNetworkId } from "../lib/organization-scopes";
 import { supplierPaymentEligibility, supplierPaymentReviewerError } from "./bank-supplier-payment.mjs";
 
 const router: IRouter = Router();
@@ -895,6 +896,19 @@ router.post("/redfp360/bank/transfers", route(async (req, res) => {
       res.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
+    const replayAccounts = await db.select().from(fpBankAccounts).where(and(
+      eq(fpBankAccounts.tenantId, actor.tenantId),
+      inArray(fpBankAccounts.id, [existing.sourceAccountId, existing.beneficiaryAccountId]),
+    ));
+    const replaySource = replayAccounts.find((account) => account.id === existing.sourceAccountId);
+    const replayBeneficiary = replayAccounts.find((account) => account.id === existing.beneficiaryAccountId);
+    if (!replaySource?.organizationId || !replayBeneficiary?.organizationId ||
+      !await db.transaction((tx) => commonSimulationNetworkId(
+        tx, actor.tenantId, [replaySource.organizationId!, replayBeneficiary.organizationId!],
+      ))) {
+      res.status(409).json({ error: "La transferencia anterior conecta empresas de redes económicas distintas." });
+      return;
+    }
     const transfer = await loadTransfer(existing.id, actor.tenantId);
     if (!transfer) {
       res.status(409).json({ error: "La transferencia anterior ya no está disponible." });
@@ -917,6 +931,10 @@ router.post("/redfp360/bank/transfers", route(async (req, res) => {
   }
   const id = randomUUID();
   await db.transaction(async (tx) => {
+    if (!source.organizationId || !beneficiary.organizationId ||
+      !await commonSimulationNetworkId(tx, actor.tenantId, [source.organizationId, beneficiary.organizationId])) {
+      throw new BankError(409, "No se permiten transferencias entre redes económicas distintas.");
+    }
     await tx.insert(fpBankTransfers).values({
       id,
       tenantId: actor.tenantId,
@@ -977,6 +995,11 @@ router.post("/redfp360/bank/supplier-payments", route(async (req, res) => {
       eq(fpPurchaseOrders.id, invoice.orderId),
       eq(fpPurchaseOrders.tenantId, actor.tenantId),
     )).limit(1) : [];
+    if (order && !await commonSimulationNetworkId(tx, actor.tenantId, [
+      order.buyerOrganizationId, order.supplierOrganizationId, invoice!.supplierOrganizationId,
+    ])) {
+      throw new BankError(409, "No se permiten pagos entre redes económicas distintas.");
+    }
     const resourceError = supplierPaymentEligibility({ invoice, order, organizationId });
     if (resourceError?.status === 404) throw new BankError(resourceError.status, resourceError.message);
 
@@ -1119,6 +1142,11 @@ router.post("/redfp360/bank/transfers/:id/action", route(async (req, res) => {
         || order.supplierOrganizationId !== invoice.supplierOrganizationId
         || invoice.status !== "conformed") {
         throw new BankError(409, "La factura vinculada ya no está conformada y vigente.");
+      }
+      if (!await commonSimulationNetworkId(tx, actor.tenantId, [
+        order.buyerOrganizationId, order.supplierOrganizationId, invoice.supplierOrganizationId,
+      ])) {
+        throw new BankError(409, "La factura vinculada pertenece a otra red económica.");
       }
     }
     const eventFingerprint = requestFingerprint;

@@ -18,6 +18,37 @@ export type OrganizationScopeDto = {
   simulationNetworkName: string;
 };
 
+export function scopesShareSimulationNetwork(
+  scopes: Array<{ organizationId: string; simulationNetworkId: string }>,
+  organizationIds: string[],
+): boolean {
+  const uniqueIds = [...new Set(organizationIds)];
+  if (!uniqueIds.length || uniqueIds.length !== organizationIds.length) return false;
+  if (scopes.length !== uniqueIds.length) return false;
+  const scopedIds = new Set(scopes.map((scope) => scope.organizationId));
+  if (uniqueIds.some((id) => !scopedIds.has(id))) return false;
+  return new Set(scopes.map((scope) => scope.simulationNetworkId)).size === 1;
+}
+
+export async function commonSimulationNetworkId(
+  tx: Transaction,
+  tenantId: string,
+  organizationIds: string[],
+): Promise<string | null> {
+  const uniqueIds = [...new Set(organizationIds)];
+  if (!uniqueIds.length || uniqueIds.length !== organizationIds.length) return null;
+  const scopes = await tx.select({
+    organizationId: fpOrganizationScopes.organizationId,
+    simulationNetworkId: fpOrganizationScopes.simulationNetworkId,
+  }).from(fpOrganizationScopes).where(and(
+    eq(fpOrganizationScopes.tenantId, tenantId),
+    inArray(fpOrganizationScopes.organizationId, uniqueIds),
+  ));
+  return scopesShareSimulationNetwork(scopes, uniqueIds)
+    ? scopes[0].simulationNetworkId
+    : null;
+}
+
 const DEFAULT_NETWORK_CODE = "ordinary-default";
 const DEFAULT_NETWORK_NAME = "Red económica ordinaria";
 

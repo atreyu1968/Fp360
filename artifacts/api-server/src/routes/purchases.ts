@@ -21,6 +21,7 @@ import {
   fpPurchaseRequestSuppliers,
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
+import { commonSimulationNetworkId } from "../lib/organization-scopes";
 
 const router: IRouter = Router();
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -239,6 +240,17 @@ router.post("/redfp360/purchases/requests", async (req, res): Promise<void> => {
       inArray(fpProducts.id, parsed.data.lines.map((line) => line.productId)),
     ));
     if (products.length !== parsed.data.lines.length) fail(404, "Una referencia ya no está activa o publicada.");
+    const productSupplierIds = products
+      .map((product) => product.supplierOrganizationId)
+      .filter((id): id is string => Boolean(id));
+    const participants = [...new Set([
+      buyer.id,
+      ...suppliers.map((supplier) => supplier.id),
+      ...productSupplierIds,
+    ])];
+    if (!await commonSimulationNetworkId(tx, actor.tenantId, participants)) {
+      fail(409, "La solicitud y sus proveedores deben pertenecer a la misma red económica.");
+    }
     const productById = new Map(products.map((product) => [product.id, product]));
     await tx.insert(fpPurchaseRequests).values({
       id: parsed.data.operationId, tenantId: actor.tenantId,
@@ -329,6 +341,9 @@ router.post("/redfp360/purchases/requests/:id/offers", async (req, res): Promise
         eq(fpOrganizations.isActive, true),
       )).for("share");
     if (!supplier || !["seller", "both"].includes(supplier.role)) fail(404, "Proveedor no disponible.");
+    if (!await commonSimulationNetworkId(tx, actor.tenantId, [request.organizationId, supplier.id])) {
+      fail(409, "No se pueden comparar ofertas de otra red económica.");
+    }
     const fingerprint = requestHash({ ...parsed.data, supplierId, userId: actor.userId });
     const [replay] = await tx.select().from(fpPurchaseOffers).where(and(
       eq(fpPurchaseOffers.id, parsed.data.operationId), eq(fpPurchaseOffers.tenantId, actor.tenantId),
@@ -585,6 +600,9 @@ router.post("/redfp360/purchases/requests/:id/award", async (req, res): Promise<
         eq(fpOrganizations.id, offer.supplierOrganizationId), eq(fpOrganizations.tenantId, actor.tenantId),
       )).for("share");
     if (!supplier?.isActive) fail(409, "El proveedor se ha archivado; revisa las ofertas antes de adjudicar.");
+    if (!await commonSimulationNetworkId(tx, actor.tenantId, [request.organizationId, offer.supplierOrganizationId])) {
+      fail(409, "No se puede adjudicar una oferta de otra red económica.");
+    }
     const offerLines = await tx.select({
       offerLine: fpPurchaseOfferLines, requestLine: fpPurchaseRequestLines,
     }).from(fpPurchaseOfferLines).innerJoin(fpPurchaseRequestLines, and(

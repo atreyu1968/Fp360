@@ -14,6 +14,7 @@ import {
   fpPurchaseOrders, fpPurchaseReceiptLines, fpPurchaseReceipts, fpBankTransfers,
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
+import { commonSimulationNetworkId } from "../lib/organization-scopes";
 import { purchaseInstructionStatus } from "./purchase-instruction-status.mjs";
 
 const router: IRouter = Router();
@@ -50,6 +51,16 @@ function totalLine(quantity: number, unitPriceCents: number, igicBasisPoints: nu
 }
 function fingerprint(value: unknown) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+async function assertOrderNetwork(
+  tx: Transaction,
+  tenantId: string,
+  buyerOrganizationId: string,
+  supplierOrganizationId: string,
+) {
+  if (!await commonSimulationNetworkId(tx, tenantId, [buyerOrganizationId, supplierOrganizationId])) {
+    fail(409, "Esta operación no puede vincular empresas de redes económicas distintas.");
+  }
 }
 async function audit(tx: Transaction, actor: AuthContext, action: string, description: string, reference: string) {
   await tx.insert(fpActivity).values({
@@ -132,6 +143,7 @@ router.post("/redfp360/purchases/orders/:id/receipts", requireSimulationWriteAcc
       eq(fpPurchaseOrders.id, params.data.id), eq(fpPurchaseOrders.tenantId, actor.tenantId),
     )).for("update");
     if (!order) fail(404, "Pedido de compra no encontrado en tu empresa.");
+    await assertOrderNetwork(tx, actor.tenantId, order.buyerOrganizationId, order.supplierOrganizationId);
     if (!mayManageBuyer(actor, order.buyerOrganizationId)) {
       fail(403, "Solo la empresa compradora puede registrar una recepción.");
     }
@@ -349,6 +361,7 @@ router.post("/redfp360/purchases/orders/:id/invoices", requireSimulationWriteAcc
       eq(fpPurchaseOrders.id, params.data.id), eq(fpPurchaseOrders.tenantId, actor.tenantId),
     )).for("update");
     if (!order) fail(404, "Pedido de compra no encontrado en tu empresa.");
+    await assertOrderNetwork(tx, actor.tenantId, order.buyerOrganizationId, order.supplierOrganizationId);
     if (!mayManageBuyer(actor, order.buyerOrganizationId)) {
       fail(403, "Solo la empresa compradora puede registrar la factura recibida.");
     }
