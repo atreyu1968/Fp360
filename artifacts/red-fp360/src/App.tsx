@@ -1404,12 +1404,19 @@ function Shell({ identity }: { identity: AuthIdentity }) {
       <Link href="/" className="brand-lockup" onClick={() => setMobileNav(false)}>
         <span className="brand-mark"><span>R</span><i /></span><span className="brand-name"><b>RED FP360</b><small>EMPRESA SIMULADA · FP</small></span>
       </Link>
-       <div className="sidebar-context"><span className="context-label">ENTORNO ACTIVO</span><div className="context-selector">
+       <div className="sidebar-context"><span className="context-label">ENTORNO ACTIVO</span><div className={`context-selector${canSelectActiveOrganization ? ' context-selector-switchable' : ''}`}>
          <span className="context-avatar">{activeEnvironment?.name.split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || '—'}</span>
-         <span className="context-choice">{canSelectActiveOrganization
-           ? <><b>Empresa activa</b><select aria-label="Empresa activa" data-testid="select-active-organization" value={activeOrganizationId} onChange={(event) => selectActiveOrganization(event.target.value)}><option value="">Selecciona una empresa</option>{activeOrganizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name} · {organization.center}</option>)}</select></>
-           : <><b>{activeEnvironment?.name ?? 'Empresa no asignada'}</b><small>{activeEnvironment?.center ?? 'Solicita que asignen una empresa'}</small></>}
-         </span>{canSelectActiveOrganization && <ChevronDown size={14} />}
+          <span className="context-choice" aria-live="polite">
+            <b>{activeEnvironment?.name ?? (canSelectActiveOrganization ? 'Selecciona una empresa' : 'Empresa no asignada')}</b>
+            <small>{activeEnvironment?.center ?? (canSelectActiveOrganization ? 'Abre el selector para elegir' : 'Solicita que asignen una empresa')}</small>
+          </span>
+          {canSelectActiveOrganization && <>
+            <ChevronDown size={15} aria-hidden="true" />
+            <select className="context-select-overlay" aria-label="Empresa activa" data-testid="select-active-organization" value={activeOrganizationId} onChange={(event) => selectActiveOrganization(event.target.value)}>
+              <option value="">Selecciona una empresa</option>
+              {activeOrganizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name} · {organization.center}</option>)}
+            </select>
+          </>}
        </div></div>
       <div className="nav-caption">ESPACIO DE TRABAJO</div>
       <nav className="main-nav" aria-label="Navegación principal">{[...navItems, ...(identity.role === 'administrator' ? [{ href: '/administracion', label: 'Administración del sistema', icon: ShieldCheck }] : [])].map(({ href, label, icon: Icon }) => <Link href={href} key={href} className={`nav-link ${location === href ? 'nav-active' : ''}`} onClick={() => setMobileNav(false)} aria-current={location === href ? 'page' : undefined}><Icon size={18} strokeWidth={1.8} /><span>{label}</span>{href === '/aplicaciones' && <span className="nav-count">26</span>}</Link>)}</nav>

@@ -505,14 +505,16 @@ body { margin: 0; }
 .brand-name small { font-size: 8px; letter-spacing: .1em; color: var(--fp-muted); font-weight: 700; }
 .sidebar-context { padding: 20px 14px 17px; }
 .context-label, .nav-caption { display: block; font-size: 9px; font-weight: 700; color: #8799aa; letter-spacing: .1em; padding: 0 9px 8px; }
-.context-selector { width: 100%; background: #f7f9fc; border: 1px solid #e8eef5; padding: 9px; border-radius: 9px; display: flex; align-items: center; text-align: left; gap: 9px; color: var(--fp-navy); }
-.context-avatar { width: 29px; height: 29px; display: grid; place-items: center; flex: 0 0 auto; background: #e6f0fb; border-radius: 7px; font-size: 10px; font-weight: 800; color: var(--fp-blue); }
-.context-choice { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.context-selector b { font-size: 11px; white-space: nowrap; }
-.context-selector small { color: var(--fp-muted); font-size: 9px; white-space: nowrap; }
-.context-selector select { width: 100%; min-width: 0; padding: 0; border: 0; outline: 0; color: #536a82; background: transparent; font: inherit; font-size: 9px; cursor: pointer; }
-.context-selector select:focus-visible { outline: 2px solid #75a8dd; outline-offset: 2px; border-radius: 3px; }
-.context-selector > svg { color: #94a4b3; }
+.context-selector { position: relative; width: 100%; min-width: 0; min-height: 62px; background: #fff; border: 1px solid #dce6f0; padding: 10px; border-radius: 10px; display: flex; align-items: center; text-align: left; gap: 10px; color: var(--fp-navy); box-shadow: 0 3px 10px rgb(17 44 80 / 5%); transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease; }
+.context-selector-switchable { cursor: pointer; }
+.context-selector-switchable:hover { border-color: #b8cee4; background: #fbfdff; box-shadow: 0 4px 13px rgb(17 44 80 / 8%); }
+.context-selector:focus-within { border-color: #75a8dd; outline: 3px solid rgb(23 111 215 / 14%); outline-offset: 2px; }
+.context-avatar { width: 32px; height: 32px; display: grid; place-items: center; flex: 0 0 auto; background: #e6f0fb; border-radius: 9px; font-size: 10px; font-weight: 800; color: var(--fp-blue); }
+.context-choice { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.context-selector b { display: block; min-width: 0; font-size: 11px; line-height: 1.3; white-space: normal; overflow-wrap: anywhere; }
+.context-selector small { display: block; min-width: 0; color: var(--fp-muted); font-size: 9px; line-height: 1.35; white-space: normal; overflow-wrap: anywhere; }
+.context-selector .context-select-overlay { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.context-selector > svg { flex: 0 0 auto; color: #60758a; pointer-events: none; }
 .environment-required { display:flex; align-items:flex-start; gap:14px; max-width:720px; padding:24px; color:var(--fp-navy); }
 .environment-required > svg { flex:0 0 auto; color:var(--fp-blue); }
 .environment-required h2 { margin:0 0 6px; font-size:17px; }
@@ -1102,6 +1104,167 @@ tbody tr:hover:not(:has(.empty-state)) { background: #fbfdff; }
   .market-recent-list li { grid-template-columns: 24px minmax(0, 1fr); padding: 6px 0; }
   .market-recent-list li > .status { grid-column: 2; justify-self: start; margin-bottom: 3px; }
   .market-quick-actions { grid-template-columns: 1fr; }
+}
+
+/* Navigation surfaces reflow instead of becoming nested scroll regions. */
+.main-nav {
+  min-height: 0;
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 3px;
+  overflow: visible !important;
+  overscroll-behavior: auto;
+  padding: 0 10px;
+  scrollbar-width: none;
+}
+.main-nav::-webkit-scrollbar { display: none; }
+.nav-link {
+  min-width: 0;
+  min-height: 33px;
+  height: auto;
+  flex: 0 1 auto;
+  gap: 6px;
+  padding: 5px 6px;
+  font-size: 9px;
+  line-height: 1.15;
+}
+.nav-link > svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.nav-link > span:not(.nav-count) { min-width: 0; overflow-wrap: anywhere; }
+.nav-link .nav-count { flex: 0 0 auto; min-width: 16px; height: 16px; padding: 0 3px; font-size: 8px; }
+.sidebar-context { padding-top: 12px; padding-bottom: 10px; }
+.context-selector { min-height: 52px; padding: 8px; gap: 8px; }
+.sidebar-bottom { padding-top: 8px; }
+.help-card { padding: 10px; }
+
+.catalog-tabs,
+.bank-tabs,
+.ss-tabs,
+.hr-tabs,
+.pay-tabs,
+.cs-tabs,
+.ps-tabs,
+.dm-tabs,
+.emp-tabs,
+.comm-tabs,
+.sc-nav,
+.pf-nav,
+.ev-nav,
+.mt-nav,
+.co-tabs,
+.purchase-tabs,
+.crm-tabs,
+.hacienda-tabs,
+.treasury-tabs,
+.dir-tabs,
+.tabs,
+.small-tabs,
+.accounting-tabs,
+.comm-dept-pills,
+.market-table-toolbar .tabs {
+  min-width: 0 !important;
+  max-width: 100%;
+  display: flex;
+  flex-wrap: wrap !important;
+  overflow: visible !important;
+  scrollbar-width: none !important;
+}
+.catalog-tabs > *,
+.bank-tabs > *,
+.ss-tabs > *,
+.hr-tabs > *,
+.pay-tabs > *,
+.cs-tabs > *,
+.ps-tabs > *,
+.dm-tabs > *,
+.emp-tabs > *,
+.comm-tabs > *,
+.sc-nav > *,
+.pf-nav > *,
+.ev-nav > *,
+.mt-nav > *,
+.co-tabs > *,
+.purchase-tabs > *,
+.crm-tabs > *,
+.hacienda-tabs > *,
+.treasury-tabs > *,
+.dir-tabs > *,
+.tabs > *,
+.small-tabs > *,
+.accounting-tabs > *,
+.comm-dept-pills > *,
+.market-table-toolbar .tabs > * {
+  min-width: 0 !important;
+  max-width: 100%;
+  flex: 0 1 auto !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+.sc-nav button > span,
+.pf-nav button > span,
+.ev-nav button > span,
+.mt-nav button > span,
+.co-tabs button > span { white-space: normal !important; }
+.co-toolbar,
+.mt-toolbar { flex-wrap: wrap; }
+.co-filter,
+.mt-campaign { max-width: 100%; }
+
+@media (max-width: 760px) {
+  .ac-nav {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    overflow: visible !important;
+  }
+  .ac-nav button {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100%;
+    flex: 0 1 auto;
+    white-space: normal;
+  }
+}
+
+@media (max-height: 760px) {
+  .main-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px;
+  }
+  .nav-link {
+    min-height: 39px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: 4px 3px;
+    text-align: center;
+    font-size: 8px;
+    line-height: 1.08;
+  }
+  .nav-link > svg { width: 14px; height: 14px; }
+  .nav-link .nav-count { position: absolute; top: 1px; right: 1px; min-width: 13px; height: 13px; font-size: 7px; }
+  .nav-link.nav-active::before { inset: 4px auto 4px 0; }
+  .sidebar-context { padding: 8px 10px 6px; }
+  .context-label { padding-bottom: 5px; }
+  .context-selector { min-height: 43px; }
+  .context-avatar { width: 25px; height: 25px; }
+  .context-selector small { display: none; }
+  .nav-caption { padding: 3px 12px 6px; font-size: 8px; }
+  .sidebar-bottom { padding: 4px 9px 0; }
+  .help-card { display: none; }
+}
+
+@media (max-height: 600px) {
+  .main-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .nav-link { min-height: 43px; font-size: 7px; }
+  .brand-lockup { height: 51px; min-height: 51px; flex-basis: 51px; }
+  .brand-mark { width: 30px; height: 30px; }
+  .sidebar-context { padding-top: 5px; padding-bottom: 4px; }
+  .context-label { display: none; }
+  .context-selector { min-height: 37px; }
+  .profile-chip { height: 48px; margin-top: 4px; }
+  .profile-leave-network { min-height: 24px; }
 }
 
 /* Logística: expediciones reales del ciclo de ventas simulado */
