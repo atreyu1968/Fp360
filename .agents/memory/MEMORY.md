@@ -12,3 +12,4 @@
 - [Validación de tipos compartidos](dependency-validation.md) — Reconstruye declaraciones compartidas tras cambios de dependencias o contratos antes de validar sus consumidores.
 - [Instalador Ubuntu](redfp360-github-installer.md) — Instalación y actualización desatendidas; documentos privados locales en Ubuntu y almacenamiento administrado en Replit.
 - [Orden de columnas en migraciones Ubuntu](ubuntu-migration-column-order.md) — Las columnas aditivas deben quedar al final de la tabla en el snapshot para coincidir con PostgreSQL.
+- [Menús interiores](redfp360-menu-design.md) — La eliminación de barras de scroll afecta a los menús interiores, no a la barra lateral.

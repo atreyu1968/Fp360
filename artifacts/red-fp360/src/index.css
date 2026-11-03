@@ -1107,37 +1107,6 @@ tbody tr:hover:not(:has(.empty-state)) { background: #fbfdff; }
 }
 
 /* Navigation surfaces reflow instead of becoming nested scroll regions. */
-.main-nav {
-  min-height: 0;
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: start;
-  gap: 3px;
-  overflow: visible !important;
-  overscroll-behavior: auto;
-  padding: 0 10px;
-  scrollbar-width: none;
-}
-.main-nav::-webkit-scrollbar { display: none; }
-.nav-link {
-  min-width: 0;
-  min-height: 33px;
-  height: auto;
-  flex: 0 1 auto;
-  gap: 6px;
-  padding: 5px 6px;
-  font-size: 9px;
-  line-height: 1.15;
-}
-.nav-link > svg { width: 15px; height: 15px; flex: 0 0 auto; }
-.nav-link > span:not(.nav-count) { min-width: 0; overflow-wrap: anywhere; }
-.nav-link .nav-count { flex: 0 0 auto; min-width: 16px; height: 16px; padding: 0 3px; font-size: 8px; }
-.sidebar-context { padding-top: 12px; padding-bottom: 10px; }
-.context-selector { min-height: 52px; padding: 8px; gap: 8px; }
-.sidebar-bottom { padding-top: 8px; }
-.help-card { padding: 10px; }
-
 .catalog-tabs,
 .bank-tabs,
 .ss-tabs,
@@ -1224,47 +1193,6 @@ tbody tr:hover:not(:has(.empty-state)) { background: #fbfdff; }
     flex: 0 1 auto;
     white-space: normal;
   }
-}
-
-@media (max-height: 760px) {
-  .main-nav {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 2px;
-  }
-  .nav-link {
-    min-height: 39px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 2px;
-    padding: 4px 3px;
-    text-align: center;
-    font-size: 8px;
-    line-height: 1.08;
-  }
-  .nav-link > svg { width: 14px; height: 14px; }
-  .nav-link .nav-count { position: absolute; top: 1px; right: 1px; min-width: 13px; height: 13px; font-size: 7px; }
-  .nav-link.nav-active::before { inset: 4px auto 4px 0; }
-  .sidebar-context { padding: 8px 10px 6px; }
-  .context-label { padding-bottom: 5px; }
-  .context-selector { min-height: 43px; }
-  .context-avatar { width: 25px; height: 25px; }
-  .context-selector small { display: none; }
-  .nav-caption { padding: 3px 12px 6px; font-size: 8px; }
-  .sidebar-bottom { padding: 4px 9px 0; }
-  .help-card { display: none; }
-}
-
-@media (max-height: 600px) {
-  .main-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .nav-link { min-height: 43px; font-size: 7px; }
-  .brand-lockup { height: 51px; min-height: 51px; flex-basis: 51px; }
-  .brand-mark { width: 30px; height: 30px; }
-  .sidebar-context { padding-top: 5px; padding-bottom: 4px; }
-  .context-label { display: none; }
-  .context-selector { min-height: 37px; }
-  .profile-chip { height: 48px; margin-top: 4px; }
-  .profile-leave-network { min-height: 24px; }
 }
 
 /* Logística: expediciones reales del ciclo de ventas simulado */
