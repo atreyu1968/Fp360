@@ -60,6 +60,11 @@ function requireProductReader(actor: AuthContext, product: typeof fpProducts.$in
 function nonBlank(value: string | undefined, label: string) {
   if (value !== undefined && !value.trim()) fail(400, `${label} no puede estar vacío.`);
 }
+function validAcademicPeriod(value: string | undefined) {
+  if (value === undefined) return true;
+  const years = /^(\d{4})-(\d{4})$/.exec(value);
+  return !!years && Number(years[2]) === Number(years[1]) + 1;
+}
 function documentResponse(row: typeof fpProductDocuments.$inferSelect) {
   return { ...row, createdAt: row.createdAt.toISOString() };
 }
@@ -92,13 +97,21 @@ router.post("/redfp360/organizations", async (req, res): Promise<void> => {
   if (!body.success) fail(400, "Revisa los datos de la empresa simulada.");
   nonBlank(body.data.name, "El nombre");
   nonBlank(body.data.center, "El centro");
+  if (!validAcademicPeriod(body.data.academicPeriod)) fail(400, "El curso escolar debe usar dos años consecutivos, por ejemplo 2027-2028.");
   const actor = req.auth!;
   if (!isNetworkSupervisor(actor)) fail(403, "Solo la administración o el profesorado de red puede crear empresas.");
+  const {
+    simulationCalendarMode = "ordinary",
+    fiscalYearStartMonth = 1,
+    academicPeriod = "2027-2028",
+    ...organizationInput
+  } = body.data;
+  if (!validAcademicPeriod(academicPeriod)) fail(400, "El curso escolar debe usar dos años consecutivos, por ejemplo 2027-2028.");
   const organization = await db.transaction(async (tx) => {
     await lockDirectory(tx, actor.tenantId);
     await checkDuplicate(tx, actor.tenantId, body.data.name, body.data.center);
     const [created] = await tx.insert(fpOrganizations).values({
-      ...body.data, name: body.data.name.trim(), center: body.data.center.trim(),
+      ...organizationInput, name: body.data.name.trim(), center: body.data.center.trim(),
       id: randomUUID(), tenantId: actor.tenantId, isActive: true,
     }).returning();
     const scope = await ensureOrganizationScope(tx, {
@@ -107,6 +120,9 @@ router.post("/redfp360/organizations", async (req, res): Promise<void> => {
       centerName: created.center,
       actorUserId: actor.userId,
       origin: "organization_created",
+      calendarMode: simulationCalendarMode,
+      fiscalYearStartMonth,
+      academicPeriod,
     });
     await activity(tx, actor, "Empresa creada", `Alta de ${created.name} en el directorio simulado.`, created.id);
     return { organization: created, scope };
@@ -115,6 +131,8 @@ router.post("/redfp360/organizations", async (req, res): Promise<void> => {
     centerId: organization.scope.scope.centerId,
     simulationNetworkId: organization.scope.scope.simulationNetworkId,
     simulationCalendarMode: organization.scope.network.calendarMode,
+    fiscalYearStartMonth: organization.scope.network.fiscalYearStartMonth,
+    academicPeriod: organization.scope.scope.academicPeriod,
     simulationNetworkName: organization.scope.network.name,
   })));
 });
@@ -126,6 +144,12 @@ router.patch("/redfp360/organizations/:id", async (req, res): Promise<void> => {
   nonBlank(body.data.name, "El nombre");
   nonBlank(body.data.center, "El centro");
   const actor = req.auth!;
+  const {
+    simulationCalendarMode,
+    fiscalYearStartMonth,
+    academicPeriod,
+    ...organizationChanges
+  } = body.data;
   const organization = await db.transaction(async (tx) => {
     await lockDirectory(tx, actor.tenantId);
     const [previous] = await tx.select().from(fpOrganizations).where(and(
@@ -137,11 +161,13 @@ router.patch("/redfp360/organizations/:id", async (req, res): Promise<void> => {
     }
     if (!isNetworkSupervisor(actor) &&
       (body.data.isActive !== undefined || body.data.role !== undefined ||
-       body.data.center !== undefined || body.data.island !== undefined)) {
-      fail(403, "Solo la supervisión de red puede cambiar el estado, centro, isla o perfil comercial de una empresa.");
+       body.data.center !== undefined || body.data.island !== undefined ||
+       simulationCalendarMode !== undefined || fiscalYearStartMonth !== undefined ||
+       academicPeriod !== undefined)) {
+      fail(403, "Solo la supervisión de red puede cambiar el estado, centro, perfil comercial o calendario de una empresa.");
     }
-    const name = body.data.name?.trim() ?? previous.name;
-    const center = body.data.center?.trim() ?? previous.center;
+    const name = organizationChanges.name?.trim() ?? previous.name;
+    const center = organizationChanges.center?.trim() ?? previous.center;
     await checkDuplicate(tx, actor.tenantId, name, center, previous.id);
     if (body.data.isActive === false) {
       const [assignment] = await tx.select({ id: fpAuthMemberships.id }).from(fpAuthMemberships).where(and(
@@ -154,7 +180,7 @@ router.patch("/redfp360/organizations/:id", async (req, res): Promise<void> => {
       )).limit(1);
       if (invitation) fail(409, "Revoca primero las invitaciones pendientes vinculadas a esta empresa.");
     }
-    const [updated] = await tx.update(fpOrganizations).set({ ...body.data, name, center })
+    const [updated] = await tx.update(fpOrganizations).set({ ...organizationChanges, name, center })
       .where(and(eq(fpOrganizations.id, previous.id), eq(fpOrganizations.tenantId, actor.tenantId))).returning();
     const scope = await ensureOrganizationScope(tx, {
       organizationId: updated.id,
@@ -162,17 +188,22 @@ router.patch("/redfp360/organizations/:id", async (req, res): Promise<void> => {
       centerName: updated.center,
       actorUserId: actor.userId,
       origin: previous.center === updated.center ? "legacy_backfill" : "center_changed",
+      calendarMode: simulationCalendarMode,
+      fiscalYearStartMonth,
+      academicPeriod,
     });
     if (previous.center !== updated.center) {
       await activity(tx, actor, "Empresa trasladada de centro", `${previous.center} → ${updated.center}. La empresa conserva su red económica e historial.`, previous.id);
     }
-    await activity(tx, actor, "Empresa actualizada", `Se ha actualizado la ficha de ${name}; se conserva su historial.`, previous.id);
+    await activity(tx, actor, "Empresa actualizada", `Se ha actualizado la ficha y la configuración de periodos de ${name}; se conserva su historial.`, previous.id);
     return { organization: updated, scope };
   });
   res.json(UpdateFp360OrganizationResponse.parse(toFp360OrganizationDto(organization.organization, {
     centerId: organization.scope.scope.centerId,
     simulationNetworkId: organization.scope.scope.simulationNetworkId,
     simulationCalendarMode: organization.scope.network.calendarMode,
+    fiscalYearStartMonth: organization.scope.network.fiscalYearStartMonth,
+    academicPeriod: organization.scope.scope.academicPeriod,
     simulationNetworkName: organization.scope.network.name,
   })));
 });
@@ -290,6 +321,8 @@ router.post("/redfp360/organizations/:id/logo-complete", async (req, res): Promi
     centerId: scope.scope.centerId,
     simulationNetworkId: scope.scope.simulationNetworkId,
     simulationCalendarMode: scope.network.calendarMode,
+    fiscalYearStartMonth: scope.network.fiscalYearStartMonth,
+    academicPeriod: scope.scope.academicPeriod,
     simulationNetworkName: scope.network.name,
   })));
 });

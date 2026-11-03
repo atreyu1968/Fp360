@@ -41,6 +41,14 @@ export const Fp360OrganizationInputActivity = {
   other: 'other',
 } as const;
 
+export type Fp360OrganizationInputSimulationCalendarMode = typeof Fp360OrganizationInputSimulationCalendarMode[keyof typeof Fp360OrganizationInputSimulationCalendarMode];
+
+
+export const Fp360OrganizationInputSimulationCalendarMode = {
+  ordinary: 'ordinary',
+  accelerated: 'accelerated',
+} as const;
+
 export interface Fp360OrganizationInput {
   /**
      * @minLength 1
@@ -67,6 +75,18 @@ export interface Fp360OrganizationInput {
   businessEmail?: string;
   /** @maxLength 40 */
   businessPhone?: string;
+  simulationCalendarMode?: Fp360OrganizationInputSimulationCalendarMode;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  fiscalYearStartMonth?: number;
+  /**
+     * @minLength 9
+     * @maxLength 9
+     * @pattern ^[0-9]{4}-[0-9]{4}$
+     */
+  academicPeriod?: string;
 }
 
 export type Fp360OrganizationUpdateIsland = typeof Fp360OrganizationUpdateIsland[keyof typeof Fp360OrganizationUpdateIsland];
@@ -105,6 +125,14 @@ export const Fp360OrganizationUpdateActivity = {
   other: 'other',
 } as const;
 
+export type Fp360OrganizationUpdateSimulationCalendarMode = typeof Fp360OrganizationUpdateSimulationCalendarMode[keyof typeof Fp360OrganizationUpdateSimulationCalendarMode];
+
+
+export const Fp360OrganizationUpdateSimulationCalendarMode = {
+  ordinary: 'ordinary',
+  accelerated: 'accelerated',
+} as const;
+
 export interface Fp360OrganizationUpdate {
   /**
      * @minLength 1
@@ -132,6 +160,18 @@ export interface Fp360OrganizationUpdate {
   businessEmail?: string;
   /** @maxLength 40 */
   businessPhone?: string;
+  simulationCalendarMode?: Fp360OrganizationUpdateSimulationCalendarMode;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  fiscalYearStartMonth?: number;
+  /**
+     * @minLength 9
+     * @maxLength 9
+     * @pattern ^[0-9]{4}-[0-9]{4}$
+     */
+  academicPeriod?: string;
 }
 
 export type OrganizationLogoUploadInputContentType = typeof OrganizationLogoUploadInputContentType[keyof typeof OrganizationLogoUploadInputContentType];
@@ -1978,6 +2018,17 @@ export interface Fp360Organization {
   centerId: string;
   simulationNetworkId: string;
   simulationCalendarMode: Fp360OrganizationSimulationCalendarMode;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  fiscalYearStartMonth: number;
+  /**
+     * @minLength 9
+     * @maxLength 9
+     * @pattern ^[0-9]{4}-[0-9]{4}$
+     */
+  academicPeriod: string;
   simulationNetworkName: string;
   name: string;
   center: string;

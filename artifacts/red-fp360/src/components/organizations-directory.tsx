@@ -75,10 +75,11 @@ export function OrganizationsDirectory({ onNotice }: { onNotice: (m: string) => 
       </div>
       {orgs.isLoading && <div className="skeleton-list" aria-label="Cargando"><span /><span /><span /></div>}
       {orgs.isError && <div className="inline-error" role="alert"><ShieldAlert size={18} /><span>No se ha podido cargar el directorio.</span><button className="text-button" onClick={() => void orgs.refetch()}>Reintentar</button></div>}
-      {orgs.data && <div className="table-scroll redfp-scroll"><table style={{ minWidth: 820 }}><thead><tr><th>Organización</th><th>Centro</th><th>Isla</th><th>Rol en red</th><th>Pedidos históricos</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
+      {orgs.data && <div className="table-scroll redfp-scroll"><table style={{ minWidth: 980 }}><thead><tr><th>Organización</th><th>Centro</th><th>Isla</th><th>Rol en red</th><th>Calendario y periodos</th><th>Pedidos históricos</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
         {rows.map((o) => <tr key={o.id} className={o.isActive ? '' : 'md-row-archived'} data-testid={`row-org-${o.id}`}>
           <td><div className="org-cell"><OrganizationLogo key={o.logoUrl ?? o.id} organization={o} /><span><b>{o.name}</b><small>{o.commercialName || 'Empresa simulada'}</small></span></div></td>
           <td>{o.center}</td><td><span className="island-label">{o.island}</span></td><td><span className="role-pill">{roleLabel(o.role)}</span></td>
+          <td><span>{o.simulationCalendarMode === 'accelerated' ? 'Acelerado' : 'Ordinario'} · ejercicio desde {new Intl.DateTimeFormat('es', { month: 'long' }).format(new Date(2020, o.fiscalYearStartMonth - 1, 1))}</span><small style={{ display: 'block' }}>{o.academicPeriod} · {o.simulationNetworkName}</small></td>
           <td className="numeric">{orders.isLoading ? '…' : orderCount(o.id)}</td>
           <td>{o.isActive ? <span className="status status-green"><span className="status-dot" />Activa</span> : <span className="status md-muted"><span className="status-dot" />Archivada</span>}</td>
           <td><div className="row-actions md-actions">{canManageOrganization(o) ? <>
@@ -88,7 +89,7 @@ export function OrganizationsDirectory({ onNotice }: { onNotice: (m: string) => 
               : <button className="mini-button" onClick={() => { setConfirmError(''); setConfirm(o); }} data-testid={`button-restore-org-${o.id}`}><ArchiveRestore size={13} /> Restaurar</button>)}
           </> : <span className="text-muted">Solo lectura</span>}</div></td>
         </tr>)}
-        {!rows.length && <tr><td colSpan={7}><div className="empty-state"><div className="empty-icon"><Building2 size={20} /></div><strong>{all.length ? 'Sin coincidencias' : 'Aún no hay empresas'}</strong><p>{all.length ? 'Cambia el filtro o la búsqueda.' : 'Crea la primera empresa simulada de la red.'}</p></div></td></tr>}
+         {!rows.length && <tr><td colSpan={8}><div className="empty-state"><div className="empty-icon"><Building2 size={20} /></div><strong>{all.length ? 'Sin coincidencias' : 'Aún no hay empresas'}</strong><p>{all.length ? 'Cambia el filtro o la búsqueda.' : 'Crea la primera empresa simulada de la red.'}</p></div></td></tr>}
       </tbody></table></div>}
       <div className="table-footer"><span>{rows.length} organizaciones</span><span className="footer-simulation"><ShieldAlert size={13} /> Datos ficticios · sin contactos de menores</span></div>
     </section>
@@ -133,6 +134,9 @@ function OrgForm({ org, canEditNetworkFields, onClose, onSaved }: {
   const [postalCode, setPostalCode] = useState(org?.postalCode ?? '');
   const [businessEmail, setBusinessEmail] = useState(org?.businessEmail ?? '');
   const [businessPhone, setBusinessPhone] = useState(org?.businessPhone ?? '');
+  const [calendarMode, setCalendarMode] = useState<Fp360OrganizationInput['simulationCalendarMode']>(org?.simulationCalendarMode ?? 'ordinary');
+  const [fiscalYearStartMonth, setFiscalYearStartMonth] = useState(org?.fiscalYearStartMonth ?? 1);
+  const [academicPeriod, setAcademicPeriod] = useState(org?.academicPeriod ?? '2027-2028');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(org?.logoUrl ?? null);
   const [saving, setSaving] = useState(false);
@@ -163,6 +167,10 @@ function OrgForm({ org, canEditNetworkFields, onClose, onSaved }: {
     e.preventDefault(); setError('');
     const n = name.trim(); const c = center.trim();
     if (!n || !c) return setError('Nombre y centro no pueden quedar vacíos.');
+    const academicYears = /^(\d{4})-(\d{4})$/.exec(academicPeriod.trim());
+    if (!academicYears || Number(academicYears[2]) !== Number(academicYears[1]) + 1) {
+      return setError('Indica un curso escolar consecutivo con el formato 2027-2028.');
+    }
     const isl = island as Fp360OrganizationInputIsland; const r = role as Fp360OrganizationInputRole;
     const profile = {
       name: n,
@@ -176,6 +184,9 @@ function OrgForm({ org, canEditNetworkFields, onClose, onSaved }: {
       postalCode: postalCode.trim(),
       businessEmail: businessEmail.trim(),
       businessPhone: businessPhone.trim(),
+      simulationCalendarMode: calendarMode ?? 'ordinary',
+      fiscalYearStartMonth,
+      academicPeriod: academicPeriod.trim(),
     };
     setSaving(true);
     try {
@@ -188,6 +199,9 @@ function OrgForm({ org, canEditNetworkFields, onClose, onSaved }: {
         if (canEditNetworkFields && c !== org.center) data.center = c;
         if (canEditNetworkFields && isl !== org.island) data.island = isl;
         if (canEditNetworkFields && r !== org.role) data.role = r;
+        if (canEditNetworkFields && profile.simulationCalendarMode !== org.simulationCalendarMode) data.simulationCalendarMode = profile.simulationCalendarMode;
+        if (canEditNetworkFields && fiscalYearStartMonth !== org.fiscalYearStartMonth) data.fiscalYearStartMonth = fiscalYearStartMonth;
+        if (canEditNetworkFields && profile.academicPeriod !== org.academicPeriod) data.academicPeriod = profile.academicPeriod;
         if (activity !== org.activity) data.activity = activity;
         if (profile.commercialName !== org.commercialName) data.commercialName = profile.commercialName;
         if (profile.address !== org.address) data.address = profile.address;
@@ -231,12 +245,16 @@ function OrgForm({ org, canEditNetworkFields, onClose, onSaved }: {
         <label>Centro educativo<input required maxLength={150} value={center} onChange={(e) => setCenter(e.target.value)} disabled={!canEditNetworkFields} data-testid="input-org-center" /></label>
         <label>Isla<select value={island} onChange={(e) => setIsland(e.target.value)} disabled={!canEditNetworkFields} data-testid="select-org-island">{ISLANDS.map((i) => <option key={i} value={i}>{i}</option>)}</select></label>
         <label>Participación en la red<select value={role} onChange={(e) => setRole(e.target.value)} disabled={!canEditNetworkFields} data-testid="select-org-role"><option value="seller">Vende</option><option value="buyer">Compra</option><option value="both">Compra y vende</option></select></label>
+        <label>Calendario económico<select value={calendarMode ?? 'ordinary'} onChange={(e) => setCalendarMode(e.target.value as Fp360OrganizationInput['simulationCalendarMode'])} disabled={!canEditNetworkFields} data-testid="select-org-calendar-mode"><option value="ordinary">Ordinario · ejercicio continuo</option><option value="accelerated">Acelerado · 12 meses por curso</option></select></label>
+        <label>Inicio del ejercicio fiscal<select value={fiscalYearStartMonth} onChange={(e) => setFiscalYearStartMonth(Number(e.target.value))} disabled={!canEditNetworkFields} data-testid="select-org-fiscal-start-month">{Array.from({ length: 12 }, (_, i) => i + 1).map((month) => <option key={month} value={month}>{new Intl.DateTimeFormat('es', { month: 'long' }).format(new Date(2020, month - 1, 1))}</option>)}</select></label>
+        <label>Curso escolar independiente<input required maxLength={9} pattern="[0-9]{4}-[0-9]{4}" value={academicPeriod} onChange={(e) => setAcademicPeriod(e.target.value)} disabled={!canEditNetworkFields} placeholder="2027-2028" data-testid="input-org-academic-period" /></label>
         <label>Dirección simulada<input maxLength={200} value={address} onChange={(e) => setAddress(e.target.value)} data-testid="input-org-address" /></label>
         <label>Municipio<input maxLength={100} value={municipality} onChange={(e) => setMunicipality(e.target.value)} data-testid="input-org-municipality" /></label>
         <label>Código postal<input maxLength={12} value={postalCode} onChange={(e) => setPostalCode(e.target.value)} data-testid="input-org-postal-code" /></label>
         <label>Correo de empresa simulado<input maxLength={150} value={businessEmail} onChange={(e) => setBusinessEmail(e.target.value)} data-testid="input-org-email" /></label>
         <label>Teléfono de empresa simulado<input maxLength={40} value={businessPhone} onChange={(e) => setBusinessPhone(e.target.value)} data-testid="input-org-phone" /></label>
       </div>
+      <p className="form-intro">El curso escolar no cierra ni modifica el ejercicio fiscal. Las empresas se asignan a redes económicas separadas según su calendario y mes de inicio fiscal.</p>
       <div className="org-profile-readonly" aria-label="Identificadores de práctica">
         <label>CIF ficticio<input readOnly value={org?.cif ?? 'Se genera al crear la empresa'} /></label>
         <label>Número de Seguridad Social ficticio<input readOnly value={org?.socialSecurityNumber ?? 'Se genera al crear la empresa'} /></label>

@@ -14,6 +14,17 @@ export interface Fp360Organization {
   centerId: string;
   simulationNetworkId: string;
   simulationCalendarMode: Fp360OrganizationSimulationCalendarMode;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  fiscalYearStartMonth: number;
+  /**
+     * @minLength 9
+     * @maxLength 9
+     * @pattern ^[0-9]{4}-[0-9]{4}$
+     */
+  academicPeriod: string;
   simulationNetworkName: string;
   name: string;
   center: string;

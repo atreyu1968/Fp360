@@ -14,6 +14,7 @@ export const fpOrganizationScopes = pgTable(
     tenantId: text("tenant_id").notNull(),
     centerId: text("center_id").notNull(),
     simulationNetworkId: text("simulation_network_id").notNull(),
+    academicPeriod: text("academic_period").notNull().default("2027-2028"),
     origin: text("origin").$type<Fp360OrganizationScopeOrigin>().notNull(),
     createdByUserId: text("created_by_user_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -15,6 +15,8 @@ export type OrganizationScopeDto = {
   centerId: string;
   simulationNetworkId: string;
   simulationCalendarMode: "ordinary" | "accelerated";
+  fiscalYearStartMonth: number;
+  academicPeriod: string;
   simulationNetworkName: string;
 };
 
@@ -81,25 +83,33 @@ async function getOrCreateCenter(
   return center;
 }
 
-async function getOrCreateDefaultNetwork(
+async function getOrCreateNetwork(
   tx: Transaction,
   tenantId: string,
+  calendarMode: "ordinary" | "accelerated",
+  fiscalYearStartMonth: number,
   createdByUserId: string | null,
 ) {
+  const code = calendarMode === "ordinary" && fiscalYearStartMonth === 1
+    ? DEFAULT_NETWORK_CODE
+    : `${calendarMode}-fiscal-${fiscalYearStartMonth}`;
   await tx.insert(fpSimulationNetworks).values({
     id: randomUUID(),
     tenantId,
-    code: DEFAULT_NETWORK_CODE,
-    name: DEFAULT_NETWORK_NAME,
-    calendarMode: "ordinary",
+    code,
+    name: calendarMode === "ordinary"
+      ? `Red económica ordinaria · ejercicio desde ${fiscalYearStartMonth}`
+      : `Red económica acelerada · ejercicio desde ${fiscalYearStartMonth}`,
+    calendarMode,
+    fiscalYearStartMonth,
     createdByUserId,
   }).onConflictDoNothing();
 
   const [network] = await tx.select().from(fpSimulationNetworks).where(and(
     eq(fpSimulationNetworks.tenantId, tenantId),
-    eq(fpSimulationNetworks.code, DEFAULT_NETWORK_CODE),
+    eq(fpSimulationNetworks.code, code),
   )).limit(1);
-  if (!network) throw new Error("No se pudo resolver la red económica ordinaria.");
+  if (!network) throw new Error("No se pudo resolver la red económica del calendario seleccionado.");
   return network;
 }
 
@@ -111,6 +121,9 @@ export async function ensureOrganizationScope(
     centerName: string;
     actorUserId: string | null;
     origin: Fp360OrganizationScopeOrigin;
+    calendarMode?: "ordinary" | "accelerated";
+    fiscalYearStartMonth?: number;
+    academicPeriod?: string;
   },
 ): Promise<{ scope: typeof fpOrganizationScopes.$inferSelect; network: typeof fpSimulationNetworks.$inferSelect }> {
   const center = await getOrCreateCenter(tx, input.tenantId, input.centerName, input.actorUserId);
@@ -120,8 +133,26 @@ export async function ensureOrganizationScope(
   )).limit(1);
 
   if (existing) {
+    const [currentNetwork] = await tx.select().from(fpSimulationNetworks).where(and(
+      eq(fpSimulationNetworks.id, existing.simulationNetworkId),
+      eq(fpSimulationNetworks.tenantId, input.tenantId),
+    )).limit(1);
+    if (!currentNetwork) throw new Error("La empresa tiene una red económica no válida.");
+    const calendarMode = input.calendarMode ?? currentNetwork.calendarMode;
+    const fiscalYearStartMonth = input.fiscalYearStartMonth ?? currentNetwork.fiscalYearStartMonth;
+    const calendarChanged = calendarMode !== currentNetwork.calendarMode ||
+      fiscalYearStartMonth !== currentNetwork.fiscalYearStartMonth;
+    const network = calendarChanged
+      ? await getOrCreateNetwork(tx, input.tenantId, calendarMode, fiscalYearStartMonth, input.actorUserId)
+      : currentNetwork;
+    const scopeChanges: Partial<typeof fpOrganizationScopes.$inferInsert> = {};
+    if (network.id !== existing.simulationNetworkId) scopeChanges.simulationNetworkId = network.id;
+    if (input.academicPeriod !== undefined && input.academicPeriod !== existing.academicPeriod) {
+      scopeChanges.academicPeriod = input.academicPeriod;
+    }
     if (existing.centerId !== center.id) {
       const [updated] = await tx.update(fpOrganizationScopes).set({
+        ...scopeChanges,
         centerId: center.id,
         origin: "center_changed",
         createdByUserId: input.actorUserId,
@@ -130,28 +161,35 @@ export async function ensureOrganizationScope(
         eq(fpOrganizationScopes.organizationId, input.organizationId),
         eq(fpOrganizationScopes.tenantId, input.tenantId),
       )).returning();
-      const [network] = await tx.select().from(fpSimulationNetworks).where(and(
-        eq(fpSimulationNetworks.id, updated.simulationNetworkId),
-        eq(fpSimulationNetworks.tenantId, input.tenantId),
-      )).limit(1);
-      if (!network) throw new Error("La empresa tiene una red económica no válida.");
       return { scope: updated, network };
     }
 
-    const [network] = await tx.select().from(fpSimulationNetworks).where(and(
-      eq(fpSimulationNetworks.id, existing.simulationNetworkId),
-      eq(fpSimulationNetworks.tenantId, input.tenantId),
-    )).limit(1);
-    if (!network) throw new Error("La empresa tiene una red económica no válida.");
+    if (Object.keys(scopeChanges).length) {
+      const [updated] = await tx.update(fpOrganizationScopes).set({
+        ...scopeChanges,
+        updatedAt: new Date(),
+      }).where(and(
+        eq(fpOrganizationScopes.organizationId, input.organizationId),
+        eq(fpOrganizationScopes.tenantId, input.tenantId),
+      )).returning();
+      return { scope: updated, network };
+    }
     return { scope: existing, network };
   }
 
-  const network = await getOrCreateDefaultNetwork(tx, input.tenantId, input.actorUserId);
+  const network = await getOrCreateNetwork(
+    tx,
+    input.tenantId,
+    input.calendarMode ?? "ordinary",
+    input.fiscalYearStartMonth ?? 1,
+    input.actorUserId,
+  );
   await tx.insert(fpOrganizationScopes).values({
     organizationId: input.organizationId,
     tenantId: input.tenantId,
     centerId: center.id,
     simulationNetworkId: network.id,
+    academicPeriod: input.academicPeriod ?? "2027-2028",
     origin: input.origin,
     createdByUserId: input.actorUserId,
   }).onConflictDoNothing();
@@ -201,6 +239,7 @@ export async function backfillTenantOrganizationScopes(tenantId: string): Promis
       code: DEFAULT_NETWORK_CODE,
       name: DEFAULT_NETWORK_NAME,
       calendarMode: "ordinary",
+      fiscalYearStartMonth: 1,
       createdByUserId: null,
     }).onConflictDoNothing().returning();
     const [defaultNetwork] = network
@@ -256,6 +295,8 @@ export async function backfillTenantOrganizationScopes(tenantId: string): Promis
         centerId: scope.centerId,
         simulationNetworkId: scope.simulationNetworkId,
         simulationCalendarMode: networkItem.calendarMode,
+        fiscalYearStartMonth: networkItem.fiscalYearStartMonth,
+        academicPeriod: scope.academicPeriod,
         simulationNetworkName: networkItem.name,
       });
     }

@@ -8,6 +8,7 @@
 import type { Fp360OrganizationInputActivity } from './fp360OrganizationInputActivity';
 import type { Fp360OrganizationInputIsland } from './fp360OrganizationInputIsland';
 import type { Fp360OrganizationInputRole } from './fp360OrganizationInputRole';
+import type { Fp360OrganizationInputSimulationCalendarMode } from './fp360OrganizationInputSimulationCalendarMode';
 
 export interface Fp360OrganizationInput {
   /**
@@ -35,4 +36,16 @@ export interface Fp360OrganizationInput {
   businessEmail?: string;
   /** @maxLength 40 */
   businessPhone?: string;
+  simulationCalendarMode?: Fp360OrganizationInputSimulationCalendarMode;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  fiscalYearStartMonth?: number;
+  /**
+     * @minLength 9
+     * @maxLength 9
+     * @pattern ^[0-9]{4}-[0-9]{4}$
+     */
+  academicPeriod?: string;
 }

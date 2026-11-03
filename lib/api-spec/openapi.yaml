@@ -5099,6 +5099,9 @@ components:
         postalCode: { type: string, maxLength: 12 }
         businessEmail: { type: string, maxLength: 150 }
         businessPhone: { type: string, maxLength: 40 }
+        simulationCalendarMode: { type: string, enum: [ordinary, accelerated] }
+        fiscalYearStartMonth: { type: integer, minimum: 1, maximum: 12 }
+        academicPeriod: { type: string, minLength: 9, maxLength: 9, pattern: '^[0-9]{4}-[0-9]{4}$' }
     Fp360OrganizationUpdate:
       type: object
       properties:
@@ -5114,6 +5117,9 @@ components:
         postalCode: { type: string, maxLength: 12 }
         businessEmail: { type: string, maxLength: 150 }
         businessPhone: { type: string, maxLength: 40 }
+        simulationCalendarMode: { type: string, enum: [ordinary, accelerated] }
+        fiscalYearStartMonth: { type: integer, minimum: 1, maximum: 12 }
+        academicPeriod: { type: string, minLength: 9, maxLength: 9, pattern: '^[0-9]{4}-[0-9]{4}$' }
     OrganizationLogoUploadInput:
       type: object
       required: [contentType, size]
@@ -6194,12 +6200,14 @@ components:
         - status
     Fp360Organization:
       type: object
-      required: [id, centerId, simulationNetworkId, simulationCalendarMode, simulationNetworkName, name, center, island, role, isActive, activity, commercialName, address, municipality, postalCode, businessEmail, businessPhone, cif, socialSecurityNumber, socialSecurityRegime, logoUrl]
+      required: [id, centerId, simulationNetworkId, simulationCalendarMode, fiscalYearStartMonth, academicPeriod, simulationNetworkName, name, center, island, role, isActive, activity, commercialName, address, municipality, postalCode, businessEmail, businessPhone, cif, socialSecurityNumber, socialSecurityRegime, logoUrl]
       properties:
         id: { type: string }
         centerId: { type: string }
         simulationNetworkId: { type: string }
         simulationCalendarMode: { type: string, enum: [ordinary, accelerated] }
+        fiscalYearStartMonth: { type: integer, minimum: 1, maximum: 12 }
+        academicPeriod: { type: string, minLength: 9, maxLength: 9, pattern: '^[0-9]{4}-[0-9]{4}$' }
         simulationNetworkName: { type: string }
         name: { type: string }
         center: { type: string }

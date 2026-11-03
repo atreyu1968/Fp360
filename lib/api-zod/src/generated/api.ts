@@ -4033,11 +4033,22 @@ export const ListFp360DirectionEventsResponse = zod.array(ListFp360DirectionEven
 /**
  * @summary List simulated market organizations
  */
+export const listFp360OrganizationsResponseFiscalYearStartMonthMax = 12;
+
+export const listFp360OrganizationsResponseAcademicPeriodMin = 9;
+export const listFp360OrganizationsResponseAcademicPeriodMax = 9;
+
+
+export const listFp360OrganizationsResponseAcademicPeriodRegExp = new RegExp('^[0-9]{4}-[0-9]{4}$');
+
+
 export const ListFp360OrganizationsResponseItem = zod.object({
   "id": zod.string(),
   "centerId": zod.string(),
   "simulationNetworkId": zod.string(),
   "simulationCalendarMode": zod.enum(['ordinary', 'accelerated']),
+  "fiscalYearStartMonth": zod.int().min(1).max(listFp360OrganizationsResponseFiscalYearStartMonthMax),
+  "academicPeriod": zod.string().min(listFp360OrganizationsResponseAcademicPeriodMin).max(listFp360OrganizationsResponseAcademicPeriodMax).regex(listFp360OrganizationsResponseAcademicPeriodRegExp),
   "simulationNetworkName": zod.string(),
   "name": zod.string(),
   "center": zod.string(),
@@ -4075,6 +4086,13 @@ export const createFp360OrganizationBodyBusinessEmailMax = 150;
 
 export const createFp360OrganizationBodyBusinessPhoneMax = 40;
 
+export const createFp360OrganizationBodyFiscalYearStartMonthMax = 12;
+
+export const createFp360OrganizationBodyAcademicPeriodMin = 9;
+export const createFp360OrganizationBodyAcademicPeriodMax = 9;
+
+
+export const createFp360OrganizationBodyAcademicPeriodRegExp = new RegExp('^[0-9]{4}-[0-9]{4}$');
 
 
 export const CreateFp360OrganizationBody = zod.object({
@@ -4088,14 +4106,28 @@ export const CreateFp360OrganizationBody = zod.object({
   "municipality": zod.string().max(createFp360OrganizationBodyMunicipalityMax).optional(),
   "postalCode": zod.string().max(createFp360OrganizationBodyPostalCodeMax).optional(),
   "businessEmail": zod.string().max(createFp360OrganizationBodyBusinessEmailMax).optional(),
-  "businessPhone": zod.string().max(createFp360OrganizationBodyBusinessPhoneMax).optional()
+  "businessPhone": zod.string().max(createFp360OrganizationBodyBusinessPhoneMax).optional(),
+  "simulationCalendarMode": zod.enum(['ordinary', 'accelerated']).optional(),
+  "fiscalYearStartMonth": zod.int().min(1).max(createFp360OrganizationBodyFiscalYearStartMonthMax).optional(),
+  "academicPeriod": zod.string().min(createFp360OrganizationBodyAcademicPeriodMin).max(createFp360OrganizationBodyAcademicPeriodMax).regex(createFp360OrganizationBodyAcademicPeriodRegExp).optional()
 })
+
+export const createFp360OrganizationResponseFiscalYearStartMonthMax = 12;
+
+export const createFp360OrganizationResponseAcademicPeriodMin = 9;
+export const createFp360OrganizationResponseAcademicPeriodMax = 9;
+
+
+export const createFp360OrganizationResponseAcademicPeriodRegExp = new RegExp('^[0-9]{4}-[0-9]{4}$');
+
 
 export const CreateFp360OrganizationResponse = zod.object({
   "id": zod.string(),
   "centerId": zod.string(),
   "simulationNetworkId": zod.string(),
   "simulationCalendarMode": zod.enum(['ordinary', 'accelerated']),
+  "fiscalYearStartMonth": zod.int().min(1).max(createFp360OrganizationResponseFiscalYearStartMonthMax),
+  "academicPeriod": zod.string().min(createFp360OrganizationResponseAcademicPeriodMin).max(createFp360OrganizationResponseAcademicPeriodMax).regex(createFp360OrganizationResponseAcademicPeriodRegExp),
   "simulationNetworkName": zod.string(),
   "name": zod.string(),
   "center": zod.string(),
@@ -4136,6 +4168,13 @@ export const updateFp360OrganizationBodyBusinessEmailMax = 150;
 
 export const updateFp360OrganizationBodyBusinessPhoneMax = 40;
 
+export const updateFp360OrganizationBodyFiscalYearStartMonthMax = 12;
+
+export const updateFp360OrganizationBodyAcademicPeriodMin = 9;
+export const updateFp360OrganizationBodyAcademicPeriodMax = 9;
+
+
+export const updateFp360OrganizationBodyAcademicPeriodRegExp = new RegExp('^[0-9]{4}-[0-9]{4}$');
 
 
 export const UpdateFp360OrganizationBody = zod.object({
@@ -4150,14 +4189,28 @@ export const UpdateFp360OrganizationBody = zod.object({
   "municipality": zod.string().max(updateFp360OrganizationBodyMunicipalityMax).optional(),
   "postalCode": zod.string().max(updateFp360OrganizationBodyPostalCodeMax).optional(),
   "businessEmail": zod.string().max(updateFp360OrganizationBodyBusinessEmailMax).optional(),
-  "businessPhone": zod.string().max(updateFp360OrganizationBodyBusinessPhoneMax).optional()
+  "businessPhone": zod.string().max(updateFp360OrganizationBodyBusinessPhoneMax).optional(),
+  "simulationCalendarMode": zod.enum(['ordinary', 'accelerated']).optional(),
+  "fiscalYearStartMonth": zod.int().min(1).max(updateFp360OrganizationBodyFiscalYearStartMonthMax).optional(),
+  "academicPeriod": zod.string().min(updateFp360OrganizationBodyAcademicPeriodMin).max(updateFp360OrganizationBodyAcademicPeriodMax).regex(updateFp360OrganizationBodyAcademicPeriodRegExp).optional()
 })
+
+export const updateFp360OrganizationResponseFiscalYearStartMonthMax = 12;
+
+export const updateFp360OrganizationResponseAcademicPeriodMin = 9;
+export const updateFp360OrganizationResponseAcademicPeriodMax = 9;
+
+
+export const updateFp360OrganizationResponseAcademicPeriodRegExp = new RegExp('^[0-9]{4}-[0-9]{4}$');
+
 
 export const UpdateFp360OrganizationResponse = zod.object({
   "id": zod.string(),
   "centerId": zod.string(),
   "simulationNetworkId": zod.string(),
   "simulationCalendarMode": zod.enum(['ordinary', 'accelerated']),
+  "fiscalYearStartMonth": zod.int().min(1).max(updateFp360OrganizationResponseFiscalYearStartMonthMax),
+  "academicPeriod": zod.string().min(updateFp360OrganizationResponseAcademicPeriodMin).max(updateFp360OrganizationResponseAcademicPeriodMax).regex(updateFp360OrganizationResponseAcademicPeriodRegExp),
   "simulationNetworkName": zod.string(),
   "name": zod.string(),
   "center": zod.string(),
@@ -4200,11 +4253,22 @@ export const CompleteFp360OrganizationLogoUploadParams = zod.object({
   "id": zod.string()
 })
 
+export const completeFp360OrganizationLogoUploadResponseFiscalYearStartMonthMax = 12;
+
+export const completeFp360OrganizationLogoUploadResponseAcademicPeriodMin = 9;
+export const completeFp360OrganizationLogoUploadResponseAcademicPeriodMax = 9;
+
+
+export const completeFp360OrganizationLogoUploadResponseAcademicPeriodRegExp = new RegExp('^[0-9]{4}-[0-9]{4}$');
+
+
 export const CompleteFp360OrganizationLogoUploadResponse = zod.object({
   "id": zod.string(),
   "centerId": zod.string(),
   "simulationNetworkId": zod.string(),
   "simulationCalendarMode": zod.enum(['ordinary', 'accelerated']),
+  "fiscalYearStartMonth": zod.int().min(1).max(completeFp360OrganizationLogoUploadResponseFiscalYearStartMonthMax),
+  "academicPeriod": zod.string().min(completeFp360OrganizationLogoUploadResponseAcademicPeriodMin).max(completeFp360OrganizationLogoUploadResponseAcademicPeriodMax).regex(completeFp360OrganizationLogoUploadResponseAcademicPeriodRegExp),
   "simulationNetworkName": zod.string(),
   "name": zod.string(),
   "center": zod.string(),
