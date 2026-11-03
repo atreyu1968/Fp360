@@ -522,10 +522,32 @@ export const fpCrmOpportunities = pgTable(
     createdByUserId: text("created_by_user_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    contactId: text("contact_id"),
   },
   (table) => [
     index("fp360_crm_opportunities_tenant_idx").on(table.tenantId),
     index("fp360_crm_opportunities_org_idx").on(table.tenantId, table.organizationId),
+  ],
+);
+
+export const fpCrmOpportunityOrderLinks = pgTable(
+  "fp360_crm_opportunity_order_links",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id").notNull(),
+    opportunityId: text("opportunity_id").notNull(),
+    orderId: text("order_id").notNull(),
+    contactId: text("contact_id"),
+    operationId: text("operation_id").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
+    actorUserId: text("actor_user_id").notNull(),
+    actorRole: text("actor_role").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("fp360_crm_opportunity_order_link_order_idx").on(table.tenantId, table.orderId),
+    index("fp360_crm_opportunity_order_link_operation_idx").on(table.tenantId, table.operationId),
+    index("fp360_crm_opportunity_order_link_opportunity_idx").on(table.tenantId, table.opportunityId),
   ],
 );
 

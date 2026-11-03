@@ -16,6 +16,14 @@ export interface Fp360Invoice {
   /** @nullable */
   issuerOrganizationId: string | null;
   buyerName: string;
+  /** @nullable */
+  crmOpportunityId: string | null;
+  /** @nullable */
+  crmOpportunityTitle: string | null;
+  /** @nullable */
+  crmContactId: string | null;
+  /** @nullable */
+  crmContactName: string | null;
   status: Fp360InvoiceStatus;
   lines: Fp360InvoiceLine[];
   /** @minimum 0 */

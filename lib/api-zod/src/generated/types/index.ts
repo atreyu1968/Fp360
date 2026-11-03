@@ -129,6 +129,7 @@ export * from './crmOpportunityHistory';
 export * from './crmOpportunityHistoryFromStage';
 export * from './crmOpportunityHistoryToStage';
 export * from './crmOpportunityInput';
+export * from './crmOpportunityLinkedOrdersItem';
 export * from './crmOpportunityStage';
 export * from './crmOpportunityStageInput';
 export * from './crmOpportunityStageInputStage';

@@ -20,6 +20,11 @@
       "schemaHash": "a99d03aa189f922757e4efaa0e2a374e183ef5c96dc30550cc886f2a40bbc246",
       "snapshot": "0003-bank-supplier-payments.sql",
       "sha256": "9ed8099ab7fdbcf7c8577bc762f9217306ebf1243e89214cb3acb950aeec101d"
+    },
+    {
+      "schemaHash": "38de37d075539bdf1970cb4d03b9fb141ce557092eac39c1d839c08d863bb60a",
+      "snapshot": "0004-crm-opportunity-order-links.sql",
+      "sha256": "3a5b23c74e4b5054a474350658c606efd26bf6b4a59cbd79d8f2d1054b0c05b1"
     }
   ],
   "migrations": [
@@ -39,6 +44,12 @@
       "id": "0003_bank_supplier_payments",
       "file": "0003_bank_supplier_payments.sql.json",
       "sha256": "2b110a38925667b26992f7544266fdf706d093b87bc8d100272e332b35848f76",
+      "backwardsCompatible": true
+    },
+    {
+      "id": "0004_crm_opportunity_order_links",
+      "file": "0004_crm_opportunity_order_links.sql.json",
+      "sha256": "66b30c857e6bbf27006abd04d1b35d073b4e9fd43b24b3463db9e6ddaec8fda3",
       "backwardsCompatible": true
     }
   ]

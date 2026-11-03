@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
   CreateFp360OrderBody,
@@ -24,6 +24,9 @@ import {
 import {
   db,
   fpActivity,
+  fpCrmContacts,
+  fpCrmOpportunities,
+  fpCrmOpportunityOrderLinks,
   fpInvoiceLines,
   fpInvoices,
   fpLogisticsEvents,
@@ -290,6 +293,22 @@ async function loadOrder(id: string, actor: AuthContext) {
     .select()
     .from(fpOrderLines)
     .where(eq(fpOrderLines.orderId, id));
+  const [crmLink] = await db.select({
+    opportunityId: fpCrmOpportunityOrderLinks.opportunityId,
+    opportunityTitle: fpCrmOpportunities.title,
+    organizationId: fpCrmOpportunities.organizationId,
+    contactId: fpCrmOpportunityOrderLinks.contactId,
+    contactName: fpCrmContacts.fullName,
+  }).from(fpCrmOpportunityOrderLinks).innerJoin(fpCrmOpportunities, and(
+    eq(fpCrmOpportunities.id, fpCrmOpportunityOrderLinks.opportunityId),
+    eq(fpCrmOpportunities.tenantId, fpCrmOpportunityOrderLinks.tenantId),
+  )).leftJoin(fpCrmContacts, and(
+    eq(fpCrmContacts.id, fpCrmOpportunityOrderLinks.contactId),
+    eq(fpCrmContacts.tenantId, fpCrmOpportunityOrderLinks.tenantId),
+  )).where(and(
+    eq(fpCrmOpportunityOrderLinks.orderId, id),
+    eq(fpCrmOpportunityOrderLinks.tenantId, tenantId),
+  )).limit(1);
   const products = orderLines.length
     ? await db.select({
       id: fpProducts.id,
@@ -302,6 +321,7 @@ async function loadOrder(id: string, actor: AuthContext) {
   const supplierByProductId = new Map(products.map((product) => [product.id, product.supplierOrganizationId]));
   const networkSupervisor = isNetworkSupervisor(actor);
   const buyerAccess = actor.organizationId === order.buyerOrganizationId;
+  const canSeeCrm = !crmLink || networkSupervisor || actor.organizationId === crmLink.organizationId;
   const visibleLines = networkSupervisor || buyerAccess
     ? orderLines
     : actor.organizationId
@@ -316,6 +336,10 @@ async function loadOrder(id: string, actor: AuthContext) {
     reference: order.reference,
     buyerOrganizationId: order.buyerOrganizationId,
     buyerName: buyer?.name ?? "Entidad de la red",
+    crmOpportunityId: canSeeCrm ? crmLink?.opportunityId ?? null : null,
+    crmOpportunityTitle: canSeeCrm ? crmLink?.opportunityTitle ?? null : null,
+    crmContactId: canSeeCrm ? crmLink?.contactId ?? null : null,
+    crmContactName: canSeeCrm ? crmLink?.contactName ?? null : null,
     status: order.status,
     lines: visibleLines.map((line) => ({
       productId: line.productId,
@@ -339,13 +363,29 @@ async function loadOrder(id: string, actor: AuthContext) {
   };
 }
 
-async function loadInvoice(id: string, tenantId: string) {
+async function loadInvoice(id: string, tenantId: string, actor: AuthContext) {
   const [invoice] = await db
     .select()
     .from(fpInvoices)
     .where(and(eq(fpInvoices.id, id), eq(fpInvoices.tenantId, tenantId)))
     .limit(1);
   if (!invoice) return null;
+  const [crmLink] = await db.select({
+    opportunityId: fpCrmOpportunityOrderLinks.opportunityId,
+    opportunityTitle: fpCrmOpportunities.title,
+    organizationId: fpCrmOpportunities.organizationId,
+    contactId: fpCrmOpportunityOrderLinks.contactId,
+    contactName: fpCrmContacts.fullName,
+  }).from(fpCrmOpportunityOrderLinks).innerJoin(fpCrmOpportunities, and(
+    eq(fpCrmOpportunities.id, fpCrmOpportunityOrderLinks.opportunityId),
+    eq(fpCrmOpportunities.tenantId, fpCrmOpportunityOrderLinks.tenantId),
+  )).leftJoin(fpCrmContacts, and(
+    eq(fpCrmContacts.id, fpCrmOpportunityOrderLinks.contactId),
+    eq(fpCrmContacts.tenantId, fpCrmOpportunityOrderLinks.tenantId),
+  )).where(and(
+    eq(fpCrmOpportunityOrderLinks.orderId, invoice.orderId),
+    eq(fpCrmOpportunityOrderLinks.tenantId, tenantId),
+  )).limit(1);
   const lines = await db
     .select()
     .from(fpInvoiceLines)
@@ -357,12 +397,17 @@ async function loadInvoice(id: string, tenantId: string) {
     .orderBy(fpPayments.createdAt);
   const paidCents = payments.reduce((sum, payment) => sum + payment.amountCents, 0);
   const balanceCents = Math.max(0, invoice.totalCents - paidCents);
+  const canSeeCrm = !crmLink || isNetworkSupervisor(actor) || actor.organizationId === crmLink.organizationId;
   return {
     id: invoice.id,
     reference: invoice.reference,
     orderId: invoice.orderId,
     issuerOrganizationId: invoice.issuerOrganizationId,
     buyerName: invoice.buyerName,
+    crmOpportunityId: canSeeCrm ? crmLink?.opportunityId ?? null : null,
+    crmOpportunityTitle: canSeeCrm ? crmLink?.opportunityTitle ?? null : null,
+    crmContactId: canSeeCrm ? crmLink?.contactId ?? null : null,
+    crmContactName: canSeeCrm ? crmLink?.contactName ?? null : null,
     status: balanceCents === 0 ? "paid" : paidCents > 0 ? "partial" : "outstanding",
     lines: lines.map((line) => ({
       productName: line.productName,
@@ -425,7 +470,7 @@ async function listInvoices(tenantId: string, actor: AuthContext) {
     .from(fpInvoices)
     .where(and(...conditions))
     .orderBy(desc(fpInvoices.createdAt));
-  const mapped = await Promise.all(rows.map((row) => loadInvoice(row.id, tenantId)));
+  const mapped = await Promise.all(rows.map((row) => loadInvoice(row.id, tenantId, actor)));
   return mapped.filter((invoice): invoice is NonNullable<typeof invoice> =>
     Boolean(invoice),
   );
@@ -558,6 +603,10 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  if (parsed.data.crmOpportunityId && !parsed.data.operationId) {
+    res.status(400).json({ error: "La vinculación CRM requiere un identificador de operación para reintentar de forma segura." });
+    return;
+  }
   if (!isNetworkSupervisor(actor) && actor.organizationId !== parsed.data.buyerOrganizationId) {
     res.status(403).json({ error: "Solo puedes crear pedidos para tu propia empresa." });
     return;
@@ -573,9 +622,46 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
     res.status(400).json({ error: "No repitas productos en el mismo pedido." });
     return;
   }
-  const id = newId("order");
-  const reference = `PV-SIM-${randomUUID().slice(0, 8).toUpperCase()}`;
   const created = await db.transaction(async (tx) => {
+    const requestFingerprint = operationFingerprint(parsed.data);
+    if (parsed.data.crmOpportunityId && parsed.data.operationId) {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`fp360-order-op:${tenantId}:${parsed.data.operationId}`}))`);
+      const [previousLink] = await tx.select().from(fpCrmOpportunityOrderLinks).where(and(
+        eq(fpCrmOpportunityOrderLinks.tenantId, tenantId),
+        eq(fpCrmOpportunityOrderLinks.operationId, parsed.data.operationId),
+      )).for("update");
+      if (previousLink) {
+        const [previousOrder] = await tx.select().from(fpOrders).where(and(
+          eq(fpOrders.id, previousLink.orderId), eq(fpOrders.tenantId, tenantId),
+        ));
+        const [previousOpportunity] = await tx.select().from(fpCrmOpportunities).where(and(
+          eq(fpCrmOpportunities.id, previousLink.opportunityId),
+          eq(fpCrmOpportunities.tenantId, tenantId),
+        ));
+        const [currentBuyer] = previousOrder ? await tx.select({
+          id: fpOrganizations.id, role: fpOrganizations.role,
+        }).from(fpOrganizations).where(and(
+          eq(fpOrganizations.id, previousOrder.buyerOrganizationId),
+          eq(fpOrganizations.tenantId, tenantId),
+          eq(fpOrganizations.isActive, true),
+        )) : [];
+        if (!previousOrder || !previousOpportunity || !currentBuyer || !["buyer", "both"].includes(currentBuyer.role)) {
+          return { ok: false as const, status: 404 as const, error: "El pedido o la oportunidad vinculados ya no están disponibles." };
+        }
+        if (previousLink.actorUserId !== actor.userId || previousLink.requestFingerprint !== requestFingerprint) {
+          return { ok: false as const, status: 409 as const, error: "El identificador de operación ya se utilizó con otra solicitud." };
+        }
+        if (
+          previousOrder.buyerOrganizationId !== parsed.data.buyerOrganizationId ||
+          previousOpportunity.organizationId !== previousOrder.buyerOrganizationId ||
+          previousOpportunity.id !== parsed.data.crmOpportunityId ||
+          (!isNetworkSupervisor(actor) && actor.organizationId !== previousOrder.buyerOrganizationId)
+        ) {
+          return { ok: false as const, status: 404 as const, error: "El pedido no existe en tu empresa." };
+        }
+        return { ok: true as const, orderId: previousOrder.id, replay: true };
+      }
+    }
     const [buyer] = await tx
       .select()
       .from(fpOrganizations)
@@ -588,9 +674,32 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
       .limit(1);
     if (!buyer || !buyer.isActive || !["buyer", "both"].includes(buyer.role)) {
       return {
-        ok: false as const,
+        ok: false as const, status: 400 as const,
         error: "Selecciona una empresa compradora activa de tu red.",
       };
+    }
+    let opportunity: typeof fpCrmOpportunities.$inferSelect | undefined;
+    if (parsed.data.crmOpportunityId) {
+      [opportunity] = await tx.select().from(fpCrmOpportunities).where(and(
+        eq(fpCrmOpportunities.id, parsed.data.crmOpportunityId),
+        eq(fpCrmOpportunities.tenantId, tenantId),
+      )).for("update");
+      if (!opportunity || opportunity.organizationId !== buyer.id) {
+        return { ok: false as const, status: 404 as const, error: "La oportunidad no existe en la empresa compradora seleccionada." };
+      }
+      if (opportunity.stage !== "won") {
+        return { ok: false as const, status: 409 as const, error: "Solo se pueden vincular pedidos a una oportunidad ganada." };
+      }
+      if (opportunity.contactId) {
+        const [contact] = await tx.select({ id: fpCrmContacts.id }).from(fpCrmContacts).where(and(
+          eq(fpCrmContacts.id, opportunity.contactId),
+          eq(fpCrmContacts.tenantId, tenantId),
+          eq(fpCrmContacts.organizationId, opportunity.organizationId),
+        ));
+        if (!contact) {
+          return { ok: false as const, status: 409 as const, error: "El contacto asociado ya no pertenece a la empresa de la oportunidad." };
+        }
+      }
     }
     const productIds = [...productQuantities.keys()];
     const products = await tx
@@ -604,15 +713,15 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
       )
       .for("update");
     if (products.length !== productIds.length) {
-      return { ok: false as const, error: "Uno de los productos ya no está disponible." };
+      return { ok: false as const, status: 400 as const, error: "Uno de los productos ya no está disponible." };
     }
     for (const product of products) {
       if (!product.isActive || !product.isPublished) {
-        return { ok: false as const, error: "Uno de los productos no está activo y aprobado para el mercado." };
+        return { ok: false as const, status: 400 as const, error: "Uno de los productos no está activo y aprobado para el mercado." };
       }
       const requested = productQuantities.get(product.id) ?? 0;
       if (product.tracksInventory && product.stock - product.reserved < requested) {
-        return { ok: false as const, error: `Stock insuficiente para ${product.name}.` };
+        return { ok: false as const, status: 400 as const, error: `Stock insuficiente para ${product.name}.` };
       }
     }
     const totalCents = products.reduce(
@@ -622,10 +731,12 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
     );
     if (!Number.isSafeInteger(totalCents)) {
       return {
-        ok: false as const,
+        ok: false as const, status: 400 as const,
         error: "El importe supera el límite permitido para esta simulación.",
       };
     }
+    const id = newId("order");
+    const reference = `PV-SIM-${randomUUID().slice(0, 8).toUpperCase()}`;
     await tx.insert(fpOrders).values({
       id,
       tenantId,
@@ -651,14 +762,37 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
         tracksInventory: product.tracksInventory,
       })),
     );
-    return { ok: true as const };
+    if (opportunity && parsed.data.operationId) {
+      await tx.insert(fpCrmOpportunityOrderLinks).values({
+        id: newId("crm-order-link"),
+        tenantId,
+        opportunityId: opportunity.id,
+        orderId: id,
+        contactId: opportunity.contactId,
+        operationId: parsed.data.operationId,
+        requestFingerprint,
+        actorUserId: actor.userId,
+        actorRole: actor.role,
+      });
+      await tx.insert(fpActivity).values({
+        id: newId("activity"),
+        tenantId,
+        action: "Oportunidad vinculada con pedido",
+        description: `${opportunity.title} vinculada explícitamente con ${reference}.`,
+        reference,
+        simulatedDate: SIMULATED_DATE,
+      });
+    }
+    return { ok: true as const, orderId: id, reference, replay: false };
   });
   if (!created.ok) {
-    res.status(400).json({ error: created.error });
+    res.status(created.status).json({ error: created.error });
     return;
   }
-  await addActivity(tenantId, "Presupuesto creado", "Nuevo pedido en borrador.", reference);
-  const order = await loadOrder(id, actor);
+  if (!created.replay && "reference" in created && created.reference) {
+    await addActivity(tenantId, "Presupuesto creado", "Nuevo pedido en borrador.", created.reference);
+  }
+  const order = await loadOrder(created.orderId, actor);
   if (!order) {
     res.status(500).json({ error: "No se pudo recuperar el pedido creado." });
     return;
@@ -1163,7 +1297,7 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
     "Factura emitida para unidades ya entregadas.",
     result.reference,
   );
-  const invoice = await loadInvoice(result.invoiceId, tenantId);
+  const invoice = await loadInvoice(result.invoiceId, tenantId, actor);
   res.status(201).json(IssueFp360InvoiceResponse.parse(invoice));
 });
 
@@ -1320,7 +1454,7 @@ router.post(
         result.reference,
       );
     }
-    const invoice = await loadInvoice(params.data.id, tenantId);
+    const invoice = await loadInvoice(params.data.id, tenantId, actor);
     res.status(result.status).json(RecordFp360PaymentResponse.parse(invoice));
   },
 );

@@ -5403,6 +5403,12 @@ export const ListCrmOpportunitiesResponseItem = zod.object({
   "id": zod.uuid(),
   "organizationId": zod.uuid(),
   "organizationName": zod.string(),
+  "contactId": zod.uuid().nullable(),
+  "contactName": zod.string().nullable(),
+  "linkedOrders": zod.array(zod.object({
+  "id": zod.string(),
+  "reference": zod.string()
+})),
   "title": zod.string(),
   "stage": zod.enum(['new', 'qualified', 'proposal', 'negotiation', 'won', 'lost']),
   "estimatedValueCents": zod.int(),
@@ -5427,6 +5433,7 @@ export const createCrmOpportunityBodyReasonMax = 500;
 
 export const CreateCrmOpportunityBody = zod.object({
   "organizationId": zod.uuid(),
+  "contactId": zod.uuid().nullish(),
   "title": zod.string().min(createCrmOpportunityBodyTitleMin).max(createCrmOpportunityBodyTitleMax),
   "estimatedValueCents": zod.int().min(createCrmOpportunityBodyEstimatedValueCentsMin).max(createCrmOpportunityBodyEstimatedValueCentsMax),
   "expectedDate": zod.iso.date().nullable(),
@@ -5437,6 +5444,12 @@ export const CreateCrmOpportunityResponse = zod.object({
   "id": zod.uuid(),
   "organizationId": zod.uuid(),
   "organizationName": zod.string(),
+  "contactId": zod.uuid().nullable(),
+  "contactName": zod.string().nullable(),
+  "linkedOrders": zod.array(zod.object({
+  "id": zod.string(),
+  "reference": zod.string()
+})),
   "title": zod.string(),
   "stage": zod.enum(['new', 'qualified', 'proposal', 'negotiation', 'won', 'lost']),
   "estimatedValueCents": zod.int(),
@@ -5460,6 +5473,7 @@ export const updateCrmOpportunityBodyEstimatedValueCentsMax = 100000000;
 
 
 export const UpdateCrmOpportunityBody = zod.object({
+  "contactId": zod.uuid().nullish(),
   "title": zod.string().min(updateCrmOpportunityBodyTitleMin).max(updateCrmOpportunityBodyTitleMax).optional(),
   "estimatedValueCents": zod.int().min(updateCrmOpportunityBodyEstimatedValueCentsMin).max(updateCrmOpportunityBodyEstimatedValueCentsMax).optional(),
   "expectedDate": zod.iso.date().nullish()
@@ -5469,6 +5483,12 @@ export const UpdateCrmOpportunityResponse = zod.object({
   "id": zod.uuid(),
   "organizationId": zod.uuid(),
   "organizationName": zod.string(),
+  "contactId": zod.uuid().nullable(),
+  "contactName": zod.string().nullable(),
+  "linkedOrders": zod.array(zod.object({
+  "id": zod.string(),
+  "reference": zod.string()
+})),
   "title": zod.string(),
   "stage": zod.enum(['new', 'qualified', 'proposal', 'negotiation', 'won', 'lost']),
   "estimatedValueCents": zod.int(),
@@ -5497,6 +5517,12 @@ export const MoveCrmOpportunityResponse = zod.object({
   "id": zod.uuid(),
   "organizationId": zod.uuid(),
   "organizationName": zod.string(),
+  "contactId": zod.uuid().nullable(),
+  "contactName": zod.string().nullable(),
+  "linkedOrders": zod.array(zod.object({
+  "id": zod.string(),
+  "reference": zod.string()
+})),
   "title": zod.string(),
   "stage": zod.enum(['new', 'qualified', 'proposal', 'negotiation', 'won', 'lost']),
   "estimatedValueCents": zod.int(),
@@ -5633,6 +5659,10 @@ export const ListFp360OrdersResponseItem = zod.object({
   "reference": zod.string(),
   "buyerOrganizationId": zod.string(),
   "buyerName": zod.string(),
+  "crmOpportunityId": zod.uuid().nullable(),
+  "crmOpportunityTitle": zod.string().nullable(),
+  "crmContactId": zod.uuid().nullable(),
+  "crmContactName": zod.string().nullable(),
   "status": zod.enum(['draft', 'confirmed', 'partial', 'delivered', 'invoiced', 'paid']),
   "lines": zod.array(zod.object({
   "productId": zod.string(),
@@ -5657,6 +5687,9 @@ export const ListFp360OrdersResponse = zod.array(ListFp360OrdersResponseItem)
  * @summary Create a simulated draft order
  */
 
+export const createFp360OrderBodyOperationIdMin = 8;
+export const createFp360OrderBodyOperationIdMax = 120;
+
 
 export const createFp360OrderBodyLinesItemQuantityMax = 999;
 
@@ -5665,6 +5698,8 @@ export const createFp360OrderBodyLinesItemQuantityMax = 999;
 
 export const CreateFp360OrderBody = zod.object({
   "buyerOrganizationId": zod.string().min(1),
+  "crmOpportunityId": zod.uuid().optional(),
+  "operationId": zod.string().min(createFp360OrderBodyOperationIdMin).max(createFp360OrderBodyOperationIdMax).optional(),
   "lines": zod.array(zod.object({
   "productId": zod.string().min(1),
   "quantity": zod.int().min(1).max(createFp360OrderBodyLinesItemQuantityMax)
@@ -5691,6 +5726,10 @@ export const CreateFp360OrderResponse = zod.object({
   "reference": zod.string(),
   "buyerOrganizationId": zod.string(),
   "buyerName": zod.string(),
+  "crmOpportunityId": zod.uuid().nullable(),
+  "crmOpportunityTitle": zod.string().nullable(),
+  "crmContactId": zod.uuid().nullable(),
+  "crmContactName": zod.string().nullable(),
   "status": zod.enum(['draft', 'confirmed', 'partial', 'delivered', 'invoiced', 'paid']),
   "lines": zod.array(zod.object({
   "productId": zod.string(),
@@ -5737,6 +5776,10 @@ export const ConfirmFp360OrderResponse = zod.object({
   "reference": zod.string(),
   "buyerOrganizationId": zod.string(),
   "buyerName": zod.string(),
+  "crmOpportunityId": zod.uuid().nullable(),
+  "crmOpportunityTitle": zod.string().nullable(),
+  "crmContactId": zod.uuid().nullable(),
+  "crmContactName": zod.string().nullable(),
   "status": zod.enum(['draft', 'confirmed', 'partial', 'delivered', 'invoiced', 'paid']),
   "lines": zod.array(zod.object({
   "productId": zod.string(),
@@ -5799,6 +5842,10 @@ export const DispatchFp360OrderResponse = zod.object({
   "reference": zod.string(),
   "buyerOrganizationId": zod.string(),
   "buyerName": zod.string(),
+  "crmOpportunityId": zod.uuid().nullable(),
+  "crmOpportunityTitle": zod.string().nullable(),
+  "crmContactId": zod.uuid().nullable(),
+  "crmContactName": zod.string().nullable(),
   "status": zod.enum(['draft', 'confirmed', 'partial', 'delivered', 'invoiced', 'paid']),
   "lines": zod.array(zod.object({
   "productId": zod.string(),
@@ -6224,6 +6271,10 @@ export const ListFp360InvoicesResponseItem = zod.object({
   "orderId": zod.string(),
   "issuerOrganizationId": zod.string().nullable(),
   "buyerName": zod.string(),
+  "crmOpportunityId": zod.uuid().nullable(),
+  "crmOpportunityTitle": zod.string().nullable(),
+  "crmContactId": zod.uuid().nullable(),
+  "crmContactName": zod.string().nullable(),
   "status": zod.enum(['outstanding', 'partial', 'paid']),
   "lines": zod.array(zod.object({
   "productName": zod.string(),
@@ -6292,6 +6343,10 @@ export const IssueFp360InvoiceResponse = zod.object({
   "orderId": zod.string(),
   "issuerOrganizationId": zod.string().nullable(),
   "buyerName": zod.string(),
+  "crmOpportunityId": zod.uuid().nullable(),
+  "crmOpportunityTitle": zod.string().nullable(),
+  "crmContactId": zod.uuid().nullable(),
+  "crmContactName": zod.string().nullable(),
   "status": zod.enum(['outstanding', 'partial', 'paid']),
   "lines": zod.array(zod.object({
   "productName": zod.string(),
@@ -7650,6 +7705,10 @@ export const RecordFp360PaymentResponse = zod.object({
   "orderId": zod.string(),
   "issuerOrganizationId": zod.string().nullable(),
   "buyerName": zod.string(),
+  "crmOpportunityId": zod.uuid().nullable(),
+  "crmOpportunityTitle": zod.string().nullable(),
+  "crmContactId": zod.uuid().nullable(),
+  "crmContactName": zod.string().nullable(),
   "status": zod.enum(['outstanding', 'partial', 'paid']),
   "lines": zod.array(zod.object({
   "productName": zod.string(),

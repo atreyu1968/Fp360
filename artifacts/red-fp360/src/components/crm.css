@@ -76,6 +76,8 @@
 .crm-mobile-list { display:none; }
 .crm-footerline { display:flex;justify-content:space-between;gap:12px;padding:10px 15px;color:#8294a4;font-size:9px; }
 .crm-sim-tag { display:flex;align-items:center;gap:5px;color:#94702b; }
+.crm-order-link { color:#187b91;font-weight:700;text-decoration:none; }
+.crm-order-link:hover { text-decoration:underline; }
 @media(max-width:900px) { .crm-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }.crm-head { align-items:flex-start;flex-direction:column; }.crm-page { padding:23px 22px 35px; } }
 @media(max-width:620px) {
  .crm-page { padding:20px 13px 30px; }

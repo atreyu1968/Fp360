@@ -5,12 +5,18 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+import type { CrmOpportunityLinkedOrdersItem } from './crmOpportunityLinkedOrdersItem';
 import type { CrmOpportunityStage } from './crmOpportunityStage';
 
 export interface CrmOpportunity {
   id: string;
   organizationId: string;
   organizationName: string;
+  /** @nullable */
+  contactId: string | null;
+  /** @nullable */
+  contactName: string | null;
+  linkedOrders: CrmOpportunityLinkedOrdersItem[];
   title: string;
   stage: CrmOpportunityStage;
   estimatedValueCents: number;

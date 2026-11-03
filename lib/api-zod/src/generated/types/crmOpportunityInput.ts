@@ -8,6 +8,8 @@
 
 export interface CrmOpportunityInput {
   organizationId: string;
+  /** @nullable */
+  contactId?: string | null;
   /**
      * @minLength 2
      * @maxLength 150

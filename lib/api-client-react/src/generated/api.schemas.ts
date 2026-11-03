@@ -957,6 +957,11 @@ export interface CrmContactUpdate {
   isActive?: boolean;
 }
 
+export type CrmOpportunityLinkedOrdersItem = {
+  id: string;
+  reference: string;
+};
+
 export type CrmOpportunityStage = typeof CrmOpportunityStage[keyof typeof CrmOpportunityStage];
 
 
@@ -973,6 +978,11 @@ export interface CrmOpportunity {
   id: string;
   organizationId: string;
   organizationName: string;
+  /** @nullable */
+  contactId: string | null;
+  /** @nullable */
+  contactName: string | null;
+  linkedOrders: CrmOpportunityLinkedOrdersItem[];
   title: string;
   stage: CrmOpportunityStage;
   estimatedValueCents: number;
@@ -985,6 +995,8 @@ export interface CrmOpportunity {
 
 export interface CrmOpportunityInput {
   organizationId: string;
+  /** @nullable */
+  contactId?: string | null;
   /**
      * @minLength 2
      * @maxLength 150
@@ -1005,6 +1017,8 @@ export interface CrmOpportunityInput {
 }
 
 export interface CrmOpportunityUpdate {
+  /** @nullable */
+  contactId?: string | null;
   /**
      * @minLength 2
      * @maxLength 150
@@ -1968,6 +1982,14 @@ export interface Fp360Order {
   reference: string;
   buyerOrganizationId: string;
   buyerName: string;
+  /** @nullable */
+  crmOpportunityId: string | null;
+  /** @nullable */
+  crmOpportunityTitle: string | null;
+  /** @nullable */
+  crmContactId: string | null;
+  /** @nullable */
+  crmContactName: string | null;
   status: Fp360OrderStatus;
   lines: Fp360OrderLine[];
   /** @minimum 0 */
@@ -1989,6 +2011,12 @@ export interface Fp360OrderLineInput {
 export interface Fp360OrderInput {
   /** @minLength 1 */
   buyerOrganizationId: string;
+  crmOpportunityId?: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId?: string;
   /** @minItems 1 */
   lines: Fp360OrderLineInput[];
 }
@@ -6491,6 +6519,14 @@ export interface Fp360Invoice {
   /** @nullable */
   issuerOrganizationId: string | null;
   buyerName: string;
+  /** @nullable */
+  crmOpportunityId: string | null;
+  /** @nullable */
+  crmOpportunityTitle: string | null;
+  /** @nullable */
+  crmContactId: string | null;
+  /** @nullable */
+  crmContactName: string | null;
   status: Fp360InvoiceStatus;
   lines: Fp360InvoiceLine[];
   /** @minimum 0 */

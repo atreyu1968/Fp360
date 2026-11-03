@@ -7,6 +7,8 @@
  */
 
 export interface CrmOpportunityUpdate {
+  /** @nullable */
+  contactId?: string | null;
   /**
      * @minLength 2
      * @maxLength 150

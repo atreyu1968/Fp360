@@ -13,6 +13,14 @@ export interface Fp360Order {
   reference: string;
   buyerOrganizationId: string;
   buyerName: string;
+  /** @nullable */
+  crmOpportunityId: string | null;
+  /** @nullable */
+  crmOpportunityTitle: string | null;
+  /** @nullable */
+  crmContactId: string | null;
+  /** @nullable */
+  crmContactName: string | null;
   status: Fp360OrderStatus;
   lines: Fp360OrderLine[];
   /** @minimum 0 */

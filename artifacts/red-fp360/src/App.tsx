@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import {
   getGetFp360DashboardQueryKey, useConfirmFp360Order, useCreateFp360Order,
+  useListCrmOpportunities,
   useConfirmFp360LogisticsDelivery, useCreateFp360LogisticsIncident,
   useDispatchFp360Order, useIssueFp360Invoice, useListFp360LogisticsShipments,
   useListFp360Invoices, useListFp360Orders,
@@ -26,6 +27,7 @@ import type {
   Fp360Order,
   Fp360Organization,
   Fp360Product,
+  CrmOpportunity,
 } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { httpStatus } from '@/components/admin-shared';
@@ -469,22 +471,39 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
   const confirmOrder = useConfirmFp360Order();
   const dispatchOrder = useDispatchFp360Order();
   const createOrder = useCreateFp360Order();
+  const opportunitiesQuery = useListCrmOpportunities<CrmOpportunity[]>();
   const [newOrder, setNewOrder] = useState(false);
   const [dispatching, setDispatching] = useState<Order | null>(null);
   const [buyerId, setBuyerId] = useState('');
   const [productId, setProductId] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [crmOpportunityId, setCrmOpportunityId] = useState('');
+  const [orderOperationId, setOrderOperationId] = useState('');
+  const [orderAttemptFingerprint, setOrderAttemptFingerprint] = useState('');
   const [dispatchQuantity, setDispatchQuantity] = useState(1);
   const [dispatchOperationId, setDispatchOperationId] = useState('');
   const buyers = (organizations ?? []).filter((org) => org.isActive && (org.role === 'buyer' || org.role === 'both'));
   const orderable = (products ?? []).filter((p) => p.isActive && p.isPublished);
   const selectedProduct = orderable.find((p) => p.id === productId);
+  const wonOpportunities = (opportunitiesQuery.data ?? []).filter((opportunity) =>
+    opportunity.stage === 'won' && opportunity.organizationId === buyerId,
+  );
   const refreshOrders = () => { void queryClient.invalidateQueries({ queryKey: orderQuery.queryKey }); onRefresh(); };
   const submitOrder = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!buyerId || !productId || quantity < 1) return;
-    createOrder.mutate({ data: { buyerOrganizationId: buyerId, lines: [{ productId, quantity }] } }, {
-      onSuccess: () => { setNewOrder(false); setBuyerId(''); setProductId(''); setQuantity(1); refreshOrders(); onNotice('Pedido simulado creado como borrador.'); },
+    const linkedOpportunityId = crmOpportunityId || undefined;
+    const fingerprint = JSON.stringify({ buyerOrganizationId: buyerId, lines: [{ productId, quantity }], crmOpportunityId: linkedOpportunityId });
+    const operationId = orderAttemptFingerprint && orderAttemptFingerprint !== fingerprint
+      ? crypto.randomUUID() : orderOperationId || crypto.randomUUID();
+    setOrderOperationId(operationId);
+    setOrderAttemptFingerprint(fingerprint);
+    createOrder.mutate({ data: {
+      buyerOrganizationId: buyerId, lines: [{ productId, quantity }],
+      ...(linkedOpportunityId ? { crmOpportunityId: linkedOpportunityId } : {}),
+      operationId,
+    } }, {
+      onSuccess: () => { setNewOrder(false); setBuyerId(''); setProductId(''); setQuantity(1); setCrmOpportunityId(''); setOrderOperationId(''); setOrderAttemptFingerprint(''); refreshOrders(); onNotice('Pedido simulado creado como borrador.'); },
       onError: () => onNotice('No se pudo crear el pedido. Revisa los datos e inténtalo de nuevo.'),
     });
   };
@@ -512,7 +531,7 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
   };
   const actionable = orders ?? [];
   return <main className="page-content">
-    <PageHeading path="/ventas"><button className="button button-primary" disabled={readOnly} onClick={() => setNewOrder(true)} data-testid="button-create-order"><Plus size={16} /> Crear pedido</button></PageHeading>
+      <PageHeading path="/ventas"><button className="button button-primary" disabled={readOnly} onClick={() => { setOrderOperationId(crypto.randomUUID()); setOrderAttemptFingerprint(''); setNewOrder(true); }} data-testid="button-create-order"><Plus size={16} /> Crear pedido</button></PageHeading>
     {readOnly && <p role="status">Tu perfil permite consultar los pedidos, pero no modificarlos.</p>}
     <SimulationNotice />
     <div className="sub-metrics">
@@ -526,7 +545,7 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
       <DataTable minWidth={780}><thead><tr><th>Referencia</th><th>Empresa compradora</th><th>Fecha simulada</th><th>Estado</th><th>Total</th><th>Unidades</th><th>Acciones</th></tr></thead><tbody>
         {!states.orders.loading && !states.orders.error && actionable.map((order) => {
           const remaining = order.lines.reduce((sum, line) => sum + line.quantity - line.shippedQuantity, 0);
-          return <tr key={order.id} data-testid={`row-order-${order.id}`}><td><b className="mono ref">{order.reference}</b></td><td>{order.buyerName}</td><td>{dateLabel(order.simulatedDate)}</td><td><Status status={order.status} /></td><td className="price-cell">{money(order.totalCents)}</td><td>{order.lines.reduce((sum, item) => sum + item.shippedQuantity, 0)} / {order.lines.reduce((sum, item) => sum + item.quantity, 0)}</td><td><div className="row-actions">
+           return <tr key={order.id} data-testid={`row-order-${order.id}`}><td><b className="mono ref">{order.reference}</b></td><td>{order.buyerName}{order.crmOpportunityTitle && <small className="table-secondary block">{order.crmOpportunityTitle}{order.crmContactName ? ` · ${order.crmContactName}` : ''}</small>}</td><td>{dateLabel(order.simulatedDate)}</td><td><Status status={order.status} /></td><td className="price-cell">{money(order.totalCents)}</td><td>{order.lines.reduce((sum, item) => sum + item.shippedQuantity, 0)} / {order.lines.reduce((sum, item) => sum + item.quantity, 0)}</td><td><div className="row-actions">
             {order.status === 'draft' && <button className="mini-button" disabled={readOnly || confirmOrder.isPending} onClick={() => confirm(order)} data-testid={`button-confirm-${order.id}`}><Check size={14} /> Confirmar</button>}
             {(order.status === 'confirmed' || order.status === 'partial') && remaining > 0 && <button className="mini-button mini-button-blue" disabled={readOnly} onClick={() => openDispatch(order)} data-testid={`button-dispatch-${order.id}`}><Truck size={14} /> Expedición</button>}
             {order.status === 'delivered' && <span className="text-muted">Listo para facturar</span>}
@@ -538,8 +557,9 @@ function SalesPage({ products, organizations, orders, states, onRefresh, onNotic
     <div className="learning-note"><CircleHelp size={17} /><div><b>Secuencia de venta</b><p>Pedido borrador → confirmación y reserva → expedición parcial o completa → factura. Los importes y movimientos de stock se calculan solo en el entorno de prácticas.</p></div></div>
     {newOrder && <Modal title="Crear pedido simulado" onClose={() => setNewOrder(false)}>
       <form className="form-stack" onSubmit={submitOrder}>
-        <p className="form-intro">Selecciona una empresa de la red y una referencia publicada. Se creará un pedido en estado borrador.</p>
-        <label>Empresa compradora<select required value={buyerId} onChange={(e) => setBuyerId(e.target.value)} data-testid="select-order-buyer"><option value="">Selecciona una organización</option>{buyers.map((org) => <option value={org.id} key={org.id}>{org.name} · {org.island}</option>)}</select></label>
+         <p className="form-intro">Selecciona una empresa de la red y una referencia publicada. Se creará un pedido en estado borrador. El pedido solo se vincula al CRM si eliges una oportunidad ganada.</p>
+         <label>Empresa compradora<select required value={buyerId} onChange={(e) => { setBuyerId(e.target.value); setCrmOpportunityId(''); }} data-testid="select-order-buyer"><option value="">Selecciona una organización</option>{buyers.map((org) => <option value={org.id} key={org.id}>{org.name} · {org.island}</option>)}</select></label>
+         {wonOpportunities.length > 0 && <label>Vincular oportunidad ganada<select value={crmOpportunityId} onChange={(e) => setCrmOpportunityId(e.target.value)} data-testid="select-order-crm-opportunity"><option value="">Sin vínculo CRM</option>{wonOpportunities.map((opportunity) => <option value={opportunity.id} key={opportunity.id}>{opportunity.title}{opportunity.contactName ? ` · ${opportunity.contactName}` : ''}</option>)}</select><small>El pedido y el contacto quedarán asociados al historial de esta oportunidad.</small></label>}
         <label>Producto o servicio<select required value={productId} onChange={(e) => setProductId(e.target.value)} data-testid="select-order-product"><option value="">Selecciona una referencia</option>{orderable.map((product) => <option value={product.id} key={product.id}>{product.name} · {product.itemType === 'service' ? 'Servicio' : 'Producto'} · {money(product.unitPriceCents)} · {product.tracksInventory ? `disp. ${Math.max(0, product.stock - product.reserved)}` : 'sin stock'}</option>)}</select></label>
         <label>Unidades o servicios<input type="number" min={1} max={999} required value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} data-testid="input-order-quantity" /></label>
         {selectedProduct && <div className="calculation-box"><span>Subtotal estimado sin IGIC</span><strong>{money(selectedProduct.unitPriceCents * quantity)}</strong><small>El cálculo fiscal final se efectúa al emitir la factura simulada.</small></div>}
@@ -1055,8 +1075,8 @@ function InvoicesPage({ invoices, orders, stateInvoices, stateOrders, onRefresh,
     <section className="panel">
       <div className="list-toolbar"><SectionTitle title="Facturas" subtitle="Documentos y pagos asociados a pedidos simulados." /><div className="tabs small-tabs"><button className={tab === 'all' ? 'tab-active' : ''} onClick={() => setTab('all')}>Todas</button><button className={tab === 'due' ? 'tab-active' : ''} onClick={() => setTab('due')}>Pendientes</button></div></div>
       <DataMessage state={stateInvoices} />
-      <DataTable minWidth={900}><thead><tr><th>Factura</th><th>Empresa</th><th>Fecha emitida</th><th>Vencimiento</th><th>Base</th><th>IGIC</th><th>Total</th><th>Saldo</th><th>Estado / acción</th></tr></thead><tbody>
-        {!stateInvoices.loading && !stateInvoices.error && shownInvoices.map((invoice) => <tr key={invoice.id} data-testid={`row-invoice-${invoice.id}`}><td><b className="mono ref">{invoice.reference}</b><small className="table-secondary block">Pedido {invoice.orderId}</small></td><td>{invoice.buyerName}</td><td>{dateLabel(invoice.simulatedDate)}</td><td>{invoice.dueDate ? dateLabel(invoice.dueDate) : '—'}</td><td>{money(invoice.baseCents)}</td><td>{money(invoice.igicCents)}</td><td className="price-cell">{money(invoice.totalCents)}</td><td className={invoice.balanceCents ? 'balance-due' : 'balance-paid'}>{money(invoice.balanceCents)}</td><td><div className="invoice-action"><Status status={invoice.status} />{invoice.balanceCents > 0 && <button className="mini-button" disabled={readOnly} onClick={() => startPayment(invoice)} data-testid={`button-payment-${invoice.id}`}>Registrar pago</button>}</div></td></tr>)}
+      <DataTable minWidth={900}><thead><tr><th>Factura</th><th>Empresa / CRM</th><th>Fecha emitida</th><th>Vencimiento</th><th>Base</th><th>IGIC</th><th>Total</th><th>Saldo</th><th>Estado / acción</th></tr></thead><tbody>
+        {!stateInvoices.loading && !stateInvoices.error && shownInvoices.map((invoice) => <tr key={invoice.id} data-testid={`row-invoice-${invoice.id}`}><td><b className="mono ref">{invoice.reference}</b><small className="table-secondary block">Pedido {invoice.orderId}</small></td><td>{invoice.buyerName}{invoice.crmOpportunityTitle && <small className="table-secondary block">{invoice.crmOpportunityTitle}{invoice.crmContactName ? ` · ${invoice.crmContactName}` : ''}</small>}</td><td>{dateLabel(invoice.simulatedDate)}</td><td>{invoice.dueDate ? dateLabel(invoice.dueDate) : '—'}</td><td>{money(invoice.baseCents)}</td><td>{money(invoice.igicCents)}</td><td className="price-cell">{money(invoice.totalCents)}</td><td className={invoice.balanceCents ? 'balance-due' : 'balance-paid'}>{money(invoice.balanceCents)}</td><td><div className="invoice-action"><Status status={invoice.status} />{invoice.balanceCents > 0 && <button className="mini-button" disabled={readOnly} onClick={() => startPayment(invoice)} data-testid={`button-payment-${invoice.id}`}>Registrar pago</button>}</div></td></tr>)}
         {!stateInvoices.loading && !stateInvoices.error && shownInvoices.length === 0 && <TableEmpty colSpan={9} title={tab === 'due' ? 'Sin saldos pendientes' : 'Aún no hay facturas'} detail={tab === 'due' ? 'Todas las facturas registradas están pagadas.' : 'Emite una factura tras registrar una expedición simulada.'} />}
       </tbody></DataTable>
     </section>

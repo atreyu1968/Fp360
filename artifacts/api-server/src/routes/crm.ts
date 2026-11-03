@@ -14,7 +14,7 @@ import {
 } from "@workspace/api-zod";
 import {
   db, fpActivity, fpCrmActivities, fpCrmContacts, fpCrmOpportunities,
-  fpCrmOpportunityHistory, fpOrganizations,
+  fpCrmOpportunityHistory, fpCrmOpportunityOrderLinks, fpOrders, fpOrganizations,
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 
@@ -152,6 +152,7 @@ async function readOpportunities(actor: AuthContext) {
   const rows = await db.select({
     id: fpCrmOpportunities.id, organizationId: fpCrmOpportunities.organizationId,
     organizationName: fpOrganizations.name, title: fpCrmOpportunities.title,
+    contactId: fpCrmOpportunities.contactId, contactName: fpCrmContacts.fullName,
     stage: fpCrmOpportunities.stage, estimatedValueCents: fpCrmOpportunities.estimatedValueCents,
     probabilityBasisPoints: fpCrmOpportunities.probabilityBasisPoints,
     expectedDate: fpCrmOpportunities.expectedDate, createdAt: fpCrmOpportunities.createdAt,
@@ -159,10 +160,33 @@ async function readOpportunities(actor: AuthContext) {
   }).from(fpCrmOpportunities).innerJoin(fpOrganizations, and(
     eq(fpOrganizations.id, fpCrmOpportunities.organizationId),
     eq(fpOrganizations.tenantId, fpCrmOpportunities.tenantId),
+  )).leftJoin(fpCrmContacts, and(
+    eq(fpCrmContacts.id, fpCrmOpportunities.contactId),
+    eq(fpCrmContacts.tenantId, fpCrmOpportunities.tenantId),
+    eq(fpCrmContacts.organizationId, fpCrmOpportunities.organizationId),
   )).where(and(eq(fpCrmOpportunities.tenantId, actor.tenantId), organizationScope))
     .orderBy(desc(fpCrmOpportunities.updatedAt)).limit(500);
+  const linkedOrders = rows.length
+    ? await db.select({
+      opportunityId: fpCrmOpportunityOrderLinks.opportunityId,
+      id: fpOrders.id, reference: fpOrders.reference,
+    }).from(fpCrmOpportunityOrderLinks).innerJoin(fpOrders, and(
+      eq(fpOrders.id, fpCrmOpportunityOrderLinks.orderId),
+      eq(fpOrders.tenantId, fpCrmOpportunityOrderLinks.tenantId),
+    )).where(and(
+      eq(fpCrmOpportunityOrderLinks.tenantId, actor.tenantId),
+      sql`${fpCrmOpportunityOrderLinks.opportunityId} IN (${sql.join(rows.map((row) => sql`${row.id}`), sql`, `)})`,
+    )).orderBy(desc(fpCrmOpportunityOrderLinks.createdAt))
+    : [];
+  const ordersByOpportunity = new Map<string, { id: string; reference: string }[]>();
+  for (const link of linkedOrders) {
+    const current = ordersByOpportunity.get(link.opportunityId) ?? [];
+    current.push({ id: link.id, reference: link.reference });
+    ordersByOpportunity.set(link.opportunityId, current);
+  }
   return ListCrmOpportunitiesResponse.parse(rows.map((row) => ({
-    ...row, createdAt: iso(row.createdAt), updatedAt: iso(row.updatedAt),
+    ...row, linkedOrders: ordersByOpportunity.get(row.id) ?? [],
+    createdAt: iso(row.createdAt), updatedAt: iso(row.updatedAt),
   })));
 }
 router.get("/redfp360/crm/opportunities", async (req, res) => {
@@ -174,9 +198,18 @@ router.post("/redfp360/crm/opportunities", async (req, res): Promise<void> => {
   const actor = req.auth!;
   const opportunityId = await db.transaction(async (tx) => {
     const org = await activeOrganization(tx, actor, parsed.data.organizationId);
+    const contactId = parsed.data.contactId ?? null;
+    if (contactId) {
+      const [contact] = await tx.select({ id: fpCrmContacts.id }).from(fpCrmContacts).where(and(
+        eq(fpCrmContacts.id, contactId), eq(fpCrmContacts.tenantId, actor.tenantId),
+        eq(fpCrmContacts.organizationId, org.id), eq(fpCrmContacts.isActive, true),
+      ));
+      if (!contact) fail(400, "Elige un contacto activo de la misma empresa que la oportunidad.");
+    }
     const id = randomUUID();
     await tx.insert(fpCrmOpportunities).values({
       id, tenantId: actor.tenantId, organizationId: org.id,
+      contactId,
       title: trimNonBlank(parsed.data.title, "El título"),
       stage: "new", estimatedValueCents: parsed.data.estimatedValueCents,
       probabilityBasisPoints: STAGE_PROBABILITY.new,
@@ -205,12 +238,20 @@ router.patch("/redfp360/crm/opportunities/:id", async (req, res): Promise<void> 
       id: fpCrmOpportunities.id,
       title: fpCrmOpportunities.title,
       organizationId: fpCrmOpportunities.organizationId,
+      contactId: fpCrmOpportunities.contactId,
     })
       .from(fpCrmOpportunities).where(and(
         eq(fpCrmOpportunities.id, params.data.id), eq(fpCrmOpportunities.tenantId, actor.tenantId),
       )).for("update");
     if (!previous) fail(404, "Oportunidad no encontrada en tu red.");
     assertOrganizationAccess(actor, previous.organizationId);
+    if (parsed.data.contactId) {
+      const [contact] = await tx.select({ id: fpCrmContacts.id }).from(fpCrmContacts).where(and(
+        eq(fpCrmContacts.id, parsed.data.contactId), eq(fpCrmContacts.tenantId, actor.tenantId),
+        eq(fpCrmContacts.organizationId, previous.organizationId), eq(fpCrmContacts.isActive, true),
+      ));
+      if (!contact) fail(400, "Elige un contacto activo de la misma empresa que la oportunidad.");
+    }
     const [updated] = await tx.update(fpCrmOpportunities).set({
       ...parsed.data,
       ...(parsed.data.title !== undefined ? { title: parsed.data.title.trim() } : {}),

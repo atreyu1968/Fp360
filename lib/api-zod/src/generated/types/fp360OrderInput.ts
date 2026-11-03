@@ -10,6 +10,12 @@ import type { Fp360OrderLineInput } from './fp360OrderLineInput';
 export interface Fp360OrderInput {
   /** @minLength 1 */
   buyerOrganizationId: string;
+  crmOpportunityId?: string;
+  /**
+     * @minLength 8
+     * @maxLength 120
+     */
+  operationId?: string;
   /** @minItems 1 */
   lines: Fp360OrderLineInput[];
 }
