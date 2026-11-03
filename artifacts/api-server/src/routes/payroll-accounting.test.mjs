@@ -19,35 +19,6 @@ const { Pool } = pg;
 const requiredEnvironment = ["DATABASE_URL", "SESSION_SECRET"];
 const missingEnvironment = requiredEnvironment.filter((key) => !process.env[key]);
 
-async function availablePort() {
-  const listener = createServer();
-  await new Promise((resolve, reject) => {
-    listener.once("error", reject);
-    listener.listen(0, "127.0.0.1", resolve);
-  });
-  const address = listener.address();
-  assert.ok(address && typeof address === "object");
-  await new Promise((resolve, reject) => listener.close((error) => error ? reject(error) : resolve()));
-  return address.port;
-}
-
-async function waitForServer(child, baseUrl) {
-  const deadline = Date.now() + 15_000;
-  while (Date.now() < deadline) {
-    if (child.exitCode !== null) {
-      throw new Error(`API test server exited with code ${child.exitCode}`);
-    }
-    try {
-      const response = await fetch(`${baseUrl}/api/healthz`);
-      if (response.ok) return;
-    } catch {
-      // The API is still starting.
-    }
-    await delay(100);
-  }
-  throw new Error("API test server did not become ready");
-}
-
 const payroll = {
   organizationId: "company-a",
   periodKey: "2027-08",
@@ -120,7 +91,36 @@ test("posting the payroll draft requires someone other than the preparer and pay
   assert.equal(validateIndependentPayrollReviewer(run, "accounting-reviewer"), null);
 });
 
-test("simultaneous payroll imports reuse one draft and reject changed account mappings", {
+async function availablePort() {
+  const listener = createServer();
+  await new Promise((resolve, reject) => {
+    listener.once("error", reject);
+    listener.listen(0, "127.0.0.1", resolve);
+  });
+  const address = listener.address();
+  assert.ok(address && typeof address === "object");
+  await new Promise((resolve, reject) => listener.close((error) => error ? reject(error) : resolve()));
+  return address.port;
+}
+
+async function waitForServer(child, baseUrl) {
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) {
+      throw new Error(`API test server exited with code ${child.exitCode}`);
+    }
+    try {
+      const response = await fetch(`${baseUrl}/api/healthz`);
+      if (response.ok) return;
+    } catch {
+      // The API is still starting.
+    }
+    await delay(100);
+  }
+  throw new Error("API test server did not become ready");
+}
+
+test("failed and simultaneous payroll imports leave no partial or duplicate drafts", {
   skip: missingEnvironment.length ? `Requires ${missingEnvironment.join(" and ")}` : false,
 }, async () => {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -131,8 +131,45 @@ test("simultaneous payroll imports reuse one draft and reject changed account ma
   const sessionId = randomUUID();
   const sessionToken = randomBytes(32).toString("base64url");
   const organizationId = randomUUID();
+  const otherOrganizationId = randomUUID();
   const policyId = randomUUID();
-  const payrollRunId = randomUUID();
+  const concurrentRunId = randomUUID();
+  const invalidMappingRunId = randomUUID();
+  const closedPeriodRunId = randomUUID();
+  const operationIds = {
+    invalidMapping: `payroll-invalid-${randomUUID()}`,
+    closedPeriod: `payroll-closed-${randomUUID()}`,
+    validRetry: `payroll-retry-${randomUUID()}`,
+  };
+  const validAccounts = {
+    wagesExpenseAccountId: randomUUID(),
+    employerCostAccountId: randomUUID(),
+    netPayableAccountId: randomUUID(),
+    workerContributionAccountId: randomUUID(),
+    employerContributionAccountId: randomUUID(),
+    withholdingAccountId: randomUUID(),
+    advancesAccountId: randomUUID(),
+    otherDeductionsAccountId: randomUUID(),
+  };
+  const changedAccounts = {
+    ...validAccounts,
+    wagesExpenseAccountId: randomUUID(),
+  };
+  const invalidAccounts = {
+    ...validAccounts,
+    wagesExpenseAccountId: randomUUID(),
+  };
+  const accountRows = [
+    [validAccounts.wagesExpenseAccountId, "test-wages", "expense"],
+    [validAccounts.employerCostAccountId, "test-employer-cost", "expense"],
+    [validAccounts.netPayableAccountId, "test-net-payable", "liability"],
+    [validAccounts.workerContributionAccountId, "test-worker-contribution", "liability"],
+    [validAccounts.employerContributionAccountId, "test-employer-contribution", "liability"],
+    [validAccounts.withholdingAccountId, "test-withholding", "liability"],
+    [validAccounts.advancesAccountId, "test-advances", "asset"],
+    [validAccounts.otherDeductionsAccountId, "test-other-deductions", "liability"],
+    [changedAccounts.wagesExpenseAccountId, "test-alternate-wages", "expense"],
+  ];
   let child;
   let locker;
   let failureTriggerName;
@@ -150,36 +187,64 @@ test("simultaneous payroll imports reuse one draft and reject changed account ma
     await waitForServer(child, baseUrl);
 
     await client.query(
-      `INSERT INTO fp360_auth_users (id, email, display_name, password_hash)
-       VALUES ($1, $2, $3, $4)`,
-      [userId, `${userId}@example.test`, "Payroll import test", "test-only-password-hash"],
+      `INSERT INTO fp360_organizations (id, tenant_id, name, center, island, role, is_active)
+       VALUES
+         ($1, $3, 'Empresa de prueba', 'Centro de prueba', 'Isla ficticia', 'company', true),
+         ($2, $3, 'Otra empresa de prueba', 'Otro centro', 'Isla ficticia', 'company', true)`,
+      [organizationId, otherOrganizationId, tenantId],
     );
     await client.query(
-      `INSERT INTO fp360_auth_memberships (id, user_id, tenant_id, role)
-       VALUES ($1, $2, $3, 'teacher')`,
-      [membershipId, userId, tenantId],
+      `INSERT INTO fp360_auth_users (id, email, display_name, password_hash)
+       VALUES ($1, $2, 'Payroll test user', 'test-only-password-hash')`,
+      [userId, `${userId}@example.test`],
+    );
+    await client.query(
+      `INSERT INTO fp360_auth_memberships (id, user_id, tenant_id, organization_id, role)
+       VALUES ($1, $2, $3, $4, 'team_manager')`,
+      [membershipId, userId, tenantId, organizationId],
     );
     const sessionHash = createHmac("sha256", process.env.SESSION_SECRET)
       .update(sessionToken)
       .digest("hex");
     await client.query(
       `INSERT INTO fp360_auth_sessions
-        (id, user_id, membership_id, token_hash, expires_at)
+         (id, user_id, membership_id, token_hash, expires_at)
        VALUES ($1, $2, $3, $4, NOW() + INTERVAL '1 hour')`,
       [sessionId, userId, membershipId, sessionHash],
     );
     await client.query(
-      `INSERT INTO fp360_organizations (id, tenant_id, name, center, island, role, is_active)
-       VALUES ($1, $2, 'Empresa ficticia de nómina', 'Centro de prueba', 'Isla ficticia', 'company', true)`,
-      [organizationId, tenantId],
-    );
-    await client.query(
       `INSERT INTO fp360_payroll_policies
-        (id, tenant_id, organization_id, version, worker_social_security_bps,
-         employer_social_security_bps, income_withholding_bps, status, operation_id,
-         request_fingerprint, created_by_user_id, created_by_name)
-       VALUES ($1, $2, $3, 1, 600, 3000, 1000, 'active', $4, 'test-policy', $5, 'Payroll import test')`,
+         (id, tenant_id, organization_id, version, worker_social_security_bps,
+          employer_social_security_bps, income_withholding_bps, status, operation_id,
+          request_fingerprint, created_by_user_id, created_by_name)
+       VALUES ($1, $2, $3, 1, 600, 3000, 1000, 'active', $4, 'test-policy', $5, 'Payroll test user')`,
       [policyId, tenantId, organizationId, `policy-${randomUUID()}`, userId],
+    );
+
+    for (const [id, code, nature] of accountRows) {
+      await client.query(
+        `INSERT INTO fp360_accounting_accounts
+           (id, tenant_id, organization_id, code, name, nature, normal_balance,
+            parent_code, active, is_system, created_by_user_id)
+         VALUES ($1, $2, $3, $4, $4, $5, $6, NULL, true, true, $7)`,
+        [
+          id,
+          tenantId,
+          organizationId,
+          code,
+          nature,
+          nature === "asset" || nature === "expense" ? "debit" : "credit",
+          userId,
+        ],
+      );
+    }
+    await client.query(
+      `INSERT INTO fp360_accounting_accounts
+         (id, tenant_id, organization_id, code, name, nature, normal_balance,
+          parent_code, active, is_system, created_by_user_id)
+       VALUES ($1, $2, $3, 'foreign-expense', 'Foreign company expense', 'expense',
+               'debit', NULL, true, true, $4)`,
+      [invalidAccounts.wagesExpenseAccountId, tenantId, otherOrganizationId, userId],
     );
 
     const receiptLines = [{
@@ -198,94 +263,109 @@ test("simultaneous payroll imports reuse one draft and reject changed account ma
       otherDeductionsCents: 8_000,
       netCents: 150_000,
       employerCostCents: 240_000,
-      receiptRef: "REC-202708-TEST",
+      receiptRef: "REC-TEST-2027",
     }];
-    await client.query(
+    const createRun = (id, periodKey, operationId) => client.query(
       `INSERT INTO fp360_payroll_runs
-        (id, tenant_id, organization_id, period_key, version, policy_id, receipt_lines,
-         employee_count, gross_total_cents, net_total_cents, employer_cost_total_cents,
-         status, operation_id, request_fingerprint, created_by_user_id, created_by_name,
-         reviewed_by_user_id, reviewed_by_name)
-       VALUES ($1, $2, $3, '2027-08', 1, $4, $5::jsonb, 1, 200000, 150000, 240000,
-         'closed', $6, 'test-run', $7, 'Payroll import test', $8, 'Payroll reviewer')`,
-      [
-        payrollRunId,
-        tenantId,
-        organizationId,
-        policyId,
-        JSON.stringify(receiptLines),
-        `payroll-run-${randomUUID()}`,
-        userId,
-        randomUUID(),
-      ],
+         (id, tenant_id, organization_id, period_key, version, policy_id, receipt_lines,
+          employee_count, gross_total_cents, net_total_cents, employer_cost_total_cents,
+          status, operation_id, request_fingerprint, created_by_user_id, created_by_name,
+          reviewed_by_user_id, reviewed_by_name)
+       VALUES ($1, $2, $3, $4, 1, $5, $6::jsonb, 1, 200000, 150000, 240000,
+               'closed', $7, 'test-run', $8, 'Payroll test user', $8, 'Payroll reviewer')`,
+      [id, tenantId, organizationId, periodKey, policyId, JSON.stringify(receiptLines), operationId, userId],
     );
-
-    const chartAccounts = [
-      ["6400", "Salarios educativos", "expense", "debit"],
-      ["6420", "Coste educativo empresa", "expense", "debit"],
-      ["4650", "Líquidos educativos pendientes", "liability", "credit"],
-      ["4760", "Cuotas educativas pendientes", "liability", "credit"],
-      ["4751", "Retenciones didácticas por pagar", "liability", "credit"],
-      ["4600", "Anticipos de personal", "asset", "debit"],
-      ["4651", "Otras deducciones educativas", "liability", "credit"],
-      ["6000", "Compras de mercaderías", "expense", "debit"],
-    ];
-    for (const [code, name, nature, normalBalance] of chartAccounts) {
-      await client.query(
-        `INSERT INTO fp360_accounting_accounts
-          (id, tenant_id, organization_id, code, name, nature, normal_balance,
-           parent_code, active, is_system, created_by_user_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, true, true, $8)`,
-        [randomUUID(), tenantId, organizationId, code, name, nature, normalBalance, userId],
-      );
-    }
-    const accountRows = await client.query(
-      `SELECT code, id FROM fp360_accounting_accounts
-       WHERE tenant_id = $1 AND organization_id = $2`,
-      [tenantId, organizationId],
+    await createRun(concurrentRunId, "2027-07", `run-${randomUUID()}`);
+    await createRun(invalidMappingRunId, "2027-08", `run-${randomUUID()}`);
+    await createRun(closedPeriodRunId, "2027-09", `run-${randomUUID()}`);
+    await client.query(
+      `INSERT INTO fp360_accounting_periods
+         (id, tenant_id, organization_id, fiscal_year, period, status, close_reason)
+       VALUES ($1, $2, $3, 2027, 9, 'closed', 'Closed for payroll import test')`,
+      [randomUUID(), tenantId, organizationId],
     );
-    const accountIdByCode = new Map(accountRows.rows.map(({ code, id }) => [code, id]));
-    const payrollAccounts = {
-      wagesExpenseAccountId: accountIdByCode.get("6400"),
-      employerCostAccountId: accountIdByCode.get("6420"),
-      netPayableAccountId: accountIdByCode.get("4650"),
-      workerContributionAccountId: accountIdByCode.get("4760"),
-      employerContributionAccountId: accountIdByCode.get("4760"),
-      withholdingAccountId: accountIdByCode.get("4751"),
-      advancesAccountId: accountIdByCode.get("4600"),
-      otherDeductionsAccountId: accountIdByCode.get("4651"),
-    };
-    assert.ok(Object.values(payrollAccounts).every(Boolean));
 
     const headers = {
       "content-type": "application/json",
       cookie: `redfp360_session=${sessionToken}`,
       origin: baseUrl,
     };
-    const importPayroll = (operationId, mapping = payrollAccounts) => fetch(
-      `${baseUrl}/api/redfp360/accounting/sources/payroll_run/${payrollRunId}/draft`,
+    const importRun = (runId, periodKey, operationId, payrollAccounts = validAccounts) => fetch(
+      `${baseUrl}/api/redfp360/accounting/sources/payroll_run/${runId}/draft`,
       {
         method: "POST",
         headers,
         body: JSON.stringify({
           organizationId,
           operationId,
-          expectedPeriodKey: "2027-08",
+          expectedPeriodKey: periodKey,
           expectedVersion: 1,
-          payrollAccounts: mapping,
+          payrollAccounts,
         }),
       },
+    );
+    const persistedCounts = async (runId, operationId) => (await client.query(
+      `SELECT
+         (SELECT COUNT(*)::int FROM fp360_accounting_entries
+          WHERE tenant_id = $1 AND source_type = 'payroll_run' AND source_id = $2) AS entries,
+         (SELECT COUNT(*)::int FROM fp360_accounting_entry_lines l
+          JOIN fp360_accounting_entries e ON e.id = l.entry_id
+          WHERE e.tenant_id = $1 AND e.source_type = 'payroll_run' AND e.source_id = $2) AS lines,
+         (SELECT COUNT(*)::int FROM fp360_accounting_events ev
+          WHERE ev.tenant_id = $1 AND (
+            ev.operation_id = $3 OR ev.entry_id IN (
+              SELECT id FROM fp360_accounting_entries
+              WHERE tenant_id = $1 AND source_type = 'payroll_run' AND source_id = $2
+            )
+          )) AS events`,
+      [tenantId, runId, operationId],
+    )).rows[0];
+
+    const invalidResponse = await importRun(
+      invalidMappingRunId,
+      "2027-08",
+      operationIds.invalidMapping,
+      invalidAccounts,
+    );
+    assert.equal(invalidResponse.status, 400, JSON.stringify(await invalidResponse.json()));
+    assert.deepEqual(
+      await persistedCounts(invalidMappingRunId, operationIds.invalidMapping),
+      { entries: 0, lines: 0, events: 0 },
+      "an account belonging to another company must not leave accounting records",
+    );
+
+    const closedPeriodResponse = await importRun(
+      closedPeriodRunId,
+      "2027-09",
+      operationIds.closedPeriod,
+    );
+    assert.equal(closedPeriodResponse.status, 409, JSON.stringify(await closedPeriodResponse.json()));
+    assert.deepEqual(
+      await persistedCounts(closedPeriodRunId, operationIds.closedPeriod),
+      { entries: 0, lines: 0, events: 0 },
+      "a closed accounting period must not leave accounting records",
+    );
+
+    const retryResponse = await importRun(
+      invalidMappingRunId,
+      "2027-08",
+      operationIds.validRetry,
+    );
+    assert.equal(retryResponse.status, 201, JSON.stringify(await retryResponse.clone().json()));
+    const retryEntry = await retryResponse.json();
+    assert.ok(retryEntry.id);
+    assert.deepEqual(
+      await persistedCounts(invalidMappingRunId, operationIds.validRetry),
+      { entries: 1, lines: 8, events: 1 },
+      "a corrected import must create one complete draft and audit event",
     );
 
     locker = await pool.connect();
     await locker.query("BEGIN");
-    await locker.query(
-      "SELECT id FROM fp360_payroll_runs WHERE id = $1 FOR UPDATE",
-      [payrollRunId],
-    );
+    await locker.query("SELECT id FROM fp360_payroll_runs WHERE id = $1 FOR UPDATE", [concurrentRunId]);
     const simultaneousRequests = [
-      importPayroll(`payroll-import-a-${randomUUID()}`),
-      importPayroll(`payroll-import-b-${randomUUID()}`),
+      importRun(concurrentRunId, "2027-07", `payroll-import-a-${randomUUID()}`),
+      importRun(concurrentRunId, "2027-07", `payroll-import-b-${randomUUID()}`),
     ];
     let observedWaiters = 0;
     const lockDeadline = Date.now() + 5_000;
@@ -311,39 +391,37 @@ test("simultaneous payroll imports reuse one draft and reject changed account ma
     assert.deepEqual(simultaneousResponses.map((response) => response.status), [201, 201]);
     assert.equal(simultaneousBodies[0].id, simultaneousBodies[1].id);
     assert.equal(simultaneousBodies[0].sourceType, "payroll_run");
-    assert.equal(simultaneousBodies[0].sourceId, payrollRunId);
+    assert.equal(simultaneousBodies[0].sourceId, concurrentRunId);
     assert.equal(simultaneousBodies[0].status, "draft");
-
-    const savedDrafts = await client.query(
-      `SELECT id, status FROM fp360_accounting_entries
-       WHERE tenant_id = $1 AND organization_id = $2
-         AND source_type = 'payroll_run' AND source_id = $3`,
-      [tenantId, organizationId, payrollRunId],
+    assert.deepEqual(
+      await persistedCounts(concurrentRunId, "unmatched-operation"),
+      { entries: 1, lines: 8, events: 1 },
+      "simultaneous imports should persist one complete draft and event",
     );
-    assert.equal(savedDrafts.rowCount, 1, "the source should have exactly one accounting entry");
-    assert.equal(savedDrafts.rows[0].id, simultaneousBodies[0].id);
-    assert.equal(savedDrafts.rows[0].status, "draft");
 
-    const matchingRetryResponse = await importPayroll(`payroll-import-retry-${randomUUID()}`);
+    const matchingRetryResponse = await importRun(
+      concurrentRunId,
+      "2027-07",
+      `payroll-import-retry-${randomUUID()}`,
+    );
     const matchingRetry = await matchingRetryResponse.json();
     assert.equal(matchingRetryResponse.status, 201);
     assert.equal(matchingRetry.id, simultaneousBodies[0].id, "a matching retry should return the original draft");
 
-    const changedMappingResponse = await importPayroll(
+    const changedMappingResponse = await importRun(
+      concurrentRunId,
+      "2027-07",
       `payroll-import-changed-${randomUUID()}`,
-      { ...payrollAccounts, wagesExpenseAccountId: accountIdByCode.get("6000") },
+      changedAccounts,
     );
     const changedMapping = await changedMappingResponse.json();
     assert.equal(changedMappingResponse.status, 409);
     assert.match(changedMapping.error, /otras cuentas/);
-
-    const finalDraftCount = await client.query(
-      `SELECT COUNT(*)::int AS count FROM fp360_accounting_entries
-       WHERE tenant_id = $1 AND organization_id = $2
-         AND source_type = 'payroll_run' AND source_id = $3 AND status = 'draft'`,
-      [tenantId, organizationId, payrollRunId],
+    assert.deepEqual(
+      await persistedCounts(concurrentRunId, "unmatched-operation"),
+      { entries: 1, lines: 8, events: 1 },
+      "retries must not create additional drafts or audit events",
     );
-    assert.equal(finalDraftCount.rows[0].count, 1, "retries must not create additional drafts");
 
     const failedPayrollRunId = randomUUID();
     const failureToken = randomUUID().replaceAll("-", "");
@@ -360,7 +438,7 @@ test("simultaneous payroll imports reuse one draft and reject changed account ma
          employee_count, gross_total_cents, net_total_cents, employer_cost_total_cents,
          status, operation_id, request_fingerprint, created_by_user_id, created_by_name,
          reviewed_by_user_id, reviewed_by_name)
-       VALUES ($1, $2, $3, '2027-09', 1, $4, $5::jsonb, 1, 200000, 150000, 240000,
+       VALUES ($1, $2, $3, '2027-10', 1, $4, $5::jsonb, 1, 200000, 150000, 240000,
          'closed', $6, 'test-run-failure', $7, 'Payroll import test', $8, 'Payroll reviewer')`,
       [
         failedPayrollRunId,
@@ -398,9 +476,9 @@ test("simultaneous payroll imports reuse one draft and reject changed account ma
         body: JSON.stringify({
           organizationId,
           operationId: failedOperationId,
-          expectedPeriodKey: "2027-09",
+          expectedPeriodKey: "2027-10",
           expectedVersion: 1,
-          payrollAccounts,
+          payrollAccounts: validAccounts,
         }),
       },
     );
@@ -449,8 +527,10 @@ test("simultaneous payroll imports reuse one draft and reject changed account ma
     await client.query("DELETE FROM fp360_accounting_events WHERE tenant_id = $1", [tenantId]);
     await client.query("DELETE FROM fp360_accounting_entry_lines WHERE tenant_id = $1", [tenantId]);
     await client.query("DELETE FROM fp360_accounting_entries WHERE tenant_id = $1", [tenantId]);
+    await client.query("DELETE FROM fp360_accounting_sequences WHERE tenant_id = $1", [tenantId]);
     await client.query("DELETE FROM fp360_accounting_periods WHERE tenant_id = $1", [tenantId]);
     await client.query("DELETE FROM fp360_accounting_accounts WHERE tenant_id = $1", [tenantId]);
+    await client.query("DELETE FROM fp360_payroll_events WHERE tenant_id = $1", [tenantId]);
     await client.query("DELETE FROM fp360_payroll_runs WHERE tenant_id = $1", [tenantId]);
     await client.query("DELETE FROM fp360_payroll_policies WHERE tenant_id = $1", [tenantId]);
     await client.query("DELETE FROM fp360_auth_sessions WHERE user_id = $1", [userId]);
