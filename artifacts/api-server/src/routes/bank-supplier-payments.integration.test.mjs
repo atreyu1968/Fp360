@@ -52,10 +52,10 @@ test("supplier payments link one conformed invoice, require independent review, 
   const sessionIds = userIds.map(() => randomUUID());
   const sessionTokens = userIds.map(() => randomBytes(32).toString("base64url"));
   const organizationIds = [buyerId, otherBuyerId, supplierId];
-  const requests = Array.from({ length: 4 }, () => randomUUID());
-  const offers = Array.from({ length: 4 }, () => randomUUID());
-  const orders = Array.from({ length: 4 }, () => randomUUID());
-  const invoices = Array.from({ length: 4 }, () => randomUUID());
+  const requests = Array.from({ length: 5 }, () => randomUUID());
+  const offers = Array.from({ length: 5 }, () => randomUUID());
+  const orders = Array.from({ length: 5 }, () => randomUUID());
+  const invoices = Array.from({ length: 5 }, () => randomUUID());
   const operationIds = Array.from({ length: 5 }, () => `supplier-payment-${randomUUID()}`);
   const failedAuditOperationId = `supplier-payment-${randomUUID()}`;
   const failureToken = randomUUID().replaceAll("-", "");
@@ -73,7 +73,14 @@ test("supplier payments link one conformed invoice, require independent review, 
       },
       body: JSON.stringify(data),
     });
-    return { status: response.status, body: await response.json() };
+    const responseText = await response.text();
+    let body;
+    try {
+      body = JSON.parse(responseText);
+    } catch {
+      body = { error: responseText.slice(0, 300) };
+    }
+    return { status: response.status, body };
   }
 
   const port = await availablePort();
@@ -194,9 +201,12 @@ test("supplier payments link one conformed invoice, require independent review, 
   await waitForServer(child, baseUrl);
 
   const sourceAccountId = `bank-primary:${tenantId}:${buyerId}`;
-  const makeInstruction = (invoiceId, operationId, organizationId = buyerId, token = sessionTokens[0]) =>
+  const makeInstruction = (
+    invoiceId, operationId, organizationId = buyerId, token = sessionTokens[0],
+    accountId = sourceAccountId,
+  ) =>
     request("/redfp360/bank/supplier-payments", "POST", {
-      organizationId, sourceAccountId, invoiceId, operationId,
+      organizationId, sourceAccountId: accountId, invoiceId, operationId,
     }, token);
   const initializedAccounts = await request(
     `/redfp360/bank/overview?organizationId=${buyerId}`, "GET", undefined, sessionTokens[0],
@@ -276,19 +286,49 @@ test("supplier payments link one conformed invoice, require independent review, 
     "The retry's audit event must reference its created instruction");
 
   const competing = await Promise.all([
-    makeInstruction(invoices[0], operationIds[0]),
-    makeInstruction(invoices[0], operationIds[1]),
+    makeInstruction(invoices[4], operationIds[0]),
+    makeInstruction(invoices[4], operationIds[1]),
   ]);
   assert.deepEqual(competing.map((result) => result.status).sort(), [201, 409]);
   const instruction = competing.find((result) => result.status === 201).body;
-  assert.equal(instruction.purchaseInvoiceId, invoices[0]);
+  assert.equal(instruction.purchaseInvoiceId, invoices[4]);
   assert.equal(instruction.organizationId, buyerId);
   assert.equal(instruction.amountCents, 11000);
   assert.equal(instruction.status, "draft");
-  assert.equal((await makeInstruction(invoices[0], instruction.operationId)).status, 200);
+  assert.equal((await makeInstruction(invoices[4], instruction.operationId)).status, 200);
   assert.equal((await makeInstruction(invoices[1], operationIds[2])).status, 409);
   assert.equal((await makeInstruction(invoices[2], operationIds[3])).status, 409);
   assert.equal((await makeInstruction(invoices[3], operationIds[4])).status, 404);
+
+  const supervisorInstruction = await makeInstruction(
+    invoices[3], `supervisor-instruction-${randomUUID()}`, otherBuyerId, sessionTokens[2],
+    `bank-primary:${tenantId}:${otherBuyerId}`,
+  );
+  assert.equal(supervisorInstruction.status, 201, JSON.stringify(supervisorInstruction.body));
+  const buyerInvoiceList = await request(
+    "/redfp360/purchases/invoices", "GET", undefined, sessionTokens[0],
+  );
+  assert.equal(buyerInvoiceList.status, 200, JSON.stringify(buyerInvoiceList.body));
+  assert.equal(buyerInvoiceList.body.some((invoice) => invoice.id === invoices[3]), false,
+    "A buyer must not receive invoices belonging to another buyer company");
+  const inaccessibleCompanyOverview = await request(
+    `/redfp360/bank/overview?organizationId=${otherBuyerId}`, "GET", undefined, sessionTokens[0],
+  );
+  assert.equal(inaccessibleCompanyOverview.status, 403,
+    "Changing the company identifier must not let a buyer open another company's bank");
+  const buyerInvoice = buyerInvoiceList.body.find((invoice) => invoice.id === invoices[0]);
+  assert.equal(buyerInvoice.buyerOrganizationId, buyerId);
+  assert.equal(buyerInvoice.supplierPaymentInstruction.id, retriedInstruction.body.id,
+    "A buyer's invoice must expose only its own linked instruction");
+
+  const supervisorInvoiceList = await request(
+    "/redfp360/purchases/invoices", "GET", undefined, sessionTokens[2],
+  );
+  assert.equal(supervisorInvoiceList.status, 200, JSON.stringify(supervisorInvoiceList.body));
+  const supervisorInvoice = supervisorInvoiceList.body.find((invoice) => invoice.id === invoices[3]);
+  assert.equal(supervisorInvoice.buyerOrganizationId, otherBuyerId);
+  assert.equal(supervisorInvoice.supplierPaymentInstruction.id, supervisorInstruction.body.id,
+    "A network supervisor must receive the invoice's actual buyer company and linked instruction");
 
   const managerToken = sessionTokens[0];
   const reviewerToken = sessionTokens[1];
