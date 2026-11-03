@@ -496,7 +496,7 @@
 body { margin: 0; }
 .app-shell { display: flex; min-height: 100dvh; color: var(--fp-navy); background: var(--fp-surface); }
 .sidebar { width: 248px; position: fixed; inset: 0 auto 0 0; z-index: 30; display: flex; flex-direction: column; background: #fff; border-right: 1px solid var(--fp-border); }
-.brand-lockup { height: 75px; display: flex; align-items: center; gap: 11px; padding: 0 22px; text-decoration: none; color: var(--fp-navy); border-bottom: 1px solid #edf2f7; }
+.brand-lockup { height: 61px; min-height: 61px; flex: 0 0 61px; display: flex; align-items: center; gap: 11px; padding: 0 22px; text-decoration: none; color: var(--fp-navy); border-bottom: 1px solid #edf2f7; }
 .brand-mark { width: 35px; height: 35px; border-radius: 10px; background: var(--fp-blue); display: grid; place-items: center; color: white; font-family: var(--app-font-serif); font-size: 23px; font-weight: 800; position: relative; overflow: hidden; }
 .brand-mark span { position: relative; z-index: 1; transform: translateX(-1px); }
 .brand-mark i { position: absolute; width: 13px; height: 13px; border-radius: 50%; right: -3px; bottom: -2px; background: var(--fp-teal); border: 2px solid #fff; }
