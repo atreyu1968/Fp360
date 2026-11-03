@@ -21,6 +21,8 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   const failureTriggerSuffix = randomUUID().replaceAll("-", "");
   const failureTriggerName = `tax_rectification_fail_${failureTriggerSuffix}`;
   const failureFunctionName = `${failureTriggerName}_fn`;
+  const failureAuditTriggerName = `tax_rectification_audit_fail_${failureTriggerSuffix}`;
+  const failureAuditFunctionName = `${failureAuditTriggerName}_fn`;
   const password = randomBytes(24).toString("base64url");
   const salt = randomBytes(16);
   const passwordHash = `scrypt$32768$8$1$${salt.toString("base64url")}$${scryptSync(password, salt, 64, {
@@ -54,6 +56,8 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   t.after(async () => {
     await pool.query(`DROP TRIGGER IF EXISTS ${failureTriggerName} ON fp360_tax_declarations`);
     await pool.query(`DROP FUNCTION IF EXISTS public.${failureFunctionName}()`);
+    await pool.query(`DROP TRIGGER IF EXISTS ${failureAuditTriggerName} ON fp360_tax_events`);
+    await pool.query(`DROP FUNCTION IF EXISTS public.${failureAuditFunctionName}()`);
     await pool.query("DELETE FROM fp360_tax_events WHERE tenant_id = $1", [tenantId]);
     await pool.query("DELETE FROM fp360_tax_declarations WHERE tenant_id = $1", [tenantId]);
     await pool.query("DELETE FROM fp360_tax_profiles WHERE tenant_id = $1", [tenantId]);
@@ -257,6 +261,58 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
 
   await pool.query(`DROP TRIGGER ${failureTriggerName} ON fp360_tax_declarations`);
   await pool.query(`DROP FUNCTION public.${failureFunctionName}()`);
+
+  const failedAuditOperationId = randomUUID();
+  await pool.query(
+    `CREATE FUNCTION public.${failureAuditFunctionName}() RETURNS trigger
+     LANGUAGE plpgsql AS $$
+     BEGIN
+       IF NEW.operation_id::text = TG_ARGV[0]
+          AND NEW.event_type = 'rectification_created' THEN
+         RAISE EXCEPTION 'controlled rectification audit failure';
+       END IF;
+       RETURN NEW;
+     END;
+     $$`,
+  );
+  await pool.query(
+    `CREATE TRIGGER ${failureAuditTriggerName}
+     BEFORE INSERT ON fp360_tax_events
+     FOR EACH ROW EXECUTE FUNCTION public.${failureAuditFunctionName}('${failedAuditOperationId}')`,
+  );
+  const failedAuditRectification = await request(`/redfp360/tax/declarations/${quarterly.body.id}/action`, "POST", {
+    action: "rectify",
+    operationId: failedAuditOperationId,
+  });
+  assert.equal(failedAuditRectification.status, 500, JSON.stringify(failedAuditRectification.body));
+
+  const originalAfterFailedAudit = await pool.query(
+    `SELECT *
+     FROM fp360_tax_declarations WHERE id = $1 AND tenant_id = $2`,
+    [quarterly.body.id, tenantId],
+  );
+  assert.deepEqual(
+    originalAfterFailedAudit.rows[0],
+    originalBeforeFailedRectification.rows[0],
+    "A failed rectification audit insert must roll back all changes to the original declaration",
+  );
+  const failedAuditVersionCount = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM fp360_tax_declarations
+     WHERE tenant_id = $1 AND supersedes_id = $2`,
+    [tenantId, quarterly.body.id],
+  );
+  assert.equal(failedAuditVersionCount.rows[0].count, 0,
+    "A failed rectification audit insert must not leave a partial version");
+  const failedAuditEventCount = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM fp360_tax_events
+     WHERE tenant_id = $1 AND operation_id = $2`,
+    [tenantId, failedAuditOperationId],
+  );
+  assert.equal(failedAuditEventCount.rows[0].count, 0,
+    "A failed rectification audit insert must not leave a partial event");
+
+  await pool.query(`DROP TRIGGER ${failureAuditTriggerName} ON fp360_tax_events`);
+  await pool.query(`DROP FUNCTION public.${failureAuditFunctionName}()`);
 
   assert.equal(quarterly.body.status, "draft");
   assert.equal(quarterly.body.withholdingBaseCents, 1249900);
