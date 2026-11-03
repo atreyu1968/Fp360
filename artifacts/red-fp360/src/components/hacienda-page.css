@@ -129,6 +129,12 @@
 .hacienda-retention-title > b { color:#284640; font-size:10px; line-height:1.4; }
 .hacienda-retention-card > small { color:#7b8f89; font-size:8px; }
 .hacienda-retention-card .hacienda-button { margin-top:auto; }
+.hacienda-payroll-period { display:flex; flex-direction:column; gap:5px; color:#627b7d; font-size:8px; font-weight:700; }
+.hacienda-payroll-period select { min-height:31px; padding:5px 8px; border:1px solid #d9e5e1; border-radius:5px; color:#36566a; background:#fff; font-size:9px; }
+.hacienda-payroll-preview,.hacienda-payroll-links { display:flex; width:100%; flex-direction:column; gap:5px; padding:9px; border:1px solid #dcebe4; border-radius:5px; color:#55756d; background:#f6fbf8; font-size:8px; line-height:1.45; }
+.hacienda-payroll-preview b,.hacienda-payroll-links b { color:#38635b; font-size:8px; }
+.hacienda-payroll-preview small,.hacienda-payroll-links small { color:#839590; font-size:7px; }
+.hacienda-payroll-links { margin-top:9px; }
 .hacienda-model-meta { display:flex; flex-wrap:wrap; justify-content:space-between; gap:7px; padding:2px 0 5px; color:#8a9994; font-size:8px; }
 .hacienda-official-warning { display:flex; align-items:center; flex-wrap:wrap; gap:7px; padding:8px 9px; border:1px solid #eadfc6; border-radius:5px; color:#876c38; background:#fffaf0; font-size:8px; line-height:1.45; }
 .hacienda-official-warning > svg { flex:0 0 auto; }

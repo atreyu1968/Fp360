@@ -45,6 +45,7 @@ export const fpTaxDeclarations = pgTable(
     lastActionByName: text("last_action_by_name"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    sourcePayrollRunIds: jsonb("source_payroll_run_ids").$type<string[]>(),
   },
   (table) => [
     uniqueIndex("fp360_tax_declaration_operation_idx").on(table.tenantId, table.operationId),

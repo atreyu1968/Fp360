@@ -2819,6 +2819,7 @@ export interface Fp360TaxDeclaration {
   paymentStatus: Fp360TaxDeclarationPaymentStatus;
   sourceInvoiceIds: string[];
   sourcePurchaseInvoiceIds: string[];
+  sourcePayrollRunIds: string[];
   formData?: Fp360TaxDeclarationFormData;
   /** @minimum 0 */
   taxableBaseCents: number;
@@ -2859,6 +2860,34 @@ export interface Fp360TaxSourceDocument {
   /** @minimum 0 */
   taxCents: number;
   status: string;
+}
+
+export type Fp360TaxPayrollSourceStatus = typeof Fp360TaxPayrollSourceStatus[keyof typeof Fp360TaxPayrollSourceStatus];
+
+
+export const Fp360TaxPayrollSourceStatus = {
+  draft: 'draft',
+  reviewed: 'reviewed',
+  closed: 'closed',
+  issued: 'issued',
+  payment_prepared: 'payment_prepared',
+  paid_simulated: 'paid_simulated',
+} as const;
+
+export interface Fp360TaxPayrollSource {
+  id: string;
+  organizationId: string;
+  /** @pattern ^2027-(0[1-9]|1[0-2])$ */
+  periodKey: string;
+  /** @minimum 1 */
+  version: number;
+  /** @minimum 0 */
+  employeeCount: number;
+  /** @minimum 0 */
+  grossTotalCents: number;
+  /** @minimum 0 */
+  withholdingCents: number;
+  status: Fp360TaxPayrollSourceStatus;
 }
 
 export type Fp360TaxRequirementStatus = typeof Fp360TaxRequirementStatus[keyof typeof Fp360TaxRequirementStatus];
@@ -2908,6 +2937,7 @@ export interface Fp360TaxOverview {
   obligations: Fp360TaxObligation[];
   declarations: Fp360TaxDeclaration[];
   sourceDocuments: Fp360TaxSourceDocument[];
+  payrollSources: Fp360TaxPayrollSource[];
   requirements: Fp360TaxRequirement[];
   events: Fp360TaxEvent[];
 }
@@ -2968,6 +2998,12 @@ export interface Fp360TaxDeclarationInput {
      * @maximum 1000000000
      */
   withholdingCents?: number;
+  /**
+     * @minItems 1
+     * @maxItems 12
+     * @items.minLength 1
+     */
+  sourcePayrollRunIds?: string[];
   /**
      * @minLength 8
      * @maxLength 120

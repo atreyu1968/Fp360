@@ -10,6 +10,7 @@ import type { Fp360TaxEvent } from './fp360TaxEvent';
 import type { Fp360TaxModelTemplate } from './fp360TaxModelTemplate';
 import type { Fp360TaxObligation } from './fp360TaxObligation';
 import type { Fp360TaxOverviewSummary } from './fp360TaxOverviewSummary';
+import type { Fp360TaxPayrollSource } from './fp360TaxPayrollSource';
 import type { Fp360TaxProfile } from './fp360TaxProfile';
 import type { Fp360TaxRequirement } from './fp360TaxRequirement';
 import type { Fp360TaxSourceDocument } from './fp360TaxSourceDocument';
@@ -23,6 +24,7 @@ export interface Fp360TaxOverview {
   obligations: Fp360TaxObligation[];
   declarations: Fp360TaxDeclaration[];
   sourceDocuments: Fp360TaxSourceDocument[];
+  payrollSources: Fp360TaxPayrollSource[];
   requirements: Fp360TaxRequirement[];
   events: Fp360TaxEvent[];
 }

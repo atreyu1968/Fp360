@@ -84,7 +84,9 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
   const [busyId, setBusyId] = useState('');
   const [requirementTarget, setRequirementTarget] = useState<Fp360TaxDeclaration | null>(null);
   const [selectedModelCode, setSelectedModelCode] = useState('');
+  const [payrollQuarter, setPayrollQuarter] = useState('2027-Q3');
   const organizationId = identity.organizationId ?? selectedOrganizationId;
+  const organizationLabel = organizations.find((org) => org.id === organizationId)?.name ?? organizationId;
   const canChooseOrganization = !identity.organizationId && ['teacher', 'administrator'].includes(identity.role);
   const readOnly = readOnlyRole(identity.role);
   const canTeach = ['teacher', 'administrator'].includes(identity.role);
@@ -115,6 +117,16 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
     (item.declarationId === null && item.requirementId === null && models.some((m) => item.description.includes(m.modelCode))),
   ), [data?.events, declarationIds, requirementIds, models]);
   const sources = data?.sourceDocuments ?? [];
+  const payrollSources = data?.payrollSources ?? [];
+  const latestPayrollSources = useMemo(() => {
+    const latest = new Map<string, (typeof payrollSources)[number]>();
+    for (const source of payrollSources) {
+      const previous = latest.get(source.periodKey);
+      if (!previous || source.version > previous.version) latest.set(source.periodKey, source);
+    }
+    return [...latest.values()];
+  }, [payrollSources]);
+  const payrollSourceById = useMemo(() => new Map(payrollSources.map((source) => [source.id, source])), [payrollSources]);
   const term = search.trim().toLocaleLowerCase('es');
   const filteredSources = useMemo(() => sources.filter((item) =>
     `${item.reference} ${item.counterparty} ${item.status}`.toLocaleLowerCase('es').includes(term)), [sources, term]);
@@ -187,6 +199,41 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
     } }, {
       onSuccess: () => { invalidate(); onNotice('Borrador fiscal educativo creado. No tiene validez oficial.'); setView('draft'); },
       onError: (error) => setFormError(errorText(error, 'No se pudo crear el borrador.')),
+    });
+  };
+  const importPayrollDraft = (modelCode: '111' | '190', periodKey: string) => {
+    const start = periodKey === '2027'
+      ? '2027-01-01'
+      : `${periodKey.slice(0, 4)}-${String((Number(periodKey.slice(-1)) - 1) * 3 + 1).padStart(2, '0')}-01`;
+    const end = periodKey === '2027'
+      ? '2027-12'
+      : `${periodKey.slice(0, 4)}-${String(Number(periodKey.slice(-1)) * 3).padStart(2, '0')}`;
+    const eligibleSources = latestPayrollSources.filter((source) =>
+      ['closed', 'issued', 'payment_prepared', 'paid_simulated'].includes(source.status)
+      && source.periodKey >= start.slice(0, 7)
+      && source.periodKey <= end);
+    if (!organizationId || eligibleSources.length === 0) {
+      setActionError('No hay nóminas cerradas disponibles para ese periodo.');
+      return;
+    }
+    setActionError('');
+    setBusyId(`payroll-${modelCode}-${periodKey}`);
+    createDeclaration.mutate({ data: {
+      organizationId, taxType: 'withholding', modelCode, periodKey,
+      sourcePayrollRunIds: eligibleSources.map((source) => source.id),
+      operationId: operationId(),
+    } }, {
+      onSuccess: () => {
+        invalidate();
+        setBusyId('');
+        setSelectedModelCode(modelCode);
+        setView('draft');
+        onNotice(`Borrador AEAT ${modelCode} creado desde ${eligibleSources.length} nómina(s) cerrada(s). Revisa los periodos y los importes antes de continuar.`);
+      },
+      onError: (error) => {
+        setBusyId('');
+        setActionError(errorText(error, 'No se pudo crear el borrador desde nóminas.'));
+      },
     });
   };
   const submitProfile = (event: FormEvent<HTMLFormElement>) => {
@@ -316,7 +363,7 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
               })}</div> : <Empty title="Sin obligaciones de este organismo" detail="No hay obligaciones fiscales para la administración seleccionada en el escenario." />}
             </section>
             <aside className="hacienda-side-stack"><section className="hacienda-panel hacienda-focus"><span className="hacienda-overline">FOCO DE APRENDIZAJE</span><h3>Lee el modelo antes de completar el expediente.</h3><p>Revisa la estructura educativa, la aplicabilidad del perfil y los documentos de origen. Toda acción queda en simulación.</p><button type="button" onClick={() => setView('draft')}>Explorar modelos <ArrowRight size={14} /></button><div className="hacienda-focus-mark"><FileCheck2 size={22} /></div></section>
-               <section className="hacienda-panel hacienda-quick"><SectionHead eyebrow="SEGUIMIENTO" title="Este organismo" /><div><span>Modelos disponibles</span><b>{models.length}</b></div><div><span>{agency === 'atc' ? 'Facturas con IGIC' : 'Fuentes AEAT de retenciones'}</span><b>{agency === 'atc' ? sources.length : 'No integradas'}</b></div><div><span>Actividad registrada</span><b>{events.length}</b></div><p>Cifras del escenario educativo, sin efectos tributarios.</p></section>
+               <section className="hacienda-panel hacienda-quick"><SectionHead eyebrow="SEGUIMIENTO" title="Este organismo" /><div><span>Modelos disponibles</span><b>{models.length}</b></div><div><span>{agency === 'atc' ? 'Facturas con IGIC' : 'Periodos de nómina'}</span><b>{agency === 'atc' ? sources.length : payrollSources.filter((source) => ['closed', 'issued', 'payment_prepared', 'paid_simulated'].includes(source.status)).length}</b></div><div><span>Actividad registrada</span><b>{events.length}</b></div><p>Cifras del escenario educativo, sin efectos tributarios.</p></section>
             </aside>
           </div>}
           {view === 'igic' && <section className="hacienda-panel">
@@ -326,14 +373,36 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
           </section>}
           {view === 'retentions' && <section className="hacienda-panel">
             <SectionHead eyebrow="AEAT · RETENCIONES" title="Obligaciones estatales de retención" description="111/190 corresponden a trabajo y actividades económicas; 115/180 a arrendamientos urbanos. Ninguna se calcula a partir del IGIC." />
-            <div className="hacienda-manual-note"><ShieldAlert size={15} /><span>La fuente de nóminas y alquileres no está integrada. Usa datos ficticios y revisa cada obligación estatal; no se muestran aquí facturas ni cuotas de IGIC.</span></div>
+            <div className="hacienda-manual-note"><ShieldAlert size={15} /><span>Las nóminas cerradas alimentan borradores revisables de los modelos 111 y 190. El resto de retenciones estatales se mantiene separado; no se muestran aquí facturas ni cuotas de IGIC y nunca se presenta una declaración automáticamente.</span></div>
             <div className="hacienda-retention-grid">{models.filter((model) => ['111', '190', '115', '180'].includes(model.modelCode)).map((model) => {
               const records = declarationsFor(model.modelCode);
               const canOpen = model.applicabilityStatus === 'applies' || canTeach;
+              const payrollPeriod = model.modelCode === '111' ? payrollQuarter : '2027';
+              const periodStart = model.modelCode === '111'
+                ? `${payrollQuarter.slice(0, 4)}-${String((Number(payrollQuarter.slice(-1)) - 1) * 3 + 1).padStart(2, '0')}`
+                : '2027-01';
+              const periodEnd = model.modelCode === '111'
+                ? `${payrollQuarter.slice(0, 4)}-${String(Number(payrollQuarter.slice(-1)) * 3).padStart(2, '0')}`
+                : '2027-12';
+              const payrollInputs = model.modelCode === '111' || model.modelCode === '190'
+                ? latestPayrollSources.filter((source) =>
+                  ['closed', 'issued', 'payment_prepared', 'paid_simulated'].includes(source.status)
+                  && source.periodKey >= periodStart && source.periodKey <= periodEnd)
+                : [];
+              const payrollGross = payrollInputs.reduce((sum, source) => sum + source.grossTotalCents, 0);
+              const payrollWithholding = payrollInputs.reduce((sum, source) => sum + source.withholdingCents, 0);
               return <article className="hacienda-retention-card" key={model.modelCode}>
                 <div className="hacienda-retention-title"><span>AEAT · {model.modelCode}</span><b>{model.label}</b></div>
                 <span className={`hacienda-applicability compact ${model.applicabilityStatus === 'applies' ? 'applies' : model.applicabilityStatus === 'review_required' ? 'review-required' : 'does-not-apply'}`}><span>{applicabilityLabel(model)}</span><p>{model.applicabilityNote}</p></span>
                 <small>{records.length ? `${records.length} expediente(s) educativo(s)` : model.periodicity === 'annual' ? 'Resumen anual informativo' : 'Autoliquidación trimestral'}</small>
+                {model.modelCode === '111' && <label className="hacienda-payroll-period">Trimestre<select value={payrollQuarter} onChange={(event) => setPayrollQuarter(event.target.value)}><option value="2027-Q1">2027 · 1.er trimestre</option><option value="2027-Q2">2027 · 2.º trimestre</option><option value="2027-Q3">2027 · 3.er trimestre</option><option value="2027-Q4">2027 · 4.º trimestre</option></select></label>}
+                {(model.modelCode === '111' || model.modelCode === '190') && <div className="hacienda-payroll-preview">
+                  <b>{payrollInputs.length} periodo(s) cerrado(s) · {euro(payrollGross)} bruto · {euro(payrollWithholding)} retenido</b>
+                  <small>Referencias del mismo periodo y empresa. Revisa posibles meses faltantes antes de validar el borrador.</small>
+                  <button type="button" className="hacienda-button small" onClick={() => importPayrollDraft(model.modelCode as '111' | '190', payrollPeriod)} disabled={!canOpen || readOnly || !payrollInputs.length || busyId === `payroll-${model.modelCode}-${payrollPeriod}`}>
+                    {busyId === `payroll-${model.modelCode}-${payrollPeriod}` ? 'Creando borrador…' : `Crear borrador ${model.modelCode} desde nóminas`}
+                  </button>
+                </div>}
                 <button type="button" className="hacienda-button small" onClick={() => { setSelectedModelCode(model.modelCode); setView('draft'); }} disabled={!canOpen || readOnly}>Abrir modelo estatal</button>
               </article>;
             })}</div>
@@ -367,6 +436,10 @@ export function HaciendaPage({ identity, organizations = [], onNotice }: Props) 
                   <div className="hacienda-declaration-top"><span className="hacienda-model-icon"><FileText size={17} /></span><div><small>{agency.toUpperCase()} · MODELO {item.modelCode} · {item.periodKey} · VERSIÓN {item.version}</small><b>{modelTitle(model)}</b></div><Status value={item.status} /></div>
                    {model && <div className={`hacienda-applicability compact ${model.applicabilityStatus === 'applies' ? 'applies' : model.applicabilityStatus === 'review_required' ? 'review-required' : 'does-not-apply'}`}><span>{applicabilityLabel(model)}</span><p>{model.applicabilityNote}</p></div>}
                   {item.formData && Object.keys(item.formData).length > 0 && <details className="hacienda-formdata"><summary>Campos educativos cumplimentados</summary><dl>{Object.entries(item.formData).map(([key, value]) => <div key={key}><dt>{model?.formFields.find((field) => field.key === key)?.label ?? key}</dt><dd>{value || '—'}</dd></div>)}</dl></details>}
+                  {item.sourcePayrollRunIds.length > 0 && <div className="hacienda-payroll-links"><b>Fuentes de nómina · {organizationLabel} · {item.sourcePayrollRunIds.length} periodo(s)</b><span>{item.sourcePayrollRunIds.map((id) => {
+                    const source = payrollSourceById.get(id);
+                    return source ? `${source.periodKey} · v${source.version}` : `Referencia ${id}`;
+                  }).join(' · ')}</span><small>Datos de nómina cerrados; estado fiscal independiente y pendiente de revisión.</small></div>}
                   <div className="hacienda-declaration-values"><span>Base imponible <b>{euro(item.taxableBaseCents)}</b></span><span>IGIC repercutido <b>{euro(item.outputIgicCents)}</b></span><span>IGIC soportado <b>{euro(item.inputIgicCents)}</b></span><span>Retenciones <b>{euro(item.withholdingCents)}</b></span><span>Resultado provisional <b className={item.resultCents < 0 ? 'hacienda-negative' : ''}>{euro(item.resultCents)}</b></span></div>
                   <div className="hacienda-declaration-foot"><span><Clock3 size={13} /> Vencimiento educativo · {dateLabel(item.simulatedDueDate)}</span><span>Pago · {statuses[item.paymentStatus] ?? item.paymentStatus}</span></div>
                   {item.receiptReference && <div className="hacienda-receipt"><BadgeCheck size={14} /><span>Justificante simulado <b className="mono">{item.receiptReference}</b></span><small>No es un justificante oficial</small></div>}

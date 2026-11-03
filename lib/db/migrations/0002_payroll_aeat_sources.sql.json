@@ -1,0 +1,3 @@
+[
+  "ALTER TABLE fp360_tax_declarations ADD COLUMN source_payroll_run_ids jsonb;"
+]

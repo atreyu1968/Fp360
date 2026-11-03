@@ -21,6 +21,7 @@ import {
   db,
   fpInvoices,
   fpOrganizations,
+  fpPayrollRuns,
   fpPurchaseInvoices,
   fpPurchaseOrders,
   fpTaxDeclarations,
@@ -35,6 +36,7 @@ import {
   modelMatchesPeriod,
   type TaxProfile,
 } from "./tax-models";
+import { aggregatePayrollWithholding } from "./tax-payroll-aggregation.mjs";
 
 const router: IRouter = Router();
 router.use("/redfp360/tax", requireAuth, requireSimulationWriteAccess);
@@ -206,6 +208,46 @@ async function calculateDeclaration(
 ) {
   const period = { start: declaration.periodStart, end: declaration.periodEnd, annual: declaration.periodStart.endsWith("-01-01") && declaration.periodEnd.endsWith("-12-31") };
   if (declaration.taxType === "withholding") {
+    if (["111", "190"].includes(declaration.modelCode) && declaration.sourcePayrollRunIds?.length) {
+      const runs = await db.select().from(fpPayrollRuns).where(and(
+        eq(fpPayrollRuns.tenantId, tenantId),
+        eq(fpPayrollRuns.organizationId, declaration.organizationId),
+        inArray(fpPayrollRuns.id, declaration.sourcePayrollRunIds),
+      ));
+      if (runs.length !== declaration.sourcePayrollRunIds.length
+        || runs.some((run) => !["closed", "issued", "payment_prepared", "paid_simulated"].includes(run.status))) {
+        throw new TaxError(409, "Una nómina vinculada ya no está disponible como periodo cerrado.");
+      }
+      if (new Set(runs.map((run) => run.periodKey)).size !== runs.length) {
+        throw new TaxError(409, "El expediente contiene más de una versión para el mismo mes de nómina.");
+      }
+      const latestRuns = await db.select({
+        periodKey: fpPayrollRuns.periodKey,
+        id: fpPayrollRuns.id,
+      }).from(fpPayrollRuns).where(and(
+        eq(fpPayrollRuns.tenantId, tenantId),
+        eq(fpPayrollRuns.organizationId, declaration.organizationId),
+        inArray(fpPayrollRuns.periodKey, runs.map((run) => run.periodKey)),
+      )).orderBy(desc(fpPayrollRuns.version));
+      const latestByPeriod = new Map<string, string>();
+      latestRuns.forEach((run) => { if (!latestByPeriod.has(run.periodKey)) latestByPeriod.set(run.periodKey, run.id); });
+      if (runs.some((run) => latestByPeriod.get(run.periodKey) !== run.id)) {
+        throw new TaxError(409, "Existe una versión posterior de una nómina vinculada. Revisa sus fuentes antes de recalcular.");
+      }
+      const { withholdingBaseCents, withholdingCents, formData } =
+        aggregatePayrollWithholding(runs, declaration.modelCode as "111" | "190");
+      return {
+        taxableBaseCents: 0,
+        outputIgicCents: 0,
+        inputIgicCents: 0,
+        withholdingBaseCents,
+        withholdingCents,
+        resultCents: declaration.modelCode === "111" ? withholdingCents : 0,
+        sourceInvoiceIds: [] as string[],
+        sourcePurchaseInvoiceIds: [] as string[],
+        formData,
+      };
+    }
     return {
       taxableBaseCents: 0,
       outputIgicCents: 0,
@@ -215,6 +257,7 @@ async function calculateDeclaration(
       resultCents: ["111", "115"].includes(declaration.modelCode) ? declaration.withholdingCents : 0,
       sourceInvoiceIds: [] as string[],
       sourcePurchaseInvoiceIds: [] as string[],
+      formData: declaration.formData ?? {},
     };
   }
   if (["420", "425"].includes(declaration.modelCode)) {
@@ -292,8 +335,12 @@ function simulatedDueDate(modelCode: string): string {
 }
 
 function serializeTaxRecord(record: Record<string, unknown>) {
-  return Object.fromEntries(Object.entries(record).map(([key, value]) =>
-    [key, value instanceof Date ? value.toISOString() : value]));
+  return Object.fromEntries(Object.entries(record).map(([key, value]) => [
+    key,
+    key === "sourcePayrollRunIds" && value == null
+      ? []
+      : value instanceof Date ? value.toISOString() : value,
+  ]));
 }
 
 router.put("/redfp360/tax/profile", route(async (request, response) => {
@@ -431,6 +478,20 @@ router.get("/redfp360/tax/overview", route(async (request, response) => {
     )).orderBy(desc(fpTaxEvents.createdAt)).limit(100),
     sourceDocuments(actor.tenantId, organizationId, { start: "2027-01-01", end: "2027-12-31", annual: true }),
   ]);
+  const payrollRuns = await db.select().from(fpPayrollRuns).where(and(
+    eq(fpPayrollRuns.tenantId, actor.tenantId),
+    eq(fpPayrollRuns.organizationId, organizationId),
+  )).orderBy(desc(fpPayrollRuns.periodKey), desc(fpPayrollRuns.version)).limit(120);
+  const payrollSources = payrollRuns.map((run) => ({
+    id: run.id,
+    organizationId: run.organizationId,
+    periodKey: run.periodKey,
+    version: run.version,
+    employeeCount: run.employeeCount,
+    grossTotalCents: run.grossTotalCents,
+    withholdingCents: run.receiptLines.reduce((sum, line) => sum + line.withholdingCents, 0),
+    status: run.status,
+  }));
   const savedProfile = profileRows[0];
   const profile: TaxProfile | null = savedProfile ? {
     organizationId,
@@ -486,6 +547,7 @@ router.get("/redfp360/tax/overview", route(async (request, response) => {
     obligations,
     declarations: declarations.map(serializeTaxRecord),
     sourceDocuments: documents.documents,
+    payrollSources,
     requirements: requirements.map(serializeTaxRecord),
     events: events.map(serializeTaxRecord),
   }));
@@ -519,10 +581,54 @@ router.post("/redfp360/tax/declarations", route(async (request, response) => {
     return;
   }
   const formData = input.formData ?? {};
-  const formValidation = validateFormData(input.modelCode, formData);
+  const sourcePayrollRunIds = input.sourcePayrollRunIds ?? [];
+  if (sourcePayrollRunIds.length && !["111", "190"].includes(input.modelCode)) {
+    response.status(400).json({ error: "Las nóminas solo pueden alimentar los modelos AEAT 111 y 190." });
+    return;
+  }
+  const formValidation = sourcePayrollRunIds.length ? null : validateFormData(input.modelCode, formData);
   if (formValidation) {
     response.status(400).json({ error: formValidation });
     return;
+  }
+  if (sourcePayrollRunIds.length) {
+    if (new Set(sourcePayrollRunIds).size !== sourcePayrollRunIds.length) {
+      response.status(400).json({ error: "No repitas referencias de nómina en el mismo borrador." });
+      return;
+    }
+    const sourceRuns = await db.select().from(fpPayrollRuns).where(and(
+      eq(fpPayrollRuns.tenantId, actor.tenantId),
+      eq(fpPayrollRuns.organizationId, organizationId),
+      inArray(fpPayrollRuns.id, sourcePayrollRunIds),
+    ));
+    if (sourceRuns.length !== sourcePayrollRunIds.length
+      || sourceRuns.some((run) =>
+        !["closed", "issued", "payment_prepared", "paid_simulated"].includes(run.status)
+        || run.periodKey.slice(0, 4) !== input.periodKey.slice(0, 4)
+        || `${run.periodKey}-01` < period.start
+        || `${run.periodKey}-01` > period.end)) {
+      response.status(409).json({ error: "Usa únicamente nóminas cerradas de la misma empresa y dentro del periodo AEAT elegido." });
+      return;
+    }
+    if (new Set(sourceRuns.map((run) => run.periodKey)).size !== sourceRuns.length) {
+      response.status(409).json({ error: "Selecciona como máximo una versión de nómina por mes." });
+      return;
+    }
+    const latestRuns = await db.select({
+      periodKey: fpPayrollRuns.periodKey,
+      id: fpPayrollRuns.id,
+      version: fpPayrollRuns.version,
+    }).from(fpPayrollRuns).where(and(
+      eq(fpPayrollRuns.tenantId, actor.tenantId),
+      eq(fpPayrollRuns.organizationId, organizationId),
+      inArray(fpPayrollRuns.periodKey, sourceRuns.map((run) => run.periodKey)),
+    )).orderBy(desc(fpPayrollRuns.version));
+    const latestByPeriod = new Map<string, string>();
+    latestRuns.forEach((run) => { if (!latestByPeriod.has(run.periodKey)) latestByPeriod.set(run.periodKey, run.id); });
+    if (sourceRuns.some((run) => latestByPeriod.get(run.periodKey) !== run.id)) {
+      response.status(409).json({ error: "Hay una versión posterior de una nómina seleccionada. Revisa la versión más reciente." });
+      return;
+    }
   }
   const profile: TaxProfile = {
     organizationId,
@@ -556,7 +662,8 @@ router.post("/redfp360/tax/declarations", route(async (request, response) => {
     eq(fpTaxDeclarations.operationId, input.operationId),
   )).limit(1);
   if (prior) {
-    if (prior.requestFingerprint !== requestFingerprint) {
+    if (prior.createdByUserId !== actor.userId || prior.organizationId !== organizationId
+      || prior.requestFingerprint !== requestFingerprint) {
       response.status(409).json({ error: "El identificador de operación ya se utilizó con otros datos." });
       return;
     }
@@ -605,7 +712,8 @@ router.post("/redfp360/tax/declarations", route(async (request, response) => {
     paymentStatus: "not_due",
     sourceInvoiceIds: [] as string[],
     sourcePurchaseInvoiceIds: [] as string[],
-    formData,
+    sourcePayrollRunIds,
+    formData: sourcePayrollRunIds.length ? {} : formData,
     taxableBaseCents: 0,
     outputIgicCents: 0,
     inputIgicCents: 0,
@@ -625,16 +733,46 @@ router.post("/redfp360/tax/declarations", route(async (request, response) => {
   };
   const calculated = await calculateDeclaration(actor.tenantId, { ...draftValues } as typeof fpTaxDeclarations.$inferSelect);
   const values = { ...draftValues, ...calculated };
-  const declaration = await db.transaction(async (tx) => {
+  const outcome = await db.transaction(async (tx) => {
+    const [lockedOrganization] = await tx.select({ id: fpOrganizations.id }).from(fpOrganizations).where(and(
+      eq(fpOrganizations.id, organizationId),
+      eq(fpOrganizations.tenantId, actor.tenantId),
+    )).for("update").limit(1);
+    if (!lockedOrganization) throw new TaxError(404, "La empresa no está disponible.");
+    const [concurrentReplay] = await tx.select().from(fpTaxDeclarations).where(and(
+      eq(fpTaxDeclarations.tenantId, actor.tenantId),
+      eq(fpTaxDeclarations.operationId, input.operationId),
+    )).limit(1);
+    if (concurrentReplay) {
+      if (concurrentReplay.createdByUserId !== actor.userId
+        || concurrentReplay.organizationId !== organizationId
+        || concurrentReplay.requestFingerprint !== requestFingerprint) {
+        throw new TaxError(409, "El identificador de operación ya se utilizó con otros datos.");
+      }
+      return { record: concurrentReplay, replayed: true };
+    }
+    const [concurrentDuplicate] = await tx.select({ id: fpTaxDeclarations.id }).from(fpTaxDeclarations).where(and(
+      eq(fpTaxDeclarations.tenantId, actor.tenantId),
+      eq(fpTaxDeclarations.organizationId, organizationId),
+      eq(fpTaxDeclarations.taxType, input.taxType),
+      eq(fpTaxDeclarations.modelCode, input.modelCode),
+      eq(fpTaxDeclarations.periodKey, input.periodKey),
+    )).limit(1);
+    if (concurrentDuplicate) {
+      throw new TaxError(409, "Ya existe un expediente para ese modelo y periodo. Usa Rectificar para crear una versión nueva.");
+    }
     const [created] = await tx.insert(fpTaxDeclarations).values(values).returning();
     if (!created) throw new TaxError(500, "No se pudo guardar el borrador.");
     await appendEvent(tx, actor, {
       organizationId, declarationId: created.id, operationId: input.operationId, requestFingerprint,
-      eventType: "draft_created", description: `Borrador ${created.modelCode} · ${created.periodKey} creado sin validez oficial.`,
+      eventType: "draft_created",
+      description: sourcePayrollRunIds.length
+        ? `Borrador AEAT ${created.modelCode} · ${created.periodKey} creado para revisión desde nóminas cerradas: ${sourcePayrollRunIds.join(", ")}.`
+        : `Borrador ${created.modelCode} · ${created.periodKey} creado sin validez oficial.`,
     });
-    return created;
+    return { record: created, replayed: false };
   });
-  response.status(201).json(CreateFp360TaxDeclarationResponse.parse(serializeTaxRecord(declaration)));
+  response.status(outcome.replayed ? 200 : 201).json(CreateFp360TaxDeclarationResponse.parse(serializeTaxRecord(outcome.record)));
 }));
 
 router.post("/redfp360/tax/declarations/:id/action", route(async (request, response) => {

@@ -26,6 +26,7 @@ export interface Fp360TaxDeclaration {
   paymentStatus: Fp360TaxDeclarationPaymentStatus;
   sourceInvoiceIds: string[];
   sourcePurchaseInvoiceIds: string[];
+  sourcePayrollRunIds: string[];
   formData?: Fp360TaxDeclarationFormData;
   /** @minimum 0 */
   taxableBaseCents: number;

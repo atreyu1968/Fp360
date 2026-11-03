@@ -580,6 +580,8 @@ export * from './fp360TaxObligationStatus';
 export * from './fp360TaxObligationTaxType';
 export * from './fp360TaxOverview';
 export * from './fp360TaxOverviewSummary';
+export * from './fp360TaxPayrollSource';
+export * from './fp360TaxPayrollSourceStatus';
 export * from './fp360TaxProfile';
 export * from './fp360TaxProfileEntityType';
 export * from './fp360TaxProfileIgicRegime';

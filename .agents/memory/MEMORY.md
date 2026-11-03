@@ -11,3 +11,4 @@
 - [Coordinación económica con IA](redfp360-ai-economic-coordinator.md) — La IA establece situaciones para las empresas y coordina el sistema económico interconectado.
 - [Validación tras actualizar dependencias](dependency-validation.md) — Fuerza la regeneración de declaraciones TypeScript tras cambios mayores de dependencias de tipos.
 - [Instalador Ubuntu](redfp360-github-installer.md) — Instalación y actualización desatendidas; documentos privados locales en Ubuntu y almacenamiento administrado en Replit.
+- [Orden de columnas en migraciones Ubuntu](ubuntu-migration-column-order.md) — Las columnas aditivas deben quedar al final de la tabla en el snapshot para coincidir con PostgreSQL.

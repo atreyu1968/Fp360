@@ -6461,7 +6461,7 @@ components:
         reason: { type: string, minLength: 5, maxLength: 500 }
     Fp360TaxOverview:
       type: object
-      required: [organizationId, simulatedDate, summary, obligations, declarations, sourceDocuments, requirements, events, taxProfile, modelCatalog]
+      required: [organizationId, simulatedDate, summary, obligations, declarations, sourceDocuments, payrollSources, requirements, events, taxProfile, modelCatalog]
       properties:
         organizationId: { type: string }
         simulatedDate: { type: string, format: date }
@@ -6488,6 +6488,9 @@ components:
         sourceDocuments:
           type: array
           items: { $ref: "#/components/schemas/Fp360TaxSourceDocument" }
+        payrollSources:
+          type: array
+          items: { $ref: "#/components/schemas/Fp360TaxPayrollSource" }
         requirements:
           type: array
           items: { $ref: "#/components/schemas/Fp360TaxRequirement" }
@@ -6518,12 +6521,24 @@ components:
         baseCents: { type: integer, minimum: 0 }
         taxCents: { type: integer, minimum: 0 }
         status: { type: string }
+    Fp360TaxPayrollSource:
+      type: object
+      required: [id, organizationId, periodKey, version, employeeCount, grossTotalCents, withholdingCents, status]
+      properties:
+        id: { type: string }
+        organizationId: { type: string }
+        periodKey: { type: string, pattern: '^2027-(0[1-9]|1[0-2])$' }
+        version: { type: integer, minimum: 1 }
+        employeeCount: { type: integer, minimum: 0 }
+        grossTotalCents: { type: integer, minimum: 0 }
+        withholdingCents: { type: integer, minimum: 0 }
+        status: { type: string, enum: [draft, reviewed, closed, issued, payment_prepared, paid_simulated] }
     Fp360TaxDeclarationStatus:
       type: string
       enum: [draft, validated, presented, payment_pending, refund_pending, closed, observed, rectified]
     Fp360TaxDeclaration:
       type: object
-      required: [id, organizationId, taxType, modelCode, periodKey, periodStart, periodEnd, simulatedDueDate, version, status, paymentStatus, sourceInvoiceIds, sourcePurchaseInvoiceIds, taxableBaseCents, outputIgicCents, inputIgicCents, withholdingBaseCents, withholdingCents, resultCents, receiptReference, supersedesId, createdByName, createdAt, updatedAt]
+      required: [id, organizationId, taxType, modelCode, periodKey, periodStart, periodEnd, simulatedDueDate, version, status, paymentStatus, sourceInvoiceIds, sourcePurchaseInvoiceIds, sourcePayrollRunIds, taxableBaseCents, outputIgicCents, inputIgicCents, withholdingBaseCents, withholdingCents, resultCents, receiptReference, supersedesId, createdByName, createdAt, updatedAt]
       properties:
         id: { type: string }
         organizationId: { type: string }
@@ -6538,6 +6553,7 @@ components:
         paymentStatus: { type: string, enum: [not_due, pending, paid, refund_pending, refund_requested] }
         sourceInvoiceIds: { type: array, items: { type: string } }
         sourcePurchaseInvoiceIds: { type: array, items: { type: string } }
+        sourcePayrollRunIds: { type: array, items: { type: string } }
         formData:
           type: object
           additionalProperties: { type: string }
@@ -6593,6 +6609,12 @@ components:
           additionalProperties: { type: string }
         withholdingBaseCents: { type: integer, minimum: 0, maximum: 1000000000 }
         withholdingCents: { type: integer, minimum: 0, maximum: 1000000000 }
+        sourcePayrollRunIds:
+          type: array
+          uniqueItems: true
+          minItems: 1
+          maxItems: 12
+          items: { type: string, minLength: 1 }
         operationId: { type: string, minLength: 8, maxLength: 120 }
     Fp360ProjectsOverview:
       type: object

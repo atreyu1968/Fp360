@@ -10,6 +10,11 @@
       "schemaHash": "b817bde1c27d27e283b16fffa6337e34f0752f2a8a3ae99dbcf1bde2dccaac78",
       "snapshot": "0001-labor-links.sql",
       "sha256": "ec544ca77a2e98c5b8adb5ea31b2cc21a6811bd44b1b535d74eaaa9183e0fcbb"
+    },
+    {
+      "schemaHash": "134de69720d9c56c728452a047f64a33fd6c63b1fbda11cd7ddd761d134d80dd",
+      "snapshot": "0002-payroll-aeat.sql",
+      "sha256": "1b669c7eda4f004707587c7967a0e98da90c31437495044204949cdab1414e39"
     }
   ],
   "migrations": [
@@ -17,6 +22,12 @@
       "id": "0001_labor_module_links",
       "file": "0001_labor_module_links.sql.json",
       "sha256": "b3b577ecf32a1021d878fb21024c549a93fddd1425d9dc93f64d009be23bdcb4",
+      "backwardsCompatible": true
+    },
+    {
+      "id": "0002_payroll_aeat_sources",
+      "file": "0002_payroll_aeat_sources.sql.json",
+      "sha256": "a4c14890cd149d000d3c263385b617d7f95203641b6600e52f9bb0e8709bd836",
       "backwardsCompatible": true
     }
   ]

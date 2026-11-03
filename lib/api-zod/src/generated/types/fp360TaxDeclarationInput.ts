@@ -29,6 +29,12 @@ export interface Fp360TaxDeclarationInput {
      */
   withholdingCents?: number;
   /**
+     * @minItems 1
+     * @maxItems 12
+     * @items.minLength 1
+     */
+  sourcePayrollRunIds?: string[];
+  /**
      * @minLength 8
      * @maxLength 120
      */

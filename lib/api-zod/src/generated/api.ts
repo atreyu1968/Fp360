@@ -7666,6 +7666,14 @@ export const getFp360TaxOverviewResponseSourceDocumentsItemBaseCentsMin = 0;
 
 export const getFp360TaxOverviewResponseSourceDocumentsItemTaxCentsMin = 0;
 
+export const getFp360TaxOverviewResponsePayrollSourcesItemPeriodKeyRegExp = new RegExp('^2027-(0[1-9]|1[0-2])$');
+
+export const getFp360TaxOverviewResponsePayrollSourcesItemEmployeeCountMin = 0;
+
+export const getFp360TaxOverviewResponsePayrollSourcesItemGrossTotalCentsMin = 0;
+
+export const getFp360TaxOverviewResponsePayrollSourcesItemWithholdingCentsMin = 0;
+
 
 
 export const GetFp360TaxOverviewResponse = zod.object({
@@ -7735,6 +7743,7 @@ export const GetFp360TaxOverviewResponse = zod.object({
   "paymentStatus": zod.enum(['not_due', 'pending', 'paid', 'refund_pending', 'refund_requested']),
   "sourceInvoiceIds": zod.array(zod.string()),
   "sourcePurchaseInvoiceIds": zod.array(zod.string()),
+  "sourcePayrollRunIds": zod.array(zod.string()),
   "formData": zod.record(zod.string(), zod.string()).optional(),
   "taxableBaseCents": zod.int().min(getFp360TaxOverviewResponseDeclarationsItemTaxableBaseCentsMin),
   "outputIgicCents": zod.int().min(getFp360TaxOverviewResponseDeclarationsItemOutputIgicCentsMin),
@@ -7757,6 +7766,16 @@ export const GetFp360TaxOverviewResponse = zod.object({
   "baseCents": zod.int().min(getFp360TaxOverviewResponseSourceDocumentsItemBaseCentsMin),
   "taxCents": zod.int().min(getFp360TaxOverviewResponseSourceDocumentsItemTaxCentsMin),
   "status": zod.string()
+})),
+  "payrollSources": zod.array(zod.object({
+  "id": zod.string(),
+  "organizationId": zod.string(),
+  "periodKey": zod.string().regex(getFp360TaxOverviewResponsePayrollSourcesItemPeriodKeyRegExp),
+  "version": zod.int().min(1),
+  "employeeCount": zod.int().min(getFp360TaxOverviewResponsePayrollSourcesItemEmployeeCountMin),
+  "grossTotalCents": zod.int().min(getFp360TaxOverviewResponsePayrollSourcesItemGrossTotalCentsMin),
+  "withholdingCents": zod.int().min(getFp360TaxOverviewResponsePayrollSourcesItemWithholdingCentsMin),
+  "status": zod.enum(['draft', 'reviewed', 'closed', 'issued', 'payment_prepared', 'paid_simulated'])
 })),
   "requirements": zod.array(zod.object({
   "id": zod.string(),
@@ -11606,6 +11625,9 @@ export const createFp360TaxDeclarationBodyWithholdingBaseCentsMax = 1000000000;
 export const createFp360TaxDeclarationBodyWithholdingCentsMin = 0;
 export const createFp360TaxDeclarationBodyWithholdingCentsMax = 1000000000;
 
+
+export const createFp360TaxDeclarationBodySourcePayrollRunIdsMax = 12;
+
 export const createFp360TaxDeclarationBodyOperationIdMin = 8;
 export const createFp360TaxDeclarationBodyOperationIdMax = 120;
 
@@ -11620,6 +11642,7 @@ export const CreateFp360TaxDeclarationBody = zod.object({
   "formData": zod.record(zod.string(), zod.string()).optional(),
   "withholdingBaseCents": zod.int().min(createFp360TaxDeclarationBodyWithholdingBaseCentsMin).max(createFp360TaxDeclarationBodyWithholdingBaseCentsMax).optional(),
   "withholdingCents": zod.int().min(createFp360TaxDeclarationBodyWithholdingCentsMin).max(createFp360TaxDeclarationBodyWithholdingCentsMax).optional(),
+  "sourcePayrollRunIds": zod.array(zod.string().min(1)).min(1).max(createFp360TaxDeclarationBodySourcePayrollRunIdsMax).optional(),
   "operationId": zod.string().min(createFp360TaxDeclarationBodyOperationIdMin).max(createFp360TaxDeclarationBodyOperationIdMax)
 })
 
@@ -11650,6 +11673,7 @@ export const CreateFp360TaxDeclarationResponse = zod.object({
   "paymentStatus": zod.enum(['not_due', 'pending', 'paid', 'refund_pending', 'refund_requested']),
   "sourceInvoiceIds": zod.array(zod.string()),
   "sourcePurchaseInvoiceIds": zod.array(zod.string()),
+  "sourcePayrollRunIds": zod.array(zod.string()),
   "formData": zod.record(zod.string(), zod.string()).optional(),
   "taxableBaseCents": zod.int().min(createFp360TaxDeclarationResponseTaxableBaseCentsMin),
   "outputIgicCents": zod.int().min(createFp360TaxDeclarationResponseOutputIgicCentsMin),
@@ -11712,6 +11736,7 @@ export const ActOnFp360TaxDeclarationResponse = zod.object({
   "paymentStatus": zod.enum(['not_due', 'pending', 'paid', 'refund_pending', 'refund_requested']),
   "sourceInvoiceIds": zod.array(zod.string()),
   "sourcePurchaseInvoiceIds": zod.array(zod.string()),
+  "sourcePayrollRunIds": zod.array(zod.string()),
   "formData": zod.record(zod.string(), zod.string()).optional(),
   "taxableBaseCents": zod.int().min(actOnFp360TaxDeclarationResponseTaxableBaseCentsMin),
   "outputIgicCents": zod.int().min(actOnFp360TaxDeclarationResponseOutputIgicCentsMin),
