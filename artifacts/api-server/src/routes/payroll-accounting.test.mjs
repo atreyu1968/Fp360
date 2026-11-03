@@ -135,6 +135,8 @@ test("simultaneous payroll imports reuse one draft and reject changed account ma
   const payrollRunId = randomUUID();
   let child;
   let locker;
+  let failureTriggerName;
+  let failureFunctionName;
 
   try {
     const port = await availablePort();
@@ -342,10 +344,102 @@ test("simultaneous payroll imports reuse one draft and reject changed account ma
       [tenantId, organizationId, payrollRunId],
     );
     assert.equal(finalDraftCount.rows[0].count, 1, "retries must not create additional drafts");
+
+    const failedPayrollRunId = randomUUID();
+    const failureToken = randomUUID().replaceAll("-", "");
+    const failedReceiptRef = `REC-FAIL-${failureToken}`;
+    const failedOperationId = `payroll-fail-${failureToken}`;
+    const failedReceiptLines = receiptLines.map((line) => ({
+      ...line,
+      workerRef: `FP-EMP-FAIL-${failureToken}`,
+      receiptRef: failedReceiptRef,
+    }));
+    await client.query(
+      `INSERT INTO fp360_payroll_runs
+        (id, tenant_id, organization_id, period_key, version, policy_id, receipt_lines,
+         employee_count, gross_total_cents, net_total_cents, employer_cost_total_cents,
+         status, operation_id, request_fingerprint, created_by_user_id, created_by_name,
+         reviewed_by_user_id, reviewed_by_name)
+       VALUES ($1, $2, $3, '2027-09', 1, $4, $5::jsonb, 1, 200000, 150000, 240000,
+         'closed', $6, 'test-run-failure', $7, 'Payroll import test', $8, 'Payroll reviewer')`,
+      [
+        failedPayrollRunId,
+        tenantId,
+        organizationId,
+        policyId,
+        JSON.stringify(failedReceiptLines),
+        `payroll-run-${failureToken}`,
+        userId,
+        randomUUID(),
+      ],
+    );
+
+    failureTriggerName = `fp360_test_fail_payroll_${failureToken}`;
+    failureFunctionName = `fp360_test_fail_payroll_fn_${failureToken}`;
+    await client.query(
+      `CREATE FUNCTION ${failureFunctionName}() RETURNS trigger
+       LANGUAGE plpgsql AS $$ BEGIN
+         RAISE EXCEPTION 'Intentional isolated payroll-import rollback test failure';
+       END $$`,
+    );
+    await client.query(
+      `CREATE TRIGGER ${failureTriggerName}
+       BEFORE INSERT ON fp360_accounting_entry_lines
+       FOR EACH ROW
+       WHEN (NEW.tenant_id = '${tenantId}' AND NEW.description LIKE '%${failedReceiptRef}%')
+       EXECUTE FUNCTION ${failureFunctionName}()`,
+    );
+
+    const failedImportResponse = await fetch(
+      `${baseUrl}/api/redfp360/accounting/sources/payroll_run/${failedPayrollRunId}/draft`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          organizationId,
+          operationId: failedOperationId,
+          expectedPeriodKey: "2027-09",
+          expectedVersion: 1,
+          payrollAccounts,
+        }),
+      },
+    );
+    const failedImportBody = await failedImportResponse.text();
+    assert.equal(failedImportResponse.status, 500, failedImportBody);
+    await client.query(`DROP TRIGGER ${failureTriggerName} ON fp360_accounting_entry_lines`);
+    await client.query(`DROP FUNCTION ${failureFunctionName}()`);
+    failureTriggerName = undefined;
+    failureFunctionName = undefined;
+
+    const failedEntryCount = await client.query(
+      `SELECT COUNT(*)::int AS count FROM fp360_accounting_entries
+       WHERE tenant_id = $1 AND organization_id = $2
+         AND source_type = 'payroll_run' AND source_id = $3`,
+      [tenantId, organizationId, failedPayrollRunId],
+    );
+    const failedLineCount = await client.query(
+      `SELECT COUNT(*)::int AS count FROM fp360_accounting_entry_lines
+       WHERE tenant_id = $1 AND description LIKE $2`,
+      [tenantId, `%${failedReceiptRef}%`],
+    );
+    const failedEventCount = await client.query(
+      `SELECT COUNT(*)::int AS count FROM fp360_accounting_events
+       WHERE tenant_id = $1 AND organization_id = $2 AND operation_id = $3`,
+      [tenantId, organizationId, failedOperationId],
+    );
+    assert.equal(failedEntryCount.rows[0].count, 0, "a line-write failure must roll back the draft entry");
+    assert.equal(failedLineCount.rows[0].count, 0, "a line-write failure must leave no accounting lines");
+    assert.equal(failedEventCount.rows[0].count, 0, "a failed import must not leave an audit event");
   } finally {
     if (locker) {
       await locker.query("ROLLBACK");
       locker.release();
+    }
+    if (failureTriggerName) {
+      await client.query(`DROP TRIGGER IF EXISTS ${failureTriggerName} ON fp360_accounting_entry_lines`);
+    }
+    if (failureFunctionName) {
+      await client.query(`DROP FUNCTION IF EXISTS ${failureFunctionName}()`);
     }
     if (child && child.exitCode === null) {
       child.kill("SIGTERM");
