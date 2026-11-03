@@ -12,3 +12,9 @@ Each company can use either continuous fiscal years that persist across academic
 **Why:** On 3 November 2026, the user confirmed multiple companies per center, the three onboarding paths, center-permission-based access, both fiscal-calendar modes configurable per company, and strict isolation between ordinary and accelerated economic networks.
 
 **How to apply:** Keep the selected company and center authorization consistent across modules. Store onboarding provenance and review actions. Keep generated seed data synthetic and auditable. Bind each company to a compatible simulation network, reject cross-network transactions and source links, and scope AI context and proposals to one network at a time while including all its companies and operations. Keep accounting calendars independent from academic dates and make annual closing an explicit teacher-led action.
+
+Company API profiles must include the selected fiscal-year start month and academic period alongside the network ID and calendar mode.
+
+**Why:** The company-creation response schema requires these settings; omitting them makes a valid calendar configuration fail at the API boundary even when its network scope was saved.
+
+**How to apply:** When creating or changing an organization profile, verify that every response path returns the saved calendar settings, including directory reads and related profile actions.

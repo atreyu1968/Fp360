@@ -25,11 +25,15 @@ test("organization identifiers are stable and explicitly simulated", () => {
     centerId: "center-1",
     simulationNetworkId: "network-1",
     simulationCalendarMode: "ordinary",
+    fiscalYearStartMonth: 1,
+    academicPeriod: "2027-2028",
     simulationNetworkName: "Red económica ordinaria",
   };
   const profile = toFp360OrganizationDto(organization, scope);
   assert.equal(profile.cif, toFp360OrganizationDto(organization, scope).cif);
   assert.equal(profile.simulationNetworkId, "network-1");
+  assert.equal(profile.fiscalYearStartMonth, 1);
+  assert.equal(profile.academicPeriod, "2027-2028");
   assert.match(profile.cif, /^SIM-CIF-[A-F0-9]{10}$/);
   assert.match(profile.socialSecurityNumber, /^SIM-SS-[A-F0-9]{10}$/);
   assert.equal(profile.socialSecurityRegime, "Sistema Especial Agrario (simulado)");
@@ -57,6 +61,8 @@ test("organization logo URLs are tenant-routed and regimes follow simulated acti
     centerId: "center-2",
     simulationNetworkId: "network-2",
     simulationCalendarMode: "accelerated",
+    fiscalYearStartMonth: 4,
+    academicPeriod: "2027-2028",
     simulationNetworkName: "Ejercicio acelerado",
   });
 
