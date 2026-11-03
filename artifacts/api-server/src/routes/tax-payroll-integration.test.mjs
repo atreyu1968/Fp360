@@ -162,6 +162,9 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
     withholdsProfessionals: false, paysBusinessRent: false, operationId: randomUUID(),
   });
   assert.equal(profile.status, 200, JSON.stringify(profile.body));
+  assert.equal(profile.body.entityType, "sociedad");
+  assert.equal(profile.body.igicRegime, "general");
+  assert.equal(profile.body.incomeTaxMethod, "not_applicable");
   const secondLogin = await request("/auth/login", "POST", {
     email: `${secondUserId}@example.test`, password,
   }, null);
@@ -169,16 +172,26 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   const secondCookie = secondLogin.cookie;
   assert.ok(secondCookie, "Second company login should return its own session cookie");
   const secondProfile = await request("/redfp360/tax/profile", "PUT", {
-    organizationId: secondCompanyId, entityType: "sociedad", igicRegime: "general",
-    incomeTaxMethod: "not_applicable", hasEmployees: true,
+    organizationId: secondCompanyId, entityType: "autonomo", igicRegime: "simplified",
+    incomeTaxMethod: "direct", hasEmployees: true,
     withholdsProfessionals: false, paysBusinessRent: false, operationId: randomUUID(),
   }, secondCookie);
   assert.equal(secondProfile.status, 200, JSON.stringify(secondProfile.body));
   assert.equal(secondProfile.body.organizationId, secondCompanyId);
+  assert.equal(secondProfile.body.entityType, "autonomo");
+  assert.equal(secondProfile.body.igicRegime, "simplified");
+  assert.equal(secondProfile.body.incomeTaxMethod, "direct");
+  const modelStatus = (overviewBody) => Object.fromEntries(overviewBody.modelCatalog.map((model) => [
+    model.modelCode, model.applicabilityStatus,
+  ]));
 
   const overview = await request(`/redfp360/tax/overview?organizationId=${companyId}`);
   assert.equal(overview.status, 200, JSON.stringify(overview.body));
   assert.deepEqual(overview.body.payrollSources.map((source) => source.id).sort(), [...payrollRunIds].sort());
+  assert.equal(modelStatus(overview.body)["420"], "applies");
+  assert.equal(modelStatus(overview.body)["421"], "not_applicable");
+  assert.equal(modelStatus(overview.body)["200"], "applies");
+  assert.equal(modelStatus(overview.body)["130"], "not_applicable");
   assert.ok(overview.body.modelCatalog.some((model) => model.modelCode === "111" && model.agency === "aeat"));
   assert.ok(overview.body.modelCatalog.some((model) => model.modelCode === "190" && model.agency === "aeat"));
 
@@ -558,4 +571,47 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   assert.ok(rectificationEvents.rows.some((event) =>
     event.declaration_id === savedRectification.id && event.event_type === "rectification_created"),
   "Creating the second rectification should be recorded");
+
+  const secondCompanyBeforeUpdate = await request(
+    `/redfp360/tax/overview?organizationId=${secondCompanyId}`, "GET", undefined, secondCookie,
+  );
+  assert.equal(secondCompanyBeforeUpdate.status, 200, JSON.stringify(secondCompanyBeforeUpdate.body));
+  assert.deepEqual(secondCompanyBeforeUpdate.body.taxProfile, {
+    ...secondCompanyBeforeUpdate.body.taxProfile,
+    organizationId: secondCompanyId,
+    entityType: "autonomo",
+    igicRegime: "simplified",
+    incomeTaxMethod: "direct",
+    hasEmployees: true,
+    withholdsProfessionals: false,
+    paysBusinessRent: false,
+  });
+  assert.equal(modelStatus(secondCompanyBeforeUpdate.body)["421"], "applies");
+  assert.equal(modelStatus(secondCompanyBeforeUpdate.body)["420"], "not_applicable");
+  assert.equal(modelStatus(secondCompanyBeforeUpdate.body)["130"], "applies");
+  assert.equal(modelStatus(secondCompanyBeforeUpdate.body)["200"], "not_applicable");
+
+  const updatedCompanyProfile = await request("/redfp360/tax/profile", "PUT", {
+    organizationId: companyId, entityType: "autonomo", igicRegime: "simplified",
+    incomeTaxMethod: "objective", hasEmployees: false,
+    withholdsProfessionals: false, paysBusinessRent: true, operationId: randomUUID(),
+  });
+  assert.equal(updatedCompanyProfile.status, 200, JSON.stringify(updatedCompanyProfile.body));
+  assert.equal(updatedCompanyProfile.body.entityType, "autonomo");
+  assert.equal(updatedCompanyProfile.body.igicRegime, "simplified");
+  assert.equal(updatedCompanyProfile.body.incomeTaxMethod, "objective");
+
+  const companyAfterUpdate = await request(`/redfp360/tax/overview?organizationId=${companyId}`);
+  assert.equal(companyAfterUpdate.status, 200, JSON.stringify(companyAfterUpdate.body));
+  assert.equal(modelStatus(companyAfterUpdate.body)["421"], "applies");
+  assert.equal(modelStatus(companyAfterUpdate.body)["131"], "applies");
+  assert.equal(modelStatus(companyAfterUpdate.body)["200"], "not_applicable");
+
+  const secondCompanyAfterUpdate = await request(
+    `/redfp360/tax/overview?organizationId=${secondCompanyId}`, "GET", undefined, secondCookie,
+  );
+  assert.equal(secondCompanyAfterUpdate.status, 200, JSON.stringify(secondCompanyAfterUpdate.body));
+  assert.deepEqual(secondCompanyAfterUpdate.body.taxProfile, secondCompanyBeforeUpdate.body.taxProfile);
+  assert.deepEqual(secondCompanyAfterUpdate.body.modelCatalog, secondCompanyBeforeUpdate.body.modelCatalog);
+  assert.deepEqual(modelStatus(secondCompanyAfterUpdate.body), modelStatus(secondCompanyBeforeUpdate.body));
 });
