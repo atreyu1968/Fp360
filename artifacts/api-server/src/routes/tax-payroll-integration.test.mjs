@@ -182,4 +182,79 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   assert.match(annual.body.formData.recipientSummary, /EMP-A: base 2000\.00 € · retención 200\.00 €/);
   assert.match(annual.body.formData.recipientSummary, /EMP-B: base 500\.00 € · retención 50\.00 €/);
   assert.doesNotMatch(annual.body.formData.recipientSummary, /EMP-C/);
+
+  const rectificationDraft = await request("/redfp360/tax/declarations", "POST", {
+    organizationId: companyId,
+    taxType: "withholding",
+    modelCode: "115",
+    periodKey: "2027-Q4",
+    formData: {
+      leasedPropertiesCount: "1",
+      withholdingBaseEuros: "1000.00",
+      withholdingEuros: "190.00",
+    },
+    operationId: randomUUID(),
+  });
+  assert.equal(rectificationDraft.status, 201, JSON.stringify(rectificationDraft.body));
+  assert.equal(rectificationDraft.body.status, "draft");
+  const originalValues = {
+    version: rectificationDraft.body.version,
+    formData: rectificationDraft.body.formData,
+    withholdingBaseCents: rectificationDraft.body.withholdingBaseCents,
+    withholdingCents: rectificationDraft.body.withholdingCents,
+    resultCents: rectificationDraft.body.resultCents,
+  };
+
+  const validated = await request(`/redfp360/tax/declarations/${rectificationDraft.body.id}/action`, "POST", {
+    action: "validate",
+    operationId: randomUUID(),
+  });
+  assert.equal(validated.status, 200, JSON.stringify(validated.body));
+  assert.equal(validated.body.status, "validated");
+
+  const presented = await request(`/redfp360/tax/declarations/${rectificationDraft.body.id}/action`, "POST", {
+    action: "present",
+    operationId: randomUUID(),
+  });
+  assert.equal(presented.status, 200, JSON.stringify(presented.body));
+  assert.equal(presented.body.status, "presented");
+  assert.ok(presented.body.receiptReference);
+
+  const rectified = await request(`/redfp360/tax/declarations/${rectificationDraft.body.id}/action`, "POST", {
+    action: "rectify",
+    operationId: randomUUID(),
+  });
+  assert.equal(rectified.status, 200, JSON.stringify(rectified.body));
+  assert.equal(rectified.body.status, "draft");
+  assert.equal(rectified.body.version, originalValues.version + 1);
+  assert.equal(rectified.body.supersedesId, rectificationDraft.body.id);
+  assert.deepEqual(rectified.body.formData, originalValues.formData);
+
+  const history = await request(`/redfp360/tax/overview?organizationId=${companyId}`);
+  assert.equal(history.status, 200, JSON.stringify(history.body));
+  const preservedOriginal = history.body.declarations.find((item) => item.id === rectificationDraft.body.id);
+  const savedRectification = history.body.declarations.find((item) => item.id === rectified.body.id);
+  assert.ok(preservedOriginal, "The original declaration should remain available in the declaration history");
+  assert.equal(preservedOriginal.status, "rectified");
+  assert.equal(preservedOriginal.version, originalValues.version);
+  assert.deepEqual(preservedOriginal.formData, originalValues.formData);
+  assert.equal(preservedOriginal.withholdingBaseCents, originalValues.withholdingBaseCents);
+  assert.equal(preservedOriginal.withholdingCents, originalValues.withholdingCents);
+  assert.equal(preservedOriginal.resultCents, originalValues.resultCents);
+  assert.equal(preservedOriginal.receiptReference, presented.body.receiptReference);
+  assert.ok(savedRectification, "The new declaration should appear alongside the original");
+  assert.equal(savedRectification.supersedesId, preservedOriginal.id);
+  assert.equal(savedRectification.version, preservedOriginal.version + 1);
+
+  const rectificationEvents = await pool.query(
+    `SELECT declaration_id, event_type FROM fp360_tax_events
+     WHERE tenant_id = $1 AND organization_id = $2 AND declaration_id = ANY($3::text[])`,
+    [tenantId, companyId, [preservedOriginal.id, savedRectification.id]],
+  );
+  assert.ok(rectificationEvents.rows.some((event) =>
+    event.declaration_id === preservedOriginal.id && event.event_type === "draft_created"),
+  "Creating the original draft should be recorded");
+  assert.ok(rectificationEvents.rows.some((event) =>
+    event.declaration_id === savedRectification.id && event.event_type === "rectification_created"),
+  "Creating the rectified version should be recorded");
 });
