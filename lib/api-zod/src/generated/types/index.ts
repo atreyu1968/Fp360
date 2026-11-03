@@ -218,6 +218,7 @@ export * from './fp360AccountingPeriodActionInput';
 export * from './fp360AccountingPeriodStatus';
 export * from './fp360AccountingSource';
 export * from './fp360AccountingSourceDraftInput';
+export * from './fp360AccountingSourceDraftInputPayrollAccounts';
 export * from './fp360AccountingSourceSourceType';
 export * from './fp360AccountingYearEndSummary';
 export * from './fp360Activity';

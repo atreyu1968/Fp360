@@ -17,4 +17,7 @@ export interface Fp360AccountingSource {
   totalCents: number;
   status: string;
   imported: boolean;
+  periodKey?: string;
+  /** @minimum 1 */
+  version?: number;
 }

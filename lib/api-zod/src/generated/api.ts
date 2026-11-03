@@ -6332,6 +6332,7 @@ export const getFp360AccountingOverviewResponsePeriodsItemPeriodMax = 12;
 
 export const getFp360AccountingOverviewResponseSourcesItemTotalCentsMin = 0;
 
+
 export const getFp360AccountingOverviewResponseBalancesItemDebitCentsMin = 0;
 
 export const getFp360AccountingOverviewResponseBalancesItemCreditCentsMin = 0;
@@ -6369,7 +6370,7 @@ export const GetFp360AccountingOverviewResponse = zod.object({
   "entryDate": zod.iso.date(),
   "concept": zod.string(),
   "status": zod.enum(['draft', 'posted', 'reversed']),
-  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'reversal']),
+  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'payroll_run', 'reversal']),
   "sourceId": zod.string().nullable(),
   "sourceReference": zod.string().nullable(),
   "debitCents": zod.int().min(getFp360AccountingOverviewResponseEntriesItemDebitCentsMin),
@@ -6408,13 +6409,15 @@ export const GetFp360AccountingOverviewResponse = zod.object({
 })),
   "sources": zod.array(zod.object({
   "id": zod.string(),
-  "sourceType": zod.enum(['sales_invoice', 'purchase_invoice', 'payment']),
+  "sourceType": zod.enum(['sales_invoice', 'purchase_invoice', 'payment', 'payroll_run']),
   "reference": zod.string(),
   "sourceDate": zod.iso.date(),
   "partnerName": zod.string(),
   "totalCents": zod.int().min(getFp360AccountingOverviewResponseSourcesItemTotalCentsMin),
   "status": zod.string(),
-  "imported": zod.boolean()
+  "imported": zod.boolean(),
+  "periodKey": zod.string().optional(),
+  "version": zod.int().min(1).optional()
 })),
   "balances": zod.array(zod.object({
   "accountId": zod.string(),
@@ -6613,7 +6616,7 @@ export const CreateFp360AccountingEntryResponse = zod.object({
   "entryDate": zod.iso.date(),
   "concept": zod.string(),
   "status": zod.enum(['draft', 'posted', 'reversed']),
-  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'reversal']),
+  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'payroll_run', 'reversal']),
   "sourceId": zod.string().nullable(),
   "sourceReference": zod.string().nullable(),
   "debitCents": zod.int().min(createFp360AccountingEntryResponseDebitCentsMin),
@@ -6685,7 +6688,7 @@ export const PostFp360AccountingEntryResponse = zod.object({
   "entryDate": zod.iso.date(),
   "concept": zod.string(),
   "status": zod.enum(['draft', 'posted', 'reversed']),
-  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'reversal']),
+  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'payroll_run', 'reversal']),
   "sourceId": zod.string().nullable(),
   "sourceReference": zod.string().nullable(),
   "debitCents": zod.int().min(postFp360AccountingEntryResponseDebitCentsMin),
@@ -6757,7 +6760,7 @@ export const ReverseFp360AccountingEntryResponse = zod.object({
   "entryDate": zod.iso.date(),
   "concept": zod.string(),
   "status": zod.enum(['draft', 'posted', 'reversed']),
-  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'reversal']),
+  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'payroll_run', 'reversal']),
   "sourceId": zod.string().nullable(),
   "sourceReference": zod.string().nullable(),
   "debitCents": zod.int().min(reverseFp360AccountingEntryResponseDebitCentsMin),
@@ -6790,18 +6793,40 @@ export const ReverseFp360AccountingEntryResponse = zod.object({
  * @summary Convert a confirmed source document into a balanced draft
  */
 export const CreateFp360AccountingSourceDraftParams = zod.object({
-  "sourceType": zod.enum(['sales_invoice', 'purchase_invoice', 'payment']),
+  "sourceType": zod.enum(['sales_invoice', 'purchase_invoice', 'payment', 'payroll_run']),
   "sourceId": zod.string()
 })
 
 
 export const createFp360AccountingSourceDraftBodyOperationIdMax = 100;
 
+export const createFp360AccountingSourceDraftBodyExpectedPeriodKeyRegExp = new RegExp('^2027-(0[1-9]|1[0-2])$');
+
+
+
+
+
+
+
+
+
 
 
 export const CreateFp360AccountingSourceDraftBody = zod.object({
   "organizationId": zod.string().min(1),
-  "operationId": zod.string().min(1).max(createFp360AccountingSourceDraftBodyOperationIdMax)
+  "operationId": zod.string().min(1).max(createFp360AccountingSourceDraftBodyOperationIdMax),
+  "expectedPeriodKey": zod.string().regex(createFp360AccountingSourceDraftBodyExpectedPeriodKeyRegExp).optional(),
+  "expectedVersion": zod.int().min(1).optional(),
+  "payrollAccounts": zod.object({
+  "wagesExpenseAccountId": zod.string().min(1),
+  "employerCostAccountId": zod.string().min(1),
+  "netPayableAccountId": zod.string().min(1),
+  "workerContributionAccountId": zod.string().min(1),
+  "employerContributionAccountId": zod.string().min(1),
+  "withholdingAccountId": zod.string().min(1),
+  "advancesAccountId": zod.string().min(1),
+  "otherDeductionsAccountId": zod.string().min(1)
+}).optional()
 })
 
 export const createFp360AccountingSourceDraftResponsePeriodMax = 12;
@@ -6826,7 +6851,7 @@ export const CreateFp360AccountingSourceDraftResponse = zod.object({
   "entryDate": zod.iso.date(),
   "concept": zod.string(),
   "status": zod.enum(['draft', 'posted', 'reversed']),
-  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'reversal']),
+  "sourceType": zod.enum(['manual', 'sales_invoice', 'purchase_invoice', 'payment', 'payroll_run', 'reversal']),
   "sourceId": zod.string().nullable(),
   "sourceReference": zod.string().nullable(),
   "debitCents": zod.int().min(createFp360AccountingSourceDraftResponseDebitCentsMin),

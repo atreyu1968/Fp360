@@ -19,6 +19,8 @@ import type {
   Fp360AccountingEntry,
   Fp360AccountingOverview,
   Fp360AccountingPeriod,
+  Fp360AccountingSource,
+  Fp360AccountingSourceDraftInput,
   Fp360AccountingYearEndSummary,
   Fp360Organization,
 } from '@workspace/api-client-react';
@@ -32,6 +34,7 @@ type View = 'summary' | 'journal' | 'chart' | 'ledger' | 'reports' | 'close';
 type ExportBook = 'journal' | 'ledger';
 type DraftLine = { accountId: string; description: string; debit: string; credit: string };
 type Nature = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
+type PayrollAccountMapping = NonNullable<Fp360AccountingSourceDraftInput['payrollAccounts']>;
 
 const natureNames: Record<Nature, string> = {
   asset: 'Activo',
@@ -47,6 +50,16 @@ const viewNames: Array<{ id: View; label: string }> = [
   { id: 'ledger', label: 'Mayor' },
   { id: 'reports', label: 'Balances y resultados' },
   { id: 'close', label: 'Cierre contable' },
+];
+const payrollAccountFields: Array<{ key: keyof PayrollAccountMapping; label: string; nature: Nature[] }> = [
+  { key: 'wagesExpenseAccountId', label: 'Salario bruto · gasto', nature: ['expense'] },
+  { key: 'employerCostAccountId', label: 'Cuota de empresa · gasto', nature: ['expense'] },
+  { key: 'netPayableAccountId', label: 'Líquido educativo pendiente', nature: ['liability'] },
+  { key: 'workerContributionAccountId', label: 'Cuota educativa de persona trabajadora', nature: ['liability'] },
+  { key: 'employerContributionAccountId', label: 'Cuota educativa de empresa pendiente', nature: ['liability'] },
+  { key: 'withholdingAccountId', label: 'Retención didáctica pendiente', nature: ['liability'] },
+  { key: 'advancesAccountId', label: 'Anticipos deducidos', nature: ['asset'] },
+  { key: 'otherDeductionsAccountId', label: 'Otras deducciones', nature: ['asset', 'liability'] },
 ];
 const formatMoney = (cents: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 const formatDate = (value: string) => new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${value.slice(0, 10)}T00:00:00.000Z`));
@@ -84,6 +97,17 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
   const [normalBalance, setNormalBalance] = useState<'debit' | 'credit'>('debit');
   const [parentCode, setParentCode] = useState('');
   const [sourceInProgress, setSourceInProgress] = useState('');
+  const [pendingPayrollSource, setPendingPayrollSource] = useState<Fp360AccountingSource | null>(null);
+  const [payrollAccounts, setPayrollAccounts] = useState<PayrollAccountMapping>({
+    wagesExpenseAccountId: '',
+    employerCostAccountId: '',
+    netPayableAccountId: '',
+    workerContributionAccountId: '',
+    employerContributionAccountId: '',
+    withholdingAccountId: '',
+    advancesAccountId: '',
+    otherDeductionsAccountId: '',
+  });
   const [actionInProgress, setActionInProgress] = useState('');
   const [selectedFiscalYear, setSelectedFiscalYear] = useState(2027);
   const [exportingBook, setExportingBook] = useState<ExportBook | null>(null);
@@ -226,7 +250,9 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
     setActionInProgress(entry.id);
     postEntry.mutate({ id: entry.id, data: { organizationId, operationId: operationId() } }, {
       onSuccess: () => { refresh(); onNotice(`Asiento contabilizado con el número asignado.`); },
-      onError: () => onNotice('El asiento no se ha contabilizado. Comprueba que Debe y Haber coincidan y que el periodo esté abierto.'),
+      onError: () => onNotice(entry.sourceType === 'payroll_run'
+        ? 'El borrador no se ha contabilizado. Comprueba el equilibrio, el periodo abierto y que no seas quien preparó o revisó la nómina.'
+        : 'El asiento no se ha contabilizado. Comprueba que Debe y Haber coincidan y que el periodo esté abierto.'),
       onSettled: () => setActionInProgress(''),
     });
   };
@@ -249,6 +275,49 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
         onNotice('Documento importado como borrador. Revisa y contabiliza el asiento.');
       },
       onError: () => onNotice('No se pudo importar el documento. Puede estar ya vinculado o no estar conformado.'),
+      onSettled: () => setSourceInProgress(''),
+    });
+  };
+  const beginPayrollImport = (source: Fp360AccountingSource) => {
+    const idForCode = (code: string, nature: Nature) =>
+      accounts.find((account) => account.code === code && account.active)?.id
+      ?? accounts.find((account) => account.nature === nature && account.active)?.id
+      ?? '';
+    setPayrollAccounts({
+      wagesExpenseAccountId: idForCode('6400', 'expense'),
+      employerCostAccountId: idForCode('6420', 'expense'),
+      netPayableAccountId: idForCode('4650', 'liability'),
+      workerContributionAccountId: idForCode('4760', 'liability'),
+      employerContributionAccountId: idForCode('4760', 'liability'),
+      withholdingAccountId: idForCode('4751', 'liability'),
+      advancesAccountId: idForCode('4600', 'asset'),
+      otherDeductionsAccountId: idForCode('4651', 'liability'),
+    });
+    setPendingPayrollSource(source);
+  };
+  const submitPayrollImport = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!pendingPayrollSource?.periodKey || !pendingPayrollSource.version) return;
+    setSourceInProgress(pendingPayrollSource.id);
+    createSourceDraft.mutate({
+      sourceType: 'payroll_run',
+      sourceId: pendingPayrollSource.id,
+      data: {
+        organizationId,
+        operationId: operationId(),
+        expectedPeriodKey: pendingPayrollSource.periodKey,
+        expectedVersion: pendingPayrollSource.version,
+        payrollAccounts,
+      },
+    }, {
+      onSuccess: (entry) => {
+        setPendingPayrollSource(null);
+        setSelectedEntryId(entry.id);
+        setView('journal');
+        refresh();
+        onNotice('Nómina importada como borrador. Una persona distinta debe revisarla antes de contabilizarla.');
+      },
+      onError: () => onNotice('No se pudo importar la nómina. Comprueba su empresa, periodo, versión y estado cerrado.'),
       onSettled: () => setSourceInProgress(''),
     });
   };
@@ -326,9 +395,21 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
         <section className="panel accounting-panel"><div className="accounting-section-head"><div><h2>Actividad del diario</h2><p>Últimos asientos de esta empresa y su estado.</p></div><button className="text-button" onClick={() => setView('journal')}>Abrir libro diario →</button></div>
           <EntryTable entries={entries.slice(0, 6)} onSelect={(entry) => { setSelectedEntryId(entry.id); setView('journal'); }} />
         </section>
-        <section className="panel accounting-panel"><div className="accounting-section-head"><div><h2>Documentos para importar</h2><p>Facturas confirmadas que aún no tienen asiento.</p></div></div>
-          {overview.sources.filter((source) => !source.imported).slice(0, 6).map((source) => <div className="accounting-source-row" key={`${source.sourceType}:${source.id}`}><div><b>{source.reference}</b><small>{source.sourceType === 'sales_invoice' ? 'Venta' : source.sourceType === 'payment' ? 'Cobro' : 'Compra'} · {source.partnerName} · {formatDate(source.sourceDate)}{source.status === 'awaiting_invoice' ? ' · Contabiliza antes la factura de venta' : ''}</small></div><strong>{formatMoney(source.totalCents)}</strong><button className="mini-button" disabled={readOnly || sourceInProgress === source.id || source.status === 'awaiting_invoice'} onClick={() => importSource(source.sourceType, source.id)}>{sourceInProgress === source.id ? 'Importando…' : source.status === 'awaiting_invoice' ? 'Pendiente' : 'Crear borrador'}</button></div>)}
-          {!overview.sources.some((source) => !source.imported) && <div className="accounting-empty compact">No hay facturas ni cobros pendientes de importar.</div>}
+        <section className="panel accounting-panel"><div className="accounting-section-head"><div><h2>Fuentes para importar</h2><p>Documentos confirmados y nóminas cerradas; siempre se crean como borrador.</p></div></div>
+          {overview.sources.filter((source) => !source.imported).slice(0, 8).map((source) => {
+            const isPayroll = source.sourceType === 'payroll_run';
+            const label = isPayroll ? 'Nómina cerrada' : source.sourceType === 'sales_invoice' ? 'Venta' : source.sourceType === 'payment' ? 'Cobro' : 'Compra';
+            const awaitingInvoice = source.status === 'awaiting_invoice';
+            return <div className="accounting-source-row" key={`${source.sourceType}:${source.id}`}>
+              <div><b>{source.reference}</b><small>{label} · {source.partnerName} · {formatDate(source.sourceDate)}{awaitingInvoice ? ' · Contabiliza antes la factura de venta' : ''}</small></div>
+              <strong>{formatMoney(source.totalCents)}</strong>
+              <button className="mini-button" disabled={readOnly || sourceInProgress === source.id || awaitingInvoice || (isPayroll && (!source.periodKey || !source.version))}
+                onClick={() => isPayroll ? beginPayrollImport(source) : importSource(source.sourceType as 'sales_invoice' | 'purchase_invoice' | 'payment', source.id)}>
+                {sourceInProgress === source.id ? 'Importando…' : awaitingInvoice ? 'Pendiente' : isPayroll ? 'Elegir cuentas' : 'Crear borrador'}
+              </button>
+            </div>;
+          })}
+          {!overview.sources.some((source) => !source.imported) && <div className="accounting-empty compact">No hay facturas, cobros ni nóminas cerradas pendientes de importar.</div>}
         </section>
       </div>}
 
@@ -403,6 +484,27 @@ export function AccountingPage({ identity, organizations = [], onNotice }: Props
         <div className="accounting-modal-actions"><button type="button" className="button button-secondary" onClick={() => setEntryModal(false)}>Cancelar</button><button className="button button-primary" disabled={createEntry.isPending || readOnly}>{createEntry.isPending ? 'Guardando…' : 'Guardar borrador'}</button></div>
       </form>
     </section></div>}
+
+    {pendingPayrollSource && <div className="accounting-modal-scrim" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPendingPayrollSource(null); }}>
+      <section className="accounting-modal" role="dialog" aria-modal="true" aria-labelledby="payroll-import-title">
+        <form onSubmit={submitPayrollImport}>
+          <div className="accounting-modal-head"><div><span>ORIGEN DE NÓMINA</span><h2 id="payroll-import-title">Preparar borrador contable</h2></div>
+            <button type="button" className="accounting-close" aria-label="Cerrar" onClick={() => setPendingPayrollSource(null)}>×</button></div>
+          <p className="accounting-modal-copy">{pendingPayrollSource.reference}. Elige cuentas del plan de esta empresa. Se conservará una línea por concepto y referencia ficticia; no se contabiliza ni se paga automáticamente.</p>
+          <div className="accounting-entry-form-lines">
+            {payrollAccountFields.map((field) => <label key={field.key}>{field.label}
+              <select required value={payrollAccounts[field.key]} onChange={(event) => setPayrollAccounts((current) => ({ ...current, [field.key]: event.target.value }))}>
+                <option value="">Selecciona una cuenta</option>
+                {accounts.filter((account) => account.active && field.nature.includes(account.nature)).map((account) =>
+                  <option key={account.id} value={account.id}>{account.code} · {account.name}</option>)}
+              </select>
+            </label>)}
+          </div>
+          <div className="accounting-modal-actions"><button type="button" className="button button-secondary" onClick={() => setPendingPayrollSource(null)}>Cancelar</button>
+            <button className="button button-primary" disabled={createSourceDraft.isPending || readOnly}>{createSourceDraft.isPending ? 'Creando borrador…' : 'Importar como borrador'}</button></div>
+        </form>
+      </section>
+    </div>}
 
     {accountModal && <div className="accounting-modal-scrim" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAccountModal(false); }}><section className="accounting-modal accounting-modal-small" role="dialog" aria-modal="true" aria-labelledby="new-account-title">
       <form onSubmit={submitAccount}><div className="accounting-modal-head"><div><span>PLAN CONTABLE</span><h2 id="new-account-title">Crear subcuenta</h2></div><button type="button" className="accounting-close" aria-label="Cerrar" onClick={() => setAccountModal(false)}>×</button></div>

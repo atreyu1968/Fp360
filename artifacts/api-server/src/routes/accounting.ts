@@ -41,6 +41,7 @@ import {
   fpPayments,
   fpPurchaseInvoices,
   fpPurchaseOrders,
+  fpPayrollRuns,
 } from "@workspace/db";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 import {
@@ -48,6 +49,13 @@ import {
   canAccessAccountingOrganization,
 } from "./accounting-scope.mjs";
 import { buildAccountingExportCsv } from "./accounting-export.mjs";
+import {
+  buildPayrollAccountingLines,
+  closedPayrollStatuses,
+  resolvePayrollSourceRetry,
+  validateIndependentPayrollReviewer,
+  validatePayrollImport,
+} from "./payroll-accounting.mjs";
 
 const router: IRouter = Router();
 router.use("/redfp360/accounting", requireAuth, requireSimulationWriteAccess);
@@ -68,11 +76,18 @@ const defaultAccounts: Array<{ code: string; name: string; nature: Nature; norma
   { code: "4000", name: "Proveedores", nature: "liability", normalBalance: "credit" },
   { code: "4100", name: "Acreedores por prestaciones", nature: "liability", normalBalance: "credit" },
   { code: "4300", name: "Clientes", nature: "asset", normalBalance: "debit" },
+  { code: "4600", name: "Anticipos de personal · educativo", nature: "asset", normalBalance: "debit" },
   { code: "4720", name: "IGIC soportado", nature: "asset", normalBalance: "debit" },
+  { code: "4751", name: "Retenciones didácticas por pagar", nature: "liability", normalBalance: "credit" },
   { code: "4770", name: "IGIC repercutido", nature: "liability", normalBalance: "credit" },
+  { code: "4650", name: "Líquidos educativos pendientes", nature: "liability", normalBalance: "credit" },
+  { code: "4651", name: "Otras deducciones educativas", nature: "liability", normalBalance: "credit" },
+  { code: "4760", name: "Cuotas educativas pendientes", nature: "liability", normalBalance: "credit" },
   { code: "5720", name: "Bancos", nature: "asset", normalBalance: "debit" },
   { code: "6000", name: "Compras de mercaderías", nature: "expense", normalBalance: "debit" },
   { code: "6240", name: "Transportes", nature: "expense", normalBalance: "debit" },
+  { code: "6400", name: "Salarios educativos", nature: "expense", normalBalance: "debit" },
+  { code: "6420", name: "Coste educativo de cuotas empresa", nature: "expense", normalBalance: "debit" },
   { code: "7000", name: "Ventas de mercaderías", nature: "revenue", normalBalance: "credit" },
 ];
 
@@ -321,7 +336,12 @@ async function loadOverview(tenantId: string, organizationId: string, actor: Aut
     eq(fpOrganizations.tenantId, tenantId),
     inArray(fpOrganizations.id, partnerIds),
   )) : [];
-  const sources = buildAccountingSources({
+  const payrollRuns = await db.select().from(fpPayrollRuns).where(and(
+    eq(fpPayrollRuns.tenantId, tenantId),
+    eq(fpPayrollRuns.organizationId, organizationId),
+  ));
+  const sources = [
+    ...buildAccountingSources({
     tenantId,
     organizationId,
     salesInvoices,
@@ -331,7 +351,22 @@ async function loadOverview(tenantId: string, organizationId: string, actor: Aut
     partners,
     imported,
     postedSalesInvoiceIds,
-  });
+    }),
+    ...payrollRuns
+      .filter((run) => closedPayrollStatuses.has(run.status))
+      .map((run) => ({
+        id: run.id,
+        sourceType: "payroll_run" as const,
+        reference: `Nómina ${run.periodKey} · v${run.version}`,
+        sourceDate: `${run.periodKey}-01`,
+        partnerName: "Plantilla ficticia",
+        totalCents: run.employerCostTotalCents,
+        status: run.status,
+        imported: imported.has(`payroll_run:${run.id}`),
+        periodKey: run.periodKey,
+        version: run.version,
+      })),
+  ].sort((a, b) => b.sourceDate.localeCompare(a.sourceDate));
 
   const totalsByAccount = new Map<string, { debitCents: number; creditCents: number }>();
   for (const line of lines) {
@@ -404,7 +439,7 @@ async function createDraft(
   requestFingerprint: string,
   entryDate: string,
   concept: string,
-  sourceType: "manual" | "sales_invoice" | "purchase_invoice" | "payment" | "reversal",
+  sourceType: "manual" | "sales_invoice" | "purchase_invoice" | "payment" | "payroll_run" | "reversal",
   sourceId: string | null,
   sourceReference: string | null,
   lines: JournalLineInput[],
@@ -816,6 +851,21 @@ router.post("/redfp360/accounting/entries/:id/post", async (req, res): Promise<v
     )).for("update").limit(1);
     if (!entry) return { error: "Asiento no encontrado.", status: 404 as const };
     if (entry.status !== "draft") return { error: "Solo se puede contabilizar un borrador.", status: 409 as const };
+    if (entry.sourceType === "payroll_run") {
+      const [run] = await tx.select().from(fpPayrollRuns).where(and(
+        eq(fpPayrollRuns.id, entry.sourceId ?? ""),
+        eq(fpPayrollRuns.tenantId, actor.tenantId),
+        eq(fpPayrollRuns.organizationId, organizationId),
+      )).for("update").limit(1);
+      if (!run || !closedPayrollStatuses.has(run.status)
+        || entry.fiscalYear !== Number(run.periodKey.slice(0, 4))
+        || entry.period !== Number(run.periodKey.slice(5, 7))
+        || entry.sourceReference !== `${run.periodKey} · v${run.version}`) {
+        return { error: "El origen de nómina ya no coincide con la empresa, periodo o versión del borrador.", status: 409 as const };
+      }
+      const reviewerError = validateIndependentPayrollReviewer(run, actor.userId);
+      if (reviewerError) return { error: reviewerError, status: 409 as const };
+    }
     const lines = await tx.select().from(fpAccountingEntryLines).where(and(
       eq(fpAccountingEntryLines.tenantId, actor.tenantId),
       eq(fpAccountingEntryLines.entryId, entry.id),
@@ -956,9 +1006,93 @@ router.post("/redfp360/accounting/sources/:sourceType/:sourceId/draft", async (r
     res.status(403).json({ error: "No tienes acceso a esa empresa." });
     return;
   }
+  if (params.data.sourceType === "payroll_run" && (
+    !body.data.expectedPeriodKey
+    || !body.data.expectedVersion
+    || !body.data.payrollAccounts
+  )) {
+    res.status(400).json({ error: "Indica el periodo, versión y cuentas educativas de la nómina." });
+    return;
+  }
   await ensureChart(actor.tenantId, organizationId, actor);
-  const requestFingerprint = fingerprint({ organizationId, sourceType: params.data.sourceType, sourceId: params.data.sourceId, operationId: body.data.operationId });
+  const payrollAccounts = body.data.payrollAccounts;
+  const requestFingerprint = params.data.sourceType === "payroll_run"
+    ? fingerprint({
+      organizationId,
+      sourceId: params.data.sourceId,
+      expectedPeriodKey: body.data.expectedPeriodKey,
+      expectedVersion: body.data.expectedVersion,
+      payrollAccounts,
+    })
+    : fingerprint({ organizationId, sourceType: params.data.sourceType, sourceId: params.data.sourceId, operationId: body.data.operationId });
   const result = await db.transaction(async (tx) => {
+    if (params.data.sourceType === "payroll_run") {
+      const [run] = await tx.select().from(fpPayrollRuns).where(and(
+        eq(fpPayrollRuns.id, params.data.sourceId),
+        eq(fpPayrollRuns.tenantId, actor.tenantId),
+      )).for("update").limit(1);
+      if (!run) return { error: "No se encontró la nómina para la empresa seleccionada.", status: 404 as const };
+      const validationError = validatePayrollImport(run, {
+        organizationId,
+        expectedPeriodKey: body.data.expectedPeriodKey!,
+        expectedVersion: body.data.expectedVersion!,
+      });
+      if (validationError) return { error: validationError, status: 409 as const };
+
+      const [priorOperation] = await tx.select().from(fpAccountingEntries).where(and(
+        eq(fpAccountingEntries.tenantId, actor.tenantId),
+        eq(fpAccountingEntries.operationId, body.data.operationId),
+      )).limit(1);
+      if (priorOperation) {
+        if (priorOperation.createdByUserId !== actor.userId || priorOperation.requestFingerprint !== requestFingerprint) {
+          return { error: "La clave de operación ya se utilizó con otros datos.", status: 409 as const };
+        }
+        return { entryId: priorOperation.id };
+      }
+
+      const [priorSource] = await tx.select().from(fpAccountingEntries).where(and(
+        eq(fpAccountingEntries.tenantId, actor.tenantId),
+        eq(fpAccountingEntries.organizationId, organizationId),
+        eq(fpAccountingEntries.sourceType, "payroll_run"),
+        eq(fpAccountingEntries.sourceId, run.id),
+      )).limit(1);
+      if (priorSource) {
+        return resolvePayrollSourceRetry(priorSource, requestFingerprint)!;
+      }
+
+      const accounts = await tx.select().from(fpAccountingAccounts).where(and(
+        eq(fpAccountingAccounts.tenantId, actor.tenantId),
+        eq(fpAccountingAccounts.organizationId, organizationId),
+      ));
+      const selectedAccounts = new Map(accounts.map((account) => [account.id, account]));
+      const mapping = payrollAccounts!;
+      const natureRequirements: Array<[string, Nature[]]> = [
+        [mapping.wagesExpenseAccountId, ["expense"]],
+        [mapping.employerCostAccountId, ["expense"]],
+        [mapping.netPayableAccountId, ["liability"]],
+        [mapping.workerContributionAccountId, ["liability"]],
+        [mapping.employerContributionAccountId, ["liability"]],
+        [mapping.withholdingAccountId, ["liability"]],
+        [mapping.advancesAccountId, ["asset"]],
+        [mapping.otherDeductionsAccountId, ["asset", "liability"]],
+      ];
+      if (natureRequirements.some(([id, allowed]) => {
+        const account = selectedAccounts.get(id);
+        return !account || !account.active || !allowed.includes(account.nature as Nature);
+      })) {
+        return { error: "Selecciona cuentas activas de gasto, pasivo o activo según cada concepto de nómina.", status: 400 as const };
+      }
+
+      const lines = buildPayrollAccountingLines(run, mapping);
+      if (lines.length < 2) return { error: "La nómina no contiene importes que puedan generar un borrador contable.", status: 409 as const };
+      const entryDate = `${run.periodKey}-01`;
+      const concept = `Nómina educativa ${run.periodKey} · v${run.version}`;
+      const sourceReference = `${run.periodKey} · v${run.version}`;
+      return createDraft(
+        tx, actor, organizationId, body.data.operationId, requestFingerprint, entryDate, concept,
+        "payroll_run", run.id, sourceReference, lines,
+      );
+    }
     const existing = await tx.select().from(fpAccountingEntries).where(and(
       eq(fpAccountingEntries.tenantId, actor.tenantId),
       eq(fpAccountingEntries.organizationId, organizationId),

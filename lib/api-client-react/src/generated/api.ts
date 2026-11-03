@@ -15266,7 +15266,7 @@ export const useReverseFp360AccountingEntry = <TError = ErrorType<void>,
       return useMutation(getReverseFp360AccountingEntryMutationOptions(options), queryClient);
     }
 
-export const getCreateFp360AccountingSourceDraftUrl = (sourceType: 'sales_invoice' | 'purchase_invoice' | 'payment',
+export const getCreateFp360AccountingSourceDraftUrl = (sourceType: 'sales_invoice' | 'purchase_invoice' | 'payment' | 'payroll_run',
     sourceId: string,) => {
 
 
@@ -15278,7 +15278,7 @@ export const getCreateFp360AccountingSourceDraftUrl = (sourceType: 'sales_invoic
 /**
  * @summary Convert a confirmed source document into a balanced draft
  */
-export const createFp360AccountingSourceDraft = async (sourceType: 'sales_invoice' | 'purchase_invoice' | 'payment',
+export const createFp360AccountingSourceDraft = async (sourceType: 'sales_invoice' | 'purchase_invoice' | 'payment' | 'payroll_run',
     sourceId: string,
     fp360AccountingSourceDraftInput: Fp360AccountingSourceDraftInput, options?: Parameters<typeof customFetch>[1]): Promise<Fp360AccountingEntry> => {
 
@@ -15341,7 +15341,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateFp360AccountingSourceDraftMutationResult = NonNullable<Awaited<ReturnType<typeof createFp360AccountingSourceDraft>>>
     export type CreateFp360AccountingSourceDraftMutationBody = BodyType<Fp360AccountingSourceDraftInput>
     export type CreateFp360AccountingSourceDraftMutationError = ErrorType<void>
-    export type CreateFp360AccountingSourceDraftMutationVariables = {sourceType: 'sales_invoice' | 'purchase_invoice' | 'payment';sourceId: string;data: BodyType<Fp360AccountingSourceDraftInput>}
+    export type CreateFp360AccountingSourceDraftMutationVariables = {sourceType: 'sales_invoice' | 'purchase_invoice' | 'payment' | 'payroll_run';sourceId: string;data: BodyType<Fp360AccountingSourceDraftInput>}
 
     /**
  * @summary Convert a confirmed source document into a balanced draft

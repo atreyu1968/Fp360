@@ -3060,7 +3060,7 @@ paths:
         - name: sourceType
           in: path
           required: true
-          schema: { type: string, enum: [sales_invoice, purchase_invoice, payment] }
+          schema: { type: string, enum: [sales_invoice, purchase_invoice, payment, payroll_run] }
         - name: sourceId
           in: path
           required: true
@@ -6342,7 +6342,7 @@ components:
         entryDate: { type: string, format: date }
         concept: { type: string }
         status: { type: string, enum: [draft, posted, reversed] }
-        sourceType: { type: string, enum: [manual, sales_invoice, purchase_invoice, payment, reversal] }
+        sourceType: { type: string, enum: [manual, sales_invoice, purchase_invoice, payment, payroll_run, reversal] }
         sourceId: { type: string, nullable: true }
         sourceReference: { type: string, nullable: true }
         debitCents: { type: integer, minimum: 0 }
@@ -6400,18 +6400,34 @@ components:
       properties:
         organizationId: { type: string, minLength: 1 }
         operationId: { type: string, minLength: 1, maxLength: 100 }
+        expectedPeriodKey: { type: string, pattern: '^2027-(0[1-9]|1[0-2])$' }
+        expectedVersion: { type: integer, minimum: 1 }
+        payrollAccounts:
+          type: object
+          required: [wagesExpenseAccountId, employerCostAccountId, netPayableAccountId, workerContributionAccountId, employerContributionAccountId, withholdingAccountId, advancesAccountId, otherDeductionsAccountId]
+          properties:
+            wagesExpenseAccountId: { type: string, minLength: 1 }
+            employerCostAccountId: { type: string, minLength: 1 }
+            netPayableAccountId: { type: string, minLength: 1 }
+            workerContributionAccountId: { type: string, minLength: 1 }
+            employerContributionAccountId: { type: string, minLength: 1 }
+            withholdingAccountId: { type: string, minLength: 1 }
+            advancesAccountId: { type: string, minLength: 1 }
+            otherDeductionsAccountId: { type: string, minLength: 1 }
     Fp360AccountingSource:
       type: object
       required: [id, sourceType, reference, sourceDate, partnerName, totalCents, status, imported]
       properties:
         id: { type: string }
-        sourceType: { type: string, enum: [sales_invoice, purchase_invoice, payment] }
+        sourceType: { type: string, enum: [sales_invoice, purchase_invoice, payment, payroll_run] }
         reference: { type: string }
         sourceDate: { type: string, format: date }
         partnerName: { type: string }
         totalCents: { type: integer, minimum: 0 }
         status: { type: string }
         imported: { type: boolean }
+        periodKey: { type: string }
+        version: { type: integer, minimum: 1 }
     Fp360AccountingBalance:
       type: object
       required: [accountId, code, name, nature, normalBalance, debitCents, creditCents, balanceCents]

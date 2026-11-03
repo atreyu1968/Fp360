@@ -5,6 +5,7 @@
  * RED FP360 demo ERP — all monetary and institutional actions are simulated.
  * OpenAPI spec version: 0.1.0
  */
+import type { Fp360AccountingSourceDraftInputPayrollAccounts } from './fp360AccountingSourceDraftInputPayrollAccounts';
 
 export interface Fp360AccountingSourceDraftInput {
   /** @minLength 1 */
@@ -14,4 +15,9 @@ export interface Fp360AccountingSourceDraftInput {
      * @maxLength 100
      */
   operationId: string;
+  /** @pattern ^2027-(0[1-9]|1[0-2])$ */
+  expectedPeriodKey?: string;
+  /** @minimum 1 */
+  expectedVersion?: number;
+  payrollAccounts?: Fp360AccountingSourceDraftInputPayrollAccounts;
 }

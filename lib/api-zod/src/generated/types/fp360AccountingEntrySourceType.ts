@@ -14,5 +14,6 @@ export const Fp360AccountingEntrySourceType = {
   sales_invoice: 'sales_invoice',
   purchase_invoice: 'purchase_invoice',
   payment: 'payment',
+  payroll_run: 'payroll_run',
   reversal: 'reversal',
 } as const;

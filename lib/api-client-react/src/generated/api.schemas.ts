@@ -2261,6 +2261,7 @@ export const Fp360AccountingEntrySourceType = {
   sales_invoice: 'sales_invoice',
   purchase_invoice: 'purchase_invoice',
   payment: 'payment',
+  payroll_run: 'payroll_run',
   reversal: 'reversal',
 } as const;
 
@@ -2354,6 +2355,7 @@ export const Fp360AccountingSourceSourceType = {
   sales_invoice: 'sales_invoice',
   purchase_invoice: 'purchase_invoice',
   payment: 'payment',
+  payroll_run: 'payroll_run',
 } as const;
 
 export interface Fp360AccountingSource {
@@ -2366,6 +2368,9 @@ export interface Fp360AccountingSource {
   totalCents: number;
   status: string;
   imported: boolean;
+  periodKey?: string;
+  /** @minimum 1 */
+  version?: number;
 }
 
 export type Fp360AccountingBalanceNature = typeof Fp360AccountingBalanceNature[keyof typeof Fp360AccountingBalanceNature];
@@ -2532,6 +2537,25 @@ export interface Fp360AccountingEntryActionInput {
   reason?: string;
 }
 
+export type Fp360AccountingSourceDraftInputPayrollAccounts = {
+  /** @minLength 1 */
+  wagesExpenseAccountId: string;
+  /** @minLength 1 */
+  employerCostAccountId: string;
+  /** @minLength 1 */
+  netPayableAccountId: string;
+  /** @minLength 1 */
+  workerContributionAccountId: string;
+  /** @minLength 1 */
+  employerContributionAccountId: string;
+  /** @minLength 1 */
+  withholdingAccountId: string;
+  /** @minLength 1 */
+  advancesAccountId: string;
+  /** @minLength 1 */
+  otherDeductionsAccountId: string;
+};
+
 export interface Fp360AccountingSourceDraftInput {
   /** @minLength 1 */
   organizationId: string;
@@ -2540,6 +2564,11 @@ export interface Fp360AccountingSourceDraftInput {
      * @maxLength 100
      */
   operationId: string;
+  /** @pattern ^2027-(0[1-9]|1[0-2])$ */
+  expectedPeriodKey?: string;
+  /** @minimum 1 */
+  expectedVersion?: number;
+  payrollAccounts?: Fp360AccountingSourceDraftInputPayrollAccounts;
 }
 
 export interface Fp360AccountingPeriodActionInput {
