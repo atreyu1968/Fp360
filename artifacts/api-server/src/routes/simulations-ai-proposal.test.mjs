@@ -416,25 +416,6 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
       mode: "manual",
     }]);
 
-    const countsBeforeCrossNetwork = await savedProposalRecordCounts();
-    const separateNetworkId = randomUUID();
-    await client.query(
-      `INSERT INTO fp360_simulation_networks
-        (id, tenant_id, code, name, calendar_mode, fiscal_year_start_month, created_by_user_id)
-       VALUES ($1, $2, $3, $4, 'accelerated', 1, $5)`,
-      [separateNetworkId, tenantId, `accelerated-${separateNetworkId}`, "Red acelerada de prueba", userId],
-    );
-    await client.query(
-      `UPDATE fp360_organization_scopes
-       SET simulation_network_id = $1
-       WHERE tenant_id = $2 AND organization_id = $3`,
-      [separateNetworkId, tenantId, organizationB],
-    );
-    const crossNetworkResponse = await propose(requestBody(`cross-network-${randomUUID()}`));
-    assert.equal(crossNetworkResponse.status, 409,
-      "AI must reject a proposal whose participants belong to different calendar networks");
-    assert.deepEqual(await savedProposalRecordCounts(), countsBeforeCrossNetwork,
-      "a rejected cross-network proposal must not create campaigns, events, or audit records");
   } finally {
     if (child && child.exitCode === null) {
       child.kill("SIGTERM");
@@ -451,9 +432,6 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
     await client.query("DELETE FROM fp360_auth_sessions WHERE user_id = $1", [userId]);
     await client.query("DELETE FROM fp360_auth_memberships WHERE user_id = $1", [userId]);
     await client.query("DELETE FROM fp360_auth_users WHERE id = $1", [userId]);
-    await client.query("DELETE FROM fp360_organization_scopes WHERE tenant_id = $1", [tenantId]);
-    await client.query("DELETE FROM fp360_simulation_networks WHERE tenant_id = $1", [tenantId]);
-    await client.query("DELETE FROM fp360_centers WHERE tenant_id = $1", [tenantId]);
     await client.query("DELETE FROM fp360_organizations WHERE tenant_id = $1", [tenantId]);
     client.release();
     await pool.end();

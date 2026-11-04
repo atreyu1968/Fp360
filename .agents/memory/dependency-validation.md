@@ -1,10 +1,12 @@
 ---
-name: Validación tras actualizar dependencias
-description: Evitar resultados engañosos del compilador incremental después de actualizar bibliotecas que cambian sus tipos públicos.
+name: Validación tras tipos compartidos y fusiones
+description: Reconstruir tipos y detectar cambios solapados tras integrar tareas concurrentes.
 ---
 
 Después de actualizar dependencias con tipos públicos o cambiar contratos/tipos compartidos, reconstruye las declaraciones de los proyectos TypeScript compartidos antes de confiar en el chequeo del artefacto consumidor.
 
-**Why:** Durante la migración a Zod 4 y al actualizar un contrato de API, las declaraciones incrementales conservadas quedaron desfasadas: los consumidores mostraron errores que desaparecieron al reconstruir las bibliotecas compartidas.
+Tras integrar varias tareas que modifican rutas o pruebas cercanas, revisa los cambios combinados por declaraciones o bloques duplicados antes de considerar válida la integración.
 
-**How to apply:** Ejecutar `pnpm run typecheck:libs` después de cambiar tipos compartidos o generar el cliente. Si hubo cambios mayores de dependencias, usar `pnpm exec tsc --build --force`. Después, ejecutar el chequeo normal del artefacto consumidor.
+**Why:** En RED FP360, las fusiones paralelas dejaron tipos compartidos desactualizados y duplicaron fragmentos en rutas y pruebas; el estado individual de las tareas no garantizó que la combinación compilara.
+
+**How to apply:** Ejecutar `pnpm run typecheck:libs` tras cambiar tipos compartidos, después el typecheck del API y la suite completa cuando las fusiones toquen rutas o pruebas. Si cambian dependencias mayores, usar `pnpm exec tsc --build --force`.

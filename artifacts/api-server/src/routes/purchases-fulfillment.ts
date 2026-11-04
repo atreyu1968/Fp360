@@ -658,14 +658,7 @@ router.get("/redfp360/purchases/supplier-analysis", async (req, res) => {
   ]));
   const bySupplier = new Map<string, {
     supplierOrganizationId: string; supplierName: string; isActive: boolean;
-    supplierOrganizationId: string; supplierName: string; isActive: boolean;
-    supplierOrganizationId: string; supplierName: string; isActive: boolean;
     orderCount: number; receivedOrderCount: number; onTimeOrderCount: number;
-    orderCount: number; receivedOrderCount: number; onTimeOrderCount: number;
-    orderCount: number; receivedOrderCount: number; onTimeOrderCount: number;
-    acceptedUnits: number; rejectedUnits: number; complaintCount: number; orderedCents: number;
-    acceptedUnits: number; rejectedUnits: number; complaintCount: number; orderedCents: number;
-    acceptedUnits: number; rejectedUnits: number; complaintCount: number; orderedCents: number;
     acceptedUnits: number; rejectedUnits: number; complaintCount: number; orderedCents: number;
   }>();
   for (const { order, supplierName, supplierIsActive, supplierId } of orders) {

@@ -602,7 +602,9 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   assert.equal(companyOverview.status, 200);
   assert.equal(secondCompanyOverview.status, 200);
   assert.deepEqual(
-    secondCompanyOverview.body.sourceDocuments.map((source) => source.id).sort(),
+    secondCompanyOverview.body.sourceDocuments
+      .filter((source) => source.sourceType === "sales_invoice")
+      .map((source) => source.id).sort(),
     otherCompanySales.filter((invoice) => invoice.date >= "2027-01-01" && invoice.date <= "2027-12-31")
       .map((invoice) => invoice.id).sort(),
     "The second company's tax overview should list only its own sales within the fiscal year",

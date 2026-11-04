@@ -131,7 +131,7 @@ export async function runDelegatedCompany(tenantId: string, organizationId: stri
       if (prior.organizationId !== organizationId || prior.requestedBy !== requestedBy || prior.revision !== delegation.revision) {
         delegationFail(409, "Identificador utilizado por otra empresa, actor o delegación.");
       }
-      return { run: prior, settings, simulationNetworkId, replay: true };
+       return { run: prior, settings, replay: true };
     }
     // A crashed process must not leave a company permanently blocked. A stale run
     // is cancelled, not replayed; its late result can no longer commit.
@@ -148,10 +148,10 @@ export async function runDelegatedCompany(tenantId: string, organizationId: stri
       detail: "Consulta del estado y del historial de toda la red antes de actuar.",
     }).returning();
     await tx.update(fpAiDelegations).set({ nextRunAt: new Date(Date.now() + 300_000) }).where(scope(tenantId, organizationId));
-    return { run, settings, simulationNetworkId, replay: false };
+    return { run, settings, replay: false };
   });
   if (reservation.replay) return reservation.run;
-  const { run, settings, simulationNetworkId } = reservation;
+  const { run, settings } = reservation;
   try {
     const network = await networkSituationSnapshot(tenantId, simulationNetworkId);
     const eligibleEvents = await db.select({
