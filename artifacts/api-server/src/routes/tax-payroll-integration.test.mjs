@@ -3,7 +3,7 @@ import { randomBytes, randomUUID, scryptSync } from "node:crypto";
 import test from "node:test";
 import pg from "pg";
 
-test("AEAT drafts use the latest payrolls and concurrent imports create only one draft", async (t) => {
+test("AEAT payroll drafts and ATC quarters use the correct source documents", async (t) => {
   assert.notEqual(process.env.NODE_ENV, "production", "Never run this test in production");
   assert.ok(process.env.DATABASE_URL, "A development/test DATABASE_URL is required");
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -20,6 +20,20 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   const secondPolicyId = randomUUID();
   const payrollRunIds = [randomUUID(), randomUUID(), randomUUID()];
   const secondPayrollRunId = randomUUID();
+  const boundarySales = [
+    { id: randomUUID(), orderId: randomUUID(), date: "2027-09-30", reference: "ATC-SALES-BEFORE", baseCents: 10000, taxCents: 700 },
+    { id: randomUUID(), orderId: randomUUID(), date: "2027-10-01", reference: "ATC-SALES-AFTER", baseCents: 20000, taxCents: 1400 },
+  ];
+  const boundaryPurchases = [
+    {
+      id: randomUUID(), requestId: randomUUID(), offerId: randomUUID(), orderId: randomUUID(),
+      date: "2027-09-30", reference: "ATC-PURCHASE-BEFORE", baseCents: 5000, taxCents: 350,
+    },
+    {
+      id: randomUUID(), requestId: randomUUID(), offerId: randomUUID(), orderId: randomUUID(),
+      date: "2027-10-01", reference: "ATC-PURCHASE-AFTER", baseCents: 8000, taxCents: 560,
+    },
+  ];
   const failureTriggerSuffix = randomUUID().replaceAll("-", "");
   const failureTriggerName = `tax_rectification_fail_${failureTriggerSuffix}`;
   const failureFunctionName = `${failureTriggerName}_fn`;
@@ -66,6 +80,12 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
     await pool.query("DELETE FROM fp360_payroll_events WHERE tenant_id = $1", [tenantId]);
     await pool.query("DELETE FROM fp360_payroll_runs WHERE tenant_id = $1", [tenantId]);
     await pool.query("DELETE FROM fp360_payroll_policies WHERE tenant_id = $1", [tenantId]);
+    await pool.query("DELETE FROM fp360_invoices WHERE tenant_id = $1", [tenantId]);
+    await pool.query("DELETE FROM fp360_purchase_invoices WHERE tenant_id = $1", [tenantId]);
+    await pool.query("DELETE FROM fp360_purchase_orders WHERE tenant_id = $1", [tenantId]);
+    await pool.query("DELETE FROM fp360_purchase_offers WHERE tenant_id = $1", [tenantId]);
+    await pool.query("DELETE FROM fp360_purchase_requests WHERE tenant_id = $1", [tenantId]);
+    await pool.query("DELETE FROM fp360_orders WHERE tenant_id = $1", [tenantId]);
     await pool.query("DELETE FROM fp360_auth_audit WHERE tenant_id = $1", [tenantId]);
     await pool.query("DELETE FROM fp360_auth_sessions WHERE user_id = ANY($1::text[])", [[userId, secondUserId]]);
     await pool.query("DELETE FROM fp360_auth_memberships WHERE user_id = ANY($1::text[])", [[userId, secondUserId]]);
@@ -170,6 +190,66 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
     [secondPayrollRunId, tenantId, secondCompanyId, secondPolicyId,
       JSON.stringify(secondCompanyPayrollLines), randomUUID(), secondUserId],
   );
+
+  for (const invoice of boundarySales) {
+    await pool.query(
+      `INSERT INTO fp360_orders
+        (id, tenant_id, reference, buyer_organization_id, status, total_cents, simulated_date)
+       VALUES ($1, $2, $3, $4, 'invoiced', $5, $6)`,
+      [invoice.orderId, tenantId, `ORDER-${invoice.reference}`, companyId,
+        invoice.baseCents + invoice.taxCents, invoice.date],
+    );
+    await pool.query(
+      `INSERT INTO fp360_invoices
+        (id, tenant_id, issuer_organization_id, reference, order_id, buyer_name, due_date,
+         base_cents, igic_cents, total_cents, simulated_date)
+       VALUES ($1, $2, $3, $4, $5, 'Cliente de prueba ATC', $6, $7, $8, $9, $10)`,
+      [invoice.id, tenantId, companyId, invoice.reference, invoice.orderId, invoice.date,
+        invoice.baseCents, invoice.taxCents, invoice.baseCents + invoice.taxCents, invoice.date],
+    );
+  }
+  for (const invoice of boundaryPurchases) {
+    await pool.query(
+      `INSERT INTO fp360_purchase_requests
+        (id, tenant_id, organization_id, request_number, department, urgency,
+         budget_cap_cents, purpose, status, created_by_user_id, created_by_role, request_fingerprint)
+       VALUES ($1, $2, $3, $4, 'Compras', 'medium', $5, 'Factura de prueba ATC',
+         'approved', $6, 'teacher', $7)`,
+      [invoice.requestId, tenantId, companyId, `REQ-${invoice.reference}`,
+        invoice.baseCents + invoice.taxCents, userId, `request-${invoice.id}`],
+    );
+    await pool.query(
+      `INSERT INTO fp360_purchase_offers
+        (id, tenant_id, request_id, supplier_organization_id, quote_reference,
+         delivery_days, payment_days, freight_cents, quality_score_basis_points,
+         created_by_user_id, created_by_role, request_fingerprint)
+       VALUES ($1, $2, $3, $4, $5, 1, 0, 0, 10000, $6, 'teacher', $7)`,
+      [invoice.offerId, tenantId, invoice.requestId, secondCompanyId,
+        `QUOTE-${invoice.reference}`, userId, `offer-${invoice.id}`],
+    );
+    await pool.query(
+      `INSERT INTO fp360_purchase_orders
+        (id, tenant_id, request_id, offer_id, buyer_organization_id, supplier_organization_id,
+         order_number, base_cents, igic_cents, freight_cents, total_cents, status,
+         awarded_reason, created_by_user_id, created_by_role, simulated_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, $10, 'received',
+         'Pedido de prueba ATC', $11, 'teacher', $12)`,
+      [invoice.orderId, tenantId, invoice.requestId, invoice.offerId, companyId, secondCompanyId,
+        `PO-${invoice.reference}`, invoice.baseCents, invoice.taxCents,
+        invoice.baseCents + invoice.taxCents, userId, invoice.date],
+    );
+    await pool.query(
+      `INSERT INTO fp360_purchase_invoices
+        (id, tenant_id, order_id, request_id, supplier_organization_id, invoice_reference,
+         invoice_date, due_date, base_cents, igic_cents, freight_cents, total_cents,
+         status, match_status, match_summary, created_by_user_id, created_by_role, request_fingerprint)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9, 0, $10,
+         'conformed', 'match', 'Factura ficticia confirmada', $11, 'teacher', $12)`,
+      [invoice.id, tenantId, invoice.orderId, invoice.requestId, secondCompanyId, invoice.reference,
+        invoice.date, invoice.baseCents, invoice.taxCents, invoice.baseCents + invoice.taxCents,
+        userId, `invoice-${invoice.id}`],
+    );
+  }
 
   const login = await request("/auth/login", "POST", {
     email: `${userId}@example.test`, password,
@@ -478,16 +558,13 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   assert.match(annual.body.formData.recipientSummary, /EMP-B: base 500\.00 € · retención 50\.00 €/);
   assert.doesNotMatch(annual.body.formData.recipientSummary, /EMP-C/);
 
-  await pool.query(
-    "UPDATE fp360_simulation_networks SET fiscal_year_start_month = 10 WHERE id = $1 AND tenant_id = $2",
-    [networkId, tenantId],
-  );
   const quarterDates = [
     ["2027-Q1", "2027-01-01", "2027-03-31"],
     ["2027-Q2", "2027-04-01", "2027-06-30"],
     ["2027-Q3", "2027-07-01", "2027-09-30"],
     ["2027-Q4", "2027-10-01", "2027-12-31"],
   ];
+  const atcQuarterDrafts = {};
   for (const [periodKey, periodStart, periodEnd] of quarterDates) {
     const declaration = await request("/redfp360/tax/declarations", "POST", {
       organizationId: companyId,
@@ -501,6 +578,34 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
     assert.equal(declaration.body.periodKey, periodKey);
     assert.equal(declaration.body.periodStart, periodStart);
     assert.equal(declaration.body.periodEnd, periodEnd);
+    atcQuarterDrafts[periodKey] = declaration.body;
+  }
+  const assertAtcBoundarySources = (draft, salesInvoice, purchaseInvoice) => {
+    assert.deepEqual(draft.sourceInvoiceIds, [salesInvoice.id]);
+    assert.deepEqual(draft.sourcePurchaseInvoiceIds, [purchaseInvoice.id]);
+    assert.equal(draft.taxableBaseCents, salesInvoice.baseCents);
+    assert.equal(draft.outputIgicCents, salesInvoice.taxCents);
+    assert.equal(draft.inputIgicCents, purchaseInvoice.taxCents);
+    assert.equal(draft.resultCents, salesInvoice.taxCents - purchaseInvoice.taxCents);
+  };
+  assertAtcBoundarySources(atcQuarterDrafts["2027-Q3"], boundarySales[0], boundaryPurchases[0]);
+  assertAtcBoundarySources(atcQuarterDrafts["2027-Q4"], boundarySales[1], boundaryPurchases[1]);
+
+  await pool.query(
+    "UPDATE fp360_simulation_networks SET fiscal_year_start_month = 10 WHERE id = $1 AND tenant_id = $2",
+    [networkId, tenantId],
+  );
+  for (const periodKey of ["2027-Q3", "2027-Q4"]) {
+    const recalculated = await request(
+      `/redfp360/tax/declarations/${atcQuarterDrafts[periodKey].id}/action`,
+      "POST",
+      { action: "recalculate", operationId: randomUUID() },
+    );
+    assert.equal(recalculated.status, 200, JSON.stringify(recalculated.body));
+    const expectedInvoices = periodKey === "2027-Q3"
+      ? [boundarySales[0], boundaryPurchases[0]]
+      : [boundarySales[1], boundaryPurchases[1]];
+    assertAtcBoundarySources(recalculated.body, expectedInvoices[0], expectedInvoices[1]);
   }
   const savedQuarterAfterCalendarChange = await pool.query(
     `SELECT period_key, period_start::text, period_end::text
