@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { and, asc, eq, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import {
   fpOrganizations, fpSimulationCampaigns, fpSimulationEvents, fpSimulationAuditEvents,
   fpDocumentDossiers, fpDocuments, fpDocumentVersions, fpDocumentEvents,
@@ -8,6 +8,11 @@ import {
 } from "@workspace/db";
 import { networkSituationSnapshot } from "../routes/simulations";
 import { commonSimulationNetworkId } from "./organization-scopes";
+import {
+  organizationsShareSimulationNetwork,
+  SIMULATION_NETWORK_MISMATCH,
+  tenantSimulationNetworkMap,
+} from "./organization-simulation-networks";
 import { normalizeLocalAiBaseUrl, requestLocalAiJson } from "./local-ai";
 import { logger } from "./logger";
 
@@ -108,12 +113,17 @@ async function createEvidence(tx: Transaction, run: FpAiDelegationRun, action: A
 // The service actor is an opaque identifier, never a login or a human AuthContext.
 // Only this closed dispatcher can write; the model cannot invoke arbitrary routes.
 export async function runDelegatedCompany(tenantId: string, organizationId: string, operationId: string, requestedBy: string) {
+  const simulationNetworks = await tenantSimulationNetworkMap(tenantId);
+  const simulationNetworkId = simulationNetworks.get(organizationId);
+  if (!simulationNetworkId) delegationFail(404, "La empresa no tiene una red económica asignada.");
   const reservation = await db.transaction(async (tx) => {
     await lockCompany(tx, tenantId, organizationId);
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`ai-operation:${tenantId}:${operationId}`}))`);
     const { delegation, settings } = await currentAuthority(tx, tenantId, organizationId);
-    const simulationNetworkId = await commonSimulationNetworkId(tx, tenantId, [organizationId]);
-    if (!simulationNetworkId) delegationFail(409, "La empresa no está asociada a una red económica válida.");
+    const currentSimulationNetworkId = await commonSimulationNetworkId(tx, tenantId, [organizationId]);
+    if (!currentSimulationNetworkId || currentSimulationNetworkId !== simulationNetworkId) {
+      delegationFail(409, SIMULATION_NETWORK_MISMATCH);
+    }
     const [prior] = await tx.select().from(fpAiDelegationRuns).where(and(
       eq(fpAiDelegationRuns.tenantId, tenantId), eq(fpAiDelegationRuns.operationId, operationId),
     ));
@@ -146,6 +156,7 @@ export async function runDelegatedCompany(tenantId: string, organizationId: stri
     const network = await networkSituationSnapshot(tenantId, simulationNetworkId);
     const eligibleEvents = await db.select({
       id: fpSimulationEvents.id, eventType: fpSimulationEvents.eventType,
+      campaignId: fpSimulationEvents.campaignId,
       simulatedDate: fpSimulationEvents.simulatedDate, requiredDocumentType: fpSimulationEvents.requiredDocumentType,
       preconditions: fpSimulationEvents.preconditions,
     }).from(fpSimulationEvents).innerJoin(fpSimulationCampaigns, and(
@@ -155,6 +166,16 @@ export async function runDelegatedCompany(tenantId: string, organizationId: stri
       eq(fpSimulationEvents.status, "published"), eq(fpSimulationCampaigns.status, "active"),
       lte(fpSimulationEvents.simulatedDate, "2027-09-15"),
     )).orderBy(asc(fpSimulationEvents.simulatedDate));
+    const campaignIds = [...new Set(eligibleEvents.map((event) => event.campaignId))];
+    const campaigns = campaignIds.length ? await db.select().from(fpSimulationCampaigns).where(and(
+      eq(fpSimulationCampaigns.tenantId, tenantId),
+      inArray(fpSimulationCampaigns.id, campaignIds),
+    )) : [];
+    const validCampaignIds = new Set(campaigns.filter((campaign) =>
+      organizationsShareSimulationNetwork(simulationNetworks, campaign.participantOrganizationIds) &&
+      campaign.participantOrganizationIds.every((id) => simulationNetworks.get(id) === simulationNetworkId),
+    ).map((campaign) => campaign.id));
+    const scopedEligibleEvents = eligibleEvents.filter((event) => validCampaignIds.has(event.campaignId));
     const [grant] = await db.select().from(fpAiDelegations).where(scope(tenantId, organizationId));
     const evidenceDocuments = await db.select({
       id: fpDocuments.id, documentType: fpDocuments.documentType, documentDate: fpDocuments.documentDate,
@@ -166,7 +187,7 @@ export async function runDelegatedCompany(tenantId: string, organizationId: stri
     const context = {
       companyScope: { tenantId, organizationId }, allowedOperations: grant?.allowedOperations ?? [],
       networkSnapshotAndCompleteOperationHistory: network,
-      eligibleEvents: eligibleEvents.filter((e) => !e.preconditions.length),
+      eligibleEvents: scopedEligibleEvents.filter((e) => !e.preconditions.length),
       evidenceDocuments,
     };
     await db.update(fpAiDelegationRuns).set({
@@ -208,7 +229,12 @@ export async function runDelegatedCompany(tenantId: string, organizationId: stri
           )).for("share") : [];
           if (!event || event.status !== "published" || event.evidenceDocumentId || event.preconditions.length ||
             event.simulatedDate > "2027-09-15" || campaign?.status !== "active" ||
-            !campaign.participantOrganizationIds.includes(organizationId)) delegationFail(409, "El evento ya no se puede completar.");
+            !campaign.participantOrganizationIds.includes(organizationId) ||
+            !organizationsShareSimulationNetwork(simulationNetworks, campaign.participantOrganizationIds) ||
+            !campaign.participantOrganizationIds.every((id) => simulationNetworks.get(id) === simulationNetworkId) ||
+            await commonSimulationNetworkId(tx, tenantId, campaign.participantOrganizationIds) !== simulationNetworkId) {
+            delegationFail(409, SIMULATION_NETWORK_MISMATCH);
+          }
           if (!context.evidenceDocuments.some(d => d.id === action.documentId)) delegationFail(403, "Evidencia fuera del contexto autorizado.");
           const [document] = await tx.select().from(fpDocuments).where(and(
             eq(fpDocuments.id, action.documentId!), eq(fpDocuments.tenantId, tenantId),

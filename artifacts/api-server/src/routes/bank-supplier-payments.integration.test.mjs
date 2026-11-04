@@ -50,6 +50,8 @@ test("bank transfers and supplier payments roll back missing audit events and cr
   const otherBuyerId = randomUUID();
   const supplierId = randomUUID();
   const userIds = [randomUUID(), randomUUID(), randomUUID()];
+  const centerId = randomUUID();
+  const simulationNetworkId = randomUUID();
   const membershipIds = userIds.map(() => randomUUID());
   const sessionIds = userIds.map(() => randomUUID());
   const sessionTokens = userIds.map(() => randomBytes(32).toString("base64url"));

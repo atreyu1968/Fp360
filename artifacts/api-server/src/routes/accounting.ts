@@ -62,6 +62,11 @@ import {
   getAccountingFiscalPeriod,
   getAccountingFiscalYearForDate,
 } from "./accounting-fiscal-period.mjs";
+import {
+  organizationsShareSimulationNetwork,
+  SIMULATION_NETWORK_MISMATCH,
+  tenantSimulationNetworkMap,
+} from "../lib/organization-simulation-networks";
 
 const router: IRouter = Router();
 router.use("/redfp360/accounting", requireAuth, requireSimulationWriteAccess);
@@ -834,6 +839,14 @@ router.post("/redfp360/accounting/entries", async (req, res): Promise<void> => {
     ...line,
     description: line.description.trim(),
   }));
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
+  if (!organizationsShareSimulationNetwork(simulationNetworks, [
+    organizationId,
+    ...lines.map((line) => line.thirdPartyOrganizationId),
+  ])) {
+    res.status(409).json({ error: SIMULATION_NETWORK_MISMATCH });
+    return;
+  }
   if (lines.some((line) => (line.debitCents === 0 && line.creditCents === 0) || (line.debitCents > 0 && line.creditCents > 0))) {
     res.status(400).json({ error: "Cada línea debe tener un importe en Debe o en Haber, nunca en ambos." });
     return;
@@ -866,6 +879,7 @@ router.post("/redfp360/accounting/entries/:id/post", async (req, res): Promise<v
     res.status(403).json({ error: "No tienes acceso a esa empresa." });
     return;
   }
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   const requestFingerprint = fingerprint({ entryId: params.data.id, organizationId, operationId: body.data.operationId, action: "post" });
   const result = await db.transaction(async (tx) => {
     const [priorEvent] = await tx.select().from(fpAccountingEvents).where(and(
@@ -917,6 +931,10 @@ router.post("/redfp360/accounting/entries/:id/post", async (req, res): Promise<v
       eq(fpAccountingEntryLines.tenantId, actor.tenantId),
       eq(fpAccountingEntryLines.entryId, entry.id),
     ));
+    if (!organizationsShareSimulationNetwork(simulationNetworks, [
+      organizationId,
+      ...lines.map((line) => line.thirdPartyOrganizationId),
+    ])) return { error: SIMULATION_NETWORK_MISMATCH, status: 409 as const };
     const debitCents = lines.reduce((sum, line) => sum + line.debitCents, 0);
     const creditCents = lines.reduce((sum, line) => sum + line.creditCents, 0);
     if (lines.length < 2 || debitCents <= 0 || debitCents !== creditCents) {
@@ -965,6 +983,7 @@ router.post("/redfp360/accounting/entries/:id/reverse", async (req, res): Promis
     res.status(400).json({ error: "Explica el motivo del contrasiento con al menos cinco caracteres." });
     return;
   }
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   const requestFingerprint = fingerprint({ entryId: params.data.id, organizationId, operationId: body.data.operationId, reason, action: "reverse" });
   const result = await db.transaction(async (tx) => {
     const [priorEvent] = await tx.select().from(fpAccountingEvents).where(and(
@@ -990,6 +1009,10 @@ router.post("/redfp360/accounting/entries/:id/reverse", async (req, res): Promis
       eq(fpAccountingEntryLines.tenantId, actor.tenantId),
       eq(fpAccountingEntryLines.entryId, original.id),
     )).orderBy(asc(fpAccountingEntryLines.lineNumber));
+    if (!organizationsShareSimulationNetwork(simulationNetworks, [
+      organizationId,
+      ...originalLines.map((line) => line.thirdPartyOrganizationId),
+    ])) return { error: SIMULATION_NETWORK_MISMATCH, status: 409 as const };
     const entryNumber = await nextEntryNumber(tx, actor.tenantId, organizationId, original.fiscalYear);
     const reversalId = randomUUID();
     const concept = `Contrasiento ${original.entryNumber ?? original.id.slice(0, 8)}: ${reason}`;
@@ -1061,6 +1084,7 @@ router.post("/redfp360/accounting/sources/:sourceType/:sourceId/draft", async (r
     res.status(400).json({ error: "Indica el periodo, versión y cuentas educativas de la nómina." });
     return;
   }
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   await ensureChart(actor.tenantId, organizationId, actor);
   const payrollAccounts = body.data.payrollAccounts;
   const requestFingerprint = params.data.sourceType === "payroll_run"
@@ -1167,6 +1191,10 @@ router.post("/redfp360/accounting/sources/:sourceType/:sourceId/draft", async (r
         eq(fpOrders.tenantId, actor.tenantId),
       )).limit(1);
       if (!order) return { error: "Pedido de origen de la factura no encontrado.", status: 404 as const };
+      if (!organizationsShareSimulationNetwork(simulationNetworks, [
+        organizationId,
+        order.buyerOrganizationId,
+      ])) return { error: SIMULATION_NETWORK_MISMATCH, status: 409 as const };
       entryDate = invoice.simulatedDate;
       concept = `Factura de venta ${invoice.reference}`;
       sourceReference = invoice.reference;
@@ -1201,6 +1229,10 @@ router.post("/redfp360/accounting/sources/:sourceType/:sourceId/draft", async (r
         eq(fpOrders.tenantId, actor.tenantId),
       )).limit(1);
       if (!order) return { error: "Pedido de origen de la factura no encontrado.", status: 404 as const };
+      if (!organizationsShareSimulationNetwork(simulationNetworks, [
+        organizationId,
+        order.buyerOrganizationId,
+      ])) return { error: SIMULATION_NETWORK_MISMATCH, status: 409 as const };
       entryDate = payment.simulatedDate;
       concept = `Cobro de factura ${invoice.reference}`;
       sourceReference = `${invoice.reference} · ${payment.id}`;
@@ -1221,6 +1253,10 @@ router.post("/redfp360/accounting/sources/:sourceType/:sourceId/draft", async (r
         eq(fpPurchaseOrders.buyerOrganizationId, organizationId),
       )).limit(1);
       if (!order) return { error: "La factura de proveedor no pertenece a esta empresa.", status: 403 as const };
+      if (!organizationsShareSimulationNetwork(simulationNetworks, [
+        organizationId,
+        order.supplierOrganizationId,
+      ])) return { error: SIMULATION_NETWORK_MISMATCH, status: 409 as const };
       entryDate = invoice.invoiceDate;
       concept = `Factura de compra ${invoice.invoiceReference}`;
       sourceReference = invoice.invoiceReference;

@@ -23,6 +23,12 @@ import {
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 import { commonSimulationNetworkId } from "../lib/organization-scopes";
 
+import {
+  organizationsShareSimulationNetwork,
+  SIMULATION_NETWORK_MISMATCH,
+  tenantSimulationNetworkMap,
+} from "../lib/organization-simulation-networks";
+
 const router: IRouter = Router();
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const SIMULATED_DATE = "2027-09-15";
@@ -76,10 +82,20 @@ async function event(
   });
 }
 async function requestForActor(requestId: string, actor: AuthContext) {
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   const [request] = await db.select().from(fpPurchaseRequests).where(and(
     eq(fpPurchaseRequests.id, requestId), eq(fpPurchaseRequests.tenantId, actor.tenantId),
   ));
   if (!request) fail(404, "La solicitud no existe en tu red.");
+  const suppliers = await db.select({ supplierOrganizationId: fpPurchaseRequestSuppliers.supplierOrganizationId })
+    .from(fpPurchaseRequestSuppliers).where(and(
+      eq(fpPurchaseRequestSuppliers.requestId, request.id),
+      eq(fpPurchaseRequestSuppliers.tenantId, actor.tenantId),
+    ));
+  if (!organizationsShareSimulationNetwork(simulationNetworks, [
+    request.organizationId,
+    ...suppliers.map((supplier) => supplier.supplierOrganizationId),
+  ])) fail(409, SIMULATION_NETWORK_MISMATCH);
   if (actorIsNetworkSupervisor(actor) || actor.organizationId === request.organizationId) return request;
   if (actor.organizationId) {
     const [invitation] = await db.select({ id: fpPurchaseRequestSuppliers.id }).from(fpPurchaseRequestSuppliers).where(and(
@@ -91,10 +107,24 @@ async function requestForActor(requestId: string, actor: AuthContext) {
   }
   fail(404, "La solicitud no está habilitada para tu organización.");
 }
-async function requireBuyer(request: { organizationId: string }, actor: AuthContext) {
+async function requireBuyer(
+  tx: Transaction,
+  request: { id: string; organizationId: string },
+  actor: AuthContext,
+  simulationNetworks: ReadonlyMap<string, string>,
+) {
   if (!actorCanBuyFor(actor, request.organizationId)) {
     fail(403, "Solo la empresa compradora o su profesorado pueden modificar esta solicitud.");
   }
+  const suppliers = await tx.select({ supplierOrganizationId: fpPurchaseRequestSuppliers.supplierOrganizationId })
+    .from(fpPurchaseRequestSuppliers).where(and(
+      eq(fpPurchaseRequestSuppliers.requestId, request.id),
+      eq(fpPurchaseRequestSuppliers.tenantId, actor.tenantId),
+    ));
+  if (!organizationsShareSimulationNetwork(simulationNetworks, [
+    request.organizationId,
+    ...suppliers.map((supplier) => supplier.supplierOrganizationId),
+  ])) fail(409, SIMULATION_NETWORK_MISMATCH);
 }
 async function readRequestDetail(id: string, actor: AuthContext) {
   const request = await requestForActor(id, actor);
@@ -210,6 +240,7 @@ router.post("/redfp360/purchases/requests", async (req, res): Promise<void> => {
     fail(400, "Agrupa cada producto en una sola línea de solicitud.");
   }
   const fingerprint = requestHash(parsed.data);
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   const id = await db.transaction(async (tx) => {
     const [replay] = await tx.select().from(fpPurchaseRequests).where(and(
       eq(fpPurchaseRequests.id, parsed.data.operationId), eq(fpPurchaseRequests.tenantId, actor.tenantId),
@@ -224,10 +255,12 @@ router.post("/redfp360/purchases/requests", async (req, res): Promise<void> => {
         eq(fpPurchaseRequestSuppliers.requestId, replay.id),
         eq(fpPurchaseRequestSuppliers.tenantId, actor.tenantId),
       ));
-      if (!await commonSimulationNetworkId(tx, actor.tenantId, [
+      const replayParticipants = [
         replay.organizationId,
         ...replaySuppliers.map((supplier) => supplier.supplierOrganizationId),
-      ])) {
+      ];
+      if (!await commonSimulationNetworkId(tx, actor.tenantId, replayParticipants) ||
+        !organizationsShareSimulationNetwork(simulationNetworks, replayParticipants)) {
         fail(409, "La solicitud anterior conecta empresas de redes económicas distintas.");
       }
       return replay.id;
@@ -246,6 +279,10 @@ router.post("/redfp360/purchases/requests", async (req, res): Promise<void> => {
     if (suppliers.length !== parsed.data.requestedSupplierIds.length) {
       fail(404, "Todos los proveedores deben estar activos y vender en esta red.");
     }
+    if (!organizationsShareSimulationNetwork(simulationNetworks, [
+      buyer.id,
+      ...suppliers.map((supplier) => supplier.id),
+    ])) fail(409, SIMULATION_NETWORK_MISMATCH);
     const products = await tx.select().from(fpProducts).where(and(
       eq(fpProducts.tenantId, actor.tenantId), eq(fpProducts.isActive, true),
       eq(fpProducts.isPublished, true),
@@ -305,12 +342,13 @@ router.post("/redfp360/purchases/requests/:id/submit", async (req, res): Promise
   if (!params.success || !parsed.success) fail(400, "Añade un motivo para solicitar ofertas.");
   const actor = req.auth!;
   const reason = parseReason(parsed.data.reason);
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   await db.transaction(async (tx) => {
     const [request] = await tx.select().from(fpPurchaseRequests).where(and(
       eq(fpPurchaseRequests.id, params.data.id), eq(fpPurchaseRequests.tenantId, actor.tenantId),
     )).for("update");
     if (!request) fail(404, "Solicitud no encontrada en tu red.");
-    await requireBuyer(request, actor);
+    await requireBuyer(tx, request, actor, simulationNetworks);
     if (request.status === "requested") {
       const [replayed] = await tx.select({ id: fpPurchaseEvents.id }).from(fpPurchaseEvents).where(and(
         eq(fpPurchaseEvents.requestId, request.id), eq(fpPurchaseEvents.tenantId, actor.tenantId),
@@ -527,12 +565,13 @@ router.post("/redfp360/purchases/requests/:id/review", async (req, res): Promise
   if (!params.success || !parsed.success) fail(400, "Indica un motivo para solicitar la aprobación.");
   const actor = req.auth!;
   const reason = parseReason(parsed.data.reason);
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   await db.transaction(async (tx) => {
     const [request] = await tx.select().from(fpPurchaseRequests).where(and(
       eq(fpPurchaseRequests.id, params.data.id), eq(fpPurchaseRequests.tenantId, actor.tenantId),
     )).for("update");
     if (!request) fail(404, "Solicitud no encontrada en tu red.");
-    await requireBuyer(request, actor);
+    await requireBuyer(tx, request, actor, simulationNetworks);
     if (request.status === "pending_approval") {
       const [replayed] = await tx.select({ id: fpPurchaseEvents.id }).from(fpPurchaseEvents).where(and(
         eq(fpPurchaseEvents.requestId, request.id), eq(fpPurchaseEvents.action, "Solicitud enviada a aprobación"),
@@ -559,12 +598,13 @@ router.post("/redfp360/purchases/requests/:id/decision", async (req, res): Promi
   const actor = req.auth!;
   if (!["teacher", "administrator"].includes(actor.role)) fail(403, "Solo profesorado o administración pueden aprobar la compra.");
   const reason = parseReason(parsed.data.reason);
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   await db.transaction(async (tx) => {
     const [request] = await tx.select().from(fpPurchaseRequests).where(and(
       eq(fpPurchaseRequests.id, params.data.id), eq(fpPurchaseRequests.tenantId, actor.tenantId),
     )).for("update");
     if (!request) fail(404, "Solicitud no encontrada en tu red.");
-    await requireBuyer(request, actor);
+    await requireBuyer(tx, request, actor, simulationNetworks);
     const decision = parsed.data.decision;
     if ((request.status === decision && request.decisionReason === reason) && request.decisionByUserId === actor.userId) return;
     if (request.status !== "pending_approval") fail(409, "Solo se puede decidir una solicitud pendiente de aprobación.");
@@ -588,12 +628,13 @@ router.post("/redfp360/purchases/requests/:id/award", async (req, res): Promise<
   if (!params.success || !parsed.success) fail(400, "Selecciona una oferta y justifica la decisión.");
   const actor = req.auth!;
   const reason = parseReason(parsed.data.reason);
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   const purchaseOrderId = await db.transaction(async (tx) => {
     const [request] = await tx.select().from(fpPurchaseRequests).where(and(
       eq(fpPurchaseRequests.id, params.data.id), eq(fpPurchaseRequests.tenantId, actor.tenantId),
     )).for("update");
     if (!request) fail(404, "Solicitud no encontrada en tu red.");
-    await requireBuyer(request, actor);
+    await requireBuyer(tx, request, actor, simulationNetworks);
     const [replay] = await tx.select().from(fpPurchaseOrders).where(and(
       eq(fpPurchaseOrders.requestId, request.id), eq(fpPurchaseOrders.tenantId, actor.tenantId),
     ));
@@ -677,12 +718,13 @@ router.post("/redfp360/purchases/requests/:id/cancel", async (req, res): Promise
   if (!params.success || !parsed.success) fail(400, "Indica el motivo de cancelación.");
   const actor = req.auth!;
   const reason = parseReason(parsed.data.reason);
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   await db.transaction(async (tx) => {
     const [request] = await tx.select().from(fpPurchaseRequests).where(and(
       eq(fpPurchaseRequests.id, params.data.id), eq(fpPurchaseRequests.tenantId, actor.tenantId),
     )).for("update");
     if (!request) fail(404, "Solicitud no encontrada en tu red.");
-    await requireBuyer(request, actor);
+    await requireBuyer(tx, request, actor, simulationNetworks);
     if (request.status === "cancelled" && request.decisionReason === reason) return;
     if (!["draft", "requested", "pending_approval", "approved", "rejected"].includes(request.status)) {
       fail(409, "Un pedido emitido no se borra; conserva su historial y registra una incidencia de recepción.");

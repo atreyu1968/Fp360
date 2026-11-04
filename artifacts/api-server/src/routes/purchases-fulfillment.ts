@@ -16,6 +16,11 @@ import {
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 import { commonSimulationNetworkId } from "../lib/organization-scopes";
 import { purchaseInstructionStatus } from "./purchase-instruction-status.mjs";
+import {
+  organizationsShareSimulationNetwork,
+  SIMULATION_NETWORK_MISMATCH,
+  tenantSimulationNetworkMap,
+} from "../lib/organization-simulation-networks";
 
 const router: IRouter = Router();
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -95,6 +100,11 @@ async function readReceipt(id: string, actor: AuthContext) {
   if (!order || !(await actorCanSeeBuyerOrder(actor, order.buyerOrganizationId))) {
     fail(404, "Recepción no encontrada en tu empresa.");
   }
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
+  if (!organizationsShareSimulationNetwork(simulationNetworks, [
+    order.buyerOrganizationId,
+    order.supplierOrganizationId,
+  ])) fail(409, SIMULATION_NETWORK_MISMATCH);
   const [supplier] = await db.select({ name: fpOrganizations.name }).from(fpOrganizations).where(and(
     eq(fpOrganizations.id, order.supplierOrganizationId), eq(fpOrganizations.tenantId, actor.tenantId),
   ));
@@ -138,6 +148,7 @@ router.post("/redfp360/purchases/orders/:id/receipts", requireSimulationWriteAcc
   const reference = parsed.data.receiptReference.trim().toUpperCase();
   if (!reference) fail(400, "Añade el número simulado del albarán.");
   const digest = fingerprint({ ...parsed.data, reference, userId: actor.userId });
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   const receiptId = await db.transaction(async (tx) => {
     const [order] = await tx.select().from(fpPurchaseOrders).where(and(
       eq(fpPurchaseOrders.id, params.data.id), eq(fpPurchaseOrders.tenantId, actor.tenantId),
@@ -147,6 +158,10 @@ router.post("/redfp360/purchases/orders/:id/receipts", requireSimulationWriteAcc
     if (!mayManageBuyer(actor, order.buyerOrganizationId)) {
       fail(403, "Solo la empresa compradora puede registrar una recepción.");
     }
+    if (!organizationsShareSimulationNetwork(simulationNetworks, [
+      order.buyerOrganizationId,
+      order.supplierOrganizationId,
+    ])) fail(409, SIMULATION_NETWORK_MISMATCH);
     const [replay] = await tx.select().from(fpPurchaseReceipts).where(and(
       eq(fpPurchaseReceipts.id, parsed.data.operationId),
       eq(fpPurchaseReceipts.tenantId, actor.tenantId),
@@ -272,6 +287,11 @@ async function readInvoice(id: string, actor: AuthContext) {
   if (!order || !(await actorCanSeeBuyerOrder(actor, order.buyerOrganizationId))) {
     fail(404, "Factura recibida no encontrada en tu empresa.");
   }
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
+  if (!organizationsShareSimulationNetwork(simulationNetworks, [
+    order.buyerOrganizationId,
+    invoice.supplierOrganizationId,
+  ])) fail(409, SIMULATION_NETWORK_MISMATCH);
   const [supplier] = await db.select({ name: fpOrganizations.name }).from(fpOrganizations).where(and(
     eq(fpOrganizations.id, invoice.supplierOrganizationId), eq(fpOrganizations.tenantId, actor.tenantId),
   ));
@@ -356,6 +376,7 @@ router.post("/redfp360/purchases/orders/:id/invoices", requireSimulationWriteAcc
     fail(400, "Cada línea del pedido solo puede aparecer una vez en la factura.");
   }
   const digest = fingerprint({ ...parsed.data, reference, userId: actor.userId });
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   const invoiceId = await db.transaction(async (tx) => {
     const [order] = await tx.select().from(fpPurchaseOrders).where(and(
       eq(fpPurchaseOrders.id, params.data.id), eq(fpPurchaseOrders.tenantId, actor.tenantId),
@@ -365,6 +386,10 @@ router.post("/redfp360/purchases/orders/:id/invoices", requireSimulationWriteAcc
     if (!mayManageBuyer(actor, order.buyerOrganizationId)) {
       fail(403, "Solo la empresa compradora puede registrar la factura recibida.");
     }
+    if (!organizationsShareSimulationNetwork(simulationNetworks, [
+      order.buyerOrganizationId,
+      order.supplierOrganizationId,
+    ])) fail(409, SIMULATION_NETWORK_MISMATCH);
     const [replay] = await tx.select().from(fpPurchaseInvoices).where(and(
       eq(fpPurchaseInvoices.id, parsed.data.operationId),
       eq(fpPurchaseInvoices.tenantId, actor.tenantId),
@@ -540,6 +565,7 @@ router.post("/redfp360/purchases/invoices/:id/decision", requireSimulationWriteA
   if (!["teacher", "administrator", "team_manager"].includes(actor.role)) {
     fail(403, "Solo Tesorería, el profesorado o administración pueden conformar facturas recibidas.");
   }
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
   await db.transaction(async (tx) => {
     const [invoice] = await tx.select().from(fpPurchaseInvoices).where(and(
       eq(fpPurchaseInvoices.id, params.data.id), eq(fpPurchaseInvoices.tenantId, actor.tenantId),
@@ -555,6 +581,10 @@ router.post("/redfp360/purchases/invoices/:id/decision", requireSimulationWriteA
     if (invoice.supplierOrganizationId !== order.supplierOrganizationId) {
       fail(409, "La factura no pertenece al proveedor del pedido.");
     }
+    if (!organizationsShareSimulationNetwork(simulationNetworks, [
+      order.buyerOrganizationId,
+      invoice.supplierOrganizationId,
+    ])) fail(409, SIMULATION_NETWORK_MISMATCH);
     const decision = parsed.data.decision;
     if (invoice.status === decision && invoice.decisionReason === reason &&
       invoice.decisionByUserId === actor.userId) return;
@@ -628,7 +658,14 @@ router.get("/redfp360/purchases/supplier-analysis", async (req, res) => {
   ]));
   const bySupplier = new Map<string, {
     supplierOrganizationId: string; supplierName: string; isActive: boolean;
+    supplierOrganizationId: string; supplierName: string; isActive: boolean;
+    supplierOrganizationId: string; supplierName: string; isActive: boolean;
     orderCount: number; receivedOrderCount: number; onTimeOrderCount: number;
+    orderCount: number; receivedOrderCount: number; onTimeOrderCount: number;
+    orderCount: number; receivedOrderCount: number; onTimeOrderCount: number;
+    acceptedUnits: number; rejectedUnits: number; complaintCount: number; orderedCents: number;
+    acceptedUnits: number; rejectedUnits: number; complaintCount: number; orderedCents: number;
+    acceptedUnits: number; rejectedUnits: number; complaintCount: number; orderedCents: number;
     acceptedUnits: number; rejectedUnits: number; complaintCount: number; orderedCents: number;
   }>();
   for (const { order, supplierName, supplierIsActive, supplierId } of orders) {

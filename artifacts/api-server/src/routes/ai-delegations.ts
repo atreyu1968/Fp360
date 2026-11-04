@@ -9,6 +9,7 @@ import {
 import {
   DelegationError, delegationFail as fail, delegationView, lockCompany, runDelegatedCompany, runView,
 } from "../lib/ai-delegation";
+import { tenantSimulationNetworkMap } from "../lib/organization-simulation-networks";
 
 // Mounted AFTER the administrator, authenticated MFA and same-origin guards.
 const router = Router();
@@ -24,6 +25,8 @@ router.get("/", async (req, res) => {
 router.put("/:organizationId", async (req, res) => {
   const actor = req.auth!;
   const organizationId = String(req.params.organizationId);
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
+  if (!simulationNetworks.has(organizationId)) fail(404, "Empresa no encontrada en tu red.");
   const body = api.UpdateAdminAiDelegationBody.safeParse(req.body);
   if (!body.success) fail(400, "Revisa los permisos y la revisión de la delegación.");
   const data = body.data;
@@ -101,7 +104,10 @@ router.post("/:organizationId/run", async (req, res) => {
   const body = api.RunAdminAiDelegationBody.safeParse(req.body);
   if (!body.success) fail(400, "El identificador del ciclo no es válido.");
   const actor = req.auth!;
-  const run = await runDelegatedCompany(actor.tenantId, String(req.params.organizationId), body.data.operationId, actor.userId);
+  const organizationId = String(req.params.organizationId);
+  const simulationNetworks = await tenantSimulationNetworkMap(actor.tenantId);
+  if (!simulationNetworks.has(organizationId)) fail(404, "Empresa no encontrada en tu red.");
+  const run = await runDelegatedCompany(actor.tenantId, organizationId, body.data.operationId, actor.userId);
   res.json(api.RunAdminAiDelegationResponse.parse(runView(run)));
 });
 const errorHandler: ErrorRequestHandler = (error, _req, res, next) => {

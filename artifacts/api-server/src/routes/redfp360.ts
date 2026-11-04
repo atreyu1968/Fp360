@@ -45,6 +45,12 @@ import { toFp360OrganizationDto } from "../lib/fp360-organization-profile";
 import { backfillTenantOrganizationScopes, commonSimulationNetworkId } from "../lib/organization-scopes";
 import { requireAuth, requireSimulationWriteAccess, type AuthContext } from "../middlewares/auth";
 
+import {
+  organizationsShareSimulationNetwork,
+  SIMULATION_NETWORK_MISMATCH,
+  tenantSimulationNetworkMap,
+} from "../lib/organization-simulation-networks";
+
 const router: IRouter = Router();
 const organizationObjectStorage = new ObjectStorageService();
 router.use(requireAuth);
@@ -657,6 +663,7 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
     res.status(400).json({ error: "No repitas productos en el mismo pedido." });
     return;
   }
+  const simulationNetworks = await tenantSimulationNetworkMap(tenantId);
   const created = await db.transaction(async (tx) => {
     const requestFingerprint = operationFingerprint(parsed.data);
     if (parsed.data.crmOpportunityId && parsed.data.operationId) {
@@ -710,6 +717,20 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
           (!isNetworkSupervisor(actor) && actor.organizationId !== previousOrder.buyerOrganizationId)
         ) {
           return { ok: false as const, status: 404 as const, error: "El pedido no existe en tu empresa." };
+        }
+        const previousLines = await tx.select({ productId: fpOrderLines.productId }).from(fpOrderLines)
+          .where(eq(fpOrderLines.orderId, previousOrder.id));
+        const previousProducts = previousLines.length ? await tx.select({
+          supplierOrganizationId: fpProducts.supplierOrganizationId,
+        }).from(fpProducts).where(and(
+          eq(fpProducts.tenantId, tenantId),
+          inArray(fpProducts.id, previousLines.map((line) => line.productId)),
+        )) : [];
+        if (!organizationsShareSimulationNetwork(simulationNetworks, [
+          previousOrder.buyerOrganizationId,
+          ...previousProducts.map((product) => product.supplierOrganizationId),
+        ])) {
+          return { ok: false as const, status: 409 as const, error: SIMULATION_NETWORK_MISMATCH };
         }
         return { ok: true as const, orderId: previousOrder.id, replay: true };
       }
@@ -770,8 +791,9 @@ router.post("/redfp360/orders", async (req, res): Promise<void> => {
     const supplierOrganizationIds = products
       .map((product) => product.supplierOrganizationId)
       .filter((id): id is string => Boolean(id));
-    if (!await commonSimulationNetworkId(tx, tenantId, [buyer.id, ...new Set(supplierOrganizationIds)])) {
-      return { ok: false as const, status: 409 as const, error: "El pedido no puede conectar empresas de redes económicas distintas." };
+    const participants = [...new Set([buyer.id, ...supplierOrganizationIds])];
+    if (!await commonSimulationNetworkId(tx, tenantId, participants)) {
+      return { ok: false as const, status: 409 as const, error: SIMULATION_NETWORK_MISMATCH };
     }
     for (const product of products) {
       if (!product.isActive || !product.isPublished) {
@@ -867,6 +889,7 @@ router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  const simulationNetworks = await tenantSimulationNetworkMap(tenantId);
   const result = await db.transaction(async (tx) => {
     const [order] = await tx
       .select()
@@ -914,7 +937,7 @@ router.post("/redfp360/orders/:id/confirm", async (req, res): Promise<void> => {
     const supplierOrganizationIds = products
       .map((product) => product.supplierOrganizationId)
       .filter((id): id is string => Boolean(id));
-    if (!await commonSimulationNetworkId(tx, tenantId, [order.buyerOrganizationId, ...new Set(supplierOrganizationIds)])) {
+    if (!await commonSimulationNetworkId(tx, tenantId, [...new Set([order.buyerOrganizationId, ...supplierOrganizationIds])])) {
       return { ok: false as const, status: 409 as const, error: "El pedido contiene empresas de redes económicas distintas." };
     }
     const productById = new Map(products.map((product) => [product.id, product]));
@@ -986,6 +1009,7 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
     res.status(400).json({ error: "No repitas productos en una entrega." });
     return;
   }
+  const simulationNetworks = await tenantSimulationNetworkMap(tenantId);
   const requestFingerprint = operationFingerprint({
     orderId: params.data.id,
     userId: actor.userId,
@@ -1025,11 +1049,14 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
         inArray(fpProducts.id, previousProductIds),
       )) : [];
       const previousParticipants = [
+        previousShipment.originOrganizationId,
+        previousShipment.destinationOrganizationId,
         ...(previousOrder ? [previousOrder.buyerOrganizationId] : []),
         ...previousProducts.map((product) => product.supplierOrganizationId).filter((id): id is string => Boolean(id)),
       ];
       if (!previousOrder || previousProducts.length !== previousProductIds.length ||
-        !await commonSimulationNetworkId(tx, tenantId, previousParticipants)) {
+        !await commonSimulationNetworkId(tx, tenantId, previousParticipants) ||
+        !organizationsShareSimulationNetwork(simulationNetworks, previousParticipants)) {
         return { ok: false as const, status: 409 as const, error: "La expedición anterior conecta redes económicas distintas." };
       }
       return { ok: true as const, reference: previousShipment.reference, replay: true as const };
@@ -1097,9 +1124,6 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
       }
     }
     const supplierIds = [...new Set(products.map((product) => product.supplierOrganizationId).filter((id): id is string => Boolean(id)))];
-    if (!await commonSimulationNetworkId(tx, tenantId, [order.buyerOrganizationId, ...supplierIds])) {
-      return { ok: false as const, status: 409 as const, error: "No se puede expedir un pedido entre redes económicas distintas." };
-    }
     if (supplierIds.length > 1 && !isNetworkSupervisor(actor)) {
       return { ok: false as const, status: 400 as const, error: "Separa la expedición cuando los productos tengan distintos proveedores." };
     }
@@ -1120,6 +1144,14 @@ router.post("/redfp360/orders/:id/dispatch", async (req, res): Promise<void> => 
         return { ok: false as const, status: 403 as const, error: "Solo la organización proveedora puede expedir estos productos." };
       }
       originOrganizationId = actor.organizationId;
+    }
+    const fulfillmentParticipants = [...new Set([
+      order.buyerOrganizationId,
+      ...supplierIds,
+      ...(originOrganizationId ? [originOrganizationId] : []),
+    ])];
+    if (!await commonSimulationNetworkId(tx, tenantId, fulfillmentParticipants)) {
+      return { ok: false as const, status: 409 as const, error: SIMULATION_NETWORK_MISMATCH };
     }
     for (const [productId, quantity] of quantities) {
       const product = productById.get(productId);
@@ -1234,6 +1266,7 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
     res.status(400).json({ error: body.error.message });
     return;
   }
+  const simulationNetworks = await tenantSimulationNetworkMap(tenantId);
   const result = await db.transaction(async (tx) => {
     const [order] = await tx
       .select()
@@ -1252,6 +1285,12 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
         status: 404 as const,
         error: "Pedido no encontrado.",
       };
+    }
+    if (!organizationsShareSimulationNetwork(simulationNetworks, [
+      order.buyerOrganizationId,
+      actor.organizationId,
+    ])) {
+      return { ok: false as const, status: 409 as const, error: SIMULATION_NETWORK_MISMATCH };
     }
     const [projectBilling] = await tx.select({ organizationId: fpProjectBillings.organizationId }).from(fpProjectBillings).where(and(
       eq(fpProjectBillings.tenantId, tenantId),
@@ -1282,6 +1321,20 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
       .from(fpOrderLines)
       .where(eq(fpOrderLines.orderId, order.id))
       .for("update");
+    const invoiceProductIds = [...new Set(lines.map((line) => line.productId))];
+    const invoiceProducts = invoiceProductIds.length ? await tx.select({
+      supplierOrganizationId: fpProducts.supplierOrganizationId,
+    }).from(fpProducts).where(and(
+      eq(fpProducts.tenantId, tenantId),
+      inArray(fpProducts.id, invoiceProductIds),
+    )) : [];
+    if (!organizationsShareSimulationNetwork(simulationNetworks, [
+      order.buyerOrganizationId,
+      actor.organizationId,
+      ...invoiceProducts.map((product) => product.supplierOrganizationId),
+    ])) {
+      return { ok: false as const, status: 409 as const, error: SIMULATION_NETWORK_MISMATCH };
+    }
     const unbilled = lines
       .map((line) => ({
         line,
@@ -1313,7 +1366,9 @@ router.post("/redfp360/invoices", async (req, res): Promise<void> => {
       ...(actor.organizationId ? [actor.organizationId] : []),
       ...(projectBilling?.organizationId ? [projectBilling.organizationId] : []),
     ])];
-    if (!await commonSimulationNetworkId(tx, tenantId, invoiceParticipants)) {
+    if (!buyer || invoiceProducts.length !== productIds.length ||
+      !await commonSimulationNetworkId(tx, tenantId, invoiceParticipants) ||
+      !organizationsShareSimulationNetwork(simulationNetworks, invoiceParticipants)) {
       return { ok: false as const, status: 409 as const, error: "La factura no puede vincular empresas de redes económicas distintas." };
     }
     const invoiceId = newId("invoice");
@@ -1426,6 +1481,7 @@ router.post(
       amountCents: body.data.amountCents,
       organizationId: actor.organizationId,
     });
+    const simulationNetworks = await tenantSimulationNetworkMap(tenantId);
     const result = await db.transaction(async (tx) => {
       const [priorOperation] = await tx
         .select()
@@ -1445,32 +1501,27 @@ router.post(
           };
         }
         const [priorInvoice] = await tx
-          .select({ reference: fpInvoices.reference })
+          .select()
           .from(fpInvoices)
           .where(and(
             eq(fpInvoices.id, priorOperation.invoiceId),
             eq(fpInvoices.tenantId, tenantId),
           ))
           .limit(1);
-        const [priorInvoiceNetworkData] = await tx.select({
-          issuerOrganizationId: fpInvoices.issuerOrganizationId,
-          orderId: fpInvoices.orderId,
-        }).from(fpInvoices).where(and(
-          eq(fpInvoices.id, priorOperation.invoiceId),
-          eq(fpInvoices.tenantId, tenantId),
-        )).limit(1);
-        const [priorOrder] = priorInvoiceNetworkData ? await tx.select({
+        const [priorOrder] = priorInvoice ? await tx.select({
           buyerOrganizationId: fpOrders.buyerOrganizationId,
         }).from(fpOrders).where(and(
-          eq(fpOrders.id, priorInvoiceNetworkData.orderId),
+          eq(fpOrders.id, priorInvoice.orderId),
           eq(fpOrders.tenantId, tenantId),
         )).limit(1) : [];
         const priorParticipants = [
-          ...(priorInvoiceNetworkData?.issuerOrganizationId ? [priorInvoiceNetworkData.issuerOrganizationId] : []),
+          ...(priorInvoice?.issuerOrganizationId ? [priorInvoice.issuerOrganizationId] : []),
           ...(priorOrder?.buyerOrganizationId ? [priorOrder.buyerOrganizationId] : []),
           ...(actor.organizationId ? [actor.organizationId] : []),
         ];
-        if (!priorOrder || !await commonSimulationNetworkId(tx, tenantId, [...new Set(priorParticipants)])) {
+        if (!priorInvoice || !priorOrder ||
+          !await commonSimulationNetworkId(tx, tenantId, [...new Set(priorParticipants)]) ||
+          !organizationsShareSimulationNetwork(simulationNetworks, priorParticipants)) {
           return {
             ok: false as const,
             status: 409 as const,
@@ -1480,7 +1531,7 @@ router.post(
         return {
           ok: true as const,
           status: 200 as const,
-          reference: priorInvoice?.reference ?? "Factura",
+          reference: priorInvoice.reference,
           replayed: true,
         };
       }
@@ -1513,7 +1564,8 @@ router.post(
         ...(order?.buyerOrganizationId ? [order.buyerOrganizationId] : []),
         ...(actor.organizationId ? [actor.organizationId] : []),
       ];
-      if (!order || !await commonSimulationNetworkId(tx, tenantId, [...new Set(paymentParticipants)])) {
+      if (!order || !await commonSimulationNetworkId(tx, tenantId, [...new Set(paymentParticipants)]) ||
+        !organizationsShareSimulationNetwork(simulationNetworks, paymentParticipants)) {
         return {
           ok: false as const,
           status: 409 as const,

@@ -56,13 +56,14 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
   const sessionToken = randomBytes(32).toString("base64url");
   const organizationA = randomUUID();
   const organizationB = randomUUID();
-  const simulationNetworkId = randomUUID();
-  const centerIdA = randomUUID();
-  const centerIdB = randomUUID();
+  const organizationC = randomUUID();
   const companyNameA = `Empresa Ficticia Aurora ${randomUUID()}`;
   const companyNameB = `Empresa Ficticia Brisa ${randomUUID()}`;
+  const companyNameC = `Empresa Ficticia Nube ${randomUUID()}`;
   const centerNameA = `Centro Ficticio Cumbre ${randomUUID()}`;
-  const centerNameB = `Centro Ficticio Delta ${randomUUID()}`;
+  const ordinaryNetworkId = randomUUID();
+  const acceleratedNetworkId = randomUUID();
+  const centerId = randomUUID();
   const tempDirectory = await mkdtemp(path.join(os.tmpdir(), "redfp360-groq-test-"));
   const responseFile = path.join(tempDirectory, "provider-response.json");
   const captureFile = path.join(tempDirectory, "provider-request.json");
@@ -124,7 +125,8 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
       `INSERT INTO fp360_organizations (id, tenant_id, name, center, island, role, is_active)
        VALUES
         ($1, $3, $4, $6, 'Isla ficticia', 'company', true),
-        ($2, $3, $5, $7, 'Isla ficticia', 'company', true)`,
+        ($2, $3, $5, $6, 'Isla ficticia', 'company', true),
+        ($7, $3, $8, $6, 'Isla ficticia', 'company', true)`,
       [
         organizationA,
         organizationB,
@@ -132,27 +134,31 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
         companyNameA,
         companyNameB,
         centerNameA,
-        centerNameB,
+        organizationC,
+        companyNameC,
       ],
     );
     await client.query(
-      `INSERT INTO fp360_centers (id, tenant_id, name, normalized_name)
-       VALUES ($1, $3, $4, lower($4)), ($2, $3, $5, lower($5))`,
-      [centerIdA, centerIdB, tenantId, centerNameA, centerNameB],
+      `INSERT INTO fp360_centers (id, tenant_id, name, normalized_name, created_by_user_id)
+       VALUES ($1, $2, $3, lower($3), $4)`,
+      [centerId, tenantId, centerNameA, userId],
     );
     await client.query(
       `INSERT INTO fp360_simulation_networks
-        (id, tenant_id, code, name, calendar_mode, fiscal_year_start_month)
-       VALUES ($1, $2, 'ordinary-default', 'Test economic network', 'ordinary', 1)`,
-      [simulationNetworkId, tenantId],
+        (id, tenant_id, code, name, calendar_mode, fiscal_year_start_month, created_by_user_id)
+       VALUES
+        ($1, $3, 'ordinary-test', 'Red ordinaria de prueba', 'ordinary', 1, $4),
+        ($2, $3, 'accelerated-test', 'Red acelerada de prueba', 'accelerated', 1, $4)`,
+      [ordinaryNetworkId, acceleratedNetworkId, tenantId, userId],
     );
     await client.query(
       `INSERT INTO fp360_organization_scopes
-        (organization_id, tenant_id, center_id, simulation_network_id, academic_period, origin)
+        (organization_id, tenant_id, center_id, simulation_network_id, academic_period, origin, created_by_user_id)
        VALUES
-        ($1, $3, $4, $5, '2027-2028', 'organization_created'),
-        ($2, $3, $6, $5, '2027-2028', 'organization_created')`,
-      [organizationA, organizationB, tenantId, centerIdA, simulationNetworkId, centerIdB],
+        ($1, $4, $5, $6, '2027-2028', 'organization_created', $7),
+        ($2, $4, $5, $6, '2027-2028', 'organization_created', $7),
+        ($3, $4, $5, $8, '2027-2028', 'organization_created', $7)`,
+      [organizationA, organizationB, organizationC, tenantId, centerId, ordinaryNetworkId, userId, acceleratedNetworkId],
     );
     await client.query(
       `INSERT INTO fp360_admin_ai_coordinator_settings
@@ -192,6 +198,15 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
         (SELECT COUNT(*)::int FROM fp360_simulation_audit_events WHERE tenant_id = $1) AS audits`,
       [tenantId],
     )).rows[0];
+
+    const crossNetworkResponse = await propose({
+      ...requestBody(`cross-network-${randomUUID()}`),
+      participantOrganizationIds: [organizationA, organizationC],
+      eventCount: 2,
+    });
+    assert.equal(crossNetworkResponse.status, 409, JSON.stringify(await crossNetworkResponse.json()));
+    assert.deepEqual(await savedProposalRecordCounts(), { campaigns: 0, events: 0, audits: 0 },
+      "AI proposals must not mix ordinary and accelerated companies in the same center");
 
     await writeFile(responseFile, JSON.stringify({ content: "{" }));
     const invalidJsonResponse = await propose(requestBody(`invalid-json-${randomUUID()}`));
@@ -282,7 +297,7 @@ test("GroqCloud proposal flow anonymizes the network and saves only a valid draf
     assert.equal(captured.url, "https://api.groq.com/openai/v1/chat/completions");
     assert.equal(captured.authorization, "Bearer test-only-groq-key");
     const externalContext = JSON.stringify(captured.requestBody.messages);
-    for (const privateName of [companyNameA, companyNameB, centerNameA, centerNameB]) {
+    for (const privateName of [companyNameA, companyNameB, companyNameC, centerNameA]) {
       assert.equal(externalContext.includes(privateName), false, `${privateName} must be anonymized before provider submission`);
     }
     assert.match(externalContext, /Empresa 01/);
