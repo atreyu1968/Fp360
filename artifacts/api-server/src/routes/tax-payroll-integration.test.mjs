@@ -302,6 +302,15 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   const overview = await request(`/redfp360/tax/overview?organizationId=${companyId}`);
   assert.equal(overview.status, 200, JSON.stringify(overview.body));
   assert.deepEqual(overview.body.payrollSources.map((source) => source.id).sort(), [...payrollRunIds].sort());
+  const overviewPurchaseSources = overview.body.sourceDocuments.filter((source) => source.sourceType === "purchase_invoice");
+  assert.deepEqual(
+    overviewPurchaseSources.map((source) => source.id).sort(),
+    boundaryPurchases.filter((invoice) => invoice.date >= "2027-01-01"
+      && invoice.date <= "2027-12-31" && invoice.status === "conformed")
+      .map((invoice) => invoice.id).sort(),
+    "The tax overview should list only conformed purchase invoices for this company and fiscal year",
+  );
+  assert.ok(overviewPurchaseSources.every((source) => source.status === "conformed"));
   assert.equal(modelStatus(overview.body)["420"], "applies");
   assert.equal(modelStatus(overview.body)["421"], "not_applicable");
   assert.equal(modelStatus(overview.body)["200"], "applies");
@@ -539,6 +548,11 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   );
   assert.equal(companyOverview.status, 200);
   assert.equal(secondCompanyOverview.status, 200);
+  assert.deepEqual(
+    secondCompanyOverview.body.sourceDocuments,
+    [],
+    "A company's tax overview must not expose another company's source documents",
+  );
   assert.deepEqual(companyOverview.body.declarations.map((declaration) => declaration.id), [quarterly.body.id]);
   assert.deepEqual(secondCompanyOverview.body.declarations.map((declaration) => declaration.id), [secondCompanyDraft.body.id]);
   assert.equal((await request(`/redfp360/tax/overview?organizationId=${secondCompanyId}`)).status, 403);
