@@ -500,6 +500,72 @@ test("failed and simultaneous payroll imports leave no partial or duplicate draf
         startMonthDraft.entry.id, tenantId],
     );
 
+    const changedVersionDraft = fiscalBoundaryDrafts[0];
+    await client.query(
+      "UPDATE fp360_payroll_runs SET version = version + 1 WHERE id = $1 AND tenant_id = $2",
+      [changedVersionDraft.run.id, tenantId],
+    );
+    const changedVersionPost = await fetch(
+      `${baseUrl}/api/redfp360/accounting/entries/${changedVersionDraft.entry.id}/post`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          organizationId,
+          operationId: `payroll-post-changed-version-${randomUUID()}`,
+        }),
+      },
+    );
+    const changedVersionBody = await changedVersionPost.json();
+    assert.equal(changedVersionPost.status, 409, JSON.stringify(changedVersionBody));
+    assert.match(changedVersionBody.error, /origen de nómina/);
+    const changedVersionEntry = await client.query(
+      "SELECT status FROM fp360_accounting_entries WHERE id = $1 AND tenant_id = $2",
+      [changedVersionDraft.entry.id, tenantId],
+    );
+    assert.equal(
+      changedVersionEntry.rows[0].status,
+      "draft",
+      "a draft must remain unposted when its payroll source version changes",
+    );
+    await client.query(
+      "UPDATE fp360_payroll_runs SET version = $1 WHERE id = $2 AND tenant_id = $3",
+      [1, changedVersionDraft.run.id, tenantId],
+    );
+
+    const reopenedDraft = fiscalBoundaryDrafts[2];
+    await client.query(
+      "UPDATE fp360_payroll_runs SET status = 'reviewed' WHERE id = $1 AND tenant_id = $2",
+      [reopenedDraft.run.id, tenantId],
+    );
+    const reopenedPost = await fetch(
+      `${baseUrl}/api/redfp360/accounting/entries/${reopenedDraft.entry.id}/post`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          organizationId,
+          operationId: `payroll-post-reopened-${randomUUID()}`,
+        }),
+      },
+    );
+    const reopenedBody = await reopenedPost.json();
+    assert.equal(reopenedPost.status, 409, JSON.stringify(reopenedBody));
+    assert.match(reopenedBody.error, /origen de nómina/);
+    const reopenedEntry = await client.query(
+      "SELECT status FROM fp360_accounting_entries WHERE id = $1 AND tenant_id = $2",
+      [reopenedDraft.entry.id, tenantId],
+    );
+    assert.equal(
+      reopenedEntry.rows[0].status,
+      "draft",
+      "a draft must remain unposted when its payroll source is no longer closed",
+    );
+    await client.query(
+      "UPDATE fp360_payroll_runs SET status = 'closed' WHERE id = $1 AND tenant_id = $2",
+      [reopenedDraft.run.id, tenantId],
+    );
+
     for (const { run, entry } of fiscalBoundaryDrafts) {
       const postedResponse = await fetch(
         `${baseUrl}/api/redfp360/accounting/entries/${entry.id}/post`,
