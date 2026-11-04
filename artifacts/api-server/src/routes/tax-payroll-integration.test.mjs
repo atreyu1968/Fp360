@@ -27,6 +27,12 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
     { id: randomUUID(), orderId: randomUUID(), date: "2027-12-31", reference: "ATC-SALES-YEAR-END", baseCents: 30000, taxCents: 2100 },
     { id: randomUUID(), orderId: randomUUID(), date: "2028-01-01", reference: "ATC-SALES-NEW-YEAR", baseCents: 40000, taxCents: 2800 },
   ];
+  const otherCompanySales = [
+    {
+      id: randomUUID(), orderId: randomUUID(), issuerOrganizationId: secondCompanyId,
+      date: "2027-06-15", reference: "ATC-SALES-OTHER-ISSUER", baseCents: 50000, taxCents: 3500,
+    },
+  ];
   const boundaryPurchases = [
     {
       id: randomUUID(), requestId: randomUUID(), offerId: randomUUID(), orderId: randomUUID(),
@@ -216,7 +222,7 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
       JSON.stringify(secondCompanyPayrollLines), randomUUID(), secondUserId],
   );
 
-  for (const invoice of boundarySales) {
+  for (const invoice of [...boundarySales, ...otherCompanySales]) {
     await pool.query(
       `INSERT INTO fp360_orders
         (id, tenant_id, reference, buyer_organization_id, status, total_cents, simulated_date)
@@ -229,7 +235,7 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
         (id, tenant_id, issuer_organization_id, reference, order_id, buyer_name, due_date,
          base_cents, igic_cents, total_cents, simulated_date)
        VALUES ($1, $2, $3, $4, $5, 'Cliente de prueba ATC', $6, $7, $8, $9, $10)`,
-      [invoice.id, tenantId, companyId, invoice.reference, invoice.orderId, invoice.date,
+      [invoice.id, tenantId, invoice.issuerOrganizationId ?? companyId, invoice.reference, invoice.orderId, invoice.date,
         invoice.baseCents, invoice.taxCents, invoice.baseCents + invoice.taxCents, invoice.date],
     );
   }
@@ -315,6 +321,13 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   const overview = await request(`/redfp360/tax/overview?organizationId=${companyId}`);
   assert.equal(overview.status, 200, JSON.stringify(overview.body));
   assert.deepEqual(overview.body.payrollSources.map((source) => source.id).sort(), [...payrollRunIds].sort());
+  const overviewSalesSources = overview.body.sourceDocuments.filter((source) => source.sourceType === "sales_invoice");
+  assert.deepEqual(
+    overviewSalesSources.map((source) => source.id).sort(),
+    boundarySales.filter((invoice) => invoice.date >= "2027-01-01" && invoice.date <= "2027-12-31")
+      .map((invoice) => invoice.id).sort(),
+    "The tax overview should list only sales issued by this company within the fiscal year",
+  );
   const overviewPurchaseSources = overview.body.sourceDocuments.filter((source) => source.sourceType === "purchase_invoice");
   assert.deepEqual(
     overviewPurchaseSources.map((source) => source.id).sort(),
@@ -572,9 +585,10 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   assert.equal(companyOverview.status, 200);
   assert.equal(secondCompanyOverview.status, 200);
   assert.deepEqual(
-    secondCompanyOverview.body.sourceDocuments,
-    [],
-    "A company's tax overview must not expose another company's source documents",
+    secondCompanyOverview.body.sourceDocuments.map((source) => source.id).sort(),
+    otherCompanySales.filter((invoice) => invoice.date >= "2027-01-01" && invoice.date <= "2027-12-31")
+      .map((invoice) => invoice.id).sort(),
+    "The second company's tax overview should list only its own sales within the fiscal year",
   );
   assert.deepEqual(companyOverview.body.declarations.map((declaration) => declaration.id), [quarterly.body.id]);
   assert.deepEqual(secondCompanyOverview.body.declarations.map((declaration) => declaration.id), [secondCompanyDraft.body.id]);
@@ -680,8 +694,9 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   assert.equal(annualAtc.status, 201, JSON.stringify(annualAtc.body));
   assert.equal(annualAtc.body.periodStart, "2027-01-01");
   assert.equal(annualAtc.body.periodEnd, "2027-12-31");
-  const annualSales = boundarySales;
-  const annualConformedPurchases = boundaryPurchases.filter((invoice) => invoice.status === "conformed");
+  const annualSales = boundarySales.filter((invoice) => invoice.date >= "2027-01-01" && invoice.date <= "2027-12-31");
+  const annualConformedPurchases = boundaryPurchases.filter((invoice) =>
+    invoice.date >= "2027-01-01" && invoice.date <= "2027-12-31" && invoice.status === "conformed");
   assert.deepEqual(annualAtc.body.sourceInvoiceIds, annualSales.map((invoice) => invoice.id));
   assert.deepEqual(annualAtc.body.sourcePurchaseInvoiceIds, annualConformedPurchases.map((invoice) => invoice.id));
   assert.ok(!annualAtc.body.sourcePurchaseInvoiceIds.includes(
