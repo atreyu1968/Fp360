@@ -22,6 +22,7 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   const payrollRunIds = [randomUUID(), randomUUID(), randomUUID()];
   const secondPayrollRunId = randomUUID();
   const boundarySales = [
+    { id: randomUUID(), orderId: randomUUID(), date: "2027-05-20", reference: "ATC-SALES-Q2", baseCents: 25000, taxCents: 1750 },
     { id: randomUUID(), orderId: randomUUID(), date: "2027-09-30", reference: "ATC-SALES-BEFORE", baseCents: 10000, taxCents: 700 },
     { id: randomUUID(), orderId: randomUUID(), date: "2027-10-01", reference: "ATC-SALES-AFTER", baseCents: 20000, taxCents: 1400 },
     { id: randomUUID(), orderId: randomUUID(), date: "2027-12-31", reference: "ATC-SALES-YEAR-END", baseCents: 30000, taxCents: 2100 },
@@ -671,17 +672,36 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   };
   const q3ConformedPurchases = boundaryPurchases.filter((invoice) =>
     invoice.date >= "2027-07-01" && invoice.date <= "2027-09-30" && invoice.status === "conformed");
+  const q2ConformedPurchases = boundaryPurchases.filter((invoice) =>
+    invoice.date >= "2027-04-01" && invoice.date <= "2027-06-30" && invoice.status === "conformed");
   const q4ConformedPurchases = boundaryPurchases.filter((invoice) =>
     invoice.date >= "2027-10-01" && invoice.date <= "2027-12-31" && invoice.status === "conformed");
   const q1ConformedPurchases = boundaryPurchases.filter((invoice) =>
     invoice.date >= "2028-01-01" && invoice.date <= "2028-03-31" && invoice.status === "conformed");
-  assertAtcQuarterSources(atcQuarterDrafts["2027-Q3"], [boundarySales[0]], q3ConformedPurchases);
+  assertAtcQuarterSources(
+    atcQuarterDrafts["2027-Q2"],
+    [boundarySales.find((invoice) => invoice.reference === "ATC-SALES-Q2")],
+    q2ConformedPurchases,
+  );
+  assert.ok(
+    !atcQuarterDrafts["2027-Q2"].sourceInvoiceIds.includes(otherCompanySales[0].id),
+    "A Q2 sale issued by another company must not become a model 420 source",
+  );
+  assertAtcQuarterSources(
+    atcQuarterDrafts["2027-Q3"],
+    boundarySales.filter((invoice) => invoice.date >= "2027-07-01" && invoice.date <= "2027-09-30"),
+    q3ConformedPurchases,
+  );
   assertAtcQuarterSources(
     atcQuarterDrafts["2027-Q4"],
-    [boundarySales[1], boundarySales[2]],
+    boundarySales.filter((invoice) => invoice.date >= "2027-10-01" && invoice.date <= "2027-12-31"),
     q4ConformedPurchases,
   );
-  assertAtcQuarterSources(atcQuarterDrafts["2028-Q1"], [boundarySales[3]], q1ConformedPurchases);
+  assertAtcQuarterSources(
+    atcQuarterDrafts["2028-Q1"],
+    boundarySales.filter((invoice) => invoice.date >= "2028-01-01" && invoice.date <= "2028-03-31"),
+    q1ConformedPurchases,
+  );
 
   const annualAtc = await request("/redfp360/tax/declarations", "POST", {
     organizationId: companyId,
@@ -724,10 +744,19 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
     );
     assert.equal(recalculated.status, 200, JSON.stringify(recalculated.body));
     const expectedInvoices = periodKey === "2027-Q3"
-      ? [[boundarySales[0]], q3ConformedPurchases]
+      ? [
+        boundarySales.filter((invoice) => invoice.date >= "2027-07-01" && invoice.date <= "2027-09-30"),
+        q3ConformedPurchases,
+      ]
       : periodKey === "2027-Q4"
-        ? [[boundarySales[1], boundarySales[2]], q4ConformedPurchases]
-        : [[boundarySales[3]], q1ConformedPurchases];
+        ? [
+          boundarySales.filter((invoice) => invoice.date >= "2027-10-01" && invoice.date <= "2027-12-31"),
+          q4ConformedPurchases,
+        ]
+        : [
+          boundarySales.filter((invoice) => invoice.date >= "2028-01-01" && invoice.date <= "2028-03-31"),
+          q1ConformedPurchases,
+        ];
     assertAtcQuarterSources(recalculated.body, expectedInvoices[0], expectedInvoices[1]);
   }
   const savedQuarterAfterCalendarChange = await pool.query(
