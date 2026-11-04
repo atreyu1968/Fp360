@@ -10,6 +10,8 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   const tenantId = `tax-payroll-test-${randomUUID()}`;
   const companyId = randomUUID();
   const secondCompanyId = randomUUID();
+  const centerId = randomUUID();
+  const networkId = randomUUID();
   const userId = randomUUID();
   const secondUserId = randomUUID();
   const membershipId = randomUUID();
@@ -68,7 +70,10 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
     await pool.query("DELETE FROM fp360_auth_sessions WHERE user_id = ANY($1::text[])", [[userId, secondUserId]]);
     await pool.query("DELETE FROM fp360_auth_memberships WHERE user_id = ANY($1::text[])", [[userId, secondUserId]]);
     await pool.query("DELETE FROM fp360_auth_users WHERE id = ANY($1::text[])", [[userId, secondUserId]]);
+    await pool.query("DELETE FROM fp360_organization_scopes WHERE tenant_id = $1", [tenantId]);
     await pool.query("DELETE FROM fp360_organizations WHERE tenant_id = $1", [tenantId]);
+    await pool.query("DELETE FROM fp360_simulation_networks WHERE tenant_id = $1", [tenantId]);
+    await pool.query("DELETE FROM fp360_centers WHERE tenant_id = $1", [tenantId]);
     await pool.end();
   });
 
@@ -86,6 +91,23 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
       [id, tenantId, name],
     );
   }
+  await pool.query(
+    `INSERT INTO fp360_centers (id, tenant_id, name, normalized_name)
+     VALUES ($1, $2, 'Tax period test centre', $3)`,
+    [centerId, tenantId, `tax-period-test-${centerId}`],
+  );
+  await pool.query(
+    `INSERT INTO fp360_simulation_networks
+      (id, tenant_id, code, name, calendar_mode, fiscal_year_start_month)
+     VALUES ($1, $2, $3, 'Tax period test network', 'ordinary', 4)`,
+    [networkId, tenantId, `tax-period-test-${networkId}`],
+  );
+  await pool.query(
+    `INSERT INTO fp360_organization_scopes
+      (organization_id, tenant_id, center_id, simulation_network_id, academic_period, origin)
+     VALUES ($1, $2, $3, $4, '2027-2028', 'organization_created')`,
+    [companyId, tenantId, centerId, networkId],
+  );
   for (const [id, name] of [[userId, "AEAT payroll test user"], [secondUserId, "Second AEAT payroll test user"]]) {
     await pool.query(
       "INSERT INTO fp360_auth_users (id,email,display_name,password_hash) VALUES ($1,$2,$3,$4)",
@@ -209,6 +231,9 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   const quarterly = concurrentResults.find((result) => result.status === 201);
   assert.ok(quarterly, "Exactly one simultaneous import should create the draft");
   assert.equal(quarterly.status, 201, JSON.stringify(quarterly.body));
+  assert.equal(quarterly.body.periodKey, "2027-Q3");
+  assert.equal(quarterly.body.periodStart, "2027-07-01");
+  assert.equal(quarterly.body.periodEnd, "2027-09-30");
   const validatedForFailedRectification = await request(`/redfp360/tax/declarations/${quarterly.body.id}/action`, "POST", {
     action: "validate",
     operationId: randomUUID(),
@@ -436,6 +461,9 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
     periodKey: "2027", sourcePayrollRunIds: payrollRunIds.slice(0, 2), operationId: randomUUID(),
   });
   assert.equal(annual.status, 201, JSON.stringify(annual.body));
+  assert.equal(annual.body.periodKey, "2027");
+  assert.equal(annual.body.periodStart, "2027-01-01");
+  assert.equal(annual.body.periodEnd, "2027-12-31");
   assert.equal(annual.body.status, "draft");
   assert.equal(annual.body.withholdingBaseCents, 250000);
   assert.equal(annual.body.withholdingCents, 25000);
@@ -449,6 +477,41 @@ test("AEAT drafts use the latest payrolls and concurrent imports create only one
   assert.match(annual.body.formData.recipientSummary, /EMP-A: base 2000\.00 € · retención 200\.00 €/);
   assert.match(annual.body.formData.recipientSummary, /EMP-B: base 500\.00 € · retención 50\.00 €/);
   assert.doesNotMatch(annual.body.formData.recipientSummary, /EMP-C/);
+
+  await pool.query(
+    "UPDATE fp360_simulation_networks SET fiscal_year_start_month = 10 WHERE id = $1 AND tenant_id = $2",
+    [networkId, tenantId],
+  );
+  const quarterDates = [
+    ["2027-Q1", "2027-01-01", "2027-03-31"],
+    ["2027-Q2", "2027-04-01", "2027-06-30"],
+    ["2027-Q3", "2027-07-01", "2027-09-30"],
+    ["2027-Q4", "2027-10-01", "2027-12-31"],
+  ];
+  for (const [periodKey, periodStart, periodEnd] of quarterDates) {
+    const declaration = await request("/redfp360/tax/declarations", "POST", {
+      organizationId: companyId,
+      taxType: "igic",
+      modelCode: "420",
+      periodKey,
+      formData: {},
+      operationId: randomUUID(),
+    });
+    assert.equal(declaration.status, 201, JSON.stringify(declaration.body));
+    assert.equal(declaration.body.periodKey, periodKey);
+    assert.equal(declaration.body.periodStart, periodStart);
+    assert.equal(declaration.body.periodEnd, periodEnd);
+  }
+  const savedQuarterAfterCalendarChange = await pool.query(
+    `SELECT period_key, period_start::text, period_end::text
+     FROM fp360_tax_declarations WHERE id = $1 AND tenant_id = $2`,
+    [quarterly.body.id, tenantId],
+  );
+  assert.deepEqual(savedQuarterAfterCalendarChange.rows[0], {
+    period_key: "2027-Q3",
+    period_start: "2027-07-01",
+    period_end: "2027-09-30",
+  }, "Changing the accounting-year start must not alter saved legal-period dates");
 
   const rectificationDraft = await request("/redfp360/tax/declarations", "POST", {
     organizationId: companyId,

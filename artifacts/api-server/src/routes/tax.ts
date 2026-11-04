@@ -34,6 +34,7 @@ import {
   buildModelCatalog,
   getTaxModel,
   modelMatchesPeriod,
+  parseTaxLegalPeriod,
   type TaxProfile,
 } from "./tax-models";
 import { aggregatePayrollWithholding } from "./tax-payroll-aggregation.mjs";
@@ -42,7 +43,7 @@ const router: IRouter = Router();
 router.use("/redfp360/tax", requireAuth, requireSimulationWriteAccess);
 const SIMULATED_DATE = "2027-09-15";
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-type Period = { start: string; end: string; annual: boolean };
+type Period = NonNullable<ReturnType<typeof parseTaxLegalPeriod>>;
 
 class TaxError extends Error {
   constructor(readonly status: number, message: string) {
@@ -76,22 +77,6 @@ function validDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value)
     && Number.isFinite(parsed.getTime())
     && parsed.toISOString().slice(0, 10) === value;
-}
-
-function parsePeriod(periodKey: string): Period | null {
-  const yearOnly = /^(\d{4})$/.exec(periodKey);
-  if (yearOnly?.[1]) return { start: `${yearOnly[1]}-01-01`, end: `${yearOnly[1]}-12-31`, annual: true };
-  const quarter = /^(\d{4})-Q([1-4])$/.exec(periodKey);
-  if (!quarter?.[1] || !quarter[2]) return null;
-  const year = Number(quarter[1]);
-  const quarterNumber = Number(quarter[2]);
-  const startMonth = (quarterNumber - 1) * 3 + 1;
-  const endDate = new Date(Date.UTC(year, startMonth + 2, 0));
-  return {
-    start: `${quarter[1]}-${String(startMonth).padStart(2, "0")}-01`,
-    end: endDate.toISOString().slice(0, 10),
-    annual: false,
-  };
 }
 
 function eurosToCents(value?: string): number {
@@ -570,7 +555,7 @@ router.post("/redfp360/tax/declarations", route(async (request, response) => {
     response.status(403).json({ error: "No tienes acceso a la empresa seleccionada." });
     return;
   }
-  const period = parsePeriod(input.periodKey);
+  const period = parseTaxLegalPeriod(input.periodKey);
   const model = getTaxModel(input.modelCode);
   if (!period || !model || model.taxType !== input.taxType || !modelMatchesPeriod(input.modelCode, period.annual)) {
     response.status(400).json({ error: "El modelo educativo no corresponde al tipo y periodo seleccionado." });

@@ -13,6 +13,29 @@ export type IgicRegime = "general" | "simplified";
 export type IncomeTaxMethod = "direct" | "objective" | "not_applicable";
 export type TaxPeriodicity = "quarterly" | "annual" | "census";
 export type TaxApplicabilityStatus = "applies" | "not_applicable" | "review_required";
+export type TaxLegalPeriod = { start: string; end: string; annual: boolean };
+
+/**
+ * AEAT/ATC filing periods follow calendar years, independently from an
+ * organization's configurable accounting-year start month.
+ */
+export function parseTaxLegalPeriod(periodKey: string): TaxLegalPeriod | null {
+  const yearOnly = /^(\d{4})$/.exec(periodKey);
+  if (yearOnly?.[1]) {
+    return { start: `${yearOnly[1]}-01-01`, end: `${yearOnly[1]}-12-31`, annual: true };
+  }
+  const quarter = /^(\d{4})-Q([1-4])$/.exec(periodKey);
+  if (!quarter?.[1] || !quarter[2]) return null;
+  const year = Number(quarter[1]);
+  const quarterNumber = Number(quarter[2]);
+  const startMonth = (quarterNumber - 1) * 3 + 1;
+  const endDate = new Date(Date.UTC(year, startMonth + 2, 0));
+  return {
+    start: `${quarter[1]}-${String(startMonth).padStart(2, "0")}-01`,
+    end: endDate.toISOString().slice(0, 10),
+    annual: false,
+  };
+}
 
 export type TaxProfile = {
   organizationId: string;
