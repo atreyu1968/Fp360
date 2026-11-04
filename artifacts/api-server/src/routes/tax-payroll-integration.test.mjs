@@ -28,10 +28,22 @@ test("AEAT payroll drafts and ATC quarters use the correct source documents", as
     {
       id: randomUUID(), requestId: randomUUID(), offerId: randomUUID(), orderId: randomUUID(),
       date: "2027-09-30", reference: "ATC-PURCHASE-BEFORE", baseCents: 5000, taxCents: 350,
+      status: "conformed",
+    },
+    {
+      id: randomUUID(), requestId: randomUUID(), offerId: randomUUID(), orderId: randomUUID(),
+      date: "2027-09-15", reference: "ATC-PURCHASE-PENDING", baseCents: 9000, taxCents: 630,
+      status: "pending_review",
+    },
+    {
+      id: randomUUID(), requestId: randomUUID(), offerId: randomUUID(), orderId: randomUUID(),
+      date: "2027-09-20", reference: "ATC-PURCHASE-RECTIFIED", baseCents: 12000, taxCents: 840,
+      status: "rectified",
     },
     {
       id: randomUUID(), requestId: randomUUID(), offerId: randomUUID(), orderId: randomUUID(),
       date: "2027-10-01", reference: "ATC-PURCHASE-AFTER", baseCents: 8000, taxCents: 560,
+      status: "conformed",
     },
   ];
   const failureTriggerSuffix = randomUUID().replaceAll("-", "");
@@ -244,10 +256,10 @@ test("AEAT payroll drafts and ATC quarters use the correct source documents", as
          invoice_date, due_date, base_cents, igic_cents, freight_cents, total_cents,
          status, match_status, match_summary, created_by_user_id, created_by_role, request_fingerprint)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9, 0, $10,
-         'conformed', 'match', 'Factura ficticia confirmada', $11, 'teacher', $12)`,
+          $11, 'match', 'Factura ficticia de prueba', $12, 'teacher', $13)`,
       [invoice.id, tenantId, invoice.orderId, invoice.requestId, secondCompanyId, invoice.reference,
         invoice.date, invoice.baseCents, invoice.taxCents, invoice.baseCents + invoice.taxCents,
-        userId, `invoice-${invoice.id}`],
+        invoice.status, userId, `invoice-${invoice.id}`],
     );
   }
 
@@ -580,16 +592,21 @@ test("AEAT payroll drafts and ATC quarters use the correct source documents", as
     assert.equal(declaration.body.periodEnd, periodEnd);
     atcQuarterDrafts[periodKey] = declaration.body;
   }
-  const assertAtcBoundarySources = (draft, salesInvoice, purchaseInvoice) => {
+  const assertAtcBoundarySources = (draft, salesInvoice, purchaseInvoices) => {
     assert.deepEqual(draft.sourceInvoiceIds, [salesInvoice.id]);
-    assert.deepEqual(draft.sourcePurchaseInvoiceIds, [purchaseInvoice.id]);
+    assert.deepEqual(draft.sourcePurchaseInvoiceIds, purchaseInvoices.map((invoice) => invoice.id));
     assert.equal(draft.taxableBaseCents, salesInvoice.baseCents);
     assert.equal(draft.outputIgicCents, salesInvoice.taxCents);
-    assert.equal(draft.inputIgicCents, purchaseInvoice.taxCents);
-    assert.equal(draft.resultCents, salesInvoice.taxCents - purchaseInvoice.taxCents);
+    const inputIgicCents = purchaseInvoices.reduce((sum, invoice) => sum + invoice.taxCents, 0);
+    assert.equal(draft.inputIgicCents, inputIgicCents);
+    assert.equal(draft.resultCents, salesInvoice.taxCents - inputIgicCents);
   };
-  assertAtcBoundarySources(atcQuarterDrafts["2027-Q3"], boundarySales[0], boundaryPurchases[0]);
-  assertAtcBoundarySources(atcQuarterDrafts["2027-Q4"], boundarySales[1], boundaryPurchases[1]);
+  const q3ConformedPurchases = boundaryPurchases.filter((invoice) => invoice.date.startsWith("2027-09")
+    && invoice.status === "conformed");
+  const q4ConformedPurchases = boundaryPurchases.filter((invoice) => invoice.date.startsWith("2027-10")
+    && invoice.status === "conformed");
+  assertAtcBoundarySources(atcQuarterDrafts["2027-Q3"], boundarySales[0], q3ConformedPurchases);
+  assertAtcBoundarySources(atcQuarterDrafts["2027-Q4"], boundarySales[1], q4ConformedPurchases);
 
   await pool.query(
     "UPDATE fp360_simulation_networks SET fiscal_year_start_month = 10 WHERE id = $1 AND tenant_id = $2",
@@ -603,8 +620,8 @@ test("AEAT payroll drafts and ATC quarters use the correct source documents", as
     );
     assert.equal(recalculated.status, 200, JSON.stringify(recalculated.body));
     const expectedInvoices = periodKey === "2027-Q3"
-      ? [boundarySales[0], boundaryPurchases[0]]
-      : [boundarySales[1], boundaryPurchases[1]];
+      ? [boundarySales[0], q3ConformedPurchases]
+      : [boundarySales[1], q4ConformedPurchases];
     assertAtcBoundarySources(recalculated.body, expectedInvoices[0], expectedInvoices[1]);
   }
   const savedQuarterAfterCalendarChange = await pool.query(
