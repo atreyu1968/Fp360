@@ -14,6 +14,7 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   const networkId = randomUUID();
   const userId = randomUUID();
   const secondUserId = randomUUID();
+  const supplierOrganizationName = "Tax integration supplier organization";
   const membershipId = randomUUID();
   const secondMembershipId = randomUUID();
   const policyId = randomUUID();
@@ -129,7 +130,7 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
     return;
   }
 
-  for (const [id, name] of [[companyId, "AEAT payroll test"], [secondCompanyId, "Second AEAT payroll test"]]) {
+  for (const [id, name] of [[companyId, "AEAT payroll test"], [secondCompanyId, supplierOrganizationName]]) {
     await pool.query(
       "INSERT INTO fp360_organizations (id,tenant_id,name,center,island,role,is_active) VALUES ($1,$2,$3,'Training centre','Gran Canaria','buyer',true)",
       [id, tenantId, name],
@@ -322,6 +323,16 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
       .map((invoice) => invoice.id).sort(),
     "The tax overview should list only conformed purchase invoices for this company and fiscal year",
   );
+  for (const invoice of boundaryPurchases.filter((item) =>
+    item.date >= "2027-01-01" && item.date <= "2027-12-31" && item.status === "conformed")) {
+    const source = overviewPurchaseSources.find((item) => item.id === invoice.id);
+    assert.ok(source, `The tax overview should include purchase invoice ${invoice.reference}`);
+    assert.equal(
+      source.counterparty,
+      supplierOrganizationName,
+      `The counterparty for ${invoice.reference} should be the name of its linked supplier organization ${secondCompanyId}`,
+    );
+  }
   assert.ok(overviewPurchaseSources.every((source) => source.status === "conformed"));
   assert.equal(modelStatus(overview.body)["420"], "applies");
   assert.equal(modelStatus(overview.body)["421"], "not_applicable");
