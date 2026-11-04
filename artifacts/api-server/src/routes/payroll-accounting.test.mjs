@@ -139,9 +139,9 @@ test("failed and simultaneous payroll imports leave no partial or duplicate draf
   const invalidMappingRunId = randomUUID();
   const closedPeriodRunId = randomUUID();
   const fiscalBoundaryRuns = [
-    { id: randomUUID(), periodKey: "2027-06", fiscalYear: 2026, period: 12 },
-    { id: concurrentRunId, periodKey: "2027-07", fiscalYear: 2027, period: 1 },
-    { id: invalidMappingRunId, periodKey: "2027-08", fiscalYear: 2027, period: 2 },
+    { id: randomUUID(), periodKey: "2027-06", fiscalYear: 2026, period: 12, expectedEntryNumber: 1 },
+    { id: concurrentRunId, periodKey: "2027-07", fiscalYear: 2027, period: 1, expectedEntryNumber: 1 },
+    { id: invalidMappingRunId, periodKey: "2027-08", fiscalYear: 2027, period: 2, expectedEntryNumber: 2 },
   ];
   const operationIds = {
     invalidMapping: `payroll-invalid-${randomUUID()}`,
@@ -517,7 +517,25 @@ test("failed and simultaneous payroll imports leave no partial or duplicate draf
       assert.equal(postedBody.status, "posted");
       assert.equal(postedBody.fiscalYear, run.fiscalYear);
       assert.equal(postedBody.period, run.period);
+      assert.equal(
+        postedBody.entryNumber,
+        run.expectedEntryNumber,
+        `${run.periodKey} should use the next number in fiscal year ${run.fiscalYear}'s own sequence`,
+      );
     }
+
+    const fiscalYearSequences = await client.query(
+      `SELECT fiscal_year, next_entry_number
+       FROM fp360_accounting_sequences
+       WHERE tenant_id = $1 AND organization_id = $2
+       ORDER BY fiscal_year`,
+      [tenantId, organizationId],
+    );
+    assert.deepEqual(
+      fiscalYearSequences.rows.map(({ fiscal_year, next_entry_number }) => [fiscal_year, next_entry_number]),
+      [[2026, 2], [2027, 3]],
+      "each fiscal year should persist an independent next-entry number",
+    );
 
     const failedPayrollRunId = randomUUID();
     const failureToken = randomUUID().replaceAll("-", "");
