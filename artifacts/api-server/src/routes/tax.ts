@@ -506,6 +506,8 @@ router.get("/redfp360/tax/overview", route(async (request, response) => {
   const obligations = modelCatalog.filter((model) => model.applicable && model.periodicity !== "census").map((model, index) => {
     const periodKey = model.periodicity === "annual" ? "2027" : "2027-Q3";
     const declaration = active.find((item) => item.modelCode === model.modelCode && item.periodKey === periodKey);
+    const legalPeriod = parseTaxLegalPeriod(periodKey);
+    if (!legalPeriod) throw new Error(`Invalid legal tax period: ${periodKey}`);
     const dueDate = declaration?.simulatedDueDate ?? simulatedDueDate(model.modelCode);
     const status = declaration?.status ?? (dueDate < SIMULATED_DATE ? "overdue" : "scheduled");
     return {
@@ -514,6 +516,8 @@ router.get("/redfp360/tax/overview", route(async (request, response) => {
       taxType: model.taxType,
       modelCode: model.modelCode,
       periodKey,
+      periodStart: declaration?.periodStart ?? legalPeriod.start,
+      periodEnd: declaration?.periodEnd ?? legalPeriod.end,
       simulatedDueDate: dueDate,
       status,
       declarationId: declaration?.id ?? null,

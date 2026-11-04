@@ -15,6 +15,8 @@ export interface Fp360TaxObligation {
   taxType: Fp360TaxObligationTaxType;
   modelCode: string;
   periodKey: string;
+  periodStart: string;
+  periodEnd: string;
   simulatedDueDate: string;
   status: Fp360TaxObligationStatus;
   /** @nullable */

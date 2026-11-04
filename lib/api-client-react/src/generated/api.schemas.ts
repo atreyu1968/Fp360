@@ -49,6 +49,14 @@ export const Fp360OrganizationInputSimulationCalendarMode = {
   accelerated: 'accelerated',
 } as const;
 
+export type Fp360OrganizationInputCreationMode = typeof Fp360OrganizationInputCreationMode[keyof typeof Fp360OrganizationInputCreationMode];
+
+
+export const Fp360OrganizationInputCreationMode = {
+  blank: 'blank',
+  ai_reviewed: 'ai_reviewed',
+} as const;
+
 export interface Fp360OrganizationInput {
   /**
      * @minLength 1
@@ -87,6 +95,120 @@ export interface Fp360OrganizationInput {
      * @pattern ^[0-9]{4}-[0-9]{4}$
      */
   academicPeriod?: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  simulationNetworkId?: string;
+  creationMode?: Fp360OrganizationInputCreationMode;
+  proposalReviewAcknowledged?: boolean;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  proposalToken?: string;
+}
+
+export type Fp360OrganizationNetworkCalendarMode = typeof Fp360OrganizationNetworkCalendarMode[keyof typeof Fp360OrganizationNetworkCalendarMode];
+
+
+export const Fp360OrganizationNetworkCalendarMode = {
+  ordinary: 'ordinary',
+  accelerated: 'accelerated',
+} as const;
+
+export interface Fp360OrganizationNetwork {
+  id: string;
+  name: string;
+  calendarMode: Fp360OrganizationNetworkCalendarMode;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  fiscalYearStartMonth: number;
+}
+
+export type Fp360OrganizationAiProfileProposalInputIsland = typeof Fp360OrganizationAiProfileProposalInputIsland[keyof typeof Fp360OrganizationAiProfileProposalInputIsland];
+
+
+export const Fp360OrganizationAiProfileProposalInputIsland = {
+  Tenerife: 'Tenerife',
+  Gran_Canaria: 'Gran Canaria',
+  Lanzarote: 'Lanzarote',
+  Fuerteventura: 'Fuerteventura',
+  La_Palma: 'La Palma',
+  La_Gomera: 'La Gomera',
+  El_Hierro: 'El Hierro',
+  La_Graciosa: 'La Graciosa',
+} as const;
+
+export type Fp360OrganizationAiProfileProposalInputActivity = typeof Fp360OrganizationAiProfileProposalInputActivity[keyof typeof Fp360OrganizationAiProfileProposalInputActivity];
+
+
+export const Fp360OrganizationAiProfileProposalInputActivity = {
+  commerce: 'commerce',
+  services: 'services',
+  manufacturing: 'manufacturing',
+  hospitality: 'hospitality',
+  agriculture: 'agriculture',
+  fishing: 'fishing',
+  other: 'other',
+} as const;
+
+export interface Fp360OrganizationAiProfileProposalInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  simulationNetworkId: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  center: string;
+  island: Fp360OrganizationAiProfileProposalInputIsland;
+  activity: Fp360OrganizationAiProfileProposalInputActivity;
+}
+
+export type Fp360OrganizationAiProfileProposalActivity = typeof Fp360OrganizationAiProfileProposalActivity[keyof typeof Fp360OrganizationAiProfileProposalActivity];
+
+
+export const Fp360OrganizationAiProfileProposalActivity = {
+  commerce: 'commerce',
+  services: 'services',
+  manufacturing: 'manufacturing',
+  hospitality: 'hospitality',
+  agriculture: 'agriculture',
+  fishing: 'fishing',
+  other: 'other',
+} as const;
+
+export interface Fp360OrganizationAiProfileProposal {
+  simulationNetworkId: string;
+  simulationNetworkName: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  proposalToken: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  name: string;
+  /** @maxLength 150 */
+  commercialName: string;
+  activity: Fp360OrganizationAiProfileProposalActivity;
+  /** @maxLength 200 */
+  address: string;
+  /** @maxLength 100 */
+  municipality: string;
+  /** @maxLength 12 */
+  postalCode: string;
+  /** @maxLength 400 */
+  description: string;
+  approvalRequired: true;
+  simulationOnly: true;
 }
 
 export type Fp360OrganizationUpdateIsland = typeof Fp360OrganizationUpdateIsland[keyof typeof Fp360OrganizationUpdateIsland];
@@ -2970,6 +3092,8 @@ export interface Fp360TaxObligation {
   taxType: Fp360TaxObligationTaxType;
   modelCode: string;
   periodKey: string;
+  periodStart: string;
+  periodEnd: string;
   simulatedDueDate: string;
   status: Fp360TaxObligationStatus;
   /** @nullable */

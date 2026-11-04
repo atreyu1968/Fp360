@@ -308,6 +308,10 @@ test("AEAT payroll drafts and ATC quarters use the correct source documents", as
   assert.equal(modelStatus(overview.body)["130"], "not_applicable");
   assert.ok(overview.body.modelCatalog.some((model) => model.modelCode === "111" && model.agency === "aeat"));
   assert.ok(overview.body.modelCatalog.some((model) => model.modelCode === "190" && model.agency === "aeat"));
+  const scheduledQuarterlyObligation = overview.body.obligations.find((item) => item.modelCode === "111");
+  assert.equal(scheduledQuarterlyObligation.periodStart, "2027-07-01");
+  assert.equal(scheduledQuarterlyObligation.periodEnd, "2027-09-30");
+  assert.equal(scheduledQuarterlyObligation.simulatedDueDate, "2027-10-15");
 
   const quarterlyBaseInput = {
     organizationId: companyId, taxType: "withholding", modelCode: "111",
@@ -326,6 +330,11 @@ test("AEAT payroll drafts and ATC quarters use the correct source documents", as
   assert.equal(quarterly.body.periodKey, "2027-Q3");
   assert.equal(quarterly.body.periodStart, "2027-07-01");
   assert.equal(quarterly.body.periodEnd, "2027-09-30");
+  const overviewWithQuarterlyDeclaration = await request(`/redfp360/tax/overview?organizationId=${companyId}`);
+  const savedQuarterlyObligation = overviewWithQuarterlyDeclaration.body.obligations.find((item) => item.modelCode === "111");
+  assert.equal(savedQuarterlyObligation.periodStart, quarterly.body.periodStart);
+  assert.equal(savedQuarterlyObligation.periodEnd, quarterly.body.periodEnd);
+  assert.equal(savedQuarterlyObligation.simulatedDueDate, quarterly.body.simulatedDueDate);
   const validatedForFailedRectification = await request(`/redfp360/tax/declarations/${quarterly.body.id}/action`, "POST", {
     action: "validate",
     operationId: randomUUID(),
@@ -556,6 +565,11 @@ test("AEAT payroll drafts and ATC quarters use the correct source documents", as
   assert.equal(annual.body.periodKey, "2027");
   assert.equal(annual.body.periodStart, "2027-01-01");
   assert.equal(annual.body.periodEnd, "2027-12-31");
+  const overviewWithAnnualDeclaration = await request(`/redfp360/tax/overview?organizationId=${companyId}`);
+  const savedAnnualObligation = overviewWithAnnualDeclaration.body.obligations.find((item) => item.modelCode === "190");
+  assert.equal(savedAnnualObligation.periodStart, annual.body.periodStart);
+  assert.equal(savedAnnualObligation.periodEnd, annual.body.periodEnd);
+  assert.equal(savedAnnualObligation.simulatedDueDate, annual.body.simulatedDueDate);
   assert.equal(annual.body.status, "draft");
   assert.equal(annual.body.withholdingBaseCents, 250000);
   assert.equal(annual.body.withholdingCents, 25000);

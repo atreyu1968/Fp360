@@ -8163,6 +8163,8 @@ export const GetFp360TaxOverviewResponse = zod.object({
   "taxType": zod.enum(['igic', 'withholding', 'census_canary', 'census_state', 'personal_income', 'corporate_tax', 'informative_canary', 'informative_state']),
   "modelCode": zod.string(),
   "periodKey": zod.string(),
+  "periodStart": zod.iso.date(),
+  "periodEnd": zod.iso.date(),
   "simulatedDueDate": zod.iso.date(),
   "status": zod.enum(['scheduled', 'draft', 'pending_review', 'validated', 'presented', 'payment_pending', 'paid', 'refund_pending', 'closed', 'observed', 'rectified', 'overdue']),
   "declarationId": zod.string().nullable()

@@ -6750,13 +6750,15 @@ components:
           items: { $ref: "#/components/schemas/Fp360TaxEvent" }
     Fp360TaxObligation:
       type: object
-      required: [id, agency, taxType, modelCode, periodKey, simulatedDueDate, status, declarationId]
+      required: [id, agency, taxType, modelCode, periodKey, periodStart, periodEnd, simulatedDueDate, status, declarationId]
       properties:
         id: { type: string }
         agency: { type: string, enum: [aeat, atc] }
         taxType: { type: string, enum: [igic, withholding, census_canary, census_state, personal_income, corporate_tax, informative_canary, informative_state] }
         modelCode: { type: string }
         periodKey: { type: string }
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
         simulatedDueDate: { type: string, format: date }
         status: { type: string, enum: [scheduled, draft, pending_review, validated, presented, payment_pending, paid, refund_pending, closed, observed, rectified, overdue] }
         declarationId: { type: string, nullable: true }
