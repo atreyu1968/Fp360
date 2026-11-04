@@ -31,7 +31,7 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   const otherCompanySales = [
     {
       id: randomUUID(), orderId: randomUUID(), issuerOrganizationId: secondCompanyId,
-      date: "2027-06-15", reference: "ATC-SALES-OTHER-ISSUER", baseCents: 50000, taxCents: 3500,
+      date: "2027-06-15", reference: "ATC-SALES-OTHER-ISSUER", baseCents: 400000, taxCents: 28000,
     },
   ];
   const boundaryPurchases = [
@@ -350,6 +350,11 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   assert.ok(overviewPurchaseSources.every((source) => source.status === "conformed"));
   assert.equal(modelStatus(overview.body)["420"], "applies");
   assert.equal(modelStatus(overview.body)["421"], "not_applicable");
+  assert.equal(
+    modelStatus(overview.body)["415"],
+    "not_applicable",
+    "A sale above the ATC 415 threshold issued by another company in the same tenant must not activate this company's model",
+  );
   assert.equal(modelStatus(overview.body)["200"], "applies");
   assert.equal(modelStatus(overview.body)["130"], "not_applicable");
   assert.ok(overview.body.modelCatalog.some((model) => model.modelCode === "111" && model.agency === "aeat"));
