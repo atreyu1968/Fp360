@@ -3,7 +3,7 @@ import { randomBytes, randomUUID, scryptSync } from "node:crypto";
 import test from "node:test";
 import pg from "pg";
 
-test("AEAT payroll drafts and ATC quarters use the correct source documents", async (t) => {
+test("AEAT payroll drafts and ATC quarter and annual models use the correct source documents", async (t) => {
   assert.notEqual(process.env.NODE_ENV, "production", "Never run this test in production");
   assert.ok(process.env.DATABASE_URL, "A development/test DATABASE_URL is required");
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -621,6 +621,34 @@ test("AEAT payroll drafts and ATC quarters use the correct source documents", as
     && invoice.status === "conformed");
   assertAtcBoundarySources(atcQuarterDrafts["2027-Q3"], boundarySales[0], q3ConformedPurchases);
   assertAtcBoundarySources(atcQuarterDrafts["2027-Q4"], boundarySales[1], q4ConformedPurchases);
+
+  const annualAtc = await request("/redfp360/tax/declarations", "POST", {
+    organizationId: companyId,
+    taxType: "igic",
+    modelCode: "425",
+    periodKey: "2027",
+    formData: {},
+    operationId: randomUUID(),
+  });
+  assert.equal(annualAtc.status, 201, JSON.stringify(annualAtc.body));
+  assert.equal(annualAtc.body.periodStart, "2027-01-01");
+  assert.equal(annualAtc.body.periodEnd, "2027-12-31");
+  const annualSales = boundarySales;
+  const annualConformedPurchases = boundaryPurchases.filter((invoice) => invoice.status === "conformed");
+  assert.deepEqual(annualAtc.body.sourceInvoiceIds, annualSales.map((invoice) => invoice.id));
+  assert.deepEqual(annualAtc.body.sourcePurchaseInvoiceIds, annualConformedPurchases.map((invoice) => invoice.id));
+  assert.ok(!annualAtc.body.sourcePurchaseInvoiceIds.includes(
+    boundaryPurchases.find((invoice) => invoice.status === "pending_review").id,
+  ), "Pending purchases must not become annual model 425 sources");
+  assert.ok(!annualAtc.body.sourcePurchaseInvoiceIds.includes(
+    boundaryPurchases.find((invoice) => invoice.status === "rectified").id,
+  ), "Rectified purchases must not become annual model 425 sources");
+  assert.equal(annualAtc.body.taxableBaseCents,
+    annualSales.reduce((sum, invoice) => sum + invoice.baseCents, 0));
+  assert.equal(annualAtc.body.outputIgicCents,
+    annualSales.reduce((sum, invoice) => sum + invoice.taxCents, 0));
+  assert.equal(annualAtc.body.inputIgicCents,
+    annualConformedPurchases.reduce((sum, invoice) => sum + invoice.taxCents, 0));
 
   await pool.query(
     "UPDATE fp360_simulation_networks SET fiscal_year_start_month = 10 WHERE id = $1 AND tenant_id = $2",
