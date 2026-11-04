@@ -23,6 +23,8 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   const boundarySales = [
     { id: randomUUID(), orderId: randomUUID(), date: "2027-09-30", reference: "ATC-SALES-BEFORE", baseCents: 10000, taxCents: 700 },
     { id: randomUUID(), orderId: randomUUID(), date: "2027-10-01", reference: "ATC-SALES-AFTER", baseCents: 20000, taxCents: 1400 },
+    { id: randomUUID(), orderId: randomUUID(), date: "2027-12-31", reference: "ATC-SALES-YEAR-END", baseCents: 30000, taxCents: 2100 },
+    { id: randomUUID(), orderId: randomUUID(), date: "2028-01-01", reference: "ATC-SALES-NEW-YEAR", baseCents: 40000, taxCents: 2800 },
   ];
   const boundaryPurchases = [
     {
@@ -43,6 +45,16 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
     {
       id: randomUUID(), requestId: randomUUID(), offerId: randomUUID(), orderId: randomUUID(),
       date: "2027-10-01", reference: "ATC-PURCHASE-AFTER", baseCents: 8000, taxCents: 560,
+      status: "conformed",
+    },
+    {
+      id: randomUUID(), requestId: randomUUID(), offerId: randomUUID(), orderId: randomUUID(),
+      date: "2027-12-31", reference: "ATC-PURCHASE-YEAR-END", baseCents: 9000, taxCents: 630,
+      status: "conformed",
+    },
+    {
+      id: randomUUID(), requestId: randomUUID(), offerId: randomUUID(), orderId: randomUUID(),
+      date: "2028-01-01", reference: "ATC-PURCHASE-NEW-YEAR", baseCents: 10000, taxCents: 700,
       status: "conformed",
     },
   ];
@@ -603,6 +615,7 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
     ["2027-Q2", "2027-04-01", "2027-06-30"],
     ["2027-Q3", "2027-07-01", "2027-09-30"],
     ["2027-Q4", "2027-10-01", "2027-12-31"],
+    ["2028-Q1", "2028-01-01", "2028-03-31"],
   ];
   const atcQuarterDrafts = {};
   for (const [periodKey, periodStart, periodEnd] of quarterDates) {
@@ -620,21 +633,30 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
     assert.equal(declaration.body.periodEnd, periodEnd);
     atcQuarterDrafts[periodKey] = declaration.body;
   }
-  const assertAtcBoundarySources = (draft, salesInvoice, purchaseInvoices) => {
-    assert.deepEqual(draft.sourceInvoiceIds, [salesInvoice.id]);
-    assert.deepEqual(draft.sourcePurchaseInvoiceIds, purchaseInvoices.map((invoice) => invoice.id));
-    assert.equal(draft.taxableBaseCents, salesInvoice.baseCents);
-    assert.equal(draft.outputIgicCents, salesInvoice.taxCents);
+  const assertAtcQuarterSources = (draft, salesInvoices, purchaseInvoices) => {
+    assert.deepEqual([...draft.sourceInvoiceIds].sort(), salesInvoices.map((invoice) => invoice.id).sort());
+    assert.deepEqual([...draft.sourcePurchaseInvoiceIds].sort(), purchaseInvoices.map((invoice) => invoice.id).sort());
+    const salesBaseCents = salesInvoices.reduce((sum, invoice) => sum + invoice.baseCents, 0);
+    const outputIgicCents = salesInvoices.reduce((sum, invoice) => sum + invoice.taxCents, 0);
     const inputIgicCents = purchaseInvoices.reduce((sum, invoice) => sum + invoice.taxCents, 0);
+    assert.equal(draft.taxableBaseCents, salesBaseCents);
+    assert.equal(draft.outputIgicCents, outputIgicCents);
     assert.equal(draft.inputIgicCents, inputIgicCents);
-    assert.equal(draft.resultCents, salesInvoice.taxCents - inputIgicCents);
+    assert.equal(draft.resultCents, outputIgicCents - inputIgicCents);
   };
-  const q3ConformedPurchases = boundaryPurchases.filter((invoice) => invoice.date.startsWith("2027-09")
-    && invoice.status === "conformed");
-  const q4ConformedPurchases = boundaryPurchases.filter((invoice) => invoice.date.startsWith("2027-10")
-    && invoice.status === "conformed");
-  assertAtcBoundarySources(atcQuarterDrafts["2027-Q3"], boundarySales[0], q3ConformedPurchases);
-  assertAtcBoundarySources(atcQuarterDrafts["2027-Q4"], boundarySales[1], q4ConformedPurchases);
+  const q3ConformedPurchases = boundaryPurchases.filter((invoice) =>
+    invoice.date >= "2027-07-01" && invoice.date <= "2027-09-30" && invoice.status === "conformed");
+  const q4ConformedPurchases = boundaryPurchases.filter((invoice) =>
+    invoice.date >= "2027-10-01" && invoice.date <= "2027-12-31" && invoice.status === "conformed");
+  const q1ConformedPurchases = boundaryPurchases.filter((invoice) =>
+    invoice.date >= "2028-01-01" && invoice.date <= "2028-03-31" && invoice.status === "conformed");
+  assertAtcQuarterSources(atcQuarterDrafts["2027-Q3"], [boundarySales[0]], q3ConformedPurchases);
+  assertAtcQuarterSources(
+    atcQuarterDrafts["2027-Q4"],
+    [boundarySales[1], boundarySales[2]],
+    q4ConformedPurchases,
+  );
+  assertAtcQuarterSources(atcQuarterDrafts["2028-Q1"], [boundarySales[3]], q1ConformedPurchases);
 
   const annualAtc = await request("/redfp360/tax/declarations", "POST", {
     organizationId: companyId,
@@ -668,7 +690,7 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
     "UPDATE fp360_simulation_networks SET fiscal_year_start_month = 10 WHERE id = $1 AND tenant_id = $2",
     [networkId, tenantId],
   );
-  for (const periodKey of ["2027-Q3", "2027-Q4"]) {
+  for (const periodKey of ["2027-Q3", "2027-Q4", "2028-Q1"]) {
     const recalculated = await request(
       `/redfp360/tax/declarations/${atcQuarterDrafts[periodKey].id}/action`,
       "POST",
@@ -676,9 +698,11 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
     );
     assert.equal(recalculated.status, 200, JSON.stringify(recalculated.body));
     const expectedInvoices = periodKey === "2027-Q3"
-      ? [boundarySales[0], q3ConformedPurchases]
-      : [boundarySales[1], q4ConformedPurchases];
-    assertAtcBoundarySources(recalculated.body, expectedInvoices[0], expectedInvoices[1]);
+      ? [[boundarySales[0]], q3ConformedPurchases]
+      : periodKey === "2027-Q4"
+        ? [[boundarySales[1], boundarySales[2]], q4ConformedPurchases]
+        : [[boundarySales[3]], q1ConformedPurchases];
+    assertAtcQuarterSources(recalculated.body, expectedInvoices[0], expectedInvoices[1]);
   }
   const savedQuarterAfterCalendarChange = await pool.query(
     `SELECT period_key, period_start::text, period_end::text
