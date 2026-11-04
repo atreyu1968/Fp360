@@ -66,6 +66,14 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
       status: "conformed",
     },
   ];
+  const otherCompanyPurchases = [
+    {
+      id: randomUUID(), requestId: randomUUID(), offerId: randomUUID(), orderId: randomUUID(),
+      buyerOrganizationId: secondCompanyId, supplierOrganizationId: companyId,
+      date: "2027-06-15", reference: "ATC-PURCHASE-OTHER-BUYER-Q2",
+      baseCents: 400000, taxCents: 28000, status: "conformed",
+    },
+  ];
   const failureTriggerSuffix = randomUUID().replaceAll("-", "");
   const failureTriggerName = `tax_rectification_fail_${failureTriggerSuffix}`;
   const failureFunctionName = `${failureTriggerName}_fn`;
@@ -240,15 +248,18 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
         invoice.baseCents, invoice.taxCents, invoice.baseCents + invoice.taxCents, invoice.date],
     );
   }
-  for (const invoice of boundaryPurchases) {
+  for (const invoice of [...boundaryPurchases, ...otherCompanyPurchases]) {
+    const buyerOrganizationId = invoice.buyerOrganizationId ?? companyId;
+    const supplierOrganizationId = invoice.supplierOrganizationId ?? secondCompanyId;
+    const creatorUserId = buyerOrganizationId === secondCompanyId ? secondUserId : userId;
     await pool.query(
       `INSERT INTO fp360_purchase_requests
         (id, tenant_id, organization_id, request_number, department, urgency,
          budget_cap_cents, purpose, status, created_by_user_id, created_by_role, request_fingerprint)
        VALUES ($1, $2, $3, $4, 'Compras', 'medium', $5, 'Factura de prueba ATC',
          'approved', $6, 'teacher', $7)`,
-      [invoice.requestId, tenantId, companyId, `REQ-${invoice.reference}`,
-        invoice.baseCents + invoice.taxCents, userId, `request-${invoice.id}`],
+      [invoice.requestId, tenantId, buyerOrganizationId, `REQ-${invoice.reference}`,
+        invoice.baseCents + invoice.taxCents, creatorUserId, `request-${invoice.id}`],
     );
     await pool.query(
       `INSERT INTO fp360_purchase_offers
@@ -256,8 +267,8 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
          delivery_days, payment_days, freight_cents, quality_score_basis_points,
          created_by_user_id, created_by_role, request_fingerprint)
        VALUES ($1, $2, $3, $4, $5, 1, 0, 0, 10000, $6, 'teacher', $7)`,
-      [invoice.offerId, tenantId, invoice.requestId, secondCompanyId,
-        `QUOTE-${invoice.reference}`, userId, `offer-${invoice.id}`],
+      [invoice.offerId, tenantId, invoice.requestId, supplierOrganizationId,
+        `QUOTE-${invoice.reference}`, creatorUserId, `offer-${invoice.id}`],
     );
     await pool.query(
       `INSERT INTO fp360_purchase_orders
@@ -266,9 +277,9 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
          awarded_reason, created_by_user_id, created_by_role, simulated_date)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, $10, 'received',
          'Pedido de prueba ATC', $11, 'teacher', $12)`,
-      [invoice.orderId, tenantId, invoice.requestId, invoice.offerId, companyId, secondCompanyId,
+      [invoice.orderId, tenantId, invoice.requestId, invoice.offerId, buyerOrganizationId, supplierOrganizationId,
         `PO-${invoice.reference}`, invoice.baseCents, invoice.taxCents,
-        invoice.baseCents + invoice.taxCents, userId, invoice.date],
+        invoice.baseCents + invoice.taxCents, creatorUserId, invoice.date],
     );
     await pool.query(
       `INSERT INTO fp360_purchase_invoices
@@ -277,9 +288,9 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
          status, match_status, match_summary, created_by_user_id, created_by_role, request_fingerprint)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9, 0, $10,
           $11, 'match', 'Factura ficticia de prueba', $12, 'teacher', $13)`,
-      [invoice.id, tenantId, invoice.orderId, invoice.requestId, secondCompanyId, invoice.reference,
+      [invoice.id, tenantId, invoice.orderId, invoice.requestId, supplierOrganizationId, invoice.reference,
         invoice.date, invoice.baseCents, invoice.taxCents, invoice.baseCents + invoice.taxCents,
-        invoice.status, userId, `invoice-${invoice.id}`],
+        invoice.status, creatorUserId, `invoice-${invoice.id}`],
     );
   }
 
@@ -691,6 +702,15 @@ test("AEAT payroll drafts and ATC quarter and annual models use the correct sour
   assert.ok(
     !atcQuarterDrafts["2027-Q2"].sourceInvoiceIds.includes(otherCompanySales[0].id),
     "A Q2 sale issued by another company must not become a model 420 source",
+  );
+  assert.ok(
+    !atcQuarterDrafts["2027-Q2"].sourcePurchaseInvoiceIds.includes(otherCompanyPurchases[0].id),
+    "A Q2 purchase invoice assigned to another company must not become a model 420 source",
+  );
+  assert.equal(
+    atcQuarterDrafts["2027-Q2"].inputIgicCents,
+    0,
+    "A purchase invoice assigned to another company must not change the selected company's deductible IGIC",
   );
   assertAtcQuarterSources(
     atcQuarterDrafts["2027-Q3"],
