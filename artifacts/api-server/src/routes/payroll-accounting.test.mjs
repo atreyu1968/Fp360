@@ -132,10 +132,17 @@ test("failed and simultaneous payroll imports leave no partial or duplicate draf
   const sessionToken = randomBytes(32).toString("base64url");
   const organizationId = randomUUID();
   const otherOrganizationId = randomUUID();
+  const centerId = randomUUID();
+  const simulationNetworkId = randomUUID();
   const policyId = randomUUID();
   const concurrentRunId = randomUUID();
   const invalidMappingRunId = randomUUID();
   const closedPeriodRunId = randomUUID();
+  const fiscalBoundaryRuns = [
+    { id: randomUUID(), periodKey: "2027-06", fiscalYear: 2026, period: 12 },
+    { id: concurrentRunId, periodKey: "2027-07", fiscalYear: 2027, period: 1 },
+    { id: invalidMappingRunId, periodKey: "2027-08", fiscalYear: 2027, period: 2 },
+  ];
   const operationIds = {
     invalidMapping: `payroll-invalid-${randomUUID()}`,
     closedPeriod: `payroll-closed-${randomUUID()}`,
@@ -192,6 +199,23 @@ test("failed and simultaneous payroll imports leave no partial or duplicate draf
          ($1, $3, 'Empresa de prueba', 'Centro de prueba', 'Isla ficticia', 'company', true),
          ($2, $3, 'Otra empresa de prueba', 'Otro centro', 'Isla ficticia', 'company', true)`,
       [organizationId, otherOrganizationId, tenantId],
+    );
+    await client.query(
+      `INSERT INTO fp360_centers (id, tenant_id, name, normalized_name)
+       VALUES ($1, $2, 'Centro de prueba', 'centro-de-prueba')`,
+      [centerId, tenantId],
+    );
+    await client.query(
+      `INSERT INTO fp360_simulation_networks
+         (id, tenant_id, code, name, calendar_mode, fiscal_year_start_month)
+       VALUES ($1, $2, 'payroll-fiscal-test', 'Calendario fiscal de nóminas', 'ordinary', 7)`,
+      [simulationNetworkId, tenantId],
+    );
+    await client.query(
+      `INSERT INTO fp360_organization_scopes
+         (organization_id, tenant_id, center_id, simulation_network_id, origin)
+       VALUES ($1, $2, $3, $4, 'organization_created')`,
+      [organizationId, tenantId, centerId, simulationNetworkId],
     );
     await client.query(
       `INSERT INTO fp360_auth_users (id, email, display_name, password_hash)
@@ -265,23 +289,24 @@ test("failed and simultaneous payroll imports leave no partial or duplicate draf
       employerCostCents: 240_000,
       receiptRef: "REC-TEST-2027",
     }];
-    const createRun = (id, periodKey, operationId) => client.query(
+    const createRun = (id, periodKey, operationId, preparerId = userId, reviewerId = preparerId) => client.query(
       `INSERT INTO fp360_payroll_runs
          (id, tenant_id, organization_id, period_key, version, policy_id, receipt_lines,
           employee_count, gross_total_cents, net_total_cents, employer_cost_total_cents,
           status, operation_id, request_fingerprint, created_by_user_id, created_by_name,
           reviewed_by_user_id, reviewed_by_name)
        VALUES ($1, $2, $3, $4, 1, $5, $6::jsonb, 1, 200000, 150000, 240000,
-               'closed', $7, 'test-run', $8, 'Payroll test user', $8, 'Payroll reviewer')`,
-      [id, tenantId, organizationId, periodKey, policyId, JSON.stringify(receiptLines), operationId, userId],
+               'closed', $7, 'test-run', $8, 'Payroll test user', $9, 'Payroll reviewer')`,
+      [id, tenantId, organizationId, periodKey, policyId, JSON.stringify(receiptLines), operationId, preparerId, reviewerId],
     );
-    await createRun(concurrentRunId, "2027-07", `run-${randomUUID()}`);
-    await createRun(invalidMappingRunId, "2027-08", `run-${randomUUID()}`);
+    await createRun(concurrentRunId, "2027-07", `run-${randomUUID()}`, randomUUID(), randomUUID());
+    await createRun(invalidMappingRunId, "2027-08", `run-${randomUUID()}`, randomUUID(), randomUUID());
     await createRun(closedPeriodRunId, "2027-09", `run-${randomUUID()}`);
+    await createRun(fiscalBoundaryRuns[0].id, fiscalBoundaryRuns[0].periodKey, `run-${randomUUID()}`, randomUUID(), randomUUID());
     await client.query(
       `INSERT INTO fp360_accounting_periods
          (id, tenant_id, organization_id, fiscal_year, period, status, close_reason)
-       VALUES ($1, $2, $3, 2027, 9, 'closed', 'Closed for payroll import test')`,
+       VALUES ($1, $2, $3, 2027, 3, 'closed', 'Closed for payroll import test')`,
       [randomUUID(), tenantId, organizationId],
     );
 
@@ -423,6 +448,77 @@ test("failed and simultaneous payroll imports leave no partial or duplicate draf
       "retries must not create additional drafts or audit events",
     );
 
+    const existingFiscalBoundaryEntries = new Map([
+      [concurrentRunId, simultaneousBodies[0]],
+      [invalidMappingRunId, retryEntry],
+    ]);
+    const fiscalBoundaryDrafts = [];
+    for (const run of fiscalBoundaryRuns) {
+      let body = existingFiscalBoundaryEntries.get(run.id);
+      if (!body) {
+        const response = await importRun(run.id, run.periodKey, `payroll-fiscal-${randomUUID()}`);
+        body = await response.json();
+        assert.equal(response.status, 201, JSON.stringify(body));
+      }
+      assert.equal(body.entryDate, `${run.periodKey}-01`);
+      assert.equal(body.fiscalYear, run.fiscalYear, `${run.periodKey} should use the correct fiscal year`);
+      assert.equal(body.period, run.period, `${run.periodKey} should use the correct fiscal period`);
+      assert.equal(body.status, "draft");
+      assert.equal(body.sourceType, "payroll_run");
+      fiscalBoundaryDrafts.push({ run, entry: body });
+    }
+
+    const startMonthDraft = fiscalBoundaryDrafts[1];
+    await client.query(
+      `UPDATE fp360_accounting_entries SET fiscal_year = 2026, period = 12
+       WHERE id = $1 AND tenant_id = $2`,
+      [startMonthDraft.entry.id, tenantId],
+    );
+    const misclassifiedPost = await fetch(
+      `${baseUrl}/api/redfp360/accounting/entries/${startMonthDraft.entry.id}/post`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          organizationId,
+          operationId: `payroll-post-misclassified-${randomUUID()}`,
+        }),
+      },
+    );
+    const misclassifiedBody = await misclassifiedPost.json();
+    assert.equal(misclassifiedPost.status, 409, JSON.stringify(misclassifiedBody));
+    assert.match(misclassifiedBody.error, /origen de nómina/);
+    const stillDraft = await client.query(
+      "SELECT status FROM fp360_accounting_entries WHERE id = $1 AND tenant_id = $2",
+      [startMonthDraft.entry.id, tenantId],
+    );
+    assert.equal(stillDraft.rows[0].status, "draft", "a misclassified payroll must remain unposted");
+    await client.query(
+      `UPDATE fp360_accounting_entries SET fiscal_year = $1, period = $2
+       WHERE id = $3 AND tenant_id = $4`,
+      [startMonthDraft.run.fiscalYear, startMonthDraft.run.period,
+        startMonthDraft.entry.id, tenantId],
+    );
+
+    for (const { run, entry } of fiscalBoundaryDrafts) {
+      const postedResponse = await fetch(
+        `${baseUrl}/api/redfp360/accounting/entries/${entry.id}/post`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            organizationId,
+            operationId: `payroll-post-correct-${run.periodKey}-${randomUUID()}`,
+          }),
+        },
+      );
+      const postedBody = await postedResponse.json();
+      assert.equal(postedResponse.status, 200, `${run.periodKey}: ${JSON.stringify(postedBody)}`);
+      assert.equal(postedBody.status, "posted");
+      assert.equal(postedBody.fiscalYear, run.fiscalYear);
+      assert.equal(postedBody.period, run.period);
+    }
+
     const failedPayrollRunId = randomUUID();
     const failureToken = randomUUID().replaceAll("-", "");
     const failedReceiptRef = `REC-FAIL-${failureToken}`;
@@ -536,7 +632,10 @@ test("failed and simultaneous payroll imports leave no partial or duplicate draf
     await client.query("DELETE FROM fp360_auth_sessions WHERE user_id = $1", [userId]);
     await client.query("DELETE FROM fp360_auth_memberships WHERE user_id = $1", [userId]);
     await client.query("DELETE FROM fp360_auth_users WHERE id = $1", [userId]);
+    await client.query("DELETE FROM fp360_organization_scopes WHERE tenant_id = $1", [tenantId]);
     await client.query("DELETE FROM fp360_organizations WHERE tenant_id = $1", [tenantId]);
+    await client.query("DELETE FROM fp360_simulation_networks WHERE tenant_id = $1", [tenantId]);
+    await client.query("DELETE FROM fp360_centers WHERE tenant_id = $1", [tenantId]);
     client.release();
     await pool.end();
   }
